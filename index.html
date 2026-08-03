@@ -1472,6 +1472,7 @@
 
                     sortedPendapatan.forEach(k => {
                         const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : []; 
+                        // Determine which income to show: admin_utama sees management income, others see team income
                         const nominalPerHari = (currentUser.role === 'admin_utama') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
                         const nominalTotal = dates.length > 0 ? (nominalPerHari * dates.length) : nominalPerHari;
 
