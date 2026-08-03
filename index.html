@@ -306,39 +306,51 @@
             <div id="modul-list" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </div>
 
-        <!-- SIMULASI CBT (INTRODUCTION) -->
+        <!-- SIMULASI CBT SCREEN -->
         <div id="view-lms-cbt" class="hidden space-y-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
                 <div>
-                    <span class="text-xs font-bold text-safety-500 uppercase tracking-widest">Ujian Mandiri</span>
-                    <h1 class="text-2xl font-extrabold text-slate-900">Simulasi CBT Sertifikasi</h1>
+                    <span class="text-xs font-bold text-amber-500 uppercase tracking-widest">Computer Based Test</span>
+                    <h1 class="text-2xl font-extrabold text-slate-900">Simulasi Ujian CBT</h1>
                 </div>
                 <button onclick="window.switchLmsTab('dashboard')" class="text-xs font-bold text-slate-500 hover:text-slate-900">&larr; Kembali ke Dashboard</button>
             </div>
 
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
-                <div class="md:flex">
-                    <div class="md:w-2/5 bg-navy-900 p-8 text-white flex flex-col justify-center relative overflow-hidden">
-                        <div class="absolute inset-0 bg-grid-pattern-white opacity-10"></div>
-                        <div class="relative z-10">
-                            <div class="w-16 h-16 bg-safety-400/20 rounded-2xl flex items-center justify-center text-safety-400 text-3xl font-bold mb-6">⏱️</div>
-                            <h2 class="text-2xl font-extrabold mb-4 leading-tight">Uji Kompetensi & Sertifikasi</h2>
-                            <p class="text-slate-300 text-sm leading-relaxed mb-6">Ujian berbasis komputer (CBT) ini dirancang untuk mensimulasikan ujian sertifikasi K3 yang sesungguhnya. Soal akan diacak secara sistem.</p>
-                            <ul class="space-y-3 text-sm text-slate-200">
-                                <li class="flex items-center"><span class="text-safety-400 mr-2">✓</span> Durasi Waktu: 45 Menit</li>
-                                <li class="flex items-center"><span class="text-safety-400 mr-2">✓</span> Penilaian Instan</li>
-                                <li class="flex items-center"><span class="text-safety-400 mr-2">✓</span> Sertifikat & PDF Review</li>
-                            </ul>
+            <div class="bg-white rounded-3xl p-8 md:p-12 border border-slate-200 shadow-xl max-w-4xl mx-auto text-center mt-8 relative overflow-hidden">
+                <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 text-amber-500 text-4xl shadow-inner">
+                    📝
+                </div>
+                <h2 class="text-3xl font-extrabold text-slate-900 mb-4">Uji Pemahaman K3 Anda</h2>
+                <p class="text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
+                    Ikuti simulasi ujian sertifikasi K3 yang disusun sesuai standar kompetensi. 
+                    Anda akan diberi waktu <strong>45 Menit</strong> untuk menyelesaikan soal-soal pilihan ganda secara acak. 
+                    Jika koneksi terputus, memori jawaban Anda akan otomatis tersimpan.
+                </p>
+                
+                <button onclick="window.openModal('modal-ujian')" class="px-8 py-4 bg-safety-500 hover:bg-safety-600 text-white rounded-xl font-extrabold shadow-lg transition-all text-sm uppercase tracking-widest">
+                    Pilih Kelas & Mulai Ujian &rarr;
+                </button>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 border-t border-slate-100 pt-8 text-left">
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg">⏱️</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Timer Pintar</h4>
+                            <p class="text-xs text-slate-500 mt-1">Waktu berjalan absolut (45 menit). Tidak bisa dicurangi dengan me-refresh browser.</p>
                         </div>
                     </div>
-                    <div class="md:w-3/5 p-8 flex flex-col justify-center">
-                        <div class="text-center max-w-sm mx-auto">
-                            <h3 class="text-xl font-bold text-slate-900 mb-2">Siap untuk Memulai?</h3>
-                            <p class="text-slate-500 text-sm mb-8">Pastikan koneksi internet Anda stabil sebelum meminta izin ujian kepada instruktur.</p>
-                            <button onclick="if(!currentUser){window.openModal('modal-login')}else{window.openModal('modal-ujian')}" class="w-full py-4 bg-safety-500 hover:bg-safety-600 text-white font-extrabold text-sm rounded-xl transition-all shadow-lg transform hover:-translate-y-1">
-                                Mulai Simulasi Ujian &rarr;
-                            </button>
-                            <p class="mt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">*Wajib login untuk akses ujian</p>
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">💾</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Auto-Save Jawaban</h4>
+                            <p class="text-xs text-slate-500 mt-1">Setiap klik disimpan ke memori lokal. Aman dari mati lampu atau tab tertutup.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="p-2 bg-purple-100 text-purple-600 rounded-lg">📡</div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm">Skor Realtime</h4>
+                            <p class="text-xs text-slate-500 mt-1">Skor Anda dikirim secara *live* ke layar Instruktur saat Anda mengerjakan soal.</p>
                         </div>
                     </div>
                 </div>
@@ -622,7 +634,7 @@
                 </div>
                 <div class="w-full bg-white border-t border-slate-200 p-4 flex flex-col gap-3 absolute bottom-0 left-0 z-20 shrink-0">
                     <button id="btn-download-pdf" class="w-full max-w-md mx-auto py-3.5 bg-navy-900 hover:bg-black text-white rounded-xl font-extrabold shadow-lg flex items-center justify-center">Unduh Soal & Kunci (PDF)</button>
-                    <button class="btn-close-modal w-full max-w-md mx-auto py-3 bg-white border-2 border-slate-200 text-slate-800 rounded-xl font-bold">Kembali ke Dashboard</button>
+                    <button class="btn-close-modal w-full max-w-md mx-auto py-3 bg-white border-2 border-slate-200 text-slate-800 rounded-xl font-bold" onclick="window.clearExamState()">Kembali ke Dashboard</button>
                 </div>
             </div>
         </div>
@@ -647,7 +659,7 @@
                 <button id="nav-btn-nilai" class="admin-nav-btn eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-dashboard"><span>Kelola Hasil Ujian</span></button>
                 <button id="nav-btn-berita" class="admin-nav-btn eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-berita"><span>Kelola Berita</span></button>
                 <button id="nav-btn-modul" class="admin-nav-btn eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-modul"><span>Kelola Modul Materi</span></button>
-                <button id="nav-btn-keuangan" class="admin-nav-btn eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pendapatan"><span>Ringkasan Keuangan</span></button>
+                <button id="nav-btn-keuangan" class="admin-nav-btn w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pendapatan"><span>Ringkasan Keuangan</span></button>
 
                 <div class="admin-utama-only eldi-access text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Menu Khusus</div>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
@@ -746,7 +758,7 @@
                             <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Total Keluar (Bulan Ini)</p><p class="text-lg font-bold tracking-tight text-purple-600 truncate" id="stat-uang-keluar">Rp 0</p>
                         </div>
                         <div class="admin-utama-only bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-blue-600 hidden">
-                            <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Saldo Bersih (Total Keseluruhan)</p><p class="text-lg font-bold tracking-tight text-blue-700 truncate" id="stat-uang-saldo">Rp 0</p>
+                            <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Saldo Bersih (Keseluruhan)</p><p class="text-lg font-bold tracking-tight text-blue-700 truncate" id="stat-uang-saldo">Rp 0</p>
                         </div>
                     </div>
                     
@@ -871,7 +883,6 @@
                                             <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer"><input type="checkbox" id="izin-nilai" class="rounded border-slate-300 text-safety-500 h-4 w-4"> <span>Melihat Hasil Ujian</span></label>
                                             <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer"><input type="checkbox" id="izin-berita" class="rounded border-slate-300 text-safety-500 h-4 w-4"> <span>Kelola Berita</span></label>
                                             <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer"><input type="checkbox" id="izin-modul" class="rounded border-slate-300 text-safety-500 h-4 w-4"> <span>Kelola Modul Materi</span></label>
-                                            <label class="flex items-center space-x-2 text-sm text-slate-700 cursor-pointer"><input type="checkbox" id="izin-keuangan" class="rounded border-slate-300 text-safety-500 h-4 w-4"> <span>Lihat Keuangan Utama</span></label>
                                         </div>
                                     </div>
                                     <button type="submit" class="w-full py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm">Simpan Akun Tim</button>
@@ -1049,6 +1060,7 @@
             }, 3000);
         };
 
+        // Anti Cheat
         document.addEventListener('keydown', (e) => {
             if(e.key === 'PrintScreen' || (e.ctrlKey && ['p','c','s','u'].includes(e.key.toLowerCase())) || (e.ctrlKey && e.shiftKey && ['i','c'].includes(e.key.toLowerCase()))) {
                 e.preventDefault(); 
@@ -1091,49 +1103,15 @@
         const pathLiveCbt = `artifacts/${cleanAppId}/public/data/live_cbt`;
         const pathKategori = `artifacts/${cleanAppId}/public/data/kategori_k3`;
 
+        // GLOBALS
         let currentUser = null; 
         let quizDataFromDB = []; let activeQuizData = []; let currentQuizIndex = 0; 
-        let userAnswers = []; let userFlags = []; let examTimerInterval = null; let examTimeRemaining = 45 * 60; 
+        let userAnswers = []; let userFlags = []; let examTimerInterval = null; 
+        let examEndTime = null; // New logic for persistence
+        
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let isAppInitialized = false;
-
-        function saveExamState() {
-            if (!currentUser) return;
-            localStorage.setItem('ruangk3_cbt_state', JSON.stringify({ uid: currentUser.uid, questions: activeQuizData, answers: userAnswers, flags: userFlags, currentIndex: currentQuizIndex, endTime: window.examEndTime }));
-        }
-
-        function clearExamState() { localStorage.removeItem('ruangk3_cbt_state'); }
-
-        function startExamTimer() {
-            if(examTimerInterval) clearInterval(examTimerInterval);
-            examTimerInterval = setInterval(() => {
-                let remaining = Math.floor((window.examEndTime - Date.now()) / 1000);
-                if (remaining <= 0) { clearInterval(examTimerInterval); window.showToast("Waktu habis!", "warning"); finishQuiz(); } 
-                else {
-                    let m = Math.floor(remaining / 60); let s = remaining % 60;
-                    const tStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                    const tDesk = document.getElementById('quiz-timer'); if(tDesk) tDesk.innerText = tStr;
-                    const tMob = document.getElementById('quiz-timer-mobile'); if(tMob) tMob.innerText = tStr;
-                }
-            }, 1000);
-        }
-
-        function checkAndResumeExam() {
-            const savedState = localStorage.getItem('ruangk3_cbt_state');
-            if (savedState) {
-                try {
-                    const state = JSON.parse(savedState);
-                    if (state.uid === currentUser.uid) {
-                        activeQuizData = state.questions; userAnswers = state.answers; userFlags = state.flags; currentQuizIndex = state.currentIndex; window.examEndTime = state.endTime;
-                        window.openModal('modal-ujian');
-                        document.getElementById('ujian-intro').classList.add('hidden'); document.getElementById('ujian-waiting').classList.remove('flex'); document.getElementById('ujian-waiting').classList.add('hidden'); document.getElementById('ujian-soal').classList.remove('hidden'); document.getElementById('ujian-soal').classList.add('flex');
-                        if (Date.now() < state.endTime) { renderQuestion(); updateGridUI(); startExamTimer(); window.showToast("Memulihkan sesi ujian Anda...", "info"); } 
-                        else { finishQuiz(); window.showToast("Waktu ujian telah habis saat Anda offline.", "warning"); }
-                    }
-                } catch (e) { clearExamState(); }
-            }
-        }
 
         window.switchLmsTab = function(tabName) {
             ['dashboard', 'kelas', 'cbt', 'live'].forEach(t => {
@@ -1174,14 +1152,7 @@
 
         async function processLogout() {
             currentUser = null; try { await signInAnonymously(auth); } catch(e){}
-            document.getElementById('auth-container-desktop').innerHTML = `<button id="btn-login-admin-desktop" class="text-xs text-slate-300 hover:text-safety-400 font-bold transition-colors uppercase tracking-wider">Login Admin</button><button id="btn-login-desktop" class="bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold px-5 py-2.5 rounded-xl shadow-md text-sm">Masuk / Daftar</button>`;
-            document.getElementById('auth-container-mobile').innerHTML = `<button id="btn-login-mobile" class="w-full text-center bg-safety-400 text-navy-900 font-extrabold px-4 py-3.5 rounded-xl shadow-md">Masuk / Daftar Akun</button><button id="btn-login-admin-mobile" class="w-full text-center text-slate-300 font-bold px-4 py-3.5 bg-navy-800 rounded-xl border border-slate-700">Login Admin</button>`;
-            document.getElementById('btn-login-desktop')?.addEventListener('click', () => window.openModal('modal-login')); 
-            document.getElementById('btn-login-admin-desktop')?.addEventListener('click', () => window.openModal('modal-login-admin')); 
-            document.getElementById('btn-login-mobile')?.addEventListener('click', () => { document.getElementById('mobile-menu')?.classList.add('hidden'); window.openModal('modal-login'); }); 
-            document.getElementById('btn-login-admin-mobile')?.addEventListener('click', () => { document.getElementById('mobile-menu')?.classList.add('hidden'); window.openModal('modal-login-admin'); });
-            document.getElementById('modul-locked')?.classList.remove('hidden'); document.getElementById('modul-list')?.classList.add('hidden');
-            document.getElementById('mobile-menu')?.classList.add('hidden');
+            window.location.reload();
         }
 
         function setupAdminUI(role) {
@@ -1222,7 +1193,7 @@
                 const izin = currentUser.izin || {};
                 if(btnNilai) { if(izin.nilai) btnNilai.classList.remove('hidden'); else btnNilai.classList.add('hidden'); }
                 if(btnBerita) { if(izin.berita) btnBerita.classList.remove('hidden'); else btnBerita.classList.add('hidden'); }
-                if(btnKeuangan) { btnKeuangan.classList.remove('hidden'); }
+                if(btnKeuangan) btnKeuangan.classList.remove('hidden'); // Selalu muncul khusus untuk Tim!
                 if(btnModul) { if(izin.modul) btnModul.classList.remove('hidden'); else btnModul.classList.add('hidden'); }
             } else if (isViewer) {
                 if(btnNilai) btnNilai.classList.add('hidden'); if(btnBerita) btnBerita.classList.add('hidden'); if(btnKeuangan) btnKeuangan.classList.add('hidden'); if(btnModul) btnModul.classList.add('hidden');
@@ -1246,6 +1217,82 @@
             });
         }
 
+        function saveExamState() {
+            if (!currentUser || !currentUser.uid) return;
+            const examState = {
+                userAnswers: userAnswers,
+                userFlags: userFlags,
+                examEndTime: examEndTime,
+                activeQuizData: activeQuizData,
+                currentQuizIndex: currentQuizIndex
+            };
+            localStorage.setItem(`ruangk3_exam_${currentUser.uid}`, JSON.stringify(examState));
+        }
+
+        window.clearExamState = function() {
+            if (!currentUser || !currentUser.uid) return;
+            localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
+            window.closeModal();
+        }
+
+        function checkAndResumeExam() {
+            if (!currentUser || !currentUser.uid) return false;
+            try {
+                const savedStateStr = localStorage.getItem(`ruangk3_exam_${currentUser.uid}`);
+                if (!savedStateStr) return false;
+                
+                const savedState = JSON.parse(savedStateStr);
+                if (savedState && savedState.examEndTime && savedState.activeQuizData) {
+                    const now = Date.now();
+                    if (now < savedState.examEndTime) {
+                        // Restore state
+                        activeQuizData = savedState.activeQuizData;
+                        userAnswers = savedState.userAnswers || new Array(activeQuizData.length).fill(null);
+                        userFlags = savedState.userFlags || new Array(activeQuizData.length).fill(false);
+                        currentQuizIndex = savedState.currentQuizIndex || 0;
+                        examEndTime = savedState.examEndTime;
+                        
+                        window.showToast("Meresume sesi ujian Anda sebelumnya...", "info");
+                        
+                        // Switch UI
+                        window.openModal('modal-ujian');
+                        document.getElementById('ujian-intro').classList.add('hidden');
+                        document.getElementById('ujian-waiting').classList.add('hidden');
+                        document.getElementById('ujian-soal').classList.remove('hidden');
+                        document.getElementById('ujian-soal').classList.add('flex');
+                        
+                        renderQuestion();
+                        updateGridUI();
+                        
+                        // Start absolute timer
+                        if(examTimerInterval) clearInterval(examTimerInterval);
+                        examTimerInterval = setInterval(() => {
+                            const remainingMs = examEndTime - Date.now();
+                            if(remainingMs <= 0) {
+                                clearInterval(examTimerInterval);
+                                window.showToast("Waktu habis!", "warning");
+                                finishQuiz();
+                                return;
+                            }
+                            const totalSeconds = Math.floor(remainingMs / 1000);
+                            let m = Math.floor(totalSeconds / 60); 
+                            let s = totalSeconds % 60;
+                            const tStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                            const tDesk = document.getElementById('quiz-timer'); if(tDesk) tDesk.innerText = tStr;
+                            const tMob = document.getElementById('quiz-timer-mobile'); if(tMob) tMob.innerText = tStr;
+                        }, 1000);
+                        
+                        return true;
+                    } else {
+                        // Expired
+                        localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
+                    }
+                }
+            } catch(e) { console.error(e); }
+            return false;
+        }
+
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 if (!user.isAnonymous && currentUser === null) {
@@ -1256,6 +1303,8 @@
                             renderAvatarUI(data.nama, 'Peserta');
                             document.getElementById('modul-locked')?.classList.add('hidden'); 
                             document.getElementById('modul-list')?.classList.remove('hidden');
+                            
+                            // Check if there is an active exam state to resume
                             checkAndResumeExam();
                         }
                     }, { onlyOnce: true });
@@ -1332,17 +1381,21 @@
             if (pin === 'admin123') { 
                 currentUser = { nama: 'Adrian', role: 'admin_utama', uid: 'admin_master_123' }; 
                 renderAvatarUI('Adrian', 'Admin Utama'); setupAdminUI('admin_utama'); openAdminView(); e.target.reset(); window.closeModal(); 
+                window.renderDashboardPendapatanHome(); window.renderVerifikasiUI();
             } else if (pin === 'adrian23') {
                 currentUser = { nama: 'Adrian (Viewer)', role: 'viewer_kalender', uid: 'viewer_kalender_123' };
                 renderAvatarUI('Adrian', 'Pemantau Kalender'); setupAdminUI('viewer_kalender'); openAdminView(); e.target.reset(); window.closeModal();
+                window.renderDashboardPendapatanHome(); window.renderVerifikasiUI();
             } else if (pin === 'eldi123') {
                 currentUser = { nama: 'Eldi Prayoga Firdaus', role: 'admin_eldi', uid: 'eldi_123', idTim: 'eldi_123' };
                 renderAvatarUI('Eldi Prayoga', 'Instruktur / Manajemen'); setupAdminUI('admin_eldi'); openAdminView(); e.target.reset(); window.closeModal();
+                window.renderDashboardPendapatanHome(); window.renderVerifikasiUI();
             } else {
                 const timFound = dataTimAll.find(t => t.pin === pin);
                 if (timFound) { 
                     currentUser = { nama: timFound.nama, role: 'admin_tim', uid: timFound.id, idTim: timFound.id, izin: timFound.izin }; 
                     renderAvatarUI(timFound.nama, 'Tim Pengajar'); setupAdminUI('admin_tim'); openAdminView(); e.target.reset(); window.closeModal(); 
+                    window.renderDashboardPendapatanHome(); window.renderVerifikasiUI();
                 } else { 
                     btnSubmit.innerText = "PIN Salah!"; btnSubmit.classList.replace('bg-navy-900', 'bg-red-500'); 
                     setTimeout(() => { btnSubmit.innerText = oriText; btnSubmit.classList.replace('bg-red-500', 'bg-navy-900'); }, 2000); 
@@ -1353,11 +1406,8 @@
         });
 
         document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
-            currentUser = null; window.closeAdminView(); try { await signInAnonymously(auth); } catch(e){}
-            document.getElementById('auth-container-desktop').innerHTML = `<button id="btn-login-admin-desktop" class="text-xs text-slate-300 hover:text-safety-400 font-bold transition-colors uppercase tracking-wider">Login Admin</button><button id="btn-login-desktop" class="bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold px-5 py-2.5 rounded-xl shadow-md text-sm">Masuk / Daftar</button>`;
-            document.getElementById('auth-container-mobile').innerHTML = `<button id="btn-login-mobile" class="w-full text-center bg-safety-400 text-navy-900 font-extrabold px-4 py-3.5 rounded-xl shadow-md">Masuk / Daftar Akun</button><button id="btn-login-admin-mobile" class="w-full text-center text-slate-300 font-bold px-4 py-3.5 bg-navy-800 border border-slate-700 rounded-xl">Login Admin</button>`;
-            document.getElementById('btn-login-desktop')?.addEventListener('click', () => window.openModal('modal-login')); document.getElementById('btn-login-admin-desktop')?.addEventListener('click', () => window.openModal('modal-login-admin')); document.getElementById('btn-login-mobile')?.addEventListener('click', () => { document.getElementById('mobile-menu')?.classList.add('hidden'); window.openModal('modal-login'); }); document.getElementById('btn-login-admin-mobile')?.addEventListener('click', () => { document.getElementById('mobile-menu')?.classList.add('hidden'); window.openModal('modal-login-admin'); });
-            document.getElementById('modul-locked')?.classList.remove('hidden'); document.getElementById('modul-list')?.classList.add('hidden');
+            currentUser = null; try { await signInAnonymously(auth); } catch(e){}
+            window.location.reload();
         });
 
         function compressImage(file, maxWidth, maxHeight, quality, callback) {
@@ -1573,7 +1623,11 @@
             try {
                 if(!currentUser) return;
                 let filteredKegiatan = dataKegiatanAll; 
-                if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
+                if (currentUser.role === 'admin_utama') {
+                    filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
+                } else if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') {
+                    filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
+                }
 
                 const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth();
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -1587,6 +1641,7 @@
                     for(let i = 0; i < firstDay; i++) { calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; }
                     
                     const todayDateOnly = new Date(); todayDateOnly.setHours(0,0,0,0);
+                    const isUtamaAtauEldi = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi';
 
                     for(let day = 1; day <= daysInMonth; day++) {
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -1602,7 +1657,7 @@
                             else if (evtDate > todayDateOnly) { colorClass = "bg-blue-100 text-blue-800 hover:bg-blue-200"; borderColor = "border-blue-300"; topBorderColor = "border-blue-300"; } 
                             else { colorClass = "bg-red-100 text-red-800 hover:bg-red-200"; borderColor = "border-red-300"; topBorderColor = "border-red-300"; }
 
-                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${(currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi') ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
+                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${isUtamaAtauEldi ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
                         });
 
                         const isToday = day === todayDateOnly.getDate() && month === todayDateOnly.getMonth() && year === todayDateOnly.getFullYear();
@@ -1618,12 +1673,19 @@
                 if(tbodyPendapatan) {
                     tbodyPendapatan.innerHTML = ''; 
                     
-                    let totalMasukBulanIni = 0; let totalTertundaBulanIni = 0; let totalMasukAllTime = 0; let hutangTimDataAllTime = {}; let totalHutangTimAllTime = 0; let countTabelBulanIni = 0; let tbodyHtml = '';
+                    let totalMasukBulanIni = 0; 
+                    let totalTertundaBulanIni = 0; 
+                    let totalMasukAllTime = 0; 
+                    let totalHutangTimAllTime = 0; 
+                    let hutangTimDataAllTime = {}; 
+                    let countTabelBulanIni = 0; 
+                    let tbodyHtml = '';
+
                     let sortedPendapatan = [...filteredKegiatan].sort((a,b) => { const dateA = a.tanggal ? a.tanggal.split(',')[0].trim() : ''; const dateB = b.tanggal ? b.tanggal.split(',')[0].trim() : ''; return new Date(dateA) - new Date(dateB); });
 
                     sortedPendapatan.forEach(k => {
                         const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : []; 
-                        // Determine which income to show: admin_utama sees management income, others see team income
+                        // Admin Utama sees management money, others see team income
                         const nominalPerHari = (currentUser.role === 'admin_utama') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
                         const nominalTotal = dates.length > 0 ? (nominalPerHari * dates.length) : nominalPerHari;
 
@@ -1632,9 +1694,11 @@
                         dates.forEach(d => {
                             let isLunasDate = false; 
                             if (statusBayarDates.hasOwnProperty(d)) { isLunasDate = statusBayarDates[d] === true; } else { isLunasDate = k.statusBayar === true; }
-                            if(isLunasDate) lunasCount++;
-
-                            if(isLunasDate) { totalMasukAllTime += nominalPerHari; }
+                            
+                            if(isLunasDate) {
+                                lunasCount++;
+                                totalMasukAllTime += nominalPerHari;
+                            }
 
                             const dDate = new Date(d);
                             if (dDate.getMonth() === month && dDate.getFullYear() === year) {
@@ -1647,8 +1711,10 @@
                         });
                         
                         if (dates.length === 0) { 
-                            if (k.statusBayar === true) { totalMasukAllTime += nominalPerHari; }
                             let kDate = new Date(k.timestamp);
+                            if (k.statusBayar === true) {
+                                totalMasukAllTime += nominalPerHari;
+                            }
                             if (kDate.getMonth() === month && kDate.getFullYear() === year) {
                                 isKegiatanDiBulanIni = true;
                                 if (k.statusBayar === true) { totalMasukBulanIni += nominalPerHari; lunasCount = 1; } else { totalTertundaBulanIni += nominalPerHari; }
@@ -1692,10 +1758,12 @@
                         let sortedPengeluaran = [...dataPengeluaranAll].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
                         
                         sortedPengeluaran.forEach(p => { 
-                            totalKeluarAllTime += (Number(p.jumlah) || 0);
+                            const valKeluar = (Number(p.jumlah) || 0);
+                            totalKeluarAllTime += valKeluar;
+
                             const pDate = new Date(p.tanggal);
                             if (pDate.getMonth() === month && pDate.getFullYear() === year) {
-                                totalKeluarBulanIni += (Number(p.jumlah) || 0); countKeluarBulanIni++;
+                                totalKeluarBulanIni += valKeluar; countKeluarBulanIni++;
                                 tbodyPengeluaranHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-5 py-2 text-xs text-slate-600">${formatDate(p.tanggal)}</td><td class="px-5 py-2 text-xs font-semibold text-slate-800">${p.deskripsi}</td><td class="px-5 py-2 text-xs font-bold text-red-500">${formatRupiah(p.jumlah)}</td><td class="px-5 py-2 text-right"><button onclick="window.hapusPengeluaran('${p.id}')" class="text-red-400 hover:text-red-600 p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td></tr>`;
                             }
                         });
@@ -1708,8 +1776,15 @@
 
                         const elHutangTim = document.getElementById('stat-hutang-tim'); if(elHutangTim) elHutangTim.innerText = formatRupiah(totalHutangTimAllTime);
                         const elKeluar = document.getElementById('stat-uang-keluar'); const elSaldo = document.getElementById('stat-uang-saldo');
+                        
                         if(elKeluar) elKeluar.innerText = formatRupiah(totalKeluarBulanIni);
-                        if(elSaldo) { const saldoAkhir = totalMasukAllTime - totalKeluarAllTime; elSaldo.innerText = formatRupiah(saldoAkhir); elSaldo.className = saldoAkhir >= 0 ? "text-lg font-bold tracking-tight text-blue-700 truncate" : "text-lg font-bold tracking-tight text-red-600 truncate"; }
+                        
+                        // SALDO ALL TIME FIX
+                        if(elSaldo) { 
+                            const saldoAkhirTotal = totalMasukAllTime - totalKeluarAllTime; 
+                            elSaldo.innerText = formatRupiah(saldoAkhirTotal); 
+                            elSaldo.className = saldoAkhirTotal >= 0 ? "text-lg font-bold tracking-tight text-blue-700 truncate" : "text-lg font-bold tracking-tight text-red-600 truncate"; 
+                        }
                     }
                 }
             } catch(e) { console.error(e); }
@@ -1720,47 +1795,53 @@
 
         window.approveUjian = async function(uid) { try { await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved' }); } catch(e){} };
 
-        function fetchDataRealtime() {
-            onValue(ref(db, pathVerifikasi), (snapshot) => {
-                const tbody = document.getElementById('admin-table-verifikasi'); const badgeVerif = document.getElementById('badge-verif');
-                let requests = [];
-                if(snapshot.exists()) {
-                    snapshot.forEach(child => {
-                        const data = child.val(); data.id = child.key;
-                        if(data.status === 'pending') {
-                            if(currentUser && currentUser.role === 'admin_utama') { requests.push(data); } 
-                            else if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
-                                if(data.idTimTarget === currentUser.idTim) requests.push(data);
-                            }
+        let rawVerifikasiSnap = null;
+        window.renderVerifikasiUI = function() {
+            const tbody = document.getElementById('admin-table-verifikasi'); const badgeVerif = document.getElementById('badge-verif');
+            let requests = [];
+            if(rawVerifikasiSnap && rawVerifikasiSnap.exists()) {
+                rawVerifikasiSnap.forEach(child => {
+                    const data = child.val(); data.id = child.key;
+                    if(data.status === 'pending') {
+                        if(currentUser && currentUser.role === 'admin_utama') { requests.push(data); } 
+                        else if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
+                            if(data.idTimTarget === currentUser.idTim) requests.push(data);
                         }
+                    }
+                });
+            }
+            requests.sort((a,b) => b.timestamp - a.timestamp);
+            
+            if(tbody) {
+                tbody.innerHTML = '';
+                if(requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">Belum ada permintaan verifikasi.</td></tr>';
+                    if(badgeVerif) badgeVerif.classList.add('hidden');
+                } else {
+                    if(badgeVerif) { badgeVerif.innerText = requests.length; badgeVerif.classList.remove('hidden'); }
+                    requests.forEach(req => {
+                        const time = new Date(req.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                        tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 border-b border-slate-100">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-700">${time} WIB</td>
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-900 text-sm">${req.namaPeserta}</div>
+                                <div class="text-xs text-slate-500">${req.instansi}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 inline-flex text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">${req.kategori}</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button onclick="window.approveUjian('${req.id}')" class="text-white bg-safety-500 hover:bg-safety-600 px-3 py-1.5 rounded-lg shadow-sm font-bold mr-2 transition-colors">Izinkan Ujian</button>
+                            </td>
+                        </tr>`;
                     });
                 }
-                requests.sort((a,b) => b.timestamp - a.timestamp);
-                
-                if(tbody) {
-                    tbody.innerHTML = '';
-                    if(requests.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">Belum ada permintaan verifikasi.</td></tr>';
-                        if(badgeVerif) badgeVerif.classList.add('hidden');
-                    } else {
-                        if(badgeVerif) { badgeVerif.innerText = requests.length; badgeVerif.classList.remove('hidden'); }
-                        requests.forEach(req => {
-                            const time = new Date(req.timestamp).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-                            tbody.innerHTML += `
-                            <tr class="hover:bg-slate-50 border-b border-slate-100">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-700">${time} WIB</td>
-                                <td class="px-6 py-4">
-                                    <div class="font-bold text-slate-900 text-sm">${req.namaPeserta}</div>
-                                    <div class="text-xs text-slate-500">${req.instansi}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 inline-flex text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">${req.kategori}</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button onclick="window.approveUjian('${req.id}')" class="text-white bg-safety-500 hover:bg-safety-600 px-3 py-1.5 rounded-lg shadow-sm font-bold mr-2 transition-colors">Izinkan Ujian</button>
-                                </td>
-                            </tr>`;
-                        });
-                    }
-                }
+            }
+        };
+
+        function fetchDataRealtime() {
+            onValue(ref(db, pathVerifikasi), (snapshot) => {
+                rawVerifikasiSnap = snapshot;
+                window.renderVerifikasiUI();
             });
 
             onValue(ref(db, pathKategori), (snapshot) => {
@@ -1911,18 +1992,22 @@
             });
 
             onValue(ref(db, pathTim), (snapshot) => {
-                dataTimAll = []; const selectKeg = document.getElementById('input-kegiatan-tim'); const listAdmin = document.getElementById('admin-list-tim'); const selectUjianTim = document.getElementById('select-ujian-tim');
-                if(selectKeg) selectKeg.innerHTML = `<option value="" disabled selected>-- Pilih Tim --</option><option value="admin_utama" class="font-bold text-safety-600">Admin Utama (Tanpa WA)</option><option value="eldi_123" class="font-bold text-blue-600">Eldi Prayoga Firdaus</option>`;
-                if(selectUjianTim) selectUjianTim.innerHTML = `<option value="" disabled selected>-- Pilih Instruktur Anda --</option><option value="admin_utama" class="font-extrabold text-emerald-600 bg-emerald-50">Adrian (Admin Pusat)</option><option value="eldi_123" class="font-extrabold text-blue-600 bg-blue-50">Eldi Prayoga Firdaus</option>`;
-                if(listAdmin) listAdmin.innerHTML = '';
-                if(snapshot.exists()) {
-                    snapshot.forEach(childSnap => {
-                        const data = childSnap.val(); data.id = childSnap.key; dataTimAll.push(data);
-                        if(selectKeg) selectKeg.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
-                        if(selectUjianTim) selectUjianTim.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
-                        if(listAdmin) {
-                            const izin = data.izin || {}; let badges = '';
-                            if(izin.nilai) badges += `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Nilai Ujian</span>`;
+            dataTimAll = []; const selectKeg = document.getElementById('input-kegiatan-tim'); const listAdmin = document.getElementById('admin-list-tim'); const selectUjianTim = document.getElementById('select-ujian-tim');
+            if(selectKeg) selectKeg.innerHTML = `<option value="" disabled selected>-- Pilih Tim --</option><option value="admin_utama" class="font-bold text-safety-600">Admin Utama (Tanpa WA)</option><option value="eldi_123" class="font-bold text-blue-600">Eldi Prayoga Firdaus</option>`;
+            if(selectUjianTim) selectUjianTim.innerHTML = `<option value="" disabled selected>-- Pilih Instruktur Anda --</option><option value="admin_utama" class="font-extrabold text-emerald-600 bg-emerald-50">Adrian (Admin Pusat)</option><option value="eldi_123" class="font-extrabold text-blue-600 bg-blue-50">Eldi Prayoga Firdaus</option>`;
+            if(listAdmin) listAdmin.innerHTML = '';
+            if(snapshot.exists()) {
+                snapshot.forEach(childSnap => {
+                    const data = childSnap.val(); data.id = childSnap.key; 
+                    
+                    if (data.nama.toLowerCase().includes('eldi') || data.pin === 'eldi123') return;
+
+                    dataTimAll.push(data);
+                    if(selectKeg) selectKeg.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
+                    if(selectUjianTim) selectUjianTim.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
+                    if(listAdmin) {
+                        const izin = data.izin || {}; let badges = '';
+                        if(izin.nilai) badges += `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Nilai Ujian</span>`;
                             if(izin.berita) badges += `<span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Berita</span>`;
                             if(izin.modul) badges += `<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Modul</span>`;
                             if(izin.keuangan) badges += `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Keuangan</span>`;
@@ -2062,8 +2147,7 @@
                         userAnswers = new Array(activeQuizData.length).fill(null);
                         userFlags = new Array(activeQuizData.length).fill(false);
                         currentQuizIndex = 0;
-                        window.examEndTime = Date.now() + (45 * 60 * 1000);
-                        saveExamState();
+                        examEndTime = Date.now() + (45 * 60 * 1000); // 45 Minutes absolute end time
                         
                         document.getElementById('ujian-waiting').classList.remove('flex');
                         document.getElementById('ujian-waiting').classList.add('hidden');
@@ -2073,7 +2157,24 @@
                         broadcastLiveCbtScore(false, 0);
                         renderQuestion();
                         updateGridUI();
-                        startExamTimer();
+                        saveExamState(); // Save to local storage right away
+                        
+                        if(examTimerInterval) clearInterval(examTimerInterval);
+                        examTimerInterval = setInterval(() => {
+                            const remainingMs = examEndTime - Date.now();
+                            if(remainingMs <= 0) {
+                                clearInterval(examTimerInterval);
+                                window.showToast("Waktu habis!", "warning");
+                                finishQuiz();
+                                return;
+                            }
+                            const totalSeconds = Math.floor(remainingMs / 1000);
+                            let m = Math.floor(totalSeconds / 60); 
+                            let s = totalSeconds % 60;
+                            const tStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                            const tDesk = document.getElementById('quiz-timer'); if(tDesk) tDesk.innerText = tStr;
+                            const tMob = document.getElementById('quiz-timer-mobile'); if(tMob) tMob.innerText = tStr;
+                        }, 1000);
                     }
                 });
             } catch(e) { btn.innerText = "Kirim Permintaan Izin Ujian"; btn.disabled = false; }
@@ -2090,7 +2191,7 @@
                 btn.className = `grid-nav-btn ${i === currentQuizIndex ? 'active' : ''}`;
                 if(userFlags[i]) btn.classList.add('flagged'); else if(userAnswers[i] !== null) btn.classList.add('answered');
                 btn.innerText = i + 1;
-                btn.onclick = () => { currentQuizIndex = i; renderQuestion(); };
+                btn.onclick = () => { currentQuizIndex = i; renderQuestion(); saveExamState(); };
                 grid.appendChild(btn);
             }
         }
@@ -2113,7 +2214,12 @@
                         const btn = document.createElement('button'); 
                         btn.className = `w-full text-left p-4 md:p-5 border-2 rounded-2xl transition-all flex items-center group font-semibold text-sm md:text-base shadow-sm ${isSelected ? 'border-safety-500 bg-emerald-50 text-safety-700' : 'border-slate-100 bg-white hover:bg-slate-50 text-slate-700'}`; 
                         btn.innerHTML = `<span class="w-8 h-8 md:w-10 md:h-10 rounded-xl flex shrink-0 items-center justify-center mr-4 md:mr-5 font-bold transition-colors ${isSelected ? 'bg-safety-500 text-white' : 'bg-slate-100 group-hover:bg-slate-200 text-slate-500'}">${labels[index]}</span> <span class="leading-relaxed">${optText}</span>`;
-                        btn.onclick = () => { userAnswers[currentQuizIndex] = index; broadcastLiveCbtScore(false); renderQuestion(); }; 
+                        btn.onclick = () => { 
+                            userAnswers[currentQuizIndex] = index; 
+                            broadcastLiveCbtScore(false); 
+                            renderQuestion(); 
+                            saveExamState(); 
+                        }; 
                         optionsContainer.appendChild(btn);
                     });
                 }
@@ -2126,12 +2232,26 @@
                 if (currentQuizIndex === activeQuizData.length - 1) { btnNext.innerHTML = 'Kumpulkan ✓'; btnNext.classList.replace('bg-safety-500', 'bg-emerald-600'); } 
                 else { btnNext.innerHTML = 'Selanjutnya &rarr;'; btnNext.classList.replace('bg-emerald-600', 'bg-safety-500'); }
             }
-            saveExamState();
         }
 
-        document.getElementById('btn-prev-soal')?.addEventListener('click', () => { if (currentQuizIndex > 0) { currentQuizIndex--; renderQuestion(); } });
-        document.getElementById('btn-next-soal')?.addEventListener('click', () => { if (currentQuizIndex < activeQuizData.length - 1) { currentQuizIndex++; renderQuestion(); } else { finishQuizConfirmation(); } });
-        document.getElementById('chk-ragu')?.addEventListener('change', (e) => { userFlags[currentQuizIndex] = e.target.checked; saveExamState(); updateGridUI(); });
+        async function broadcastLiveCbtScore(isFinished = false, finalScoreOverride = null) {
+            if(!currentUser || !currentUser.uid) return;
+            try {
+                let currentCorrect = 0; let answeredCount = 0;
+                userAnswers.forEach((ans, idx) => { if(ans !== null) { answeredCount++; if(activeQuizData[idx] && ans === activeQuizData[idx].jawabanBenar) currentCorrect++; } });
+                const liveScore = finalScoreOverride !== null ? finalScoreOverride : (activeQuizData.length > 0 ? Math.round((currentCorrect / activeQuizData.length) * 100) : 0);
+                const currentCategory = activeQuizData[0]?.kategori || 'K3 Umum';
+                let passingGrade = 70; if (currentCategory.includes('Kelas D')) passingGrade = 65;
+                const isPassed = liveScore >= passingGrade;
+                let statusText = 'Ujian Berlangsung'; if(isFinished) { statusText = isPassed ? 'LULUS' : 'TIDAK LULUS'; }
+
+                await set(ref(db, `${pathLiveCbt}/${currentUser.uid}`), { namaPeserta: currentUser.nama, instansi: currentUser.instansi, kategori: currentCategory, skorLive: liveScore, soalTerjawab: answeredCount, totalSoal: activeQuizData.length, status: statusText, lastUpdate: Date.now() });
+            } catch(e){}
+        }
+
+        document.getElementById('btn-prev-soal')?.addEventListener('click', () => { if (currentQuizIndex > 0) { currentQuizIndex--; renderQuestion(); saveExamState(); } });
+        document.getElementById('btn-next-soal')?.addEventListener('click', () => { if (currentQuizIndex < activeQuizData.length - 1) { currentQuizIndex++; renderQuestion(); saveExamState(); } else { finishQuizConfirmation(); } });
+        document.getElementById('chk-ragu')?.addEventListener('change', (e) => { userFlags[currentQuizIndex] = e.target.checked; updateGridUI(); saveExamState(); });
         document.getElementById('btn-selesai-ujian')?.addEventListener('click', finishQuizConfirmation);
 
         function finishQuizConfirmation() {
@@ -2146,8 +2266,9 @@
         }
 
         async function finishQuiz() {
-            clearExamState();
             if(examTimerInterval) clearInterval(examTimerInterval); 
+            window.clearExamState(); // Hapus ingatan ujian dari lokal
+            
             document.getElementById('ujian-soal').classList.remove('flex'); document.getElementById('ujian-soal').classList.add('hidden'); 
             document.getElementById('ujian-hasil').classList.remove('hidden');
             
