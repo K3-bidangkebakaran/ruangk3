@@ -486,14 +486,22 @@
                 <p class="text-slate-600 mb-6 text-sm text-center">Waktu Pengerjaan: <strong>45 Menit</strong>. Lengkapi formulir di bawah untuk meminta verifikasi instruktur.</p>
                 
                 <div class="space-y-4 mb-6 max-w-lg mx-auto">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">1. Pilih Kategori K3 & Kelas:</label>
-                        <select id="select-ujian-kategori" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm">
-                            <!-- Populated dynamically -->
-                        </select>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">1. Pilih Bidang K3:</label>
+                            <select id="select-ujian-bidang" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">2. Pilih Kelas / Kategori:</label>
+                            <select id="select-ujian-kelas" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm">
+                                <option value="" disabled selected>-- Pilih Bidang Dulu --</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">2. Pilih Instruktur / Tim Pengajar:</label>
+                    <div class="mt-2">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">3. Pilih Instruktur / Tim Pengajar:</label>
                         <select id="select-ujian-tim" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm">
                             <option value="" disabled selected>-- Memuat Daftar Pengajar --</option>
                         </select>
@@ -606,7 +614,7 @@
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-tim"><span>Kelola Akun Tim</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-soal"><span>Kelola Bank Soal</span></button>
-                <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kategori"><span>Kelola Kategori K3</span></button>
+                <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kategori"><span>Kelola Kategori K3</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pjk3"><span>Kelola Mitra PJK3</span></button>
             </nav>
             
@@ -838,13 +846,26 @@
                 </div>
 
                 <!-- Kategori Bidang K3 -->
-                <div id="admin-panel-kategori" class="admin-panel hidden admin-utama-only">
+                <div id="admin-panel-kategori" class="admin-panel hidden admin-utama-only eldi-access">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-1">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Tambah Kategori Bidang</h3>
                                 <form id="form-kategori" class="space-y-4">
-                                    <input type="text" id="input-kategori-nama" required placeholder="Cth: Petugas Peran Kebakaran" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Bidang K3</label>
+                                        <input type="text" id="input-kategori-bidang" required placeholder="Cth: Kebakaran, PAA, Listrik" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none" list="list-bidang">
+                                        <datalist id="list-bidang">
+                                            <option value="Kebakaran"></option>
+                                            <option value="PAA"></option>
+                                            <option value="Listrik"></option>
+                                            <option value="Konstruksi"></option>
+                                        </datalist>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Kategori / Kelas</label>
+                                        <input type="text" id="input-kategori-nama" required placeholder="Cth: Kelas D (Petugas Peran)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    </div>
                                     <button type="submit" class="w-full py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm">Simpan Kategori</button>
                                 </form>
                             </div>
@@ -852,7 +873,7 @@
                         <div class="lg:col-span-2">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                                 <h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Kategori Bidang K3</h3>
-                                <div id="admin-list-kategori" class="space-y-3"></div>
+                                <div id="admin-list-kategori" class="space-y-2"></div>
                             </div>
                         </div>
                     </div>
@@ -865,11 +886,18 @@
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Tambah Modul Materi</h3>
                                 <form id="form-modul" class="space-y-4">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori Bidang K3</label>
-                                        <select id="input-kategori-modul" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-white">
-                                            <option value="Semua Bidang / Umum">Semua Bidang / Umum</option>
-                                        </select>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 mb-1">Bidang K3</label>
+                                            <select id="input-bidang-modul" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 mb-1">Kelas</label>
+                                            <select id="input-kelas-modul" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                                <option value="Umum">Umum</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <input type="text" id="input-judul-modul" required placeholder="Judul Modul" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     <input type="url" id="input-video-modul" placeholder="Link Video (YouTube / MP4) - Opsional" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
@@ -893,11 +921,18 @@
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Tambah / Edit Soal</h3>
                                 <form id="form-soal" class="space-y-4">
                                     <input type="hidden" id="input-soal-id" value="">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori Bidang K3</label>
-                                        <select id="input-soal-kategori" required class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-sm">
-                                            <!-- Dynamically filled -->
-                                        </select>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 mb-1">Bidang K3</label>
+                                            <select id="input-bidang-soal" required class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-sm">
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 mb-1">Kelas</label>
+                                            <select id="input-kelas-soal" required class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-sm">
+                                                <option value="" disabled selected>Pilih Bidang Dulu</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Pertanyaan</label><textarea id="input-tanya" required rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none text-sm"></textarea></div>
                                     <div class="space-y-2">
@@ -1280,7 +1315,7 @@
         document.getElementById('form-kategori')?.addEventListener('submit', async (e) => {
             e.preventDefault(); if(!currentUser) return;
             const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "Menyimpan...";
-            try { await push(ref(db, pathKategori), { nama: document.getElementById('input-kategori-nama').value, timestamp: Date.now() }); e.target.reset(); window.showToast("Kategori berhasil ditambahkan.", "success"); } catch(err) { window.showToast("Gagal menambahkan kategori.", "error"); }
+            try { await push(ref(db, pathKategori), { bidang: document.getElementById('input-kategori-bidang').value.trim(), nama: document.getElementById('input-kategori-nama').value, timestamp: Date.now() }); e.target.reset(); window.showToast("Kategori berhasil ditambahkan.", "success"); } catch(err) { window.showToast("Gagal menambahkan kategori.", "error"); }
             setTimeout(() => { btn.innerText = ori; }, 2000);
         });
 
@@ -1376,9 +1411,31 @@
             } catch(e) { console.error(e); }
         };
 
+        window.updateKelasDropdown = function(bidangSelectId, kelasSelectId) {
+            const bidang = document.getElementById(bidangSelectId).value;
+            const kelasSelect = document.getElementById(kelasSelectId);
+            if(!kelasSelect) return;
+            if(bidang === 'Umum') {
+                kelasSelect.innerHTML = `<option value="Umum">Umum</option>`;
+                return;
+            }
+            const filteredClasses = dataKategoriAll.filter(k => (k.bidang || 'Lainnya') === bidang);
+            kelasSelect.innerHTML = filteredClasses.length > 0 
+                ? filteredClasses.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('')
+                : `<option value="" disabled selected>Tidak ada kelas</option>`;
+        };
+
+        document.getElementById('input-bidang-modul')?.addEventListener('change', () => window.updateKelasDropdown('input-bidang-modul', 'input-kelas-modul'));
+        document.getElementById('input-bidang-soal')?.addEventListener('change', () => window.updateKelasDropdown('input-bidang-soal', 'input-kelas-soal'));
+        document.getElementById('select-ujian-bidang')?.addEventListener('change', () => window.updateKelasDropdown('select-ujian-bidang', 'select-ujian-kelas'));
+
         document.getElementById('form-modul')?.addEventListener('submit', async (e) => { 
             e.preventDefault(); if(!currentUser) return; const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "..."; 
-            try { await push(ref(db, pathModul), { kategori: document.getElementById('input-kategori-modul').value, judul: document.getElementById('input-judul-modul').value, videoUrl: document.getElementById('input-video-modul').value.trim(), docUrl: document.getElementById('input-doc-modul').value.trim(), isi: document.getElementById('input-isi-modul').value, timestamp: Date.now() }); e.target.reset(); window.showToast("Modul Tersimpan", "success"); } catch(err){} setTimeout(() => { btn.innerText = ori; }, 2000); 
+            try { 
+                const valKategori = document.getElementById('input-bidang-modul').value + ' - ' + document.getElementById('input-kelas-modul').value;
+                await push(ref(db, pathModul), { kategori: valKategori, judul: document.getElementById('input-judul-modul').value, videoUrl: document.getElementById('input-video-modul').value.trim(), docUrl: document.getElementById('input-doc-modul').value.trim(), isi: document.getElementById('input-isi-modul').value, timestamp: Date.now() }); 
+                e.target.reset(); window.showToast("Modul Tersimpan", "success"); 
+            } catch(err){} setTimeout(() => { btn.innerText = ori; }, 2000); 
         });
         
         document.getElementById('form-pjk3')?.addEventListener('submit', async (e) => { 
@@ -1388,7 +1445,12 @@
 
         document.getElementById('form-soal')?.addEventListener('submit', async (e) => {
             e.preventDefault(); if(!currentUser) return; const btn = document.getElementById('btn-submit-soal'); const ori = btn.innerText; btn.innerText = "Menyimpan..."; const idEditSoal = document.getElementById('input-soal-id').value;
-            const dataToSave = { kategori: document.getElementById('input-soal-kategori').value, pertanyaan: document.getElementById('input-tanya').value, opsi: [ document.getElementById('input-opsi-0').value, document.getElementById('input-opsi-1').value, document.getElementById('input-opsi-2').value, document.getElementById('input-opsi-3').value ], jawabanBenar: parseInt(document.getElementById('input-jawaban').value) };
+            
+            const bidang = document.getElementById('input-bidang-soal').value;
+            const kelas = document.getElementById('input-kelas-soal').value;
+            if(!bidang || !kelas) { btn.innerText = ori; return window.showToast("Pilih Bidang dan Kelas K3!", "warning"); }
+            
+            const dataToSave = { kategori: `${bidang} - ${kelas}`, pertanyaan: document.getElementById('input-tanya').value, opsi: [ document.getElementById('input-opsi-0').value, document.getElementById('input-opsi-1').value, document.getElementById('input-opsi-2').value, document.getElementById('input-opsi-3').value ], jawabanBenar: parseInt(document.getElementById('input-jawaban').value) };
             try { 
                 if(idEditSoal) { await update(ref(db, `${pathSoal}/${idEditSoal}`), dataToSave); window.showToast("Soal diperbarui.", "success"); document.getElementById('btn-batal-soal')?.click(); } 
                 else { dataToSave.timestamp = Date.now(); await push(ref(db, pathSoal), dataToSave); e.target.reset(); window.showToast("Soal tersimpan.", "success"); }
@@ -1401,7 +1463,19 @@
 
         window.editSoal = function(id) {
             const data = quizDataFromDB.find(q => q.id === id); if(!data) return;
-            document.getElementById('input-soal-id').value = data.id; document.getElementById('input-soal-kategori').value = data.kategori || 'Kelas D'; document.getElementById('input-tanya').value = data.pertanyaan;
+            document.getElementById('input-soal-id').value = data.id; 
+            
+            let kat = data.kategori || 'Umum - Umum';
+            let parts = kat.split(' - ');
+            let bidangVal = parts[0];
+            let kelasVal = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
+            
+            const selBidang = document.getElementById('input-bidang-soal');
+            if(selBidang) { selBidang.value = bidangVal; window.updateKelasDropdown('input-bidang-soal', 'input-kelas-soal'); }
+            const selKelas = document.getElementById('input-kelas-soal');
+            if(selKelas) { selKelas.value = kelasVal; }
+
+            document.getElementById('input-tanya').value = data.pertanyaan;
             if(data.opsi && data.opsi.length === 4) { document.getElementById('input-opsi-0').value = data.opsi[0]; document.getElementById('input-opsi-1').value = data.opsi[1]; document.getElementById('input-opsi-2').value = data.opsi[2]; document.getElementById('input-opsi-3').value = data.opsi[3]; }
             document.getElementById('input-jawaban').value = data.jawabanBenar; document.getElementById('btn-batal-soal').classList.remove('hidden'); document.getElementById('btn-submit-soal').innerHTML = "Simpan Perubahan"; document.getElementById('admin-panel-soal').scrollIntoView({ behavior: 'smooth' });
         };
@@ -1610,32 +1684,52 @@
 
             onValue(ref(db, pathKategori), (snapshot) => {
                 dataKategoriAll = []; 
-                const selectKategoriModul = document.getElementById('input-kategori-modul');
-                const selectKategoriSoal = document.getElementById('input-soal-kategori');
-                const selectKategoriUjian = document.getElementById('select-ujian-kategori');
                 const listAdminKategori = document.getElementById('admin-list-kategori');
                 
-                let defaultOptions = `<option value="Semua Bidang / Umum">Semua Bidang / Umum</option>`;
-                let specificOptions = ``;
+                const defaultKat = [
+                    { id: 'def_1', bidang: 'Kebakaran', nama: 'Kelas D (Petugas Peran Kebakaran)', timestamp: Date.now() },
+                    { id: 'def_2', bidang: 'Kebakaran', nama: 'Kelas C (Regu Penanggulangan)', timestamp: Date.now() },
+                    { id: 'def_3', bidang: 'Kebakaran', nama: 'Kelas B (Koordinator)', timestamp: Date.now() },
+                    { id: 'def_4', bidang: 'Kebakaran', nama: 'Kelas A (Ahli K3 Spesialis)', timestamp: Date.now() },
+                    { id: 'def_5', bidang: 'PAA', nama: 'Operator Forklift', timestamp: Date.now() },
+                    { id: 'def_6', bidang: 'PAA', nama: 'Operator Crane', timestamp: Date.now() },
+                    { id: 'def_7', bidang: 'PAA', nama: 'Rigger / Juru Ikat', timestamp: Date.now() }
+                ];
+
+                dataKategoriAll.push(...defaultKat);
 
                 if(snapshot.exists()) {
                     snapshot.forEach(childSnap => { const data = childSnap.val(); data.id = childSnap.key; dataKategoriAll.push(data); });
-                } else {
-                    const defaultKat = ["Petugas Peran Kebakaran (Kelas D)", "Regu Penanggulangan Kebakaran (Kelas C)", "Koordinator Penanggulangan Kebakaran (Kelas B)", "Ahli K3 Spesialis Kebakaran (Kelas A)"];
-                    defaultKat.forEach((nama, idx) => { dataKategoriAll.push({ id: `def_${idx}`, nama: nama, timestamp: Date.now() }); });
                 }
                 
-                if(listAdminKategori) listAdminKategori.innerHTML = '';
+                const grouped = {};
+                let uniqueBidang = [];
                 dataKategoriAll.forEach(k => {
-                    specificOptions += `<option value="${k.nama}">${k.nama}</option>`;
-                    if(listAdminKategori) {
-                        listAdminKategori.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center"><span class="font-bold text-slate-800 text-sm">${k.nama}</span><button onclick="window.hapusKategori('${k.id}')" class="text-red-500 hover:text-red-700 bg-white p-1.5 rounded shadow-sm border border-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
-                    }
+                    const b = k.bidang || 'Lainnya';
+                    if(!uniqueBidang.includes(b)) uniqueBidang.push(b);
+                    if(!grouped[b]) grouped[b] = [];
+                    grouped[b].push(k);
                 });
 
-                if(selectKategoriModul) selectKategoriModul.innerHTML = defaultOptions + specificOptions;
-                if(selectKategoriSoal) selectKategoriSoal.innerHTML = specificOptions;
-                if(selectKategoriUjian) selectKategoriUjian.innerHTML = specificOptions;
+                if(listAdminKategori) listAdminKategori.innerHTML = '';
+                
+                for(const [bidang, kats] of Object.entries(grouped)) {
+                    if(listAdminKategori) listAdminKategori.innerHTML += `<div class="col-span-full mt-4 mb-1"><span class="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-200 px-2 py-1 rounded">Bidang ${bidang}</span></div>`;
+                    
+                    kats.forEach(k => {
+                        if(listAdminKategori) {
+                            const btnHapus = k.id.startsWith('def_') ? '<span class="text-[9px] text-slate-400 font-bold bg-slate-200 px-2 py-1 rounded tracking-widest">BAWAAN</span>' : `<button onclick="window.hapusKategori('${k.id}')" class="text-red-500 hover:text-red-700 bg-white p-1.5 rounded shadow-sm border border-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`;
+                            listAdminKategori.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center ml-2 lg:ml-4 mb-2"><span class="font-bold text-slate-800 text-sm">${k.nama}</span>${btnHapus}</div>`;
+                        }
+                    });
+                }
+
+                const bidangOptions = `<option value="" disabled selected>-- Pilih Bidang K3 --</option>` + uniqueBidang.map(b => `<option value="${b}">${b}</option>`).join('');
+                const bidangModulOptions = `<option value="Umum">Umum / Semua Bidang</option>` + uniqueBidang.map(b => `<option value="${b}">${b}</option>`).join('');
+                
+                const sBidangModul = document.getElementById('input-bidang-modul'); if(sBidangModul) { const val = sBidangModul.value; sBidangModul.innerHTML = bidangModulOptions; if(val) sBidangModul.value = val; }
+                const sBidangSoal = document.getElementById('input-bidang-soal'); if(sBidangSoal) { const val = sBidangSoal.value; sBidangSoal.innerHTML = bidangOptions; if(val) sBidangSoal.value = val; }
+                const sBidangUjian = document.getElementById('select-ujian-bidang'); if(sBidangUjian) { const val = sBidangUjian.value; sBidangUjian.innerHTML = bidangOptions; if(val) sBidangUjian.value = val; }
             });
 
             onValue(ref(db, pathPeserta), (snapshot) => {
@@ -1857,7 +1951,11 @@
         let myVerifyUnsubscribe = null;
         document.getElementById('btn-request-quiz')?.addEventListener('click', async () => {
             if(!currentUser) return;
-            const kat = document.getElementById('select-ujian-kategori').value;
+            const bidang = document.getElementById('select-ujian-bidang').value;
+            const kelas = document.getElementById('select-ujian-kelas').value;
+            if(!bidang || !kelas) return window.showToast("Pilih Bidang dan Kelas K3 terlebih dahulu!", "warning");
+            
+            const kat = `${bidang} - ${kelas}`;
             const timTarget = document.getElementById('select-ujian-tim').value;
             if(!timTarget) return window.showToast("Pilih instruktur/tim pengajar terlebih dahulu!", "warning");
             
