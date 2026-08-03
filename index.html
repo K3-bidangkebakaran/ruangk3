@@ -2200,15 +2200,34 @@
                     const status = snap.val()?.status;
                     if(status === 'approved') {
                         myVerifyUnsubscribe();
-                        activeQuizData = quizDataFromDB.filter(q => q.kategori === kat);
-                        if(activeQuizData.length === 0) activeQuizData = quizDataFromDB.slice(0, 10);
+                        
+                        // PERBAIKAN: Sistem pencocokan Kategori yang lebih longgar & Anti-Gagal
+                        activeQuizData = quizDataFromDB.filter(q => {
+                            const qKat = (q.kategori || '').toLowerCase();
+                            const selKat = kat.toLowerCase();
+                            const selKelas = kelas.toLowerCase();
+                            
+                            // Jika teksnya sama persis
+                            if (qKat === selKat || qKat === selKelas) return true;
+                            
+                            // Jika teks saling mengandung (Mengatasi perbedaan spasi/format data lama)
+                            if (qKat.includes(selKelas) || selKelas.includes(qKat) || selKat.includes(qKat)) return true;
+                            
+                            return false;
+                        });
+                        
+                        // MENGHAPUS BATASAN 10 SOAL! Jika soalnya 50, akan tampil 50!
+                        if(activeQuizData.length === 0) {
+                            window.showToast("Kategori spesifik tidak presisi. Menampilkan seluruh bank soal...", "warning");
+                            activeQuizData = [...quizDataFromDB]; // Ambil SEMUA soal yang ada tanpa dipotong
+                        }
                         
                         for (let i = activeQuizData.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [activeQuizData[i], activeQuizData[j]] = [activeQuizData[j], activeQuizData[i]]; }
                         
                         userAnswers = new Array(activeQuizData.length).fill(null);
                         userFlags = new Array(activeQuizData.length).fill(false);
                         currentQuizIndex = 0;
-                        examEndTime = Date.now() + (45 * 60 * 1000); // 45 Minutes absolute end time
+                        examEndTime = Date.now() + (45 * 60 * 1000); // 45 Menit absolut
                         
                         document.getElementById('ujian-waiting').classList.remove('flex');
                         document.getElementById('ujian-waiting').classList.add('hidden');
@@ -2218,7 +2237,9 @@
                         broadcastLiveCbtScore(false, 0);
                         renderQuestion();
                         updateGridUI();
-                        saveExamState(); // Save to local storage right away
+                        
+                        // Panggil fitur save ke localStorage (Anti-Refresh)
+                        if (typeof saveExamState === 'function') saveExamState(); 
                         
                         if(examTimerInterval) clearInterval(examTimerInterval);
                         examTimerInterval = setInterval(() => {
