@@ -1058,6 +1058,44 @@
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let isAppInitialized = false;
+        window.examEndTime = null;
+
+        function saveExamState() {
+            if (!currentUser) return;
+            localStorage.setItem('ruangk3_cbt_state', JSON.stringify({ uid: currentUser.uid, questions: activeQuizData, answers: userAnswers, flags: userFlags, currentIndex: currentQuizIndex, endTime: window.examEndTime }));
+        }
+
+        function clearExamState() { localStorage.removeItem('ruangk3_cbt_state'); }
+
+        function startExamTimer() {
+            if(examTimerInterval) clearInterval(examTimerInterval);
+            examTimerInterval = setInterval(() => {
+                let remaining = Math.floor((window.examEndTime - Date.now()) / 1000);
+                if (remaining <= 0) { clearInterval(examTimerInterval); window.showToast("Waktu habis!", "warning"); finishQuiz(); } 
+                else {
+                    let m = Math.floor(remaining / 60); let s = remaining % 60;
+                    const tStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                    const tDesk = document.getElementById('quiz-timer'); if(tDesk) tDesk.innerText = tStr;
+                    const tMob = document.getElementById('quiz-timer-mobile'); if(tMob) tMob.innerText = tStr;
+                }
+            }, 1000);
+        }
+
+        function checkAndResumeExam() {
+            const savedState = localStorage.getItem('ruangk3_cbt_state');
+            if (savedState) {
+                try {
+                    const state = JSON.parse(savedState);
+                    if (state.uid === currentUser.uid) {
+                        activeQuizData = state.questions; userAnswers = state.answers; userFlags = state.flags; currentQuizIndex = state.currentIndex; window.examEndTime = state.endTime;
+                        window.openModal('modal-ujian');
+                        document.getElementById('ujian-intro').classList.add('hidden'); document.getElementById('ujian-waiting').classList.remove('flex'); document.getElementById('ujian-waiting').classList.add('hidden'); document.getElementById('ujian-soal').classList.remove('hidden'); document.getElementById('ujian-soal').classList.add('flex');
+                        if (Date.now() < state.endTime) { renderQuestion(); updateGridUI(); startExamTimer(); window.showToast("Memulihkan sesi ujian Anda...", "info"); } 
+                        else { finishQuiz(); window.showToast("Waktu ujian telah habis saat Anda offline.", "warning"); }
+                    }
+                } catch (e) { clearExamState(); }
+            }
+        }
 
         window.switchLmsTab = function(tabName) {
             ['dashboard', 'kelas', 'cbt', 'live'].forEach(t => {
@@ -1181,6 +1219,7 @@
                             renderAvatarUI(data.nama, 'Peserta');
                             document.getElementById('modul-locked')?.classList.add('hidden'); 
                             document.getElementById('modul-list')?.classList.remove('hidden');
+                            checkAndResumeExam();
                         }
                     }, { onlyOnce: true });
                 }
@@ -1991,7 +2030,8 @@
                         userAnswers = new Array(activeQuizData.length).fill(null);
                         userFlags = new Array(activeQuizData.length).fill(false);
                         currentQuizIndex = 0;
-                        examTimeRemaining = 45 * 60;
+                        window.examEndTime = Date.now() + (45 * 60 * 1000);
+                        saveExamState();
                         
                         document.getElementById('ujian-waiting').classList.remove('flex');
                         document.getElementById('ujian-waiting').classList.add('hidden');
@@ -2001,15 +2041,7 @@
                         broadcastLiveCbtScore(false, 0);
                         renderQuestion();
                         updateGridUI();
-                        
-                        examTimerInterval = setInterval(() => {
-                            examTimeRemaining--;
-                            let m = Math.floor(examTimeRemaining / 60); let s = examTimeRemaining % 60;
-                            const tStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                            const tDesk = document.getElementById('quiz-timer'); if(tDesk) tDesk.innerText = tStr;
-                            const tMob = document.getElementById('quiz-timer-mobile'); if(tMob) tMob.innerText = tStr;
-                            if(examTimeRemaining <= 0) { clearInterval(examTimerInterval); window.showToast("Waktu habis!", "warning"); finishQuiz(); }
-                        }, 1000);
+                        startExamTimer();
                     }
                 });
             } catch(e) { btn.innerText = "Kirim Permintaan Izin Ujian"; btn.disabled = false; }
@@ -2062,6 +2094,7 @@
                 if (currentQuizIndex === activeQuizData.length - 1) { btnNext.innerHTML = 'Kumpulkan ✓'; btnNext.classList.replace('bg-safety-500', 'bg-emerald-600'); } 
                 else { btnNext.innerHTML = 'Selanjutnya &rarr;'; btnNext.classList.replace('bg-emerald-600', 'bg-safety-500'); }
             }
+            saveExamState();
         }
 
         async function broadcastLiveCbtScore(isFinished = false, finalScoreOverride = null) {
@@ -2081,7 +2114,7 @@
 
         document.getElementById('btn-prev-soal')?.addEventListener('click', () => { if (currentQuizIndex > 0) { currentQuizIndex--; renderQuestion(); } });
         document.getElementById('btn-next-soal')?.addEventListener('click', () => { if (currentQuizIndex < activeQuizData.length - 1) { currentQuizIndex++; renderQuestion(); } else { finishQuizConfirmation(); } });
-        document.getElementById('chk-ragu')?.addEventListener('change', (e) => { userFlags[currentQuizIndex] = e.target.checked; updateGridUI(); });
+        document.getElementById('chk-ragu')?.addEventListener('change', (e) => { userFlags[currentQuizIndex] = e.target.checked; saveExamState(); updateGridUI(); });
         document.getElementById('btn-selesai-ujian')?.addEventListener('click', finishQuizConfirmation);
 
         function finishQuizConfirmation() {
@@ -2096,6 +2129,7 @@
         }
 
         async function finishQuiz() {
+            clearExamState();
             if(examTimerInterval) clearInterval(examTimerInterval); 
             document.getElementById('ujian-soal').classList.remove('flex'); document.getElementById('ujian-soal').classList.add('hidden'); 
             document.getElementById('ujian-hasil').classList.remove('hidden');
