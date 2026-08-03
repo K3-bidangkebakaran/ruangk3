@@ -1527,15 +1527,76 @@
         
         window.hapusKegiatan = async function(id) { try { await remove(ref(db, `${pathKegiatan}/${id}`)); window.showToast("Kegiatan berhasil dihapus.", "success"); } catch(e){ window.showToast("Gagal menghapus kegiatan.", "error"); } };
         window.hapusPengeluaran = async function(id) { try { await remove(ref(db, `${pathPengeluaran}/${id}`)); window.showToast("Pengeluaran berhasil dihapus.", "success"); } catch(e){ window.showToast("Gagal menghapus pengeluaran.", "error"); } };
-        window.toggleStatusBayarTgl = async function(id, dateStr, isChecked) { try { await update(ref(db, `${pathKegiatan}/${id}/statusBayarDates`), { [dateStr]: isChecked }); } catch(e){} };
+        
+        window.toggleStatusBayarTgl = async function(id, dateStr, isChecked) { 
+            try { 
+                // 1. Update status pembayaran dari PJK3/Klien
+                await update(ref(db, `${pathKegiatan}/${id}/statusBayarDates`), { [dateStr]: isChecked }); 
+                
+                // 2. Fitur Otomatis: Lunaskan juga pendapatan ke akun Tim terkait
+                const k = dataKegiatanAll.find(x => x.id === id);
+                if (k) {
+                    let anyChecked = isChecked;
+                    const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : [];
+                    dates.forEach(d => {
+                        if (d !== dateStr && k.statusBayarDates && k.statusBayarDates[d]) anyChecked = true;
+                    });
+                    
+                    // Update status bayar tim di database agar otomatis hilang dari daftar Hutang
+                    await update(ref(db, `${pathKegiatan}/${id}`), { statusBayarTim: anyChecked });
+                }
+            } catch(e){ console.error(e); } 
+        };
+
         window.hapusPjk3 = async function(id) { try { await remove(ref(db, `${pathPjk3}/${id}`)); window.showToast("Logo PJK3 berhasil dihapus.", "success"); } catch(e){ window.showToast("Gagal menghapus PJK3.", "error"); } };
 
         window.bukaModalHutang = function() {
             try {
                 const container = document.getElementById('list-hutang-tim'); if(!container) return; container.innerHTML = ''; const hutangObj = window.currentHutangTimData || {}; const keys = Object.keys(hutangObj);
-                if (keys.length === 0) { container.innerHTML = '<p class="text-slate-500 text-xs text-center py-4">Tidak ada rincian belum bayar tim saat ini.</p>'; } else { keys.forEach(idTim => { const item = hutangObj[idTim]; container.innerHTML += `<div class="p-4 bg-red-50 border border-red-200 rounded-xl space-y-2"><div class="flex justify-between items-center"><h4 class="font-extrabold text-slate-900 text-sm">${item.nama}</h4><span class="font-extrabold text-red-600 text-sm">${formatRupiah(item.nominal)}</span></div><p class="text-xs text-slate-600">Total ${item.kegiatans.length} kegiatan belum diselesaikan pembayarannya.</p></div>`; }); }
+                if (keys.length === 0) { container.innerHTML = '<p class="text-slate-500 text-xs text-center py-4">Tidak ada rincian belum bayar tim saat ini.</p>'; } else { 
+                    keys.forEach(idTim => { 
+                        const item = hutangObj[idTim]; 
+                        container.innerHTML += `
+                        <div class="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-extrabold text-slate-900 text-sm">${item.nama}</h4>
+                                <span class="font-extrabold text-red-600 text-sm">${formatRupiah(item.nominal)}</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-red-200 pt-2.5">
+                                <p class="text-[10px] text-slate-600 font-bold uppercase">Total ${item.kegiatans.length} Kegiatan</p>
+                                <button onclick="window.bayarHutangTim('${idTim}', this)" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold rounded-lg shadow-sm transition-colors">Tandai Lunas ✓</button>
+                            </div>
+                        </div>`; 
+                    }); 
+                }
                 window.openModal('modal-hutang-tim');
             } catch(e) { console.error(e); }
+        };
+
+        window.bayarHutangTim = async function(idTim, btnEl) {
+            const hutangObj = window.currentHutangTimData || {};
+            const item = hutangObj[idTim];
+            if(!item || !item.kegiatans) return;
+            
+            const oriText = btnEl.innerText;
+            btnEl.innerText = "Memproses...";
+            btnEl.disabled = true;
+
+            try {
+                const updates = {};
+                // Memperbarui semua kegiatan milik tim tersebut menjadi lunas
+                item.kegiatans.forEach(k => {
+                    updates[`${pathKegiatan}/${k.id}/statusBayarTim`] = true;
+                });
+                
+                await update(ref(db), updates);
+                window.showToast(`Hutang ke ${item.nama} berhasil dilunasi.`, "success");
+                window.closeModal();
+            } catch(e) {
+                window.showToast("Gagal mengupdate status bayar tim.", "error");
+                btnEl.innerText = oriText;
+                btnEl.disabled = false;
+            }
         };
 
         window.updateKelasDropdown = function(bidangSelectId, kelasSelectId) {
