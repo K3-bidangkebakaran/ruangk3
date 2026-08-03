@@ -306,6 +306,45 @@
             <div id="modul-list" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </div>
 
+        <!-- SIMULASI CBT (INTRODUCTION) -->
+        <div id="view-lms-cbt" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="text-xs font-bold text-safety-500 uppercase tracking-widest">Ujian Mandiri</span>
+                    <h1 class="text-2xl font-extrabold text-slate-900">Simulasi CBT Sertifikasi</h1>
+                </div>
+                <button onclick="window.switchLmsTab('dashboard')" class="text-xs font-bold text-slate-500 hover:text-slate-900">&larr; Kembali ke Dashboard</button>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                <div class="md:flex">
+                    <div class="md:w-2/5 bg-navy-900 p-8 text-white flex flex-col justify-center relative overflow-hidden">
+                        <div class="absolute inset-0 bg-grid-pattern-white opacity-10"></div>
+                        <div class="relative z-10">
+                            <div class="w-16 h-16 bg-safety-400/20 rounded-2xl flex items-center justify-center text-safety-400 text-3xl font-bold mb-6">⏱️</div>
+                            <h2 class="text-2xl font-extrabold mb-4 leading-tight">Uji Kompetensi & Sertifikasi</h2>
+                            <p class="text-slate-300 text-sm leading-relaxed mb-6">Ujian berbasis komputer (CBT) ini dirancang untuk mensimulasikan ujian sertifikasi K3 yang sesungguhnya. Soal akan diacak secara sistem.</p>
+                            <ul class="space-y-3 text-sm text-slate-200">
+                                <li class="flex items-center"><span class="text-safety-400 mr-2">✓</span> Durasi Waktu: 45 Menit</li>
+                                <li class="flex items-center"><span class="text-safety-400 mr-2">✓</span> Penilaian Instan</li>
+                                <li class="flex items-center"><span class="text-safety-400 mr-2">✓</span> Sertifikat & PDF Review</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="md:w-3/5 p-8 flex flex-col justify-center">
+                        <div class="text-center max-w-sm mx-auto">
+                            <h3 class="text-xl font-bold text-slate-900 mb-2">Siap untuk Memulai?</h3>
+                            <p class="text-slate-500 text-sm mb-8">Pastikan koneksi internet Anda stabil sebelum meminta izin ujian kepada instruktur.</p>
+                            <button onclick="if(!currentUser){window.openModal('modal-login')}else{window.openModal('modal-ujian')}" class="w-full py-4 bg-safety-500 hover:bg-safety-600 text-white font-extrabold text-sm rounded-xl transition-all shadow-lg transform hover:-translate-y-1">
+                                Mulai Simulasi Ujian &rarr;
+                            </button>
+                            <p class="mt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">*Wajib login untuk akses ujian</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- LIVE CBT (SCOREBOARD) -->
         <div id="view-lms-live" class="hidden space-y-6">
             <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl space-y-6">
@@ -1058,7 +1097,6 @@
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let isAppInitialized = false;
-        window.examEndTime = null;
 
         function saveExamState() {
             if (!currentUser) return;
@@ -1184,7 +1222,6 @@
                 const izin = currentUser.izin || {};
                 if(btnNilai) { if(izin.nilai) btnNilai.classList.remove('hidden'); else btnNilai.classList.add('hidden'); }
                 if(btnBerita) { if(izin.berita) btnBerita.classList.remove('hidden'); else btnBerita.classList.add('hidden'); }
-                // Tampilkan selalu menu keuangan untuk Tim agar bisa melihat rincian pendapatannya
                 if(btnKeuangan) { btnKeuangan.classList.remove('hidden'); }
                 if(btnModul) { if(izin.modul) btnModul.classList.remove('hidden'); else btnModul.classList.add('hidden'); }
             } else if (isViewer) {
@@ -1535,16 +1572,8 @@
         window.renderDashboardPendapatanHome = function() {
             try {
                 if(!currentUser) return;
-                
-                // PENYARINGAN MUTLAK & KETAT JADWAL
-                let filteredKegiatan = [];
-                if (currentUser.role === 'admin_utama') {
-                    filteredKegiatan = dataKegiatanAll;
-                } else if (currentUser.role === 'admin_eldi') {
-                    filteredKegiatan = dataKegiatanAll.filter(k => String(k.idTim) === 'eldi_123');
-                } else if (currentUser.role === 'admin_tim') {
-                    filteredKegiatan = dataKegiatanAll.filter(k => String(k.idTim) === String(currentUser.idTim));
-                }
+                let filteredKegiatan = dataKegiatanAll; 
+                if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
 
                 const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth();
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -1572,9 +1601,8 @@
                             if (isLunas) { colorClass = "bg-green-100 text-green-800 hover:bg-green-200"; borderColor = "border-green-300"; topBorderColor = "border-green-300"; } 
                             else if (evtDate > todayDateOnly) { colorClass = "bg-blue-100 text-blue-800 hover:bg-blue-200"; borderColor = "border-blue-300"; topBorderColor = "border-blue-300"; } 
                             else { colorClass = "bg-red-100 text-red-800 hover:bg-red-200"; borderColor = "border-red-300"; topBorderColor = "border-red-300"; }
-                            
-                            const isUtamaAtauEldi = (currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi');
-                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${isUtamaAtauEldi ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
+
+                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${(currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi') ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
                         });
 
                         const isToday = day === todayDateOnly.getDate() && month === todayDateOnly.getMonth() && year === todayDateOnly.getFullYear();
@@ -2095,21 +2123,6 @@
                 else { btnNext.innerHTML = 'Selanjutnya &rarr;'; btnNext.classList.replace('bg-emerald-600', 'bg-safety-500'); }
             }
             saveExamState();
-        }
-
-        async function broadcastLiveCbtScore(isFinished = false, finalScoreOverride = null) {
-            if(!currentUser || !currentUser.uid) return;
-            try {
-                let currentCorrect = 0; let answeredCount = 0;
-                userAnswers.forEach((ans, idx) => { if(ans !== null) { answeredCount++; if(activeQuizData[idx] && ans === activeQuizData[idx].jawabanBenar) currentCorrect++; } });
-                const liveScore = finalScoreOverride !== null ? finalScoreOverride : (activeQuizData.length > 0 ? Math.round((currentCorrect / activeQuizData.length) * 100) : 0);
-                const currentCategory = activeQuizData[0]?.kategori || 'K3 Umum';
-                let passingGrade = 70; if (currentCategory.includes('Kelas D')) passingGrade = 65;
-                const isPassed = liveScore >= passingGrade;
-                let statusText = 'Ujian Berlangsung'; if(isFinished) { statusText = isPassed ? 'LULUS' : 'TIDAK LULUS'; }
-
-                await set(ref(db, `${pathLiveCbt}/${currentUser.uid}`), { namaPeserta: currentUser.nama, instansi: currentUser.instansi, kategori: currentCategory, skorLive: liveScore, soalTerjawab: answeredCount, totalSoal: activeQuizData.length, status: statusText, lastUpdate: Date.now() });
-            } catch(e){}
         }
 
         document.getElementById('btn-prev-soal')?.addEventListener('click', () => { if (currentQuizIndex > 0) { currentQuizIndex--; renderQuestion(); } });
