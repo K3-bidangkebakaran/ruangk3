@@ -1146,7 +1146,8 @@
                 const izin = currentUser.izin || {};
                 if(btnNilai) { if(izin.nilai) btnNilai.classList.remove('hidden'); else btnNilai.classList.add('hidden'); }
                 if(btnBerita) { if(izin.berita) btnBerita.classList.remove('hidden'); else btnBerita.classList.add('hidden'); }
-                if(btnKeuangan) { if(izin.keuangan) btnKeuangan.classList.remove('hidden'); else btnKeuangan.classList.add('hidden'); }
+                // Tampilkan selalu menu keuangan untuk Tim agar bisa melihat rincian pendapatannya
+                if(btnKeuangan) { btnKeuangan.classList.remove('hidden'); }
                 if(btnModul) { if(izin.modul) btnModul.classList.remove('hidden'); else btnModul.classList.add('hidden'); }
             } else if (isViewer) {
                 if(btnNilai) btnNilai.classList.add('hidden'); if(btnBerita) btnBerita.classList.add('hidden'); if(btnKeuangan) btnKeuangan.classList.add('hidden'); if(btnModul) btnModul.classList.add('hidden');
@@ -1495,8 +1496,16 @@
         window.renderDashboardPendapatanHome = function() {
             try {
                 if(!currentUser) return;
-                let filteredKegiatan = dataKegiatanAll; 
-                if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
+                
+                // PENYARINGAN MUTLAK & KETAT JADWAL
+                let filteredKegiatan = [];
+                if (currentUser.role === 'admin_utama') {
+                    filteredKegiatan = dataKegiatanAll;
+                } else if (currentUser.role === 'admin_eldi') {
+                    filteredKegiatan = dataKegiatanAll.filter(k => String(k.idTim) === 'eldi_123');
+                } else if (currentUser.role === 'admin_tim') {
+                    filteredKegiatan = dataKegiatanAll.filter(k => String(k.idTim) === String(currentUser.idTim));
+                }
 
                 const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth();
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -1524,8 +1533,9 @@
                             if (isLunas) { colorClass = "bg-green-100 text-green-800 hover:bg-green-200"; borderColor = "border-green-300"; topBorderColor = "border-green-300"; } 
                             else if (evtDate > todayDateOnly) { colorClass = "bg-blue-100 text-blue-800 hover:bg-blue-200"; borderColor = "border-blue-300"; topBorderColor = "border-blue-300"; } 
                             else { colorClass = "bg-red-100 text-red-800 hover:bg-red-200"; borderColor = "border-red-300"; topBorderColor = "border-red-300"; }
-
-                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${(currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi') ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
+                            
+                            const isUtamaAtauEldi = (currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi');
+                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${isUtamaAtauEldi ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
                         });
 
                         const isToday = day === todayDateOnly.getDate() && month === todayDateOnly.getMonth() && year === todayDateOnly.getFullYear();
