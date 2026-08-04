@@ -22,6 +22,9 @@
     <!-- html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
+    <!-- Chart.js (Untuk Grafik Rating) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -75,6 +78,15 @@
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
         .bg-grid-pattern-white { background-image: radial-gradient(rgba(255, 255, 255, 0.12) 2px, transparent 2px); background-size: 24px 24px; }
+        
+        /* Star Rating System */
+        .rating-stars { display: flex; flex-direction: row-reverse; justify-content: center; gap: 0.5rem; }
+        .rating-stars input { display: none; }
+        .rating-stars label { cursor: pointer; color: #cbd5e1; transition: color 0.2s ease; }
+        .rating-stars label svg { width: 48px; height: 48px; fill: currentColor; }
+        .rating-stars input:checked ~ label,
+        .rating-stars label:hover,
+        .rating-stars label:hover ~ label { color: #f59e0b; }
     </style>
 </head>
 
@@ -525,6 +537,34 @@
                 <button type="button" class="btn-close-modal text-slate-400 hover:text-slate-800 bg-slate-100 p-2 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
             <div id="list-hutang-tim" class="flex-grow overflow-y-auto admin-scroll pr-2 space-y-4"></div>
+        </div>
+
+        <!-- Modal Survey Ulasan Instruktur -->
+        <div id="modal-ulasan-instruktur" class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 hidden relative z-[1050]">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500 text-3xl">⭐</div>
+                <h3 class="text-2xl font-extrabold text-slate-900">Beri Ulasan Instruktur</h3>
+                <p class="text-slate-500 text-sm mt-2">Bagaimana pengalaman Anda diajar oleh instruktur ini?</p>
+            </div>
+            <form id="form-ulasan-instruktur" class="space-y-4">
+                <div class="flex justify-center flex-row-reverse star-rating">
+                    <input type="radio" id="star5" name="rating" value="5" class="hidden" required />
+                    <label for="star5" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
+                    <input type="radio" id="star4" name="rating" value="4" class="hidden" />
+                    <label for="star4" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
+                    <input type="radio" id="star3" name="rating" value="3" class="hidden" />
+                    <label for="star3" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
+                    <input type="radio" id="star2" name="rating" value="2" class="hidden" />
+                    <label for="star2" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
+                    <input type="radio" id="star1" name="rating" value="1" class="hidden" />
+                    <label for="star1" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Saran & Kritik (Wajib)</label>
+                    <textarea id="input-ulasan-teks" required rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none transition-all" placeholder="Tuliskan pengalaman atau masukan Anda..."></textarea>
+                </div>
+                <button type="submit" class="w-full py-3.5 bg-navy-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg mt-4">Kirim Ulasan & Lihat Nilai</button>
+            </form>
         </div>
 
         <!-- MODAL UJIAN CBT -->
@@ -1038,7 +1078,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, set, update, remove, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, update, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -1107,7 +1147,7 @@
         let currentUser = null; 
         let quizDataFromDB = []; let activeQuizData = []; let currentQuizIndex = 0; 
         let userAnswers = []; let userFlags = []; let examTimerInterval = null; 
-        let examEndTime = null; // New logic for persistence
+        let examEndTime = null; let hasSubmittedSurvey = false;
         
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
@@ -1245,7 +1285,6 @@
                 if (savedState && savedState.examEndTime && savedState.activeQuizData) {
                     const now = Date.now();
                     if (now < savedState.examEndTime) {
-                        // Restore state
                         activeQuizData = savedState.activeQuizData;
                         userAnswers = savedState.userAnswers || new Array(activeQuizData.length).fill(null);
                         userFlags = savedState.userFlags || new Array(activeQuizData.length).fill(false);
@@ -1254,7 +1293,6 @@
                         
                         window.showToast("Meresume sesi ujian Anda sebelumnya...", "info");
                         
-                        // Switch UI
                         window.openModal('modal-ujian');
                         document.getElementById('ujian-intro').classList.add('hidden');
                         document.getElementById('ujian-waiting').classList.add('hidden');
@@ -1264,7 +1302,6 @@
                         renderQuestion();
                         updateGridUI();
                         
-                        // Start absolute timer
                         if(examTimerInterval) clearInterval(examTimerInterval);
                         examTimerInterval = setInterval(() => {
                             const remainingMs = examEndTime - Date.now();
@@ -1284,14 +1321,12 @@
                         
                         return true;
                     } else {
-                        // Expired
                         localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
                     }
                 }
             } catch(e) { console.error(e); }
             return false;
         }
-
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -1303,8 +1338,6 @@
                             renderAvatarUI(data.nama, 'Peserta');
                             document.getElementById('modul-locked')?.classList.add('hidden'); 
                             document.getElementById('modul-list')?.classList.remove('hidden');
-                            
-                            // Check if there is an active exam state to resume
                             checkAndResumeExam();
                         }
                     }, { onlyOnce: true });
@@ -1317,7 +1350,12 @@
                         const vEl = document.getElementById('admin-visitor-count'); if(vEl) vEl.innerText = count.toLocaleString('id-ID'); 
                         window.animateNumber('stat-total-visitors', count);
                     });
-                    runTransaction(visitRef, (currentData) => { return (currentData || 0) + 1; }).catch(err => {});
+                    
+                    // Fiksasi Bug RunTransaction
+                    get(visitRef).then(snap => {
+                        set(visitRef, (snap.val() || 0) + 1).catch(()=>{});
+                    }).catch(()=>{});
+                    
                     fetchDataRealtime();
                 }
             } else { try { await signInAnonymously(auth); } catch(e){} }
@@ -2074,10 +2112,10 @@
                             if(izin.keuangan) badges += `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Keuangan</span>`;
                             if(!badges) badges = `<span class="text-[9px] text-slate-400 italic">Hanya akses dasar</span>`;
 
-                            listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm relative group"><div class="absolute top-2 right-2 flex space-x-1"><button onclick="window.editTim('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Edit Akses"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusTim('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Tim"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div><h4 class="font-bold text-slate-900 text-sm mb-1 pr-12">${data.nama}</h4><p class="text-xs text-slate-600 mb-1">📱 ${data.hp}</p><p class="text-xs text-slate-600 font-mono mb-2">🔑 PIN: <strong class="text-safety-600">${data.pin}</strong></p><div class="border-t border-slate-200 pt-2 mt-1"><p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Akses Khusus:</p><div>${badges}</div></div></div>`;
-                        }
-                    });
-                }
+                        listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm relative group"><div class="absolute top-2 right-2 flex space-x-1"><button onclick="window.editTim('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Edit Akses"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusTim('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Tim"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div><h4 class="font-bold text-slate-900 text-sm mb-1 pr-12">${data.nama}</h4><p class="text-xs text-slate-600 mb-1">📱 ${data.hp}</p><p class="text-xs text-slate-600 font-mono mb-2">🔑 PIN: <strong class="text-safety-600">${data.pin}</strong></p><div class="border-t border-slate-200 pt-2 mt-1"><p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Akses Khusus:</p><div>${badges}</div></div></div>`;
+                    }
+                });
+            }
             });
             
             onValue(ref(db, pathPjk3), (snapshot) => {
@@ -2201,25 +2239,19 @@
                     if(status === 'approved') {
                         myVerifyUnsubscribe();
                         
-                        // PERBAIKAN: Sistem pencocokan Kategori yang lebih longgar & Anti-Gagal
                         activeQuizData = quizDataFromDB.filter(q => {
                             const qKat = (q.kategori || '').toLowerCase();
                             const selKat = kat.toLowerCase();
                             const selKelas = kelas.toLowerCase();
                             
-                            // Jika teksnya sama persis
                             if (qKat === selKat || qKat === selKelas) return true;
-                            
-                            // Jika teks saling mengandung (Mengatasi perbedaan spasi/format data lama)
                             if (qKat.includes(selKelas) || selKelas.includes(qKat) || selKat.includes(qKat)) return true;
-                            
                             return false;
                         });
                         
-                        // MENGHAPUS BATASAN 10 SOAL! Jika soalnya 50, akan tampil 50!
                         if(activeQuizData.length === 0) {
                             window.showToast("Kategori spesifik tidak presisi. Menampilkan seluruh bank soal...", "warning");
-                            activeQuizData = [...quizDataFromDB]; // Ambil SEMUA soal yang ada tanpa dipotong
+                            activeQuizData = [...quizDataFromDB];
                         }
                         
                         for (let i = activeQuizData.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [activeQuizData[i], activeQuizData[j]] = [activeQuizData[j], activeQuizData[i]]; }
@@ -2227,6 +2259,7 @@
                         userAnswers = new Array(activeQuizData.length).fill(null);
                         userFlags = new Array(activeQuizData.length).fill(false);
                         currentQuizIndex = 0;
+                        hasSubmittedSurvey = false;
                         examEndTime = Date.now() + (45 * 60 * 1000); // 45 Menit absolut
                         
                         document.getElementById('ujian-waiting').classList.remove('flex');
@@ -2238,7 +2271,6 @@
                         renderQuestion();
                         updateGridUI();
                         
-                        // Panggil fitur save ke localStorage (Anti-Refresh)
                         if (typeof saveExamState === 'function') saveExamState(); 
                         
                         if(examTimerInterval) clearInterval(examTimerInterval);
@@ -2332,9 +2364,47 @@
         }
 
         document.getElementById('btn-prev-soal')?.addEventListener('click', () => { if (currentQuizIndex > 0) { currentQuizIndex--; renderQuestion(); saveExamState(); } });
-        document.getElementById('btn-next-soal')?.addEventListener('click', () => { if (currentQuizIndex < activeQuizData.length - 1) { currentQuizIndex++; renderQuestion(); saveExamState(); } else { finishQuizConfirmation(); } });
+        document.getElementById('btn-next-soal')?.addEventListener('click', () => { if (currentQuizIndex < activeQuizData.length - 1) { currentQuizIndex++; renderQuestion(); saveExamState(); } else { checkSurveyAndFinish(); } });
         document.getElementById('chk-ragu')?.addEventListener('change', (e) => { userFlags[currentQuizIndex] = e.target.checked; updateGridUI(); saveExamState(); });
-        document.getElementById('btn-selesai-ujian')?.addEventListener('click', finishQuizConfirmation);
+        document.getElementById('btn-selesai-ujian')?.addEventListener('click', checkSurveyAndFinish);
+
+        // 1. Cek Survey sebelum kumpulkan
+        function checkSurveyAndFinish() {
+            if(document.getElementById('modal-ulasan-instruktur') && !hasSubmittedSurvey) {
+                window.openModal('modal-ulasan-instruktur');
+            } else {
+                finishQuizConfirmation();
+            }
+        }
+
+        // 2. Simpan Survey ke Firebase & Otomatis Lanjut ke Hasil Ujian
+        document.getElementById('form-ulasan-instruktur')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const ori = btn.innerText; btn.innerText = "Mengirim..."; btn.disabled = true;
+            
+            try {
+                const starEl = document.querySelector('input[name="rating"]:checked');
+                const star = starEl ? parseInt(starEl.value) : 5;
+                const saran = document.getElementById('input-ulasan-teks')?.value || '';
+                const idInstruktur = document.getElementById('select-ujian-tim')?.value || 'unknown';
+                
+                await push(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), {
+                    idTim: idInstruktur,
+                    namaPeserta: currentUser ? currentUser.nama : 'Peserta',
+                    bintang: star,
+                    ulasan: saran,
+                    timestamp: Date.now()
+                });
+            } catch(err) { console.error("Gagal kirim ulasan", err); }
+            
+            hasSubmittedSurvey = true;
+            window.closeModal();
+            btn.innerText = ori; btn.disabled = false;
+            
+            // Langsung memproses & menampilkan nilai tanpa perlu klik lagi!
+            finishQuizConfirmation();
+        });
 
         function finishQuizConfirmation() {
             const unans = userAnswers.filter(a => a === null).length;
