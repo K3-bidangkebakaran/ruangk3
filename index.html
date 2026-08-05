@@ -791,13 +791,13 @@
                         <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-amber-500 overflow-hidden">
                             <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Tertunda (Bulan Ini)</p><p class="text-lg font-bold tracking-tight text-amber-500 truncate" id="stat-uang-tertunda">Rp 0</p>
                         </div>
-                        <div onclick="window.bukaModalHutang()" class="admin-utama-only bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-red-500 cursor-pointer hover:bg-red-50 hidden">
+                        <div onclick="window.bukaModalHutang()" class="admin-utama-only viewer-access bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-red-500 cursor-pointer hover:bg-red-50 hidden">
                             <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Belum Bayar Tim</p><p class="text-lg font-bold tracking-tight text-red-600 truncate" id="stat-hutang-tim">Rp 0</p><p class="text-[8px] text-slate-400 font-bold uppercase mt-1">Klik detail &rarr;</p>
                         </div>
-                        <div class="admin-utama-only bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-purple-500 hidden">
+                        <div class="admin-utama-only viewer-access bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-purple-500 hidden">
                             <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Total Keluar (Bulan Ini)</p><p class="text-lg font-bold tracking-tight text-purple-600 truncate" id="stat-uang-keluar">Rp 0</p>
                         </div>
-                        <div class="admin-utama-only bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-blue-600 hidden">
+                        <div class="admin-utama-only viewer-access bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-blue-600 hidden">
                             <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Saldo Bersih (Keseluruhan)</p><p class="text-lg font-bold tracking-tight text-blue-700 truncate" id="stat-uang-saldo">Rp 0</p>
                         </div>
                     </div>
@@ -806,14 +806,14 @@
                         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center"><h3 class="text-md font-bold text-slate-800">Riwayat Pendapatan</h3></div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-5 py-4 font-semibold">Tgl Kegiatan (Ceklis = Lunas)</th><th class="px-5 py-4 font-semibold">Nama / PJK3</th><th class="px-5 py-4 font-semibold">Pendapatan</th><th class="px-5 py-4 font-semibold">Status Bayar</th><th class="px-5 py-4 font-semibold text-right admin-utama-only hidden">Aksi</th></tr></thead>
+                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-5 py-4 font-semibold">Tgl Kegiatan (Ceklis = Lunas)</th><th class="px-5 py-4 font-semibold">Nama / PJK3</th><th id="th-nama-tim" class="px-5 py-4 font-semibold hidden">Tim Pengajar</th><th class="px-5 py-4 font-semibold">Pendapatan</th><th class="px-5 py-4 font-semibold">Status Bayar</th><th id="th-aksi-pendapatan" class="px-5 py-4 font-semibold text-right hidden">Aksi</th></tr></thead>
                                 <tbody id="admin-table-pendapatan" class="divide-y divide-slate-100 bg-white"><tr><td colspan="6" class="text-center py-6 text-slate-500">Memuat data...</td></tr></tbody>
                             </table>
                         </div>
                     </div>
                     
-                    <div class="admin-utama-only hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-1">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-1 admin-utama-only hidden">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Catat Pengeluaran</h3>
                                 <form id="form-pengeluaran" class="space-y-4">
@@ -824,7 +824,7 @@
                                 </form>
                             </div>
                         </div>
-                        <div class="lg:col-span-2">
+                        <div class="lg:col-span-2 admin-utama-only viewer-access hidden">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 <div class="p-5 border-b border-slate-200 bg-slate-50"><h3 class="text-md font-bold text-slate-800">Riwayat Pengeluaran (Bulan Ini)</h3></div>
                                 <div class="overflow-x-auto max-h-[400px] admin-scroll">
@@ -1203,6 +1203,7 @@
             document.querySelectorAll('.admin-utama-only').forEach(el => {
                 if (isUtama) { el.classList.remove('hidden'); } 
                 else if (isEldi && el.classList.contains('eldi-access')) { el.classList.remove('hidden'); } 
+                else if (isViewer && el.closest('#admin-panel-pendapatan')) { el.classList.remove('hidden'); } // Viewer kini bisa buka semua widget keuangan
                 else { el.classList.add('hidden'); }
             });
 
@@ -1236,7 +1237,10 @@
                 if(btnKeuangan) btnKeuangan.classList.remove('hidden'); // Selalu muncul khusus untuk Tim!
                 if(btnModul) { if(izin.modul) btnModul.classList.remove('hidden'); else btnModul.classList.add('hidden'); }
             } else if (isViewer) {
-                if(btnNilai) btnNilai.classList.add('hidden'); if(btnBerita) btnBerita.classList.add('hidden'); if(btnKeuangan) btnKeuangan.classList.add('hidden'); if(btnModul) btnModul.classList.add('hidden');
+                if(btnNilai) btnNilai.classList.remove('hidden'); 
+                if(btnBerita) btnBerita.classList.remove('hidden'); 
+                if(btnKeuangan) btnKeuangan.classList.remove('hidden'); 
+                if(btnModul) btnModul.classList.remove('hidden');
             }
 
             document.getElementById('admin-name-display').innerText = currentUser.nama;
@@ -1722,10 +1726,14 @@
             try {
                 if(!currentUser) return;
                 let filteredKegiatan = dataKegiatanAll; 
-                if (currentUser.role === 'admin_utama') {
-                    filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
-                } else if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') {
+                
+                // Filter akses masing-masing Role
+                if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') {
+                    // Tim & Eldi hanya melihat datanya sendiri
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
+                } else if (currentUser.role === 'viewer_kalender') {
+                    // Sembunyikan seluruh data milik eldi123 dari adrian23 (Viewer)
+                    filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
                 }
 
                 const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth();
@@ -1740,7 +1748,7 @@
                     for(let i = 0; i < firstDay; i++) { calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; }
                     
                     const todayDateOnly = new Date(); todayDateOnly.setHours(0,0,0,0);
-                    const isUtamaAtauEldi = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi';
+                    const isBisaLihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
 
                     for(let day = 1; day <= daysInMonth; day++) {
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -1756,7 +1764,7 @@
                             else if (evtDate > todayDateOnly) { colorClass = "bg-blue-100 text-blue-800 hover:bg-blue-200"; borderColor = "border-blue-300"; topBorderColor = "border-blue-300"; } 
                             else { colorClass = "bg-red-100 text-red-800 hover:bg-red-200"; borderColor = "border-red-300"; topBorderColor = "border-red-300"; }
 
-                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${isUtamaAtauEldi ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
+                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${isBisaLihatTim ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
                         });
 
                         const isToday = day === todayDateOnly.getDate() && month === todayDateOnly.getMonth() && year === todayDateOnly.getFullYear();
@@ -1780,12 +1788,21 @@
                     let countTabelBulanIni = 0; 
                     let tbodyHtml = '';
 
+                    const isBisaEdit = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi';
+                    const isBisaLihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
+
+                    const thNamaTim = document.getElementById('th-nama-tim');
+                    if(thNamaTim) { if(isBisaLihatTim) thNamaTim.classList.remove('hidden'); else thNamaTim.classList.add('hidden'); }
+                    const thAksi = document.getElementById('th-aksi-pendapatan');
+                    if(thAksi) { if(isBisaEdit) thAksi.classList.remove('hidden'); else thAksi.classList.add('hidden'); }
+
                     let sortedPendapatan = [...filteredKegiatan].sort((a,b) => { const dateA = a.tanggal ? a.tanggal.split(',')[0].trim() : ''; const dateB = b.tanggal ? b.tanggal.split(',')[0].trim() : ''; return new Date(dateA) - new Date(dateB); });
 
                     sortedPendapatan.forEach(k => {
                         const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : []; 
-                        // Admin Utama sees management money, others see team income
-                        const nominalPerHari = (currentUser.role === 'admin_utama') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
+                        
+                        // Admin Utama & Viewer see management money, others see team income
+                        const nominalPerHari = (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
                         const nominalTotal = dates.length > 0 ? (nominalPerHari * dates.length) : nominalPerHari;
 
                         const statusBayarDates = k.statusBayarDates || {}; let lunasCount = 0; let checkHtml = ''; let isKegiatanDiBulanIni = false; 
@@ -1805,7 +1822,7 @@
                                 if(isLunasDate) { totalMasukBulanIni += nominalPerHari; } else { totalTertundaBulanIni += nominalPerHari; }
                             }
 
-                            if(currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi') { checkHtml += `<label class="flex items-center space-x-2 mt-1 cursor-pointer"><input type="checkbox" ${isLunasDate?'checked':''} onchange="window.toggleStatusBayarTgl('${k.id}', '${d}', this.checked)" class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5"><span class="text-[10px] text-slate-700 font-medium">${formatDate(d)}</span></label>`; } 
+                            if(isBisaEdit) { checkHtml += `<label class="flex items-center space-x-2 mt-1 cursor-pointer"><input type="checkbox" ${isLunasDate?'checked':''} onchange="window.toggleStatusBayarTgl('${k.id}', '${d}', this.checked)" class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5"><span class="text-[10px] text-slate-700 font-medium">${formatDate(d)}</span></label>`; } 
                             else { checkHtml += `<div class="text-[10px] text-slate-500 flex items-center mt-1"><span class="w-1.5 h-1.5 rounded-full mr-1.5 ${isLunasDate ? 'bg-green-500' : 'bg-slate-300'}"></span>${formatDate(d)}</div>`; }
                         });
                         
@@ -1820,7 +1837,7 @@
                             }
                         }
                         
-                        if(currentUser.role === 'admin_utama' && k.idTim && k.idTim !== 'admin_utama' && k.idTim !== 'eldi_123' && k.statusBayarTim !== true) {
+                        if((currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') && k.idTim && k.idTim !== 'admin_utama' && k.statusBayarTim !== true) {
                             const nominalTimPerHari = Number(k.pendapatanTim) || 0;
                             const totalPendapatanTimKegiatan = dates.length > 0 ? (nominalTimPerHari * dates.length) : nominalTimPerHari;
                             
@@ -1839,8 +1856,8 @@
                             else badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">SEBAGIAN</span>`;
                             
                             let aksiHtml = '';
-                            if(currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi') { aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; }
-                            tbodyHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-5 py-3 text-xs text-slate-600 align-top">${checkHtml}</td><td class="px-5 py-3 text-sm font-semibold text-slate-900 align-top">${k.namaKegiatan} <br><span class="font-normal text-slate-500 text-xs">${k.pjk3}</span></td>${(currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi') ? `<td class="px-5 py-3 text-xs text-slate-700 font-medium align-top">${k.namaTim}</td>` : ''}<td class="px-5 py-3 whitespace-nowrap text-sm font-bold ${isLunasTotal ? 'text-green-600' : 'text-slate-500'} align-top">${formatRupiah(nominalTotal)}<br><span class="text-[9px] text-slate-400 font-normal">(${formatRupiah(nominalPerHari)} / Hari)</span></td><td class="px-5 py-3 whitespace-nowrap align-top">${badgeStatus}</td>${aksiHtml}</tr>`;
+                            if(isBisaEdit) { aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; }
+                            tbodyHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-5 py-3 text-xs text-slate-600 align-top">${checkHtml}</td><td class="px-5 py-3 text-sm font-semibold text-slate-900 align-top">${k.namaKegiatan} <br><span class="font-normal text-slate-500 text-xs">${k.pjk3}</span></td>${isBisaLihatTim ? `<td class="px-5 py-3 text-xs text-slate-700 font-medium align-top">${k.namaTim}</td>` : ''}<td class="px-5 py-3 whitespace-nowrap text-sm font-bold ${isLunasTotal ? 'text-green-600' : 'text-slate-500'} align-top">${formatRupiah(nominalTotal)}<br><span class="text-[9px] text-slate-400 font-normal">(${formatRupiah(nominalPerHari)} / Hari)</span></td><td class="px-5 py-3 whitespace-nowrap align-top">${badgeStatus}</td>${aksiHtml}</tr>`;
                         }
                     });
 
@@ -1852,7 +1869,7 @@
                     const elMasuk = document.getElementById('stat-uang-masuk'); const elTertunda = document.getElementById('stat-uang-tertunda');
                     if(elMasuk) elMasuk.innerText = formatRupiah(totalMasukBulanIni); if(elTertunda) elTertunda.innerText = formatRupiah(totalTertundaBulanIni);
                     
-                    if(currentUser.role === 'admin_utama') {
+                    if(currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') {
                         let totalKeluarBulanIni = 0; let totalKeluarAllTime = 0; let tbodyPengeluaranHtml = ''; let countKeluarBulanIni = 0;
                         let sortedPengeluaran = [...dataPengeluaranAll].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
                         
@@ -1863,7 +1880,7 @@
                             const pDate = new Date(p.tanggal);
                             if (pDate.getMonth() === month && pDate.getFullYear() === year) {
                                 totalKeluarBulanIni += valKeluar; countKeluarBulanIni++;
-                                tbodyPengeluaranHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-5 py-2 text-xs text-slate-600">${formatDate(p.tanggal)}</td><td class="px-5 py-2 text-xs font-semibold text-slate-800">${p.deskripsi}</td><td class="px-5 py-2 text-xs font-bold text-red-500">${formatRupiah(p.jumlah)}</td><td class="px-5 py-2 text-right"><button onclick="window.hapusPengeluaran('${p.id}')" class="text-red-400 hover:text-red-600 p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td></tr>`;
+                                tbodyPengeluaranHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-5 py-2 text-xs text-slate-600">${formatDate(p.tanggal)}</td><td class="px-5 py-2 text-xs font-semibold text-slate-800">${p.deskripsi}</td><td class="px-5 py-2 text-xs font-bold text-red-500">${formatRupiah(p.jumlah)}</td><td class="px-5 py-2 text-right">${currentUser.role === 'admin_utama' ? `<button onclick="window.hapusPengeluaran('${p.id}')" class="text-red-400 hover:text-red-600 p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : `<span class="text-[10px] text-slate-400 italic">Read-Only</span>`}</td></tr>`;
                             }
                         });
 
@@ -1878,7 +1895,6 @@
                         
                         if(elKeluar) elKeluar.innerText = formatRupiah(totalKeluarBulanIni);
                         
-                        // SALDO ALL TIME FIX
                         if(elSaldo) { 
                             const saldoAkhirTotal = totalMasukAllTime - totalKeluarAllTime; 
                             elSaldo.innerText = formatRupiah(saldoAkhirTotal); 
@@ -1902,8 +1918,12 @@
                 rawVerifikasiSnap.forEach(child => {
                     const data = child.val(); data.id = child.key;
                     if(data.status === 'pending') {
-                        if(currentUser && currentUser.role === 'admin_utama') { requests.push(data); } 
-                        else if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
+                        if(currentUser && currentUser.role === 'admin_utama') { 
+                            requests.push(data); 
+                        } else if(currentUser && currentUser.role === 'viewer_kalender') {
+                            // Sembunyikan permintaan verifikasi ujian Eldi dari layar adrian23
+                            if(data.idTimTarget !== 'eldi_123') requests.push(data);
+                        } else if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
                             if(data.idTimTarget === currentUser.idTim) requests.push(data);
                         }
                     }
