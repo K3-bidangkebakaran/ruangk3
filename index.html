@@ -1734,7 +1734,14 @@
                 } else if (currentUser.role === 'viewer_kalender') {
                     // Sembunyikan seluruh data milik eldi123 dari adrian23 (Viewer)
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
+                } else if (currentUser.role === 'admin_utama') {
+                    // Admin Pusat juga disembunyikan data Eldi
+                    filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
                 }
+
+                // Variabel izin visibilitas kolom tim dan aksi
+                const isBisaLihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
+                const isBisaEdit = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi';
 
                 const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth();
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -1748,7 +1755,6 @@
                     for(let i = 0; i < firstDay; i++) { calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; }
                     
                     const todayDateOnly = new Date(); todayDateOnly.setHours(0,0,0,0);
-                    const isBisaLihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
 
                     for(let day = 1; day <= daysInMonth; day++) {
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -1788,9 +1794,6 @@
                     let countTabelBulanIni = 0; 
                     let tbodyHtml = '';
 
-                    const isBisaEdit = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi';
-                    const isBisaLihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
-
                     const thNamaTim = document.getElementById('th-nama-tim');
                     if(thNamaTim) { if(isBisaLihatTim) thNamaTim.classList.remove('hidden'); else thNamaTim.classList.add('hidden'); }
                     const thAksi = document.getElementById('th-aksi-pendapatan');
@@ -1800,8 +1803,7 @@
 
                     sortedPendapatan.forEach(k => {
                         const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : []; 
-                        
-                        // Admin Utama & Viewer see management money, others see team income
+                        // Admin Utama sees management money, others see team income
                         const nominalPerHari = (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
                         const nominalTotal = dates.length > 0 ? (nominalPerHari * dates.length) : nominalPerHari;
 
@@ -1837,7 +1839,7 @@
                             }
                         }
                         
-                        if((currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') && k.idTim && k.idTim !== 'admin_utama' && k.statusBayarTim !== true) {
+                        if((currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') && k.idTim && k.idTim !== 'admin_utama' && k.idTim !== 'eldi_123' && k.statusBayarTim !== true) {
                             const nominalTimPerHari = Number(k.pendapatanTim) || 0;
                             const totalPendapatanTimKegiatan = dates.length > 0 ? (nominalTimPerHari * dates.length) : nominalTimPerHari;
                             
@@ -1919,8 +1921,10 @@
                     const data = child.val(); data.id = child.key;
                     if(data.status === 'pending') {
                         if(currentUser && currentUser.role === 'admin_utama') { 
-                            requests.push(data); 
-                        } else if(currentUser && currentUser.role === 'viewer_kalender') {
+                            // Sembunyikan permintaan verifikasi ujian Eldi dari layar admin pusat
+                            if(data.idTimTarget !== 'eldi_123') requests.push(data); 
+                        } 
+                        else if(currentUser && currentUser.role === 'viewer_kalender') {
                             // Sembunyikan permintaan verifikasi ujian Eldi dari layar adrian23
                             if(data.idTimTarget !== 'eldi_123') requests.push(data);
                         } else if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
@@ -2213,11 +2217,64 @@
                 quizDataFromDB = []; const listAdmin = document.getElementById('admin-list-soal');
                 if(listAdmin) listAdmin.innerHTML = '';
 
-                if (!snapshot.exists() && listAdmin) { listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Belum ada soal tersimpan di Database.</p>'; return; }
+                // Hapus blok kode residu yang rusak di sini
+
+                const seedQuestions = [
+                    {
+                        id: 'seed_q1',
+                        kategori: 'Kebakaran - Kelas D (Petugas Peran Kebakaran)',
+                        pertanyaan: 'Sistem proteksi kebakaran aktif terdiri dari:',
+                        opsi: [
+                            'APAR, hidran, detektor dan alarm, sprinkler',
+                            'Sarana jalan keluar, kompartemenisasi, titik kumpul',
+                            'Struktur bangunan, tangga darurat, pintu tahan api',
+                            'APD, rambu-rambu, prosedur tanggap darurat'
+                        ],
+                        jawabanBenar: 0
+                    },
+                    {
+                        id: 'seed_q2',
+                        kategori: 'Kebakaran - Kelas C (Regu Penanggulangan)',
+                        pertanyaan: 'Berikut ini adalah contoh proteksi kebakaran pasif, kecuali:',
+                        opsi: [
+                            'Fire stop',
+                            'Detector',
+                            'Fire proofing',
+                            'Sistem pengendali asap'
+                        ],
+                        jawabanBenar: 1
+                    },
+                    {
+                        id: 'seed_q3',
+                        kategori: 'Kebakaran - Kelas B (Koordinator)',
+                        pertanyaan: 'SMK3 sebagaimana dimaksud dalam PP. No. 50 tahun 2012 meliputi:',
+                        opsi: [
+                            'Penetapan kebijakan K3, Perencanaan K3, Pelaksanaan Rencana K3, Pemantauan dan evalusai kinerja K3 dan Peninjauan dan Peningkatan kinerja SMK3',
+                            'Perencanaan K3, Penetapan kebijakan K3, Pelaksanaan Rencana K3, Pemantauan dan evaluasi kinerja K3 dan Peninjauan dan Peningkatan Kinerja SMK3',
+                            'Penetapan komitmen pengusaha, perencanaan k3, pelaksanaan rencana K3, Pemantauandan evaluasi K3, DAN Peninjauan dan Peningkatan kinerja SMK3',
+                            'Pelaksanaan rencana K3, Pemantauan dan evaluasi kinerja K3, dan peninjauan dan peningkatan kinerja SMK3'
+                        ],
+                        jawabanBenar: 0
+                    }
+                ];
+
+                if (!snapshot.exists()) {
+                    // Jika database benar-benar kosong, dorong seedQuestions ke DB
+                    seedQuestions.forEach(q => {
+                        const { id, ...qData } = q;
+                        qData.timestamp = Date.now();
+                        push(ref(db, pathSoal), qData);
+                    });
+                    if(listAdmin) listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Menginisialisasi bank soal awal... Memuat ulang...</p>';
+                    return; // Hentikan eksekusi lebih lanjut, biarkan onValue terpanggil lagi saat data masuk
+                } else {
+                    snapshot.forEach(childSnap => { const data = childSnap.val(); data.id = childSnap.key; quizDataFromDB.push(data); });
+                }
+
+                if (!snapshot.exists() && listAdmin) { listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Memuat data awal...</p>'; return; }
 
                 let categoryCounters = {};
-                snapshot.forEach(childSnap => { const data = childSnap.val(); data.id = childSnap.key; quizDataFromDB.push(data); });
-
+                
                 if(listAdmin) {
                     quizDataFromDB.forEach((data) => {
                         const kat = data.kategori || 'Umum'; if (!categoryCounters[kat]) categoryCounters[kat] = 1; const noSoalBidang = categoryCounters[kat]++;
@@ -2397,7 +2454,6 @@
             }
         }
 
-        // 2. Simpan Survey ke Firebase & Otomatis Lanjut ke Hasil Ujian
         document.getElementById('form-ulasan-instruktur')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
@@ -2490,7 +2546,11 @@
                 if (currentUser.email && emailStatusEl) {
                     emailStatusEl.classList.remove('hidden'); emailStatusEl.innerText = `Mengirim notifikasi ke email...`; 
                     const templateParams = { to_email: currentUser.email, to_name: currentUser.nama, score: finalScore, status: isPassed ? 'LULUS' : 'TIDAK LULUS', category: currentCategory };
-                    emailjs.send('service_phv7wvj', 'template_aofwfyn', templateParams).then(function() { emailStatusEl.innerHTML = `✓ Notifikasi dikirim ke Email.`; }).catch(function(error) { emailStatusEl.innerHTML = `Gagal mengirim email.`; });
+                    if (typeof emailjs !== 'undefined') {
+                        emailjs.send('service_phv7wvj', 'template_aofwfyn', templateParams).then(function() { emailStatusEl.innerHTML = `✓ Notifikasi dikirim ke Email.`; }).catch(function(error) { emailStatusEl.innerHTML = `Gagal mengirim email.`; });
+                    } else {
+                        emailStatusEl.innerHTML = `Layanan email sedang tidak tersedia.`;
+                    }
                 }
             }
         }
