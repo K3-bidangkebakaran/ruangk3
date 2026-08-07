@@ -1725,23 +1725,20 @@
         window.renderDashboardPendapatanHome = function() {
             try {
                 if(!currentUser) return;
+                
+                const isBisaEdit = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi';
+                const isBisaLihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
+
                 let filteredKegiatan = dataKegiatanAll; 
                 
                 // Filter akses masing-masing Role
                 if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') {
                     // Tim & Eldi hanya melihat datanya sendiri
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
-                } else if (currentUser.role === 'viewer_kalender') {
-                    // Sembunyikan seluruh data milik eldi123 dari adrian23 (Viewer)
-                    filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
-                } else if (currentUser.role === 'admin_utama') {
-                    // Admin Pusat juga disembunyikan data Eldi
+                } else if (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') {
+                    // Sembunyikan seluruh data milik eldi123 dari Admin Pusat dan adrian23 (Viewer)
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
                 }
-
-                // Variabel izin visibilitas kolom tim dan aksi
-                const isBisaLihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
-                const isBisaEdit = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi';
 
                 const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth();
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -1920,13 +1917,9 @@
                 rawVerifikasiSnap.forEach(child => {
                     const data = child.val(); data.id = child.key;
                     if(data.status === 'pending') {
-                        if(currentUser && currentUser.role === 'admin_utama') { 
-                            // Sembunyikan permintaan verifikasi ujian Eldi dari layar admin pusat
+                        if(currentUser && (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender')) { 
+                            // Sembunyikan permintaan verifikasi ujian Eldi dari layar Admin Pusat dan adrian23
                             if(data.idTimTarget !== 'eldi_123') requests.push(data); 
-                        } 
-                        else if(currentUser && currentUser.role === 'viewer_kalender') {
-                            // Sembunyikan permintaan verifikasi ujian Eldi dari layar adrian23
-                            if(data.idTimTarget !== 'eldi_123') requests.push(data);
                         } else if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
                             if(data.idTimTarget === currentUser.idTim) requests.push(data);
                         }
