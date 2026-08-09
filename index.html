@@ -553,16 +553,16 @@
                 <p class="text-slate-500 text-sm mt-2">Bagaimana pengalaman Anda diajar oleh instruktur ini?</p>
             </div>
             <form id="form-ulasan-instruktur" class="space-y-4">
-                <div class="flex justify-center flex-row-reverse rating-stars">
-                    <input type="radio" id="star5" name="rating" value="5" required />
+                <div class="flex justify-center flex-row-reverse star-rating">
+                    <input type="radio" id="star5" name="rating" value="5" class="hidden" required />
                     <label for="star5" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star4" name="rating" value="4" />
+                    <input type="radio" id="star4" name="rating" value="4" class="hidden" />
                     <label for="star4" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star3" name="rating" value="3" />
+                    <input type="radio" id="star3" name="rating" value="3" class="hidden" />
                     <label for="star3" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star2" name="rating" value="2" />
+                    <input type="radio" id="star2" name="rating" value="2" class="hidden" />
                     <label for="star2" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star1" name="rating" value="1" />
+                    <input type="radio" id="star1" name="rating" value="1" class="hidden" />
                     <label for="star1" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
                 </div>
                 <div>
@@ -574,85 +574,95 @@
         </div>
 
         <!-- MODAL UJIAN CBT -->
-        <div id="modal-ujian" class="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-5xl p-0 hidden flex-col max-h-[95vh] overflow-hidden relative z-[1000] mx-4 sm:mx-auto">
-            <div id="ujian-intro" class="p-4 sm:p-6 md:p-8 flex-grow overflow-y-auto">
-                <div class="w-12 h-12 md:w-16 md:h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4 text-safety-600 shadow-inner">
-                    <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253" /></svg>
+        <div id="modal-ujian" class="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-5xl p-0 hidden flex-col h-[calc(100dvh-2rem)] md:h-[90vh] overflow-hidden relative z-[1000]">
+            
+            <div id="ujian-intro" class="flex-1 flex flex-col p-5 sm:p-8 overflow-y-auto min-h-0">
+                <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 text-safety-600 shadow-inner shrink-0">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253" /></svg>
                 </div>
-                <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2 text-center">Permintaan Permohonan Ujian CBT</h3>
-                <p class="text-slate-600 mb-6 text-xs md:text-sm text-center">Waktu Pengerjaan: <strong>45 Menit</strong>. Lengkapi formulir di bawah untuk meminta verifikasi instruktur.</p>
+                <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2 text-center shrink-0">Permintaan Permohonan Ujian CBT</h3>
+                <p class="text-slate-600 mb-6 text-sm text-center shrink-0">Waktu Pengerjaan: <strong>45 Menit</strong>. Lengkapi formulir di bawah untuk meminta verifikasi instruktur.</p>
                 
-                <div class="space-y-4 mb-4 md:mb-6 max-w-lg mx-auto px-2 md:px-0">
+                <div class="space-y-4 mb-6 max-w-lg mx-auto w-full shrink-0">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5 md:mb-2">1. Pilih Bidang K3:</label>
-                            <select id="select-ujian-bidang" class="w-full px-3 py-2.5 md:px-4 md:py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm text-sm md:text-base">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">1. Pilih Bidang K3:</label>
+                            <select id="select-ujian-bidang" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm">
                                 <!-- Populated dynamically -->
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1.5 md:mb-2">2. Pilih Kelas / Kategori:</label>
-                            <select id="select-ujian-kelas" class="w-full px-3 py-2.5 md:px-4 md:py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm text-sm md:text-base">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">2. Pilih Kelas / Kategori:</label>
+                            <select id="select-ujian-kelas" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm">
                                 <option value="" disabled selected>-- Pilih Bidang Dulu --</option>
                             </select>
                         </div>
                     </div>
                     <div class="mt-2">
-                        <label class="block text-sm font-semibold text-slate-700 mb-1.5 md:mb-2">3. Pilih Instruktur / Tim Pengajar:</label>
-                        <select id="select-ujian-tim" required class="w-full px-3 py-2.5 md:px-4 md:py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm text-sm md:text-base">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">3. Pilih Instruktur / Tim Pengajar:</label>
+                        <select id="select-ujian-tim" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-safety-400 outline-none font-medium text-slate-800 bg-white shadow-sm">
                             <option value="" disabled selected>-- Memuat Daftar Pengajar --</option>
                         </select>
                     </div>
-                    <button id="btn-request-quiz" class="w-full py-3.5 md:py-4 bg-safety-500 text-white rounded-xl font-bold hover:bg-safety-600 transition-all shadow-md mt-4 md:mt-6 text-sm md:text-base">Kirim Permintaan Izin Ujian</button>
-                    <button class="btn-close-modal w-full py-2 text-slate-500 font-semibold hover:text-slate-800 text-sm md:text-base">Batal & Keluar</button>
+                    <button id="btn-request-quiz" class="w-full py-4 bg-safety-500 text-white rounded-xl font-bold hover:bg-safety-600 transition-all shadow-md mt-6">Kirim Permintaan Izin Ujian</button>
+                    <button class="btn-close-modal w-full py-2 text-slate-500 font-semibold hover:text-slate-800">Batal & Keluar</button>
                 </div>
             </div>
             
-            <div id="ujian-waiting" class="hidden text-center p-4 sm:p-8 flex-col items-center justify-center h-full min-h-[300px] md:min-h-[400px]">
-                <div class="inline-block relative w-16 h-16 md:w-20 md:h-20 mb-4 md:mb-6"><svg class="animate-spin text-safety-400 w-full h-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
-                <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2 md:mb-3 animate-pulse">Menunggu Verifikasi Pengajar...</h3>
-                <p class="text-xs md:text-sm text-slate-500 mb-6 md:mb-8 max-w-sm mx-auto">Instruktur sedang meninjau permintaan Anda. Layar ini otomatis berubah saat diizinkan.</p>
-                <button id="btn-cancel-request" class="px-6 py-2.5 md:px-8 md:py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 text-sm md:text-base">Batalkan Permintaan</button>
+            <div id="ujian-waiting" class="hidden text-center p-8 flex-col items-center justify-center flex-1 min-h-0">
+                <div class="inline-block relative w-20 h-20 mb-6"><svg class="animate-spin text-safety-400 w-full h-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-3 animate-pulse">Menunggu Verifikasi Pengajar...</h3>
+                <p class="text-sm text-slate-500 mb-8 max-w-sm mx-auto">Instruktur sedang meninjau permintaan Anda. Layar ini otomatis berubah saat diizinkan.</p>
+                <button id="btn-cancel-request" class="px-8 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 shadow-sm">Batalkan Permintaan</button>
             </div>
 
-            <!-- CBT Area -->
-            <div id="ujian-soal" class="hidden w-full h-full flex-col md:flex-row bg-slate-100">
-                <div class="flex-grow flex flex-col p-4 md:p-6 lg:p-8 bg-white border-r border-slate-200 overflow-y-auto relative h-[60vh] md:h-auto">
-                    <div class="md:hidden flex justify-between items-center mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <span class="text-xs font-bold text-slate-500 uppercase">Soal <span id="quiz-progress-mobile">1</span></span>
-                        <span class="flex items-center space-x-2 bg-red-50 px-3 py-1.5 rounded-md text-red-600 border border-red-200"><span id="quiz-timer-mobile" class="font-bold font-mono text-sm">45:00</span></span>
+            <div id="ujian-soal" class="hidden flex-1 w-full flex-col md:flex-row bg-slate-100 overflow-hidden min-h-0">
+                <!-- Area Soal (Kiri/Atas) -->
+                <div class="flex-1 flex flex-col p-4 md:p-6 lg:p-8 bg-white md:border-r border-slate-200 overflow-y-auto relative min-h-0">
+                    <!-- Header Mobile -->
+                    <div class="md:hidden flex justify-between items-center mb-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm shrink-0 sticky top-0 z-20">
+                        <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Soal <span id="quiz-progress-mobile" class="text-safety-600 text-sm ml-1">1</span></span>
+                        <span class="flex items-center space-x-2 bg-red-50 px-3 py-1.5 rounded-lg text-red-600 border border-red-200 shadow-inner"><span id="quiz-timer-mobile" class="font-bold font-mono text-sm tracking-widest">45:00</span></span>
                     </div>
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="flex-grow pr-4">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Pertanyaan No. <span id="quiz-progress" class="text-safety-600 text-lg ml-1">1</span></span>
-                            <h4 id="quiz-question" class="text-base md:text-xl font-bold text-slate-900 leading-relaxed">Memuat...</h4>
+                    
+                    <div class="flex-1 shrink-0 mb-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex-grow md:pr-4">
+                                <span class="hidden md:block text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pertanyaan No. <span id="quiz-progress" class="text-safety-600 text-lg ml-1">1</span></span>
+                                <h4 id="quiz-question" class="text-sm md:text-xl font-bold text-slate-900 leading-relaxed md:leading-relaxed">Memuat...</h4>
+                            </div>
                         </div>
+                        <div id="quiz-options" class="space-y-3"></div>
                     </div>
-                    <div id="quiz-options" class="space-y-3 mb-8"></div>
-                    <div class="mt-auto pt-4 border-t border-slate-100 flex flex-wrap gap-3 justify-between items-center bg-white sticky bottom-0">
-                        <button id="btn-prev-soal" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm flex items-center">Kembali</button>
-                        <label class="flex items-center space-x-2 cursor-pointer bg-amber-50 hover:bg-amber-100 px-4 py-2.5 rounded-xl border border-amber-200">
-                            <input type="checkbox" id="chk-ragu" class="rounded border-amber-400 text-amber-500 w-4 h-4"><span class="text-xs font-bold text-amber-800 uppercase">Ragu</span>
+
+                    <!-- Footer Action Soal -->
+                    <div class="pt-4 border-t border-slate-100 flex gap-2 justify-between items-center bg-white sticky bottom-0 z-10 shrink-0 pb-1 md:pb-0">
+                        <button id="btn-prev-soal" class="px-4 py-2.5 md:px-5 md:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-[11px] md:text-sm flex items-center transition-colors">Kembali</button>
+                        <label class="flex items-center space-x-2 cursor-pointer bg-amber-50 hover:bg-amber-100 px-4 py-2.5 rounded-xl border border-amber-200 transition-colors">
+                            <input type="checkbox" id="chk-ragu" class="rounded border-amber-400 text-amber-500 w-3.5 h-3.5"><span class="text-[10px] md:text-xs font-extrabold text-amber-800 uppercase tracking-wider">Ragu</span>
                         </label>
-                        <button id="btn-next-soal" class="px-6 py-2.5 bg-safety-500 hover:bg-safety-600 text-white font-bold rounded-xl text-sm flex items-center">Selanjutnya</button>
+                        <button id="btn-next-soal" class="px-4 py-2.5 md:px-6 md:py-2.5 bg-safety-500 hover:bg-safety-600 text-white font-bold rounded-xl text-[11px] md:text-sm flex items-center shadow-md transition-all">Selanjutnya</button>
                     </div>
                 </div>
-                <div class="w-full md:w-80 bg-slate-50 flex flex-col flex-shrink-0 border-t md:border-t-0 border-slate-200">
-                    <div class="p-5 border-b border-slate-200 hidden md:block text-center bg-white">
+                
+                <!-- Area Navigasi (Kanan/Bawah) -->
+                <div class="h-[35vh] md:h-full w-full md:w-80 bg-slate-50 flex flex-col shrink-0 md:border-l border-t md:border-t-0 border-slate-200 min-h-0 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.06)] md:shadow-none z-30">
+                    <div class="p-4 md:p-5 border-b border-slate-200 hidden md:block text-center bg-white shrink-0">
                         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Sisa Waktu</p>
-                        <span class="flex items-center justify-center space-x-2 bg-red-50 px-4 py-3 rounded-xl text-red-600 border border-red-200"><span id="quiz-timer" class="font-extrabold tracking-widest font-mono text-2xl">45:00</span></span>
+                        <span class="flex items-center justify-center space-x-2 bg-red-50 px-4 py-3 rounded-xl text-red-600 border border-red-200 shadow-inner"><span id="quiz-timer" class="font-extrabold tracking-widest font-mono text-2xl">45:00</span></span>
                     </div>
-                    <div class="p-5 flex-grow overflow-y-auto">
-                        <h5 class="text-xs font-bold text-slate-500 mb-4 uppercase tracking-wider text-center md:text-left">Peta Navigasi Soal</h5>
-                        <div id="quiz-grid-nav" class="flex flex-wrap gap-2.5 justify-center md:justify-start"></div>
+                    <div class="p-4 md:p-5 flex-1 overflow-y-auto min-h-0 bg-slate-100/50 md:bg-transparent">
+                        <h5 class="text-[10px] font-extrabold text-slate-400 mb-3 uppercase tracking-widest text-center md:text-left">Peta Navigasi Soal</h5>
+                        <div id="quiz-grid-nav" class="flex flex-wrap gap-2 justify-center md:justify-start"></div>
                     </div>
-                    <div class="p-5 bg-white border-t border-slate-200">
-                        <button id="btn-selesai-ujian" class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl text-sm uppercase tracking-widest shadow-md">Selesai & Kumpulkan</button>
+                    <div class="p-4 md:p-5 bg-white border-t border-slate-200 shrink-0">
+                        <button id="btn-selesai-ujian" class="w-full py-3.5 md:py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-xl text-xs uppercase tracking-widest shadow-lg transition-all">Selesai Ujian</button>
                     </div>
                 </div>
             </div>
-            
-            <div id="ujian-hasil" class="hidden text-center p-8 bg-white h-full flex flex-col items-center justify-center overflow-y-auto relative">
+
+            <div id="ujian-hasil" class="hidden flex-1 w-full flex-col bg-slate-50 overflow-hidden min-h-0">
+                <!-- PDF Container -->
                 <div id="pdf-content-container" class="hidden text-left bg-white p-10 w-[800px] max-w-[800px] font-sans">
                     <div class="text-center mb-6 pb-4 border-b-2 border-slate-800">
                         <h2 class="text-3xl font-extrabold mb-1">Laporan Hasil Ujian CBT LMS</h2>
@@ -668,19 +678,23 @@
                     <div id="pdf-review-list" class="space-y-5"></div>
                 </div>
 
-                <div class="flex-grow flex flex-col items-center justify-center w-full pt-4 pb-32">
-                    <div id="quiz-icon-container" class="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner"></div>
-                    <h3 class="text-3xl font-extrabold text-slate-900 mb-2">Ujian Selesai!</h3>
-                    <div class="w-full max-w-md bg-slate-50 rounded-2xl py-8 mb-6 mt-4 border border-slate-200 shadow-inner">
-                        <p class="text-sm text-slate-500 font-bold uppercase tracking-widest mb-2">Nilai Akhir Anda</p>
-                        <p id="quiz-score" class="text-[5rem] font-black leading-none">0</p>
-                        <p id="quiz-status-lulus" class="text-lg font-bold mt-4 uppercase tracking-widest text-slate-900">MEMPROSES...</p>
-                        <p id="quiz-email-status" class="text-xs font-medium text-safety-600 mt-5 hidden bg-emerald-50 py-1.5 px-3 rounded inline-block"></p>
+                <!-- Score Visuals -->
+                <div class="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col items-center justify-center min-h-0 text-center relative">
+                    <div id="quiz-icon-container" class="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl"></div>
+                    <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">Ujian Selesai!</h3>
+                    <div class="w-full max-w-md bg-white rounded-2xl py-6 md:py-8 mb-4 mt-2 md:mt-4 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-safety-400 to-emerald-400"></div>
+                        <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1 md:mb-2">Nilai Akhir Anda</p>
+                        <p id="quiz-score" class="text-[4rem] md:text-[5rem] font-black leading-none text-slate-800">0</p>
+                        <p id="quiz-status-lulus" class="text-sm md:text-lg font-extrabold mt-3 md:mt-4 uppercase tracking-widest text-slate-900">MEMPROSES...</p>
+                        <p id="quiz-email-status" class="text-[10px] md:text-xs font-bold text-safety-600 mt-4 md:mt-5 hidden bg-emerald-50 py-1.5 px-3 rounded-lg border border-emerald-100 inline-block"></p>
                     </div>
                 </div>
-                <div class="w-full bg-white border-t border-slate-200 p-4 flex flex-col gap-3 absolute bottom-0 left-0 z-20 shrink-0">
-                    <button id="btn-download-pdf" class="w-full max-w-md mx-auto py-3.5 bg-navy-900 hover:bg-black text-white rounded-xl font-extrabold shadow-lg flex items-center justify-center">Unduh Soal & Kunci (PDF)</button>
-                    <button class="btn-close-modal w-full max-w-md mx-auto py-3 bg-white border-2 border-slate-200 text-slate-800 rounded-xl font-bold" onclick="window.clearExamState()">Kembali ke Dashboard</button>
+                
+                <!-- Actions -->
+                <div class="p-4 md:p-6 bg-white border-t border-slate-200 shrink-0 flex flex-col sm:flex-row gap-3 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.03)] z-10">
+                    <button id="btn-download-pdf" class="flex-1 py-3.5 bg-navy-900 hover:bg-black text-white rounded-xl font-extrabold shadow-md flex items-center justify-center text-xs md:text-sm uppercase tracking-widest transition-all">Unduh Laporan (PDF)</button>
+                    <button class="btn-close-modal flex-1 py-3 md:py-3.5 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all text-xs md:text-sm" onclick="window.clearExamState()">Kembali ke Dashboard</button>
                 </div>
             </div>
         </div>
