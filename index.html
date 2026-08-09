@@ -81,7 +81,7 @@
         
         /* Star Rating System */
         .rating-stars { display: flex; flex-direction: row-reverse; justify-content: center; gap: 0.5rem; }
-        .rating-stars input { display: none; }
+        .rating-stars input { position: absolute; opacity: 0; width: 0; height: 0; }
         .rating-stars label { cursor: pointer; color: #cbd5e1; transition: color 0.2s ease; }
         .rating-stars label svg { width: 48px; height: 48px; fill: currentColor; }
         .rating-stars input:checked ~ label,
@@ -547,16 +547,16 @@
                 <p class="text-slate-500 text-sm mt-2">Bagaimana pengalaman Anda diajar oleh instruktur ini?</p>
             </div>
             <form id="form-ulasan-instruktur" class="space-y-4">
-                <div class="flex justify-center flex-row-reverse star-rating">
-                    <input type="radio" id="star5" name="rating" value="5" class="hidden" required />
+                <div class="flex justify-center flex-row-reverse rating-stars">
+                    <input type="radio" id="star5" name="rating" value="5" required />
                     <label for="star5" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star4" name="rating" value="4" class="hidden" />
+                    <input type="radio" id="star4" name="rating" value="4" />
                     <label for="star4" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star3" name="rating" value="3" class="hidden" />
+                    <input type="radio" id="star3" name="rating" value="3" />
                     <label for="star3" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star2" name="rating" value="2" class="hidden" />
+                    <input type="radio" id="star2" name="rating" value="2" />
                     <label for="star2" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
-                    <input type="radio" id="star1" name="rating" value="1" class="hidden" />
+                    <input type="radio" id="star1" name="rating" value="1" />
                     <label for="star1" class="cursor-pointer text-slate-300 text-4xl transition-colors px-1">★</label>
                 </div>
                 <div>
@@ -1203,7 +1203,7 @@
             document.querySelectorAll('.admin-utama-only').forEach(el => {
                 if (isUtama) { el.classList.remove('hidden'); } 
                 else if (isEldi && el.classList.contains('eldi-access')) { el.classList.remove('hidden'); } 
-                else if (isViewer && el.closest('#admin-panel-pendapatan')) { el.classList.remove('hidden'); } // Viewer kini bisa buka semua widget keuangan
+                else if (isViewer && el.closest('#admin-panel-pendapatan')) { el.classList.remove('hidden'); } 
                 else { el.classList.add('hidden'); }
             });
 
@@ -1234,7 +1234,7 @@
                 const izin = currentUser.izin || {};
                 if(btnNilai) { if(izin.nilai) btnNilai.classList.remove('hidden'); else btnNilai.classList.add('hidden'); }
                 if(btnBerita) { if(izin.berita) btnBerita.classList.remove('hidden'); else btnBerita.classList.add('hidden'); }
-                if(btnKeuangan) btnKeuangan.classList.remove('hidden'); // Selalu muncul khusus untuk Tim!
+                if(btnKeuangan) btnKeuangan.classList.remove('hidden');
                 if(btnModul) { if(izin.modul) btnModul.classList.remove('hidden'); else btnModul.classList.add('hidden'); }
             } else if (isViewer) {
                 if(btnNilai) btnNilai.classList.remove('hidden'); 
@@ -1355,7 +1355,6 @@
                         window.animateNumber('stat-total-visitors', count);
                     });
                     
-                    // Fiksasi Bug RunTransaction
                     get(visitRef).then(snap => {
                         set(visitRef, (snap.val() || 0) + 1).catch(()=>{});
                     }).catch(()=>{});
@@ -1572,10 +1571,8 @@
         
         window.toggleStatusBayarTgl = async function(id, dateStr, isChecked) { 
             try { 
-                // 1. Update status pembayaran dari PJK3/Klien
                 await update(ref(db, `${pathKegiatan}/${id}/statusBayarDates`), { [dateStr]: isChecked }); 
                 
-                // 2. Fitur Otomatis: Lunaskan juga pendapatan ke akun Tim terkait
                 const k = dataKegiatanAll.find(x => x.id === id);
                 if (k) {
                     let anyChecked = isChecked;
@@ -1584,7 +1581,6 @@
                         if (d !== dateStr && k.statusBayarDates && k.statusBayarDates[d]) anyChecked = true;
                     });
                     
-                    // Update status bayar tim di database agar otomatis hilang dari daftar Hutang
                     await update(ref(db, `${pathKegiatan}/${id}`), { statusBayarTim: anyChecked });
                 }
             } catch(e){ console.error(e); } 
@@ -1626,7 +1622,6 @@
 
             try {
                 const updates = {};
-                // Memperbarui semua kegiatan milik tim tersebut menjadi lunas
                 item.kegiatans.forEach(k => {
                     updates[`${pathKegiatan}/${k.id}/statusBayarTim`] = true;
                 });
@@ -1731,12 +1726,9 @@
 
                 let filteredKegiatan = dataKegiatanAll; 
                 
-                // Filter akses masing-masing Role
                 if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') {
-                    // Tim & Eldi hanya melihat datanya sendiri
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
                 } else if (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') {
-                    // Sembunyikan seluruh data milik eldi123 dari Admin Pusat dan adrian23 (Viewer)
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
                 }
 
@@ -1800,7 +1792,6 @@
 
                     sortedPendapatan.forEach(k => {
                         const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : []; 
-                        // Admin Utama sees management money, others see team income
                         const nominalPerHari = (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
                         const nominalTotal = dates.length > 0 ? (nominalPerHari * dates.length) : nominalPerHari;
 
@@ -1918,7 +1909,6 @@
                     const data = child.val(); data.id = child.key;
                     if(data.status === 'pending') {
                         if(currentUser && (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender')) { 
-                            // Sembunyikan permintaan verifikasi ujian Eldi dari layar Admin Pusat dan adrian23
                             if(data.idTimTarget !== 'eldi_123') requests.push(data); 
                         } else if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
                             if(data.idTimTarget === currentUser.idTim) requests.push(data);
