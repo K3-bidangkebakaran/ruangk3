@@ -1576,7 +1576,11 @@
         window.editTim = function(id) {
             const data = dataTimAll.find(t => t.id === id); if(!data) return;
             document.getElementById('input-tim-nama').value = data.nama; document.getElementById('input-tim-nama').setAttribute('data-edit-id', id); document.getElementById('input-tim-hp').value = data.hp; document.getElementById('input-tim-pin').value = data.pin;
-            const izin = data.izin || {}; document.getElementById('izin-nilai').checked = !!izin.nilai; document.getElementById('izin-berita').checked = !!izin.berita; document.getElementById('izin-modul').checked = !!izin.modul; document.getElementById('izin-keuangan').checked = !!izin.keuangan;
+            const izin = data.izin || {}; 
+            const elNilai = document.getElementById('izin-nilai'); if(elNilai) elNilai.checked = !!izin.nilai; 
+            const elBerita = document.getElementById('izin-berita'); if(elBerita) elBerita.checked = !!izin.berita; 
+            const elModul = document.getElementById('izin-modul'); if(elModul) elModul.checked = !!izin.modul; 
+            const elKeuangan = document.getElementById('izin-keuangan'); if(elKeuangan) elKeuangan.checked = !!izin.keuangan;
             const btn = document.querySelector('#form-tim button[type="submit"]'); if(btn) btn.innerText = "Simpan Perubahan";
             let batalBtn = document.getElementById('btn-batal-tim');
             if(!batalBtn) { batalBtn = document.createElement('button'); batalBtn.id = 'btn-batal-tim'; batalBtn.type = 'button'; batalBtn.className = 'w-full mt-2 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-50'; batalBtn.innerText = 'Batal Edit'; batalBtn.onclick = window.batalEditTim; document.getElementById('form-tim').appendChild(batalBtn); }
@@ -1590,7 +1594,8 @@
         document.getElementById('form-tim')?.addEventListener('submit', async (e) => { 
             e.preventDefault(); if(!currentUser) return; const btn = e.target.querySelector('button[type="submit"]'); const ori = btn.innerText; btn.innerText = "Menyimpan..."; const editId = document.getElementById('input-tim-nama').getAttribute('data-edit-id');
             try { 
-                const izin = { nilai: document.getElementById('izin-nilai').checked, berita: document.getElementById('izin-berita').checked, modul: document.getElementById('izin-modul').checked, keuangan: document.getElementById('izin-keuangan').checked };
+                const elNilai = document.getElementById('izin-nilai'); const elBerita = document.getElementById('izin-berita'); const elModul = document.getElementById('izin-modul'); const elKeuangan = document.getElementById('izin-keuangan');
+                const izin = { nilai: elNilai ? elNilai.checked : false, berita: elBerita ? elBerita.checked : false, modul: elModul ? elModul.checked : false, keuangan: elKeuangan ? elKeuangan.checked : false };
                 const dataToSave = { nama: document.getElementById('input-tim-nama').value, hp: document.getElementById('input-tim-hp').value, pin: document.getElementById('input-tim-pin').value, izin: izin };
                 if (editId) { await update(ref(db, `${pathTim}/${editId}`), dataToSave); window.showToast("Akun tim berhasil diperbarui.", "success"); window.batalEditTim(); } else { dataToSave.timestamp = Date.now(); await push(ref(db, pathTim), dataToSave); window.showToast("Akun tim berhasil ditambahkan.", "success"); e.target.reset(); }
             } catch(err){ window.showToast("Gagal menyimpan akun tim.", "error"); } 
