@@ -1103,7 +1103,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, set, update, remove, runTransaction, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, update, remove, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -1136,8 +1136,14 @@
         document.addEventListener('keyup', (e) => {
             if(e.key === 'PrintScreen') {
                 try {
-                    const dummy = document.createElement('textarea'); dummy.value = ''; dummy.style.position = 'fixed'; dummy.style.opacity = '0';
-                    document.body.appendChild(dummy); dummy.select(); document.execCommand('copy'); document.body.removeChild(dummy);
+                    const dummy = document.createElement('textarea'); 
+                    dummy.value = ''; 
+                    dummy.style.position = 'fixed'; 
+                    dummy.style.opacity = '0';
+                    document.body.appendChild(dummy); 
+                    dummy.select(); 
+                    document.execCommand('copy'); 
+                    document.body.removeChild(dummy);
                 } catch (err) {}
             }
         });
@@ -1152,7 +1158,9 @@
           messagingSenderId: "497833559757",
           appId: "1:497833559757:web:01c2de15cd5f56dbb18b84"
         };
-        const app = initializeApp(firebaseConfig); const db = getDatabase(app); const auth = getAuth(app);
+        const app = initializeApp(firebaseConfig); 
+        const db = getDatabase(app); 
+        const auth = getAuth(app);
 
         const pathPeserta = `artifacts/${cleanAppId}/public/data/peserta`;
         const pathModul = `artifacts/${cleanAppId}/public/data/modul`;
@@ -1179,6 +1187,11 @@
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
         let isAppInitialized = false;
 
+        window.sendWA_Fonnte = async function(hp, message) {
+            // Placeholder for WhatsApp API integration
+            console.log(`[WA Simulator] Sent to ${hp}: \n${message}`);
+        };
+
         window.openAdminIfAllowed = function() {
             if (currentUser && currentUser.role !== 'peserta') {
                 window.openAdminView();
@@ -1196,14 +1209,19 @@
         };
 
         window.animateNumber = function(id, endValue) {
-            const el = document.getElementById(id); if (!el) return;
-            let startValue = parseInt(el.innerText.replace(/[^0-9]/g, '')) || 0; if (startValue === endValue) return;
-            let duration = 1200; let startTime = null;
+            const el = document.getElementById(id); 
+            if (!el) return;
+            let startValue = parseInt(el.innerText.replace(/[^0-9]/g, '')) || 0; 
+            if (startValue === endValue) return;
+            
+            let duration = 1200; 
+            let startTime = null;
             function step(timestamp) {
                 if (!startTime) startTime = timestamp;
                 let progress = Math.min((timestamp - startTime) / duration, 1);
                 el.innerText = Math.floor(progress * (endValue - startValue) + startValue).toLocaleString('id-ID');
-                if (progress < 1) window.requestAnimationFrame(step); else el.innerText = endValue.toLocaleString('id-ID');
+                if (progress < 1) window.requestAnimationFrame(step); 
+                else el.innerText = endValue.toLocaleString('id-ID');
             }
             window.requestAnimationFrame(step);
         };
@@ -1214,9 +1232,18 @@
         
         window.formatDate = function(dateString) { 
             if(!dateString) return '-'; 
-            if(typeof dateString === 'number') { const dt = new Date(dateString); return dt.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }); } 
-            if(typeof dateString === 'string' && dateString.includes(',')) { return dateString.split(',').map(d => { const dt = new Date(d.trim()); return dt.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }); }).join('<br>'); } 
-            const d = new Date(dateString); return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }); 
+            if(typeof dateString === 'number') { 
+                const dt = new Date(dateString); 
+                return dt.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }); 
+            } 
+            if(typeof dateString === 'string' && dateString.includes(',')) { 
+                return dateString.split(',').map(d => { 
+                    const dt = new Date(d.trim()); 
+                    return dt.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }); 
+                }).join('<br>'); 
+            } 
+            const d = new Date(dateString); 
+            return d.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }); 
         };
 
         window.renderAvatarUI = function(nama, roleText) {
@@ -1227,9 +1254,27 @@
             if(currentUser) {
                 let displayRole = currentUser.role === 'peserta' ? 'Peserta' : (roleText || 'Admin');
                 
-                deskContainer.innerHTML = `<div class="flex items-center space-x-3"><div class="text-right cursor-pointer" onclick="window.openAdminIfAllowed();"><p class="text-sm font-bold text-white leading-none hover:text-safety-400 transition-colors">${nama.split(' ')[0]}</p><p class="text-[10px] uppercase font-bold text-safety-400 mt-0.5">${displayRole}</p></div><div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md cursor-pointer hover:scale-105 transition-transform" onclick="window.openAdminIfAllowed();">${initial}</div><button onclick="window.processLogout()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 font-bold rounded-lg text-xs border border-red-500/30 transition-colors">Keluar</button></div>`;
+                deskContainer.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="text-right cursor-pointer" onclick="window.openAdminIfAllowed();">
+                        <p class="text-sm font-bold text-white leading-none hover:text-safety-400 transition-colors">${nama.split(' ')[0]}</p>
+                        <p class="text-[10px] uppercase font-bold text-safety-400 mt-0.5">${displayRole}</p>
+                    </div>
+                    <div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md cursor-pointer hover:scale-105 transition-transform" onclick="window.openAdminIfAllowed();">
+                        ${initial}
+                    </div>
+                    <button onclick="window.processLogout()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 font-bold rounded-lg text-xs border border-red-500/30 transition-colors">Keluar</button>
+                </div>`;
                 
-                mobContainer.innerHTML = `<div class="bg-navy-800 p-3 rounded-xl mb-2 flex items-center space-x-3 border border-slate-700 cursor-pointer" onclick="window.openAdminIfAllowed();"><div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs">${initial}</div><div><p class="font-bold text-white text-sm">${nama}</p><p class="text-[10px] text-safety-400 font-bold uppercase">${displayRole}</p></div></div><button onclick="window.processLogout()" class="w-full text-center bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 font-bold px-4 py-3 rounded-xl transition-colors">Keluar Akun</button>`;
+                mobContainer.innerHTML = `
+                <div class="bg-navy-800 p-3 rounded-xl mb-2 flex items-center space-x-3 border border-slate-700 cursor-pointer" onclick="window.openAdminIfAllowed();">
+                    <div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs">${initial}</div>
+                    <div>
+                        <p class="font-bold text-white text-sm">${nama}</p>
+                        <p class="text-[10px] text-safety-400 font-bold uppercase">${displayRole}</p>
+                    </div>
+                </div>
+                <button onclick="window.processLogout()" class="w-full text-center bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 font-bold px-4 py-3 rounded-xl transition-colors">Keluar Akun</button>`;
                 
                 const wt = document.getElementById('lms-welcome-title'); 
                 if(wt) { wt.innerText = `Selamat Datang, ${nama.split(' ')[0]} di Portal RuangK3`; }
@@ -1237,7 +1282,8 @@
         };
 
         window.processLogout = async function() {
-            currentUser = null; try { await signInAnonymously(auth); } catch(e){}
+            currentUser = null; 
+            try { await signInAnonymously(auth); } catch(e){}
             window.location.reload();
         }
 
@@ -1385,7 +1431,10 @@
             const btnReview = document.getElementById('nav-btn-review');
             
             if (isUtama || isEldi) {
-                if(btnNilai) btnNilai.classList.remove('hidden'); if(btnBerita) btnBerita.classList.remove('hidden'); if(btnKeuangan) btnKeuangan.classList.remove('hidden'); if(btnModul) btnModul.classList.remove('hidden');
+                if(btnNilai) btnNilai.classList.remove('hidden'); 
+                if(btnBerita) btnBerita.classList.remove('hidden'); 
+                if(btnKeuangan) btnKeuangan.classList.remove('hidden'); 
+                if(btnModul) btnModul.classList.remove('hidden');
                 if(isUtama && btnReview) btnReview.classList.remove('hidden');
             } else if (role === 'admin_tim') {
                 const izin = currentUser.izin || {};
@@ -1407,15 +1456,26 @@
             document.getElementById('admin-avatar-initial').innerText = currentUser.nama.substring(0,2).toUpperCase();
             
             document.querySelectorAll('.admin-nav-btn').forEach(btn => {
-                const newBtn = btn.cloneNode(true); btn.parentNode.replaceChild(newBtn, btn);
+                const newBtn = btn.cloneNode(true); 
+                btn.parentNode.replaceChild(newBtn, btn);
                 newBtn.addEventListener('click', (e) => {
                     const targetId = e.currentTarget.getAttribute('data-target');
                     if(window.innerWidth < 768) window.toggleSidebar();
                     document.querySelectorAll('.admin-panel').forEach(p => p.classList.add('hidden'));
-                    const targetPanel = document.getElementById(targetId); if(targetPanel) targetPanel.classList.remove('hidden');
-                    document.querySelectorAll('.admin-nav-btn').forEach(b => { b.classList.remove('bg-safety-500', 'text-white'); b.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-white'); });
-                    e.currentTarget.classList.add('bg-safety-500', 'text-white'); e.currentTarget.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
-                    const headerTitle = document.getElementById('admin-header-title'); if(headerTitle) headerTitle.innerText = e.currentTarget.querySelector('span:first-child').innerText || "Panel";
+                    
+                    const targetPanel = document.getElementById(targetId); 
+                    if(targetPanel) targetPanel.classList.remove('hidden');
+                    
+                    document.querySelectorAll('.admin-nav-btn').forEach(b => { 
+                        b.classList.remove('bg-safety-500', 'text-white'); 
+                        b.classList.add('text-slate-400', 'hover:bg-slate-800', 'hover:text-white'); 
+                    });
+                    
+                    e.currentTarget.classList.add('bg-safety-500', 'text-white'); 
+                    e.currentTarget.classList.remove('text-slate-400', 'hover:bg-slate-800', 'hover:text-white');
+                    
+                    const headerTitle = document.getElementById('admin-header-title'); 
+                    if(headerTitle) headerTitle.innerText = e.currentTarget.querySelector('span:first-child').innerText || "Panel";
                 });
             });
         }
@@ -1519,8 +1579,11 @@
             document.getElementById('quiz-options').innerHTML = htmlOptions;
             
             const btnPrev = document.getElementById('btn-prev-soal');
-            if(currentQuizIndex === 0) { btnPrev.classList.add('opacity-50', 'cursor-not-allowed'); } 
-            else { btnPrev.classList.remove('opacity-50', 'cursor-not-allowed'); }
+            if(currentQuizIndex === 0) { 
+                btnPrev.classList.add('opacity-50', 'cursor-not-allowed'); 
+            } else { 
+                btnPrev.classList.remove('opacity-50', 'cursor-not-allowed'); 
+            }
             
             const chkRagu = document.getElementById('chk-ragu');
             if(chkRagu) chkRagu.checked = userFlags[currentQuizIndex] || false;
@@ -1578,17 +1641,27 @@
             document.getElementById('quiz-score').innerText = finalScore;
             const statusEl = document.getElementById('quiz-status-lulus');
             if(statusEl) {
-                if(isLulus) { statusEl.innerText = "LULUS SERTIFIKASI"; statusEl.className = "text-sm md:text-lg font-extrabold mt-3 md:mt-4 uppercase tracking-widest text-emerald-600"; }
-                else { statusEl.innerText = "TIDAK LULUS"; statusEl.className = "text-sm md:text-lg font-extrabold mt-3 md:mt-4 uppercase tracking-widest text-red-500"; }
+                if(isLulus) { 
+                    statusEl.innerText = "LULUS SERTIFIKASI"; 
+                    statusEl.className = "text-sm md:text-lg font-extrabold mt-3 md:mt-4 uppercase tracking-widest text-emerald-600"; 
+                } else { 
+                    statusEl.innerText = "TIDAK LULUS"; 
+                    statusEl.className = "text-sm md:text-lg font-extrabold mt-3 md:mt-4 uppercase tracking-widest text-red-500"; 
+                }
             }
             
             const iconContainer = document.getElementById('quiz-icon-container');
             if(iconContainer) {
-                if(isLulus) { iconContainer.innerHTML = '🎓'; iconContainer.className = "w-20 h-20 md:w-24 md:h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl text-emerald-600"; }
-                else { iconContainer.innerHTML = '⚠️'; iconContainer.className = "w-20 h-20 md:w-24 md:h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl text-red-500"; }
+                if(isLulus) { 
+                    iconContainer.innerHTML = '🎓'; 
+                    iconContainer.className = "w-20 h-20 md:w-24 md:h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl text-emerald-600"; 
+                } else { 
+                    iconContainer.innerHTML = '⚠️'; 
+                    iconContainer.className = "w-20 h-20 md:w-24 md:h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl text-red-500"; 
+                }
             }
 
-            // Menyuntikkan Data ke dalam Template Laporan PDF
+            // PDF Template Fill
             document.getElementById('pdf-nama').innerText = currentUser ? currentUser.nama : 'Anonim';
             document.getElementById('pdf-instansi').innerText = currentUser ? (currentUser.instansi || '-') : '-';
             document.getElementById('pdf-kategori').innerText = activeQuizData[0] ? activeQuizData[0].kategori : 'Umum';
@@ -1634,8 +1707,17 @@
 
             if(currentUser && currentUser.uid) {
                 try {
-                    await update(ref(db, `${pathPeserta}/${currentUser.uid}`), { skorUjian: finalScore, statusKelulusan: isLulus ? 'Lulus' : 'Tidak Lulus', tglUjian: Date.now() });
-                    await update(ref(db, `${pathLiveCbt}/${currentUser.uid}`), { skorLive: finalScore, status: isLulus ? 'LULUS' : 'TIDAK LULUS', lastUpdate: Date.now(), soalTerjawab: total });
+                    await update(ref(db, `${pathPeserta}/${currentUser.uid}`), { 
+                        skorUjian: finalScore, 
+                        statusKelulusan: isLulus ? 'Lulus' : 'Tidak Lulus', 
+                        tglUjian: Date.now() 
+                    });
+                    await update(ref(db, `${pathLiveCbt}/${currentUser.uid}`), { 
+                        skorLive: finalScore, 
+                        status: isLulus ? 'LULUS' : 'TIDAK LULUS', 
+                        lastUpdate: Date.now(), 
+                        soalTerjawab: total 
+                    });
                 } catch(e) {}
             }
             
@@ -1645,23 +1727,20 @@
         window.downloadPDF = function() {
             const originalElement = document.getElementById('pdf-content-container');
 
-            // 1. Buat Wrapper dengan posisi FIXED agar kebal dari efek scroll layar
             const tempWrapper = document.createElement('div');
-            tempWrapper.style.position = 'fixed'; // Mengunci posisi agar tidak tergeser
+            tempWrapper.style.position = 'fixed'; 
             tempWrapper.style.top = '0';
             tempWrapper.style.left = '0';
-            tempWrapper.style.width = '800px'; // Ukuran baku PDF
+            tempWrapper.style.width = '800px'; 
             tempWrapper.style.background = 'white';
             tempWrapper.style.zIndex = '-9999';
 
-            // 2. Clone isi hasil jawaban dari DOM utama
             const clone = originalElement.cloneNode(true);
             clone.classList.remove('hidden'); 
             clone.style.width = '100%'; 
             clone.style.margin = '0';
-            clone.style.padding = '40px'; // Memberi ruang aman untuk margin PDF
+            clone.style.padding = '40px'; 
             
-            // 3. Masukkan ke dalam DOM
             tempWrapper.appendChild(clone);
             document.body.appendChild(tempWrapper);
 
@@ -1674,8 +1753,8 @@
                     scale: 2, 
                     logging: false, 
                     useCORS: true, 
-                    scrollX: 0, // Kunci Anti-Terpotong 1
-                    scrollY: 0, // Kunci Anti-Terpotong 2
+                    scrollX: 0, 
+                    scrollY: 0, 
                     windowWidth: 800
                 },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
@@ -1686,7 +1765,6 @@
             btn.innerText = "MENYIAPKAN PDF...";
             btn.disabled = true;
 
-            // 4. Generate PDF dari hasil tempWrapper
             html2pdf().set(opt).from(tempWrapper).save().then(() => {
                 document.body.removeChild(tempWrapper);
                 btn.innerText = oriText;
@@ -1703,21 +1781,30 @@
 
         const overlay = document.getElementById('modal-overlay');
         window.openModal = function(modalId) {
-            if(!overlay) return; overlay.classList.remove('hidden');
+            if(!overlay) return; 
+            overlay.classList.remove('hidden');
             document.querySelectorAll('#modal-overlay > div').forEach(el => el.classList.add('hidden'));
-            const mod = document.getElementById(modalId); if(mod) mod.classList.remove('hidden');
+            const mod = document.getElementById(modalId); 
+            if(mod) mod.classList.remove('hidden');
         };
-        window.closeModal = function() { if(overlay) overlay.classList.add('hidden'); };
+        
+        window.closeModal = function() { 
+            if(overlay) overlay.classList.add('hidden'); 
+        };
+        
         document.querySelectorAll('.btn-close-modal').forEach(btn => btn.addEventListener('click', window.closeModal));
 
         const mobileMenu = document.getElementById('mobile-menu');
-        document.getElementById('mobile-menu-button')?.addEventListener('click', () => { if(mobileMenu) mobileMenu.classList.toggle('hidden'); });
+        document.getElementById('mobile-menu-button')?.addEventListener('click', () => { 
+            if(mobileMenu) mobileMenu.classList.toggle('hidden'); 
+        });
         
-        const tabMasuk = document.getElementById('tab-btn-masuk'); const tabDaftar = document.getElementById('tab-btn-daftar');
-        const formMasuk = document.getElementById('form-login-peserta'); const formDaftar = document.getElementById('form-register-peserta');
+        const tabMasuk = document.getElementById('tab-btn-masuk'); 
+        const tabDaftar = document.getElementById('tab-btn-daftar');
+        const formMasuk = document.getElementById('form-login-peserta'); 
+        const formDaftar = document.getElementById('form-register-peserta');
         const authMsg = document.getElementById('auth-message');
         
-        // Forgot Password UI Elements
         const loginFieldsContainer = document.getElementById('login-fields-container');
         const forgotPasswordContainer = document.getElementById('forgot-password-container');
         const btnDoLogin = document.getElementById('btn-do-login');
@@ -1726,30 +1813,37 @@
 
         function switchTab(isLogin) {
             authMsg.classList.add('hidden');
-            // Reset Forgot Password state when switching tabs
             loginFieldsContainer.classList.remove('hidden');
             btnDoLogin.classList.remove('hidden');
             forgotPasswordContainer.classList.add('hidden');
             loginEmailInput.setAttribute('required', 'true');
             loginPasswordInput.setAttribute('required', 'true');
 
-            if(isLogin) { tabMasuk.className = "flex-1 py-2.5 font-bold text-sm rounded-lg bg-white shadow-sm text-safety-600 transition-all"; tabDaftar.className = "flex-1 py-2.5 font-bold text-sm rounded-lg text-slate-500 transition-all"; formMasuk.classList.remove('hidden'); formDaftar.classList.add('hidden'); } 
-            else { tabDaftar.className = "flex-1 py-2.5 font-bold text-sm rounded-lg bg-white shadow-sm text-safety-600 transition-all"; tabMasuk.className = "flex-1 py-2.5 font-bold text-sm rounded-lg text-slate-500 transition-all"; formDaftar.classList.remove('hidden'); formMasuk.classList.add('hidden'); }
+            if(isLogin) { 
+                tabMasuk.className = "flex-1 py-2.5 font-bold text-sm rounded-lg bg-white shadow-sm text-safety-600 transition-all"; 
+                tabDaftar.className = "flex-1 py-2.5 font-bold text-sm rounded-lg text-slate-500 transition-all"; 
+                formMasuk.classList.remove('hidden'); 
+                formDaftar.classList.add('hidden'); 
+            } else { 
+                tabDaftar.className = "flex-1 py-2.5 font-bold text-sm rounded-lg bg-white shadow-sm text-safety-600 transition-all"; 
+                tabMasuk.className = "flex-1 py-2.5 font-bold text-sm rounded-lg text-slate-500 transition-all"; 
+                formDaftar.classList.remove('hidden'); 
+                formMasuk.classList.add('hidden'); 
+            }
         }
-        tabMasuk?.addEventListener('click', () => switchTab(true)); tabDaftar?.addEventListener('click', () => switchTab(false));
+        
+        tabMasuk?.addEventListener('click', () => switchTab(true)); 
+        tabDaftar?.addEventListener('click', () => switchTab(false));
 
-        // Handle Forgot Password Flow
         document.getElementById('btn-show-forgot-password')?.addEventListener('click', () => {
             loginFieldsContainer.classList.add('hidden');
             btnDoLogin.classList.add('hidden');
             forgotPasswordContainer.classList.remove('hidden');
             
-            // Remove required so the form doesn't block submission attempt (though we use a separate button)
             loginEmailInput.removeAttribute('required');
             loginPasswordInput.removeAttribute('required');
             authMsg.classList.add('hidden');
             
-            // Auto-fill reset email if they already typed it in login
             const currentEmail = loginEmailInput.value.trim();
             if(currentEmail) {
                 document.getElementById('reset-email').value = currentEmail;
@@ -1784,8 +1878,6 @@
                 if (error.code === 'auth/invalid-email') {
                     showAuthMsg("Format email tidak valid.", true);
                 } else if (error.code === 'auth/user-not-found') {
-                    // For security, some devs prefer to say "If email exists, link was sent" to prevent email enumeration.
-                    // Firebase often returns user-not-found depending on settings.
                     showAuthMsg("Email tidak ditemukan dalam sistem kami.", true);
                 } else {
                     showAuthMsg("Terjadi kesalahan. Silakan coba lagi.", true);
@@ -1797,26 +1889,51 @@
         });
 
         function showAuthMsg(msg, isError=true) {
-            authMsg.innerHTML = msg; authMsg.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'bg-green-50', 'text-green-600');
-            if(isError) authMsg.classList.add('bg-red-50', 'text-red-600'); else authMsg.classList.add('bg-green-50', 'text-green-600');
+            authMsg.innerHTML = msg; 
+            authMsg.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'bg-green-50', 'text-green-600');
+            if(isError) authMsg.classList.add('bg-red-50', 'text-red-600'); 
+            else authMsg.classList.add('bg-green-50', 'text-green-600');
         }
 
         document.getElementById('form-login-peserta')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); const email = document.getElementById('login-email').value.trim(); const p = document.getElementById('login-password').value;
-            const btn = document.getElementById('btn-do-login'); const ori = btn.innerText; btn.innerText = "Memeriksa...";
+            e.preventDefault(); 
+            const email = document.getElementById('login-email').value.trim(); 
+            const p = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-do-login'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Memeriksa...";
             try { 
                 await signInWithEmailAndPassword(auth, email, p); 
-                window.closeModal(); e.target.reset(); window.showToast('Login berhasil!', 'success');
-            } catch (err) { showAuthMsg("Gagal: Email atau Sandi salah."); } btn.innerText = ori;
+                window.closeModal(); 
+                e.target.reset(); 
+                window.showToast('Login berhasil!', 'success');
+            } catch (err) { 
+                showAuthMsg("Gagal: Email atau Sandi salah."); 
+            } 
+            btn.innerText = ori;
         });
 
         document.getElementById('form-register-peserta')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); const email = document.getElementById('reg-email').value.trim(); const p = document.getElementById('reg-password').value; const nama = document.getElementById('reg-nama').value; const instansi = document.getElementById('reg-instansi').value;
-            const btn = document.getElementById('btn-do-register'); const ori = btn.innerText; btn.innerText = "Mendaftarkan...";
+            e.preventDefault(); 
+            const email = document.getElementById('reg-email').value.trim(); 
+            const p = document.getElementById('reg-password').value; 
+            const nama = document.getElementById('reg-nama').value; 
+            const instansi = document.getElementById('reg-instansi').value;
+            const btn = document.getElementById('btn-do-register'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Mendaftarkan...";
             try { 
                 const userCred = await createUserWithEmailAndPassword(auth, email, p); 
-                await set(ref(db, `${pathPeserta}/${userCred.user.uid}`), { email: email, nama: nama, instansi: instansi, role: 'peserta', timestamp: Date.now() }); 
-                showAuthMsg("Berhasil daftar! Silakan Masuk.", false); switchTab(true); e.target.reset(); 
+                await set(ref(db, `${pathPeserta}/${userCred.user.uid}`), { 
+                    email: email, 
+                    nama: nama, 
+                    instansi: instansi, 
+                    role: 'peserta', 
+                    timestamp: Date.now() 
+                }); 
+                showAuthMsg("Berhasil daftar! Silakan Masuk.", false); 
+                switchTab(true); 
+                e.target.reset(); 
             } catch (err) { 
                 if(err.code === 'auth/email-already-in-use') showAuthMsg("Gagal: Email sudah terdaftar."); 
                 else showAuthMsg("Terjadi kesalahan."); 
@@ -1826,7 +1943,10 @@
 
         document.getElementById('btn-request-quiz')?.addEventListener('click', async () => {
             if(!currentUser) { window.showToast("Silakan login dulu!", "error"); return; }
-            const bdg = document.getElementById('select-ujian-bidang').value; const kls = document.getElementById('select-ujian-kelas').value; const idTim = document.getElementById('select-ujian-tim').value;
+            const bdg = document.getElementById('select-ujian-bidang').value; 
+            const kls = document.getElementById('select-ujian-kelas').value; 
+            const idTim = document.getElementById('select-ujian-tim').value;
+            
             if(!bdg || !kls || !idTim) { window.showToast("Lengkapi semua pilihan form ujian!", "warning"); return; }
             
             document.getElementById('ujian-intro').classList.add('hidden');
@@ -1834,7 +1954,15 @@
             document.getElementById('ujian-waiting').classList.add('flex');
             
             const reqRef = push(ref(db, pathVerifikasi));
-            await set(reqRef, { uid: currentUser.uid, namaPeserta: currentUser.nama, instansi: currentUser.instansi, kategori: `${bdg} - ${kls}`, idTimTarget: idTim, status: 'pending', timestamp: Date.now() });
+            await set(reqRef, { 
+                uid: currentUser.uid, 
+                namaPeserta: currentUser.nama, 
+                instansi: currentUser.instansi, 
+                kategori: `${bdg} - ${kls}`, 
+                idTimTarget: idTim, 
+                status: 'pending', 
+                timestamp: Date.now() 
+            });
             
             window.showToast("Permintaan terkirim. Menunggu instruktur...", "success");
             
@@ -1862,8 +1990,14 @@
                     window.updateGridUI();
                     
                     set(ref(db, `${pathLiveCbt}/${currentUser.uid}`), {
-                        namaPeserta: currentUser.nama, instansi: currentUser.instansi, kategori: `${bdg} - ${kls}`,
-                        status: 'Ujian Berlangsung', skorLive: 0, totalSoal: activeQuizData.length, soalTerjawab: 0, lastUpdate: Date.now()
+                        namaPeserta: currentUser.nama, 
+                        instansi: currentUser.instansi, 
+                        kategori: `${bdg} - ${kls}`,
+                        status: 'Ujian Berlangsung', 
+                        skorLive: 0, 
+                        totalSoal: activeQuizData.length, 
+                        soalTerjawab: 0, 
+                        lastUpdate: Date.now()
                     });
                     
                     examTimerInterval = setInterval(() => {
@@ -1875,7 +2009,8 @@
                             return;
                         }
                         const totalSeconds = Math.floor(remainingMs / 1000);
-                        let m = Math.floor(totalSeconds / 60); let s = totalSeconds % 60;
+                        let m = Math.floor(totalSeconds / 60); 
+                        let s = totalSeconds % 60;
                         const tStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
                         const tDesk = document.getElementById('quiz-timer'); if(tDesk) tDesk.innerText = tStr;
                         const tMob = document.getElementById('quiz-timer-mobile'); if(tMob) tMob.innerText = tStr;
@@ -1884,48 +2019,104 @@
             });
         });
 
-        document.getElementById('btn-cancel-request')?.addEventListener('click', () => { window.closeModal(); document.getElementById('ujian-waiting').classList.add('hidden'); document.getElementById('ujian-intro').classList.remove('hidden'); });
+        document.getElementById('btn-cancel-request')?.addEventListener('click', () => { 
+            window.closeModal(); 
+            document.getElementById('ujian-waiting').classList.add('hidden'); 
+            document.getElementById('ujian-intro').classList.remove('hidden'); 
+        });
         
         document.getElementById('btn-prev-soal')?.addEventListener('click', () => { if(currentQuizIndex > 0) window.goToQuestion(currentQuizIndex - 1); });
         document.getElementById('btn-next-soal')?.addEventListener('click', () => { if(currentQuizIndex < activeQuizData.length - 1) window.goToQuestion(currentQuizIndex + 1); });
         document.getElementById('chk-ragu')?.addEventListener('change', (e) => { userFlags[currentQuizIndex] = e.target.checked; window.saveExamState(); window.updateGridUI(); });
+        
         document.getElementById('btn-selesai-ujian')?.addEventListener('click', () => {
             const unans = userAnswers.filter(x => x === null).length;
-            if(unans > 0) { if(!confirm(`Masih ada ${unans} soal yang belum dijawab. Yakin selesai?`)) return; }
+            if(unans > 0) { 
+                if(!confirm(`Masih ada ${unans} soal yang belum dijawab. Yakin selesai?`)) return; 
+            }
             window.finishQuiz();
         });
 
-        const viewAdmin = document.getElementById('view-admin'); const adminSidebar = document.getElementById('admin-sidebar'); const adminOverlay = document.getElementById('admin-sidebar-overlay');
-        window.openAdminView = function() { viewAdmin.classList.remove('hidden'); viewAdmin.classList.add('flex'); document.body.style.overflow = 'hidden'; }
-        window.closeAdminView = function() { viewAdmin.classList.add('hidden'); viewAdmin.classList.remove('flex'); document.body.style.overflow = ''; }
-        window.toggleSidebar = function() { adminSidebar.classList.toggle('-translate-x-full'); adminOverlay.classList.toggle('hidden'); }
+        const viewAdmin = document.getElementById('view-admin'); 
+        const adminSidebar = document.getElementById('admin-sidebar'); 
+        const adminOverlay = document.getElementById('admin-sidebar-overlay');
         
-        document.getElementById('btn-open-admin-sidebar')?.addEventListener('click', window.toggleSidebar); document.getElementById('btn-close-admin-sidebar')?.addEventListener('click', window.toggleSidebar); adminOverlay?.addEventListener('click', window.toggleSidebar); document.getElementById('btn-admin-to-web')?.addEventListener('click', window.closeAdminView);
+        window.openAdminView = function() { 
+            viewAdmin.classList.remove('hidden'); 
+            viewAdmin.classList.add('flex'); 
+            document.body.style.overflow = 'hidden'; 
+        }
+        window.closeAdminView = function() { 
+            viewAdmin.classList.add('hidden'); 
+            viewAdmin.classList.remove('flex'); 
+            document.body.style.overflow = ''; 
+        }
+        window.toggleSidebar = function() { 
+            adminSidebar.classList.toggle('-translate-x-full'); 
+            adminOverlay.classList.toggle('hidden'); 
+        }
+        
+        document.getElementById('btn-open-admin-sidebar')?.addEventListener('click', window.toggleSidebar); 
+        document.getElementById('btn-close-admin-sidebar')?.addEventListener('click', window.toggleSidebar); 
+        adminOverlay?.addEventListener('click', window.toggleSidebar); 
+        document.getElementById('btn-admin-to-web')?.addEventListener('click', window.closeAdminView);
 
         document.getElementById('form-login-admin')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); const pin = document.getElementById('input-pin-admin').value; const btnSubmit = document.getElementById('btn-submit-admin'); const oriText = btnSubmit.innerText; btnSubmit.innerText = "Memeriksa...";
+            e.preventDefault(); 
+            const pin = document.getElementById('input-pin-admin').value; 
+            const btnSubmit = document.getElementById('btn-submit-admin'); 
+            const oriText = btnSubmit.innerText; 
+            btnSubmit.innerText = "Memeriksa...";
             
             if (pin === 'admin123') { 
                 currentUser = { nama: 'Adrian', role: 'admin_utama', uid: 'admin_master_123' }; 
-                window.renderAvatarUI('Adrian', 'Admin Utama'); window.setupAdminUI('admin_utama'); window.openAdminView(); e.target.reset(); window.closeModal(); 
-                window.renderDashboardPendapatanHome(); window.renderVerifikasiUI(); window.renderReviewUI();
+                window.renderAvatarUI('Adrian', 'Admin Utama'); 
+                window.setupAdminUI('admin_utama'); 
+                window.openAdminView(); 
+                e.target.reset(); 
+                window.closeModal(); 
+                window.renderDashboardPendapatanHome(); 
+                window.renderVerifikasiUI(); 
+                window.renderReviewUI();
             } else if (pin === 'adrian23') {
                 currentUser = { nama: 'Adrian (Viewer)', role: 'viewer_kalender', uid: 'viewer_kalender_123' };
-                window.renderAvatarUI('Adrian', 'Pemantau Kalender'); window.setupAdminUI('viewer_kalender'); window.openAdminView(); e.target.reset(); window.closeModal();
-                window.renderDashboardPendapatanHome(); window.renderVerifikasiUI(); window.renderReviewUI();
+                window.renderAvatarUI('Adrian', 'Pemantau Kalender'); 
+                window.setupAdminUI('viewer_kalender'); 
+                window.openAdminView(); 
+                e.target.reset(); 
+                window.closeModal();
+                window.renderDashboardPendapatanHome(); 
+                window.renderVerifikasiUI(); 
+                window.renderReviewUI();
             } else if (pin === 'eldi123') {
                 currentUser = { nama: 'Eldi Prayoga Firdaus', role: 'admin_eldi', uid: 'eldi_123', idTim: 'eldi_123' };
-                window.renderAvatarUI('Eldi Prayoga', 'Instruktur / Manajemen'); window.setupAdminUI('admin_eldi'); window.openAdminView(); e.target.reset(); window.closeModal();
-                window.renderDashboardPendapatanHome(); window.renderVerifikasiUI(); window.renderReviewUI();
+                window.renderAvatarUI('Eldi Prayoga', 'Instruktur / Manajemen'); 
+                window.setupAdminUI('admin_eldi'); 
+                window.openAdminView(); 
+                e.target.reset(); 
+                window.closeModal();
+                window.renderDashboardPendapatanHome(); 
+                window.renderVerifikasiUI(); 
+                window.renderReviewUI();
             } else {
                 const timFound = dataTimAll.find(t => t.pin === pin);
                 if (timFound) { 
                     currentUser = { nama: timFound.nama, role: 'admin_tim', uid: timFound.id, idTim: timFound.id, izin: timFound.izin }; 
-                    window.renderAvatarUI(timFound.nama, 'Tim Pengajar'); window.setupAdminUI('admin_tim'); window.openAdminView(); e.target.reset(); window.closeModal(); 
-                    window.renderDashboardPendapatanHome(); window.renderVerifikasiUI(); window.renderReviewUI();
+                    window.renderAvatarUI(timFound.nama, 'Tim Pengajar'); 
+                    window.setupAdminUI('admin_tim'); 
+                    window.openAdminView(); 
+                    e.target.reset(); 
+                    window.closeModal(); 
+                    window.renderDashboardPendapatanHome(); 
+                    window.renderVerifikasiUI(); 
+                    window.renderReviewUI();
                 } else { 
-                    btnSubmit.innerText = "PIN Salah!"; btnSubmit.classList.replace('bg-navy-900', 'bg-red-500'); 
-                    setTimeout(() => { btnSubmit.innerText = oriText; btnSubmit.classList.replace('bg-red-500', 'bg-navy-900'); }, 2000); 
+                    btnSubmit.innerText = "PIN Salah!"; 
+                    btnSubmit.classList.replace('bg-navy-900', 'bg-red-500'); 
+                    setTimeout(() => { 
+                        btnSubmit.innerText = oriText; 
+                        btnSubmit.classList.replace('bg-red-500', 'bg-navy-900'); 
+                    }, 2000); 
                     return; 
                 }
             }
@@ -1933,67 +2124,151 @@
         });
 
         document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
-            currentUser = null; try { await signInAnonymously(auth); } catch(e){}
+            currentUser = null; 
+            try { await signInAnonymously(auth); } catch(e){}
             window.location.reload();
         });
 
         window.compressImage = function(file, maxWidth, maxHeight, quality, callback) {
-            const reader = new FileReader(); reader.readAsDataURL(file);
+            const reader = new FileReader(); 
+            reader.readAsDataURL(file);
             reader.onload = function(event) {
-                const img = new Image(); img.src = event.target.result;
+                const img = new Image(); 
+                img.src = event.target.result;
                 img.onload = function() {
-                    const canvas = document.createElement('canvas'); let width = img.width; let height = img.height;
-                    if (width > height) { if (width > maxWidth) { height = Math.round((height *= maxWidth / width)); width = maxWidth; } } else { if (height > maxHeight) { width = Math.round((width *= maxHeight / height)); height = maxHeight; } }
-                    canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height); callback(canvas.toDataURL('image/jpeg', quality));
+                    const canvas = document.createElement('canvas'); 
+                    let width = img.width; 
+                    let height = img.height;
+                    
+                    if (width > height) { 
+                        if (width > maxWidth) { height = Math.round((height *= maxWidth / width)); width = maxWidth; } 
+                    } else { 
+                        if (height > maxHeight) { width = Math.round((width *= maxHeight / height)); height = maxHeight; } 
+                    }
+                    
+                    canvas.width = width; 
+                    canvas.height = height; 
+                    const ctx = canvas.getContext('2d'); 
+                    ctx.drawImage(img, 0, 0, width, height); 
+                    callback(canvas.toDataURL('image/jpeg', quality));
                 }
             }
         };
 
         window.compressedBase64Array = []; 
-        const inputFoto = document.getElementById('input-berita-foto'); const labelFile = document.getElementById('label-nama-file'); 
+        const inputFoto = document.getElementById('input-berita-foto'); 
+        const labelFile = document.getElementById('label-nama-file'); 
+        
         if(inputFoto) { 
             inputFoto.addEventListener('change', async function(e) { 
-                const files = e.target.files; window.compressedBase64Array = []; 
+                const files = e.target.files; 
+                window.compressedBase64Array = []; 
                 if (files && files.length > 0) { 
-                    const limit = Math.min(files.length, 5); labelFile.innerHTML = `Memproses ${limit} gambar...`; labelFile.classList.add('text-safety-600'); 
-                    for(let i=0; i<limit; i++) { await new Promise(resolve => { window.compressImage(files[i], 800, 800, 0.7, function(dataUrl) { window.compressedBase64Array.push(dataUrl); resolve(); }); }); }
+                    const limit = Math.min(files.length, 5); 
+                    labelFile.innerHTML = `Memproses ${limit} gambar...`; 
+                    labelFile.classList.add('text-safety-600'); 
+                    for(let i=0; i<limit; i++) { 
+                        await new Promise(resolve => { 
+                            window.compressImage(files[i], 800, 800, 0.7, function(dataUrl) { 
+                                window.compressedBase64Array.push(dataUrl); resolve(); 
+                            }); 
+                        }); 
+                    }
                     labelFile.innerHTML = `<span class="font-bold text-green-600">${limit} Foto Siap Diupload</span>`; 
-                } else { labelFile.innerHTML = `Klik pilih gambar<br><span class="font-normal">(Bisa lebih dari 1)</span>`; labelFile.classList.remove('text-safety-600'); } 
+                } else { 
+                    labelFile.innerHTML = `Klik pilih gambar<br><span class="font-normal">(Bisa lebih dari 1)</span>`; 
+                    labelFile.classList.remove('text-safety-600'); 
+                } 
             }); 
         }
 
         window.compressedBase64Pjk3 = null;
-        const inputFotoPjk3 = document.getElementById('input-pjk3-foto'); const labelFilePjk3 = document.getElementById('label-nama-file-pjk3');
+        const inputFotoPjk3 = document.getElementById('input-pjk3-foto'); 
+        const labelFilePjk3 = document.getElementById('label-nama-file-pjk3');
         if(inputFotoPjk3) { 
             inputFotoPjk3.addEventListener('change', function(e) { 
                 const file = e.target.files[0]; 
                 if (file) { 
-                    labelFilePjk3.innerText = file.name; labelFilePjk3.classList.add('text-safety-600'); 
-                    window.compressImage(file, 500, 500, 0.8, function(dataUrl) { window.compressedBase64Pjk3 = dataUrl; }); 
+                    labelFilePjk3.innerText = file.name; 
+                    labelFilePjk3.classList.add('text-safety-600'); 
+                    window.compressImage(file, 500, 500, 0.8, function(dataUrl) { 
+                        window.compressedBase64Pjk3 = dataUrl; 
+                    }); 
                 } else { 
-                    labelFilePjk3.innerText = "Upload Logo PJK3"; labelFilePjk3.classList.remove('text-safety-600'); window.compressedBase64Pjk3 = null; 
+                    labelFilePjk3.innerText = "Upload Logo PJK3"; 
+                    labelFilePjk3.classList.remove('text-safety-600'); 
+                    window.compressedBase64Pjk3 = null; 
                 } 
             }); 
         }
 
         document.getElementById('form-kategori')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); if(!currentUser) return;
-            const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "Menyimpan...";
-            try { await push(ref(db, pathKategori), { bidang: document.getElementById('input-kategori-bidang').value.trim(), nama: document.getElementById('input-kategori-nama').value, timestamp: Date.now() }); e.target.reset(); window.showToast("Kategori berhasil ditambahkan.", "success"); } catch(err) { window.showToast("Gagal menambahkan kategori.", "error"); }
+            e.preventDefault(); 
+            if(!currentUser) return;
+            const btn = e.target.querySelector('button'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Menyimpan...";
+            try { 
+                await push(ref(db, pathKategori), { 
+                    bidang: document.getElementById('input-kategori-bidang').value.trim(), 
+                    nama: document.getElementById('input-kategori-nama').value, 
+                    timestamp: Date.now() 
+                }); 
+                e.target.reset(); 
+                window.showToast("Kategori berhasil ditambahkan.", "success"); 
+            } catch(err) { 
+                window.showToast("Gagal menambahkan kategori.", "error"); 
+            }
             setTimeout(() => { btn.innerText = ori; }, 2000);
         });
 
         window.hapusKategori = async function(id) {
-            try { await remove(ref(db, `${pathKategori}/${id}`)); window.showToast("Kategori berhasil dihapus.", "success"); } catch(e) { window.showToast("Gagal menghapus kategori.", "error"); }
+            try { 
+                await remove(ref(db, `${pathKategori}/${id}`)); 
+                window.showToast("Kategori berhasil dihapus.", "success"); 
+            } catch(e) { 
+                window.showToast("Gagal menghapus kategori.", "error"); 
+            }
         };
 
         document.getElementById('form-berita')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); if(!currentUser) return; const btn = e.target.querySelector('button'); const ori = btn.innerHTML; btn.innerText = "Menerbitkan..."; btn.disabled = true;
-            try { await push(ref(db, pathBerita), { judul: document.getElementById('input-berita-judul').value, kategori: document.getElementById('input-berita-kategori').value, isi: document.getElementById('input-berita-isi').value, fotoBase64: window.compressedBase64Array.length > 0 ? window.compressedBase64Array : null, penulis: currentUser.nama, timestamp: Date.now() }); e.target.reset(); window.compressedBase64Array = []; const labelFile = document.getElementById('label-nama-file'); if(labelFile) { labelFile.innerHTML = `Klik pilih gambar<br><span class="font-normal">(Bisa lebih dari 1)</span>`; labelFile.classList.remove('text-safety-600'); } btn.innerText = "Diterbitkan!"; } catch(err) { btn.innerText = "Gagal"; } setTimeout(() => { btn.innerHTML = ori; btn.disabled = false; }, 2000);
+            e.preventDefault(); 
+            if(!currentUser) return; 
+            const btn = e.target.querySelector('button'); 
+            const ori = btn.innerHTML; 
+            btn.innerText = "Menerbitkan..."; 
+            btn.disabled = true;
+            try { 
+                await push(ref(db, pathBerita), { 
+                    judul: document.getElementById('input-berita-judul').value, 
+                    kategori: document.getElementById('input-berita-kategori').value, 
+                    isi: document.getElementById('input-berita-isi').value, 
+                    fotoBase64: window.compressedBase64Array.length > 0 ? window.compressedBase64Array : null, 
+                    penulis: currentUser.nama, 
+                    timestamp: Date.now() 
+                }); 
+                e.target.reset(); 
+                window.compressedBase64Array = []; 
+                const lbl = document.getElementById('label-nama-file'); 
+                if(lbl) { 
+                    lbl.innerHTML = `Klik pilih gambar<br><span class="font-normal">(Bisa lebih dari 1)</span>`; 
+                    lbl.classList.remove('text-safety-600'); 
+                } 
+                btn.innerText = "Diterbitkan!"; 
+            } catch(err) { 
+                btn.innerText = "Gagal"; 
+            } 
+            setTimeout(() => { btn.innerHTML = ori; btn.disabled = false; }, 2000);
         });
 
         document.getElementById('form-kegiatan')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); if(!currentUser) return; const btn = document.getElementById('btn-submit-kegiatan'); const ori = btn.innerHTML; btn.innerText = "Menyimpan..."; btn.disabled = true;
+            e.preventDefault(); 
+            if(!currentUser) return; 
+            const btn = document.getElementById('btn-submit-kegiatan'); 
+            const ori = btn.innerHTML; 
+            btn.innerText = "Menyimpan..."; 
+            btn.disabled = true;
+            
             const isEldi = currentUser.role === 'admin_eldi';
             const idEdit = document.getElementById('input-kegiatan-id').value; 
             const selectTim = document.getElementById('input-kegiatan-tim'); 
@@ -2008,9 +2283,14 @@
             
             const dataToSave = { idTim, namaTim, tanggal, namaKegiatan: namaKeg, pjk3, pendapatanManagement, pendapatanTim };
             try {
-                if (idEdit) { await update(ref(db, `${pathKegiatan}/${idEdit}`), dataToSave); document.getElementById('btn-batal-kegiatan')?.click(); btn.innerText = "Diperbarui!"; window.showToast("Kegiatan diperbarui.", "success"); } 
-                else {
-                    dataToSave.timestamp = Date.now(); await push(ref(db, pathKegiatan), dataToSave);
+                if (idEdit) { 
+                    await update(ref(db, `${pathKegiatan}/${idEdit}`), dataToSave); 
+                    document.getElementById('btn-batal-kegiatan')?.click(); 
+                    btn.innerText = "Diperbarui!"; 
+                    window.showToast("Kegiatan diperbarui.", "success"); 
+                } else {
+                    dataToSave.timestamp = Date.now(); 
+                    await push(ref(db, pathKegiatan), dataToSave);
                     
                     if (idTim !== 'admin_utama' && idTim !== 'eldi_123') { 
                         const timData = dataTimAll.find(t => t.id === idTim); 
@@ -2022,15 +2302,35 @@
                     btn.innerText = "Tersimpan!";
                     window.showToast("Kegiatan berhasil ditambahkan.", "success");
                 } 
-                e.target.reset(); let fpKegiatan = document.getElementById('input-kegiatan-tanggal')?._flatpickr; if(fpKegiatan) fpKegiatan.clear();
-            } catch (err) { btn.innerText = "Error!"; window.showToast("Gagal menyimpan kegiatan.", "error"); } setTimeout(() => { btn.innerHTML = ori; btn.disabled = false; }, 2000);
+                e.target.reset(); 
+                let fpKegiatan = document.getElementById('input-kegiatan-tanggal')?._flatpickr; 
+                if(fpKegiatan) fpKegiatan.clear();
+            } catch (err) { 
+                btn.innerText = "Error!"; 
+                window.showToast("Gagal menyimpan kegiatan.", "error"); 
+            } 
+            setTimeout(() => { btn.innerHTML = ori; btn.disabled = false; }, 2000);
         });
 
         window.editKegiatan = function(id) {
             if (currentUser && currentUser.role === 'viewer_kalender') return window.showToast("Akses Ditolak: Membaca Kalender saja.", "error");
             if (currentUser && (currentUser.role !== 'admin_utama' && currentUser.role !== 'admin_eldi')) return window.showToast("Akses Ditolak: Hanya Admin Pusat & Instruktur Utama.", "error");
-            const data = dataKegiatanAll.find(k => k.id === id); if(!data) return;
-            document.getElementById('input-kegiatan-id').value = data.id; let fpKegiatan = document.getElementById('input-kegiatan-tanggal')?._flatpickr; if(fpKegiatan && data.tanggal) fpKegiatan.setDate(data.tanggal.split(',').map(d => d.trim())); document.getElementById('input-kegiatan-pjk3').value = data.pjk3; document.getElementById('input-kegiatan-nama').value = data.namaKegiatan; document.getElementById('input-kegiatan-tim').value = data.idTim; document.getElementById('input-kegiatan-pendapatan').value = data.pendapatanManagement || 0; document.getElementById('input-kegiatan-pendapatan-tim').value = data.pendapatanTim || 0; document.getElementById('btn-batal-kegiatan')?.classList.remove('hidden'); document.getElementById('btn-submit-kegiatan').innerHTML = "Simpan Perubahan"; document.querySelector('.admin-nav-btn[data-target="admin-panel-kegiatan"]')?.click();
+            
+            const data = dataKegiatanAll.find(k => k.id === id); 
+            if(!data) return;
+            
+            document.getElementById('input-kegiatan-id').value = data.id; 
+            let fpKegiatan = document.getElementById('input-kegiatan-tanggal')?._flatpickr; 
+            if(fpKegiatan && data.tanggal) fpKegiatan.setDate(data.tanggal.split(',').map(d => d.trim())); 
+            
+            document.getElementById('input-kegiatan-pjk3').value = data.pjk3; 
+            document.getElementById('input-kegiatan-nama').value = data.namaKegiatan; 
+            document.getElementById('input-kegiatan-tim').value = data.idTim; 
+            document.getElementById('input-kegiatan-pendapatan').value = data.pendapatanManagement || 0; 
+            document.getElementById('input-kegiatan-pendapatan-tim').value = data.pendapatanTim || 0; 
+            document.getElementById('btn-batal-kegiatan')?.classList.remove('hidden'); 
+            document.getElementById('btn-submit-kegiatan').innerHTML = "Simpan Perubahan"; 
+            document.querySelector('.admin-nav-btn[data-target="admin-panel-kegiatan"]')?.click();
         };
 
         window.batalEditTim = function() {
@@ -2043,38 +2343,113 @@
         };
 
         window.editTim = function(id) {
-            const data = dataTimAll.find(t => t.id === id); if(!data) return;
-            document.getElementById('input-tim-nama').value = data.nama; document.getElementById('input-tim-nama').setAttribute('data-edit-id', id); document.getElementById('input-tim-hp').value = data.hp; document.getElementById('input-tim-pin').value = data.pin;
+            const data = dataTimAll.find(t => t.id === id); 
+            if(!data) return;
+            
+            document.getElementById('input-tim-nama').value = data.nama; 
+            document.getElementById('input-tim-nama').setAttribute('data-edit-id', id); 
+            document.getElementById('input-tim-hp').value = data.hp; 
+            document.getElementById('input-tim-pin').value = data.pin;
+            
             const izin = data.izin || {}; 
             const elNilai = document.getElementById('izin-nilai'); if(elNilai) elNilai.checked = !!izin.nilai; 
             const elBerita = document.getElementById('izin-berita'); if(elBerita) elBerita.checked = !!izin.berita; 
             const elModul = document.getElementById('izin-modul'); if(elModul) elModul.checked = !!izin.modul; 
             const elKeuangan = document.getElementById('izin-keuangan'); if(elKeuangan) elKeuangan.checked = !!izin.keuangan;
-            const btn = document.querySelector('#form-tim button[type="submit"]'); if(btn) btn.innerText = "Simpan Perubahan";
+            
+            const btn = document.querySelector('#form-tim button[type="submit"]'); 
+            if(btn) btn.innerText = "Simpan Perubahan";
+            
             let batalBtn = document.getElementById('btn-batal-tim');
-            if(!batalBtn) { batalBtn = document.createElement('button'); batalBtn.id = 'btn-batal-tim'; batalBtn.type = 'button'; batalBtn.className = 'w-full mt-2 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-50'; batalBtn.innerText = 'Batal Edit'; batalBtn.onclick = window.batalEditTim; document.getElementById('form-tim').appendChild(batalBtn); }
-            batalBtn.classList.remove('hidden'); document.getElementById('admin-panel-tim').scrollIntoView({ behavior: 'smooth' });
+            if(!batalBtn) { 
+                batalBtn = document.createElement('button'); 
+                batalBtn.id = 'btn-batal-tim'; 
+                batalBtn.type = 'button'; 
+                batalBtn.className = 'w-full mt-2 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-50'; 
+                batalBtn.innerText = 'Batal Edit'; 
+                batalBtn.onclick = window.batalEditTim; 
+                document.getElementById('form-tim').appendChild(batalBtn); 
+            }
+            batalBtn.classList.remove('hidden'); 
+            document.getElementById('admin-panel-tim').scrollIntoView({ behavior: 'smooth' });
         };
 
         window.hapusTim = async function(id) {
-            try { await remove(ref(db, `${pathTim}/${id}`)); window.showToast("Akun Tim berhasil dihapus.", "success"); } catch(e) { window.showToast("Gagal menghapus akun tim.", "error"); }
+            try { 
+                await remove(ref(db, `${pathTim}/${id}`)); 
+                window.showToast("Akun Tim berhasil dihapus.", "success"); 
+            } catch(e) { 
+                window.showToast("Gagal menghapus akun tim.", "error"); 
+            }
         };
 
         document.getElementById('form-tim')?.addEventListener('submit', async (e) => { 
-            e.preventDefault(); if(!currentUser) return; const btn = e.target.querySelector('button[type="submit"]'); const ori = btn.innerText; btn.innerText = "Menyimpan..."; const editId = document.getElementById('input-tim-nama').getAttribute('data-edit-id');
+            e.preventDefault(); 
+            if(!currentUser) return; 
+            const btn = e.target.querySelector('button[type="submit"]'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Menyimpan..."; 
+            const editId = document.getElementById('input-tim-nama').getAttribute('data-edit-id');
             try { 
-                const elNilai = document.getElementById('izin-nilai'); const elBerita = document.getElementById('izin-berita'); const elModul = document.getElementById('izin-modul'); const elKeuangan = document.getElementById('izin-keuangan');
-                const izin = { nilai: elNilai ? elNilai.checked : false, berita: elBerita ? elBerita.checked : false, modul: elModul ? elModul.checked : false, keuangan: elKeuangan ? elKeuangan.checked : false };
-                const dataToSave = { nama: document.getElementById('input-tim-nama').value, hp: document.getElementById('input-tim-hp').value, pin: document.getElementById('input-tim-pin').value, izin: izin };
-                if (editId) { await update(ref(db, `${pathTim}/${editId}`), dataToSave); window.showToast("Akun tim berhasil diperbarui.", "success"); window.batalEditTim(); } else { dataToSave.timestamp = Date.now(); await push(ref(db, pathTim), dataToSave); window.showToast("Akun tim berhasil ditambahkan.", "success"); e.target.reset(); }
-            } catch(err){ window.showToast("Gagal menyimpan akun tim.", "error"); } 
+                const elNilai = document.getElementById('izin-nilai'); 
+                const elBerita = document.getElementById('izin-berita'); 
+                const elModul = document.getElementById('izin-modul'); 
+                const elKeuangan = document.getElementById('izin-keuangan');
+                const izin = { 
+                    nilai: elNilai ? elNilai.checked : false, 
+                    berita: elBerita ? elBerita.checked : false, 
+                    modul: elModul ? elModul.checked : false, 
+                    keuangan: elKeuangan ? elKeuangan.checked : false 
+                };
+                const dataToSave = { 
+                    nama: document.getElementById('input-tim-nama').value, 
+                    hp: document.getElementById('input-tim-hp').value, 
+                    pin: document.getElementById('input-tim-pin').value, 
+                    izin: izin 
+                };
+                if (editId) { 
+                    await update(ref(db, `${pathTim}/${editId}`), dataToSave); 
+                    window.showToast("Akun tim berhasil diperbarui.", "success"); 
+                    window.batalEditTim(); 
+                } else { 
+                    dataToSave.timestamp = Date.now(); 
+                    await push(ref(db, pathTim), dataToSave); 
+                    window.showToast("Akun tim berhasil ditambahkan.", "success"); 
+                    e.target.reset(); 
+                }
+            } catch(err){ 
+                window.showToast("Gagal menyimpan akun tim.", "error"); 
+            } 
             setTimeout(() => { if(btn) btn.innerText = ori; }, 2000); 
         });
 
-        document.getElementById('form-pengeluaran')?.addEventListener('submit', async (e) => { e.preventDefault(); if(!currentUser) return; const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "Menyimpan..."; try { await push(ref(db, pathPengeluaran), { tanggal: document.getElementById('input-pengeluaran-tanggal').value, deskripsi: document.getElementById('input-pengeluaran-desk').value, jumlah: parseInt(document.getElementById('input-pengeluaran-jumlah').value), timestamp: Date.now() }); e.target.reset(); window.showToast("Pengeluaran tersimpan.", "success"); } catch(err){} setTimeout(() => { btn.innerText = ori; }, 2000); });
+        document.getElementById('form-pengeluaran')?.addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            if(!currentUser) return; 
+            const btn = e.target.querySelector('button'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Menyimpan..."; 
+            try { 
+                await push(ref(db, pathPengeluaran), { 
+                    tanggal: document.getElementById('input-pengeluaran-tanggal').value, 
+                    deskripsi: document.getElementById('input-pengeluaran-desk').value, 
+                    jumlah: parseInt(document.getElementById('input-pengeluaran-jumlah').value), 
+                    timestamp: Date.now() 
+                }); 
+                e.target.reset(); 
+                window.showToast("Pengeluaran tersimpan.", "success"); 
+            } catch(err){} 
+            setTimeout(() => { btn.innerText = ori; }, 2000); 
+        });
         
-        window.hapusKegiatan = async function(id) { try { await remove(ref(db, `${pathKegiatan}/${id}`)); window.showToast("Kegiatan berhasil dihapus.", "success"); } catch(e){ window.showToast("Gagal menghapus kegiatan.", "error"); } };
-        window.hapusPengeluaran = async function(id) { try { await remove(ref(db, `${pathPengeluaran}/${id}`)); window.showToast("Pengeluaran berhasil dihapus.", "success"); } catch(e){ window.showToast("Gagal menghapus pengeluaran.", "error"); } };
+        window.hapusKegiatan = async function(id) { 
+            try { await remove(ref(db, `${pathKegiatan}/${id}`)); window.showToast("Kegiatan berhasil dihapus.", "success"); } 
+            catch(e){ window.showToast("Gagal menghapus kegiatan.", "error"); } 
+        };
+        window.hapusPengeluaran = async function(id) { 
+            try { await remove(ref(db, `${pathPengeluaran}/${id}`)); window.showToast("Pengeluaran berhasil dihapus.", "success"); } 
+            catch(e){ window.showToast("Gagal menghapus pengeluaran.", "error"); } 
+        };
         
         window.toggleStatusBayarTgl = async function(id, dateStr, isChecked) { 
             try { 
@@ -2093,26 +2468,51 @@
             } catch(e){ console.error(e); } 
         };
 
-        window.hapusPjk3 = async function(id) { try { await remove(ref(db, `${pathPjk3}/${id}`)); window.showToast("Logo PJK3 berhasil dihapus.", "success"); } catch(e){ window.showToast("Gagal menghapus PJK3.", "error"); } };
+        window.hapusPjk3 = async function(id) { 
+            try { await remove(ref(db, `${pathPjk3}/${id}`)); window.showToast("Logo PJK3 berhasil dihapus.", "success"); } 
+            catch(e){ window.showToast("Gagal menghapus PJK3.", "error"); } 
+        };
 
         document.getElementById('form-running-text')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); if(!currentUser) return;
-            const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "Menyimpan...";
+            e.preventDefault(); 
+            if(!currentUser) return;
+            const btn = e.target.querySelector('button'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Menyimpan...";
             try {
-                await push(ref(db, pathRunningText), { isi: document.getElementById('input-running-text').value, timestamp: Date.now() });
-                e.target.reset(); window.showToast("Running Text berhasil ditambahkan.", "success");
-            } catch(err) { window.showToast("Gagal menambahkan teks.", "error"); }
+                await push(ref(db, pathRunningText), { 
+                    isi: document.getElementById('input-running-text').value, 
+                    timestamp: Date.now() 
+                });
+                e.target.reset(); 
+                window.showToast("Running Text berhasil ditambahkan.", "success");
+            } catch(err) { 
+                window.showToast("Gagal menambahkan teks.", "error"); 
+            }
             setTimeout(() => { btn.innerText = ori; }, 2000);
         });
 
         window.hapusRunningText = async function(id) {
-            try { await remove(ref(db, `${pathRunningText}/${id}`)); window.showToast("Running text berhasil dihapus.", "success"); } catch(e) { window.showToast("Gagal menghapus data.", "error"); }
+            try { 
+                await remove(ref(db, `${pathRunningText}/${id}`)); 
+                window.showToast("Running text berhasil dihapus.", "success"); 
+            } catch(e) { 
+                window.showToast("Gagal menghapus data.", "error"); 
+            }
         };
 
         window.bukaModalHutang = function() {
             try {
-                const container = document.getElementById('list-hutang-tim'); if(!container) return; container.innerHTML = ''; const hutangObj = window.currentHutangTimData || {}; const keys = Object.keys(hutangObj);
-                if (keys.length === 0) { container.innerHTML = '<p class="text-slate-500 text-xs text-center py-4">Tidak ada rincian belum bayar tim saat ini.</p>'; } else { 
+                const container = document.getElementById('list-hutang-tim'); 
+                if(!container) return; 
+                
+                container.innerHTML = ''; 
+                const hutangObj = window.currentHutangTimData || {}; 
+                const keys = Object.keys(hutangObj);
+                
+                if (keys.length === 0) { 
+                    container.innerHTML = '<p class="text-slate-500 text-xs text-center py-4">Tidak ada rincian belum bayar tim saat ini.</p>'; 
+                } else { 
                     keys.forEach(idTim => { 
                         const item = hutangObj[idTim]; 
                         container.innerHTML += `
@@ -2161,10 +2561,12 @@
             const bidang = document.getElementById(bidangSelectId).value;
             const kelasSelect = document.getElementById(kelasSelectId);
             if(!kelasSelect) return;
+            
             if(bidang === 'Umum') {
                 kelasSelect.innerHTML = `<option value="Umum">Umum</option>`;
                 return;
             }
+            
             const filteredClasses = dataKategoriAll.filter(k => (k.bidang || 'Lainnya') === bidang);
             kelasSelect.innerHTML = filteredClasses.length > 0 
                 ? filteredClasses.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('')
@@ -2176,39 +2578,105 @@
         document.getElementById('select-ujian-bidang')?.addEventListener('change', () => window.updateKelasDropdown('select-ujian-bidang', 'select-ujian-kelas'));
 
         document.getElementById('form-modul')?.addEventListener('submit', async (e) => { 
-            e.preventDefault(); if(!currentUser) return; const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "..."; 
+            e.preventDefault(); 
+            if(!currentUser) return; 
+            const btn = e.target.querySelector('button'); 
+            const ori = btn.innerText; 
+            btn.innerText = "..."; 
             try { 
                 const valKategori = document.getElementById('input-bidang-modul').value + ' - ' + document.getElementById('input-kelas-modul').value;
-                await push(ref(db, pathModul), { kategori: valKategori, judul: document.getElementById('input-judul-modul').value, videoUrl: document.getElementById('input-video-modul').value.trim(), docUrl: document.getElementById('input-doc-modul').value.trim(), isi: document.getElementById('input-isi-modul').value, timestamp: Date.now() }); 
-                e.target.reset(); window.showToast("Modul Tersimpan", "success"); 
-            } catch(err){} setTimeout(() => { btn.innerText = ori; }, 2000); 
+                await push(ref(db, pathModul), { 
+                    kategori: valKategori, 
+                    judul: document.getElementById('input-judul-modul').value, 
+                    videoUrl: document.getElementById('input-video-modul').value.trim(), 
+                    docUrl: document.getElementById('input-doc-modul').value.trim(), 
+                    isi: document.getElementById('input-isi-modul').value, 
+                    timestamp: Date.now() 
+                }); 
+                e.target.reset(); 
+                window.showToast("Modul Tersimpan", "success"); 
+            } catch(err){} 
+            setTimeout(() => { btn.innerText = ori; }, 2000); 
         });
         
         document.getElementById('form-pjk3')?.addEventListener('submit', async (e) => { 
-            e.preventDefault(); if(!currentUser || !window.compressedBase64Pjk3) return window.showToast("Pilih gambar logo terlebih dahulu!", "warning"); const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "Mengupload..."; btn.disabled = true; 
-            try { await push(ref(db, pathPjk3), { nama: document.getElementById('input-pjk3-nama').value, logoBase64: window.compressedBase64Pjk3, timestamp: Date.now() }); e.target.reset(); window.compressedBase64Pjk3 = null; const labelFilePjk3 = document.getElementById('label-nama-file-pjk3'); if(labelFilePjk3) { labelFilePjk3.innerText = "Upload Logo PJK3"; labelFilePjk3.classList.remove('text-safety-600'); } window.showToast("Logo berhasil disimpan", "success"); } catch(err) { window.showToast("Gagal menyimpan logo", "error"); } setTimeout(() => { btn.innerHTML = ori; btn.disabled = false; }, 2000); 
+            e.preventDefault(); 
+            if(!currentUser || !window.compressedBase64Pjk3) return window.showToast("Pilih gambar logo terlebih dahulu!", "warning"); 
+            const btn = e.target.querySelector('button'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Mengupload..."; 
+            btn.disabled = true; 
+            try { 
+                await push(ref(db, pathPjk3), { 
+                    nama: document.getElementById('input-pjk3-nama').value, 
+                    logoBase64: window.compressedBase64Pjk3, 
+                    timestamp: Date.now() 
+                }); 
+                e.target.reset(); 
+                window.compressedBase64Pjk3 = null; 
+                const lbl = document.getElementById('label-nama-file-pjk3'); 
+                if(lbl) { lbl.innerText = "Upload Logo PJK3"; lbl.classList.remove('text-safety-600'); } 
+                window.showToast("Logo berhasil disimpan", "success"); 
+            } catch(err) { 
+                window.showToast("Gagal menyimpan logo", "error"); 
+            } 
+            setTimeout(() => { btn.innerHTML = ori; btn.disabled = false; }, 2000); 
         });
 
         document.getElementById('form-soal')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); if(!currentUser) return; const btn = document.getElementById('btn-submit-soal'); const ori = btn.innerText; btn.innerText = "Menyimpan..."; const idEditSoal = document.getElementById('input-soal-id').value;
+            e.preventDefault(); 
+            if(!currentUser) return; 
+            const btn = document.getElementById('btn-submit-soal'); 
+            const ori = btn.innerText; 
+            btn.innerText = "Menyimpan..."; 
+            const idEditSoal = document.getElementById('input-soal-id').value;
             
             const bidang = document.getElementById('input-bidang-soal').value;
             const kelas = document.getElementById('input-kelas-soal').value;
-            if(!bidang || !kelas) { btn.innerText = ori; return window.showToast("Pilih Bidang dan Kelas K3!", "warning"); }
+            if(!bidang || !kelas) { 
+                btn.innerText = ori; 
+                return window.showToast("Pilih Bidang dan Kelas K3!", "warning"); 
+            }
             
-            const dataToSave = { kategori: `${bidang} - ${kelas}`, pertanyaan: document.getElementById('input-tanya').value, opsi: [ document.getElementById('input-opsi-0').value, document.getElementById('input-opsi-1').value, document.getElementById('input-opsi-2').value, document.getElementById('input-opsi-3').value ], jawabanBenar: parseInt(document.getElementById('input-jawaban').value) };
+            const dataToSave = { 
+                kategori: `${bidang} - ${kelas}`, 
+                pertanyaan: document.getElementById('input-tanya').value, 
+                opsi: [ 
+                    document.getElementById('input-opsi-0').value, 
+                    document.getElementById('input-opsi-1').value, 
+                    document.getElementById('input-opsi-2').value, 
+                    document.getElementById('input-opsi-3').value 
+                ], 
+                jawabanBenar: parseInt(document.getElementById('input-jawaban').value) 
+            };
+            
             try { 
-                if(idEditSoal) { await update(ref(db, `${pathSoal}/${idEditSoal}`), dataToSave); window.showToast("Soal diperbarui.", "success"); document.getElementById('btn-batal-soal')?.click(); } 
-                else { dataToSave.timestamp = Date.now(); await push(ref(db, pathSoal), dataToSave); e.target.reset(); window.showToast("Soal tersimpan.", "success"); }
-            } catch(err) { window.showToast("Gagal menyimpan.", "error"); } setTimeout(() => { btn.innerText = ori; }, 2000);
+                if(idEditSoal) { 
+                    await update(ref(db, `${pathSoal}/${idEditSoal}`), dataToSave); 
+                    window.showToast("Soal diperbarui.", "success"); 
+                    document.getElementById('btn-batal-soal')?.click(); 
+                } else { 
+                    dataToSave.timestamp = Date.now(); 
+                    await push(ref(db, pathSoal), dataToSave); 
+                    e.target.reset(); 
+                    window.showToast("Soal tersimpan.", "success"); 
+                }
+            } catch(err) { 
+                window.showToast("Gagal menyimpan.", "error"); 
+            } 
+            setTimeout(() => { btn.innerText = ori; }, 2000);
         });
 
         window.batalEditSoal = function() {
-            document.getElementById('form-soal').reset(); document.getElementById('input-soal-id').value = ''; document.getElementById('btn-batal-soal').classList.add('hidden'); document.getElementById('btn-submit-soal').innerHTML = "Simpan Soal";
+            document.getElementById('form-soal').reset(); 
+            document.getElementById('input-soal-id').value = ''; 
+            document.getElementById('btn-batal-soal').classList.add('hidden'); 
+            document.getElementById('btn-submit-soal').innerHTML = "Simpan Soal";
         };
 
         window.editSoal = function(id) {
-            const data = quizDataFromDB.find(q => q.id === id); if(!data) return;
+            const data = quizDataFromDB.find(q => q.id === id); 
+            if(!data) return;
             document.getElementById('input-soal-id').value = data.id; 
             
             let kat = data.kategori || 'Umum - Umum';
@@ -2218,16 +2686,31 @@
             
             const selBidang = document.getElementById('input-bidang-soal');
             if(selBidang) { selBidang.value = bidangVal; window.updateKelasDropdown('input-bidang-soal', 'input-kelas-soal'); }
+            
             const selKelas = document.getElementById('input-kelas-soal');
             if(selKelas) { selKelas.value = kelasVal; }
 
             document.getElementById('input-tanya').value = data.pertanyaan;
-            if(data.opsi && data.opsi.length === 4) { document.getElementById('input-opsi-0').value = data.opsi[0]; document.getElementById('input-opsi-1').value = data.opsi[1]; document.getElementById('input-opsi-2').value = data.opsi[2]; document.getElementById('input-opsi-3').value = data.opsi[3]; }
-            document.getElementById('input-jawaban').value = data.jawabanBenar; document.getElementById('btn-batal-soal').classList.remove('hidden'); document.getElementById('btn-submit-soal').innerHTML = "Simpan Perubahan"; document.getElementById('admin-panel-soal').scrollIntoView({ behavior: 'smooth' });
+            if(data.opsi && data.opsi.length === 4) { 
+                document.getElementById('input-opsi-0').value = data.opsi[0]; 
+                document.getElementById('input-opsi-1').value = data.opsi[1]; 
+                document.getElementById('input-opsi-2').value = data.opsi[2]; 
+                document.getElementById('input-opsi-3').value = data.opsi[3]; 
+            }
+            
+            document.getElementById('input-jawaban').value = data.jawabanBenar; 
+            document.getElementById('btn-batal-soal').classList.remove('hidden'); 
+            document.getElementById('btn-submit-soal').innerHTML = "Simpan Perubahan"; 
+            document.getElementById('admin-panel-soal').scrollIntoView({ behavior: 'smooth' });
         };
 
         window.hapusSoal = async function(id) {
-            try { await remove(ref(db, `${pathSoal}/${id}`)); window.showToast("Soal berhasil dihapus.", "success"); } catch(e) { window.showToast("Gagal menghapus soal.", "error"); }
+            try { 
+                await remove(ref(db, `${pathSoal}/${id}`)); 
+                window.showToast("Soal berhasil dihapus.", "success"); 
+            } catch(e) { 
+                window.showToast("Gagal menghapus soal.", "error"); 
+            }
         };
 
         window.bacaBerita = function(id) {
@@ -2279,18 +2762,24 @@
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
                 }
 
-                const year = currentCalDate.getFullYear(); const month = currentCalDate.getMonth();
+                const year = currentCalDate.getFullYear(); 
+                const month = currentCalDate.getMonth();
                 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                const headerCal = document.getElementById('calendar-month-year'); if(headerCal) headerCal.innerText = `${monthNames[month]} ${year}`;
+                const headerCal = document.getElementById('calendar-month-year'); 
+                if(headerCal) headerCal.innerText = `${monthNames[month]} ${year}`;
                 
-                const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const firstDay = new Date(year, month, 1).getDay(); 
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
                 const calendarBody = document.getElementById('calendar-body');
                 
                 if(calendarBody) {
                     calendarBody.innerHTML = '';
-                    for(let i = 0; i < firstDay; i++) { calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; }
+                    for(let i = 0; i < firstDay; i++) { 
+                        calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; 
+                    }
                     
-                    const todayDateOnly = new Date(); todayDateOnly.setHours(0,0,0,0);
+                    const todayDateOnly = new Date(); 
+                    todayDateOnly.setHours(0,0,0,0);
 
                     for(let day = 1; day <= daysInMonth; day++) {
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -2298,24 +2787,44 @@
                         
                         let eventsHtml = '';
                         dayEvents.forEach(evt => {
-                            const evtDate = new Date(dateStr); evtDate.setHours(0,0,0,0);
+                            const evtDate = new Date(dateStr); 
+                            evtDate.setHours(0,0,0,0);
                             const isLunas = (evt.statusBayarDates && evt.statusBayarDates[dateStr] === true) || evt.statusBayar === true;
-                            let colorClass = ""; let borderColor = ""; let topBorderColor = "";
                             
-                            if (isLunas) { colorClass = "bg-green-100 text-green-800 hover:bg-green-200"; borderColor = "border-green-300"; topBorderColor = "border-green-300"; } 
-                            else if (evtDate > todayDateOnly) { colorClass = "bg-blue-100 text-blue-800 hover:bg-blue-200"; borderColor = "border-blue-300"; topBorderColor = "border-blue-300"; } 
-                            else { colorClass = "bg-red-100 text-red-800 hover:bg-red-200"; borderColor = "border-red-300"; topBorderColor = "border-red-300"; }
+                            let colorClass = ""; 
+                            let borderColor = ""; 
+                            let topBorderColor = "";
+                            
+                            if (isLunas) { 
+                                colorClass = "bg-green-100 text-green-800 hover:bg-green-200"; 
+                                borderColor = "border-green-300"; 
+                                topBorderColor = "border-green-300"; 
+                            } else if (evtDate > todayDateOnly) { 
+                                colorClass = "bg-blue-100 text-blue-800 hover:bg-blue-200"; 
+                                borderColor = "border-blue-300"; 
+                                topBorderColor = "border-blue-300"; 
+                            } else { 
+                                colorClass = "bg-red-100 text-red-800 hover:bg-red-200"; 
+                                borderColor = "border-red-300"; 
+                                topBorderColor = "border-red-300"; 
+                            }
 
-                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${isBisaLihatTim ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : ''}</div>`;
+                            const teamHTML = isBisaLihatTim ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : '';
+                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${teamHTML}</div>`;
                         });
 
                         const isToday = day === todayDateOnly.getDate() && month === todayDateOnly.getMonth() && year === todayDateOnly.getFullYear();
                         const dayClass = isToday ? "bg-emerald-50/60 ring-1 ring-inset ring-emerald-200" : "bg-white";
                         const numClass = isToday ? "bg-safety-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-sm" : "text-slate-700 font-semibold text-xs";
+                        
                         calendarBody.innerHTML += `<div class="min-h-[90px] p-1.5 flex flex-col ${dayClass}"><div class="mb-1 flex justify-end"><span class="${numClass}">${day}</span></div><div class="flex-grow space-y-1 overflow-y-auto admin-scroll max-h-[70px] pr-1">${eventsHtml}</div></div>`;
                     }
-                    const totalCells = firstDay + daysInMonth; const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-                    for(let i = 0; i < remainingCells; i++) { calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; }
+                    
+                    const totalCells = firstDay + daysInMonth; 
+                    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+                    for(let i = 0; i < remainingCells; i++) { 
+                        calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; 
+                    }
                 }
 
                 const tbodyPendapatan = document.getElementById('admin-table-pendapatan');
@@ -2331,22 +2840,40 @@
                     let tbodyHtml = '';
 
                     const thNamaTim = document.getElementById('th-nama-tim');
-                    if(thNamaTim) { if(isBisaLihatTim) thNamaTim.classList.remove('hidden'); else thNamaTim.classList.add('hidden'); }
+                    if(thNamaTim) { 
+                        if(isBisaLihatTim) thNamaTim.classList.remove('hidden'); 
+                        else thNamaTim.classList.add('hidden'); 
+                    }
+                    
                     const thAksi = document.getElementById('th-aksi-pendapatan');
-                    if(thAksi) { if(isBisaEdit) thAksi.classList.remove('hidden'); else thAksi.classList.add('hidden'); }
+                    if(thAksi) { 
+                        if(isBisaEdit) thAksi.classList.remove('hidden'); 
+                        else thAksi.classList.add('hidden'); 
+                    }
 
-                    let sortedPendapatan = [...filteredKegiatan].sort((a,b) => { const dateA = a.tanggal ? a.tanggal.split(',')[0].trim() : ''; const dateB = b.tanggal ? b.tanggal.split(',')[0].trim() : ''; return new Date(dateA) - new Date(dateB); });
+                    let sortedPendapatan = [...filteredKegiatan].sort((a,b) => { 
+                        const dateA = a.tanggal ? a.tanggal.split(',')[0].trim() : ''; 
+                        const dateB = b.tanggal ? b.tanggal.split(',')[0].trim() : ''; 
+                        return new Date(dateA) - new Date(dateB); 
+                    });
 
                     sortedPendapatan.forEach(k => {
                         const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : []; 
                         const nominalPerHari = (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
                         const nominalTotal = dates.length > 0 ? (nominalPerHari * dates.length) : nominalPerHari;
 
-                        const statusBayarDates = k.statusBayarDates || {}; let lunasCount = 0; let checkHtml = ''; let isKegiatanDiBulanIni = false; 
+                        const statusBayarDates = k.statusBayarDates || {}; 
+                        let lunasCount = 0; 
+                        let checkHtml = ''; 
+                        let isKegiatanDiBulanIni = false; 
                         
                         dates.forEach(d => {
                             let isLunasDate = false; 
-                            if (statusBayarDates.hasOwnProperty(d)) { isLunasDate = statusBayarDates[d] === true; } else { isLunasDate = k.statusBayar === true; }
+                            if (statusBayarDates.hasOwnProperty(d)) { 
+                                isLunasDate = statusBayarDates[d] === true; 
+                            } else { 
+                                isLunasDate = k.statusBayar === true; 
+                            }
                             
                             if(isLunasDate) {
                                 lunasCount++;
@@ -2356,11 +2883,18 @@
                             const dDate = new Date(d);
                             if (dDate.getMonth() === month && dDate.getFullYear() === year) {
                                 isKegiatanDiBulanIni = true;
-                                if(isLunasDate) { totalMasukBulanIni += nominalPerHari; } else { totalTertundaBulanIni += nominalPerHari; }
+                                if(isLunasDate) { 
+                                    totalMasukBulanIni += nominalPerHari; 
+                                } else { 
+                                    totalTertundaBulanIni += nominalPerHari; 
+                                }
                             }
 
-                            if(isBisaEdit) { checkHtml += `<label class="flex items-center space-x-2 mt-1 cursor-pointer"><input type="checkbox" ${isLunasDate?'checked':''} onchange="window.toggleStatusBayarTgl('${k.id}', '${d}', this.checked)" class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5"><span class="text-[10px] text-slate-700 font-medium">${window.formatDate(d)}</span></label>`; } 
-                            else { checkHtml += `<div class="text-[10px] text-slate-500 flex items-center mt-1"><span class="w-1.5 h-1.5 rounded-full mr-1.5 ${isLunasDate ? 'bg-green-500' : 'bg-slate-300'}"></span>${window.formatDate(d)}</div>`; }
+                            if(isBisaEdit) { 
+                                checkHtml += `<label class="flex items-center space-x-2 mt-1 cursor-pointer"><input type="checkbox" ${isLunasDate?'checked':''} onchange="window.toggleStatusBayarTgl('${k.id}', '${d}', this.checked)" class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5"><span class="text-[10px] text-slate-700 font-medium">${window.formatDate(d)}</span></label>`; 
+                            } else { 
+                                checkHtml += `<div class="text-[10px] text-slate-500 flex items-center mt-1"><span class="w-1.5 h-1.5 rounded-full mr-1.5 ${isLunasDate ? 'bg-green-500' : 'bg-slate-300'}"></span>${window.formatDate(d)}</div>`; 
+                            }
                         });
                         
                         if (dates.length === 0) { 
@@ -2370,7 +2904,12 @@
                             }
                             if (kDate.getMonth() === month && kDate.getFullYear() === year) {
                                 isKegiatanDiBulanIni = true;
-                                if (k.statusBayar === true) { totalMasukBulanIni += nominalPerHari; lunasCount = 1; } else { totalTertundaBulanIni += nominalPerHari; }
+                                if (k.statusBayar === true) { 
+                                    totalMasukBulanIni += nominalPerHari; 
+                                    lunasCount = 1; 
+                                } else { 
+                                    totalTertundaBulanIni += nominalPerHari; 
+                                }
                             }
                         }
                         
@@ -2379,7 +2918,9 @@
                             const totalPendapatanTimKegiatan = dates.length > 0 ? (nominalTimPerHari * dates.length) : nominalTimPerHari;
                             
                             totalHutangTimAllTime += totalPendapatanTimKegiatan;
-                            if(!hutangTimDataAllTime[k.idTim]) hutangTimDataAllTime[k.idTim] = { nama: k.namaTim, nominal: 0, kegiatans: [] };
+                            if(!hutangTimDataAllTime[k.idTim]) {
+                                hutangTimDataAllTime[k.idTim] = { nama: k.namaTim, nominal: 0, kegiatans: [] };
+                            }
                             hutangTimDataAllTime[k.idTim].nominal += totalPendapatanTimKegiatan; 
                             hutangTimDataAllTime[k.idTim].kegiatans.push({...k, totalPendapatanTim: totalPendapatanTimKegiatan});
                         }
@@ -2388,26 +2929,54 @@
                             countTabelBulanIni++;
                             let badgeStatus = ''; 
                             const isLunasTotal = (dates.length > 0 && lunasCount === dates.length) || (dates.length === 0 && k.statusBayar === true);
-                            if (lunasCount === 0 && !isLunasTotal) badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">BELUM BAYAR</span>`;
-                            else if (isLunasTotal) badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">LUNAS</span>`;
-                            else badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">SEBAGIAN</span>`;
+                            
+                            if (lunasCount === 0 && !isLunasTotal) {
+                                badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">BELUM BAYAR</span>`;
+                            } else if (isLunasTotal) {
+                                badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">LUNAS</span>`;
+                            } else {
+                                badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">SEBAGIAN</span>`;
+                            }
                             
                             let aksiHtml = '';
-                            if(isBisaEdit) { aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; }
-                            tbodyHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-5 py-3 text-xs text-slate-600 align-top">${checkHtml}</td><td class="px-5 py-3 text-sm font-semibold text-slate-900 align-top">${k.namaKegiatan} <br><span class="font-normal text-slate-500 text-xs">${k.pjk3}</span></td>${isBisaLihatTim ? `<td class="px-5 py-3 text-xs text-slate-700 font-medium align-top">${k.namaTim}</td>` : ''}<td class="px-5 py-3 whitespace-nowrap text-sm font-bold ${isLunasTotal ? 'text-green-600' : 'text-slate-500'} align-top">${window.formatRupiah(nominalTotal)}<br><span class="text-[9px] text-slate-400 font-normal">(${window.formatRupiah(nominalPerHari)} / Hari)</span></td><td class="px-5 py-3 whitespace-nowrap align-top">${badgeStatus}</td>${aksiHtml}</tr>`;
+                            if(isBisaEdit) { 
+                                aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; 
+                            }
+                            
+                            const tdTeam = isBisaLihatTim ? `<td class="px-5 py-3 text-xs text-slate-700 font-medium align-top">${k.namaTim}</td>` : '';
+                            
+                            tbodyHtml += `
+                            <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                <td class="px-5 py-3 text-xs text-slate-600 align-top">${checkHtml}</td>
+                                <td class="px-5 py-3 text-sm font-semibold text-slate-900 align-top">${k.namaKegiatan} <br><span class="font-normal text-slate-500 text-xs">${k.pjk3}</span></td>
+                                ${tdTeam}
+                                <td class="px-5 py-3 whitespace-nowrap text-sm font-bold ${isLunasTotal ? 'text-green-600' : 'text-slate-500'} align-top">${window.formatRupiah(nominalTotal)}<br><span class="text-[9px] text-slate-400 font-normal">(${window.formatRupiah(nominalPerHari)} / Hari)</span></td>
+                                <td class="px-5 py-3 whitespace-nowrap align-top">${badgeStatus}</td>
+                                ${aksiHtml}
+                            </tr>`;
                         }
                     });
 
-                    if (countTabelBulanIni === 0) tbodyPendapatan.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500 text-sm">Belum ada rincian kegiatan di bulan yang dipilih.</td></tr>';
-                    else tbodyPendapatan.innerHTML = tbodyHtml;
+                    if (countTabelBulanIni === 0) {
+                        tbodyPendapatan.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500 text-sm">Belum ada rincian kegiatan di bulan yang dipilih.</td></tr>';
+                    } else {
+                        tbodyPendapatan.innerHTML = tbodyHtml;
+                    }
                     
                     window.currentHutangTimData = hutangTimDataAllTime;
                     
-                    const elMasuk = document.getElementById('stat-uang-masuk'); const elTertunda = document.getElementById('stat-uang-tertunda');
-                    if(elMasuk) elMasuk.innerText = window.formatRupiah(totalMasukBulanIni); if(elTertunda) elTertunda.innerText = window.formatRupiah(totalTertundaBulanIni);
+                    const elMasuk = document.getElementById('stat-uang-masuk'); 
+                    const elTertunda = document.getElementById('stat-uang-tertunda');
+                    
+                    if(elMasuk) elMasuk.innerText = window.formatRupiah(totalMasukBulanIni); 
+                    if(elTertunda) elTertunda.innerText = window.formatRupiah(totalTertundaBulanIni);
                     
                     if(currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') {
-                        let totalKeluarBulanIni = 0; let totalKeluarAllTime = 0; let tbodyPengeluaranHtml = ''; let countKeluarBulanIni = 0;
+                        let totalKeluarBulanIni = 0; 
+                        let totalKeluarAllTime = 0; 
+                        let tbodyPengeluaranHtml = ''; 
+                        let countKeluarBulanIni = 0;
+                        
                         let sortedPengeluaran = [...dataPengeluaranAll].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
                         
                         sortedPengeluaran.forEach(p => { 
@@ -2416,19 +2985,37 @@
 
                             const pDate = new Date(p.tanggal);
                             if (pDate.getMonth() === month && pDate.getFullYear() === year) {
-                                totalKeluarBulanIni += valKeluar; countKeluarBulanIni++;
-                                tbodyPengeluaranHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-5 py-2 text-xs text-slate-600">${window.formatDate(p.tanggal)}</td><td class="px-5 py-2 text-xs font-semibold text-slate-800">${p.deskripsi}</td><td class="px-5 py-2 text-xs font-bold text-red-500">${window.formatRupiah(p.jumlah)}</td><td class="px-5 py-2 text-right">${currentUser.role === 'admin_utama' ? `<button onclick="window.hapusPengeluaran('${p.id}')" class="text-red-400 hover:text-red-600 p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : `<span class="text-[10px] text-slate-400 italic">Read-Only</span>`}</td></tr>`;
+                                totalKeluarBulanIni += valKeluar; 
+                                countKeluarBulanIni++;
+                                
+                                const btnAksi = currentUser.role === 'admin_utama' 
+                                    ? `<button onclick="window.hapusPengeluaran('${p.id}')" class="text-red-400 hover:text-red-600 p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` 
+                                    : `<span class="text-[10px] text-slate-400 italic">Read-Only</span>`;
+                                    
+                                tbodyPengeluaranHtml += `
+                                <tr class="hover:bg-slate-50 border-b border-slate-100">
+                                    <td class="px-5 py-2 text-xs text-slate-600">${window.formatDate(p.tanggal)}</td>
+                                    <td class="px-5 py-2 text-xs font-semibold text-slate-800">${p.deskripsi}</td>
+                                    <td class="px-5 py-2 text-xs font-bold text-red-500">${window.formatRupiah(p.jumlah)}</td>
+                                    <td class="px-5 py-2 text-right">${btnAksi}</td>
+                                </tr>`;
                             }
                         });
 
                         const tbodyPengeluaran = document.getElementById('admin-table-pengeluaran');
                         if(tbodyPengeluaran) {
-                            if (countKeluarBulanIni === 0) tbodyPengeluaran.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-500 text-sm">Tidak ada pengeluaran di bulan ini.</td></tr>';
-                            else tbodyPengeluaran.innerHTML = tbodyPengeluaranHtml;
+                            if (countKeluarBulanIni === 0) {
+                                tbodyPengeluaran.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-500 text-sm">Tidak ada pengeluaran di bulan ini.</td></tr>';
+                            } else {
+                                tbodyPengeluaran.innerHTML = tbodyPengeluaranHtml;
+                            }
                         }
 
-                        const elHutangTim = document.getElementById('stat-hutang-tim'); if(elHutangTim) elHutangTim.innerText = window.formatRupiah(totalHutangTimAllTime);
-                        const elKeluar = document.getElementById('stat-uang-keluar'); const elSaldo = document.getElementById('stat-uang-saldo');
+                        const elHutangTim = document.getElementById('stat-hutang-tim'); 
+                        if(elHutangTim) elHutangTim.innerText = window.formatRupiah(totalHutangTimAllTime);
+                        
+                        const elKeluar = document.getElementById('stat-uang-keluar'); 
+                        const elSaldo = document.getElementById('stat-uang-saldo');
                         
                         if(elKeluar) elKeluar.innerText = window.formatRupiah(totalKeluarBulanIni);
                         
@@ -2442,10 +3029,20 @@
             } catch(e) { console.error(e); }
         };
 
-        document.getElementById('btn-prev-month')?.addEventListener('click', () => { currentCalDate.setMonth(currentCalDate.getMonth() - 1); window.renderDashboardPendapatanHome(); });
-        document.getElementById('btn-next-month')?.addEventListener('click', () => { currentCalDate.setMonth(currentCalDate.getMonth() + 1); window.renderDashboardPendapatanHome(); });
+        document.getElementById('btn-prev-month')?.addEventListener('click', () => { 
+            currentCalDate.setMonth(currentCalDate.getMonth() - 1); 
+            window.renderDashboardPendapatanHome(); 
+        });
+        document.getElementById('btn-next-month')?.addEventListener('click', () => { 
+            currentCalDate.setMonth(currentCalDate.getMonth() + 1); 
+            window.renderDashboardPendapatanHome(); 
+        });
 
-        window.approveUjian = async function(uid) { try { await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved' }); } catch(e){} };
+        window.approveUjian = async function(uid) { 
+            try { 
+                await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved' }); 
+            } catch(e){} 
+        };
 
         window.fetchDataRealtime = function() {
             onValue(ref(db, pathVerifikasi), (snapshot) => {
@@ -2470,7 +3067,11 @@
                 dataKategoriAll.push(...defaultKat);
 
                 if(snapshot.exists()) {
-                    snapshot.forEach(childSnap => { const data = childSnap.val(); data.id = childSnap.key; dataKategoriAll.push(data); });
+                    snapshot.forEach(childSnap => { 
+                        const data = childSnap.val(); 
+                        data.id = childSnap.key; 
+                        dataKategoriAll.push(data); 
+                    });
                 }
                 
                 const grouped = {};
@@ -2485,11 +3086,15 @@
                 if(listAdminKategori) listAdminKategori.innerHTML = '';
                 
                 for(const [bidang, kats] of Object.entries(grouped)) {
-                    if(listAdminKategori) listAdminKategori.innerHTML += `<div class="col-span-full mt-4 mb-1"><span class="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-200 px-2 py-1 rounded">Bidang ${bidang}</span></div>`;
+                    if(listAdminKategori) {
+                        listAdminKategori.innerHTML += `<div class="col-span-full mt-4 mb-1"><span class="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-200 px-2 py-1 rounded">Bidang ${bidang}</span></div>`;
+                    }
                     
                     kats.forEach(k => {
                         if(listAdminKategori) {
-                            const btnHapus = k.id.startsWith('def_') ? '<span class="text-[9px] text-slate-400 font-bold bg-slate-200 px-2 py-1 rounded tracking-widest">BAWAAN</span>' : `<button onclick="window.hapusKategori('${k.id}')" class="text-red-500 hover:text-red-700 bg-white p-1.5 rounded shadow-sm border border-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`;
+                            const btnHapus = k.id.startsWith('def_') 
+                                ? '<span class="text-[9px] text-slate-400 font-bold bg-slate-200 px-2 py-1 rounded tracking-widest">BAWAAN</span>' 
+                                : `<button onclick="window.hapusKategori('${k.id}')" class="text-red-500 hover:text-red-700 bg-white p-1.5 rounded shadow-sm border border-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`;
                             listAdminKategori.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center ml-2 lg:ml-4 mb-2"><span class="font-bold text-slate-800 text-sm">${k.nama}</span>${btnHapus}</div>`;
                         }
                     });
@@ -2498,9 +3103,14 @@
                 const bidangOptions = `<option value="" disabled selected>-- Pilih Bidang K3 --</option>` + uniqueBidang.map(b => `<option value="${b}">${b}</option>`).join('');
                 const bidangModulOptions = `<option value="Umum">Umum / Semua Bidang</option>` + uniqueBidang.map(b => `<option value="${b}">${b}</option>`).join('');
                 
-                const sBidangModul = document.getElementById('input-bidang-modul'); if(sBidangModul) { const val = sBidangModul.value; sBidangModul.innerHTML = bidangModulOptions; if(val) sBidangModul.value = val; }
-                const sBidangSoal = document.getElementById('input-bidang-soal'); if(sBidangSoal) { const val = sBidangSoal.value; sBidangSoal.innerHTML = bidangOptions; if(val) sBidangSoal.value = val; }
-                const sBidangUjian = document.getElementById('select-ujian-bidang'); if(sBidangUjian) { const val = sBidangUjian.value; sBidangUjian.innerHTML = bidangOptions; if(val) sBidangUjian.value = val; }
+                const sBidangModul = document.getElementById('input-bidang-modul'); 
+                if(sBidangModul) { const val = sBidangModul.value; sBidangModul.innerHTML = bidangModulOptions; if(val) sBidangModul.value = val; }
+                
+                const sBidangSoal = document.getElementById('input-bidang-soal'); 
+                if(sBidangSoal) { const val = sBidangSoal.value; sBidangSoal.innerHTML = bidangOptions; if(val) sBidangSoal.value = val; }
+                
+                const sBidangUjian = document.getElementById('select-ujian-bidang'); 
+                if(sBidangUjian) { const val = sBidangUjian.value; sBidangUjian.innerHTML = bidangOptions; if(val) sBidangUjian.value = val; }
             });
 
             onValue(ref(db, pathPeserta), (snapshot) => {
@@ -2508,46 +3118,74 @@
                 if(tbodyAdmin) tbodyAdmin.innerHTML = ''; 
                 let countDaftar = 0; let countLulus = 0;
                 
-                if(!snapshot.exists() && tbodyAdmin) { tbodyAdmin.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-500 italic text-sm">Belum ada data peserta.</td></tr>'; } 
-                else if (snapshot.exists()) { 
+                if(!snapshot.exists() && tbodyAdmin) { 
+                    tbodyAdmin.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-500 italic text-sm">Belum ada data peserta.</td></tr>'; 
+                } else if (snapshot.exists()) { 
                     snapshot.forEach(childSnap => { 
-                        countDaftar++; const data = childSnap.val(); 
-                        let skorText = 'Belum Ujian'; let colorSkor = 'bg-slate-100 text-slate-600';
+                        countDaftar++; 
+                        const data = childSnap.val(); 
+                        let skorText = 'Belum Ujian'; 
+                        let colorSkor = 'bg-slate-100 text-slate-600';
+                        
                         if (data.skorUjian && data.skorUjian !== '-') {
                             countLulus++; 
-                            if (data.statusKelulusan === 'Tidak Lulus') { skorText = `Tidak Lulus (${data.skorUjian})`; colorSkor = 'bg-red-100 text-red-800 font-bold border border-red-200'; } 
-                            else { skorText = `Lulus (${data.skorUjian})`; colorSkor = 'bg-green-100 text-green-800 font-bold border border-green-200'; }
+                            if (data.statusKelulusan === 'Tidak Lulus') { 
+                                skorText = `Tidak Lulus (${data.skorUjian})`; 
+                                colorSkor = 'bg-red-100 text-red-800 font-bold border border-red-200'; 
+                            } else { 
+                                skorText = `Lulus (${data.skorUjian})`; 
+                                colorSkor = 'bg-green-100 text-green-800 font-bold border border-green-200'; 
+                            }
                         }
-                        if(tbodyAdmin) tbodyAdmin.innerHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`; 
+                        if(tbodyAdmin) {
+                            tbodyAdmin.innerHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`; 
+                        }
                     }); 
                 }
-                window.animateNumber('stat-total-pendaftar', countDaftar); window.animateNumber('stat-total-lulus', countLulus);
+                window.animateNumber('stat-total-pendaftar', countDaftar); 
+                window.animateNumber('stat-total-lulus', countLulus);
             });
 
             onValue(ref(db, pathBerita), (snapshot) => {
-                const listPublic = document.getElementById('public-berita-container'); const listAdmin = document.getElementById('admin-list-berita');
-                if(listPublic) listPublic.innerHTML = ''; if(listAdmin) listAdmin.innerHTML = '';
-                let beritas = []; if(snapshot.exists()) { snapshot.forEach(childSnap => { const data = childSnap.val(); data.id = childSnap.key; beritas.push(data); }); }
+                const listPublic = document.getElementById('public-berita-container'); 
+                const listAdmin = document.getElementById('admin-list-berita');
+                if(listPublic) listPublic.innerHTML = ''; 
+                if(listAdmin) listAdmin.innerHTML = '';
+                
+                let beritas = []; 
+                if(snapshot.exists()) { 
+                    snapshot.forEach(childSnap => { 
+                        const data = childSnap.val(); 
+                        data.id = childSnap.key; 
+                        beritas.push(data); 
+                    }); 
+                }
                 beritas.sort((a,b) => b.timestamp - a.timestamp);
                 
                 window.dataBeritaAll = beritas;
 
-                if(beritas.length === 0 && listPublic) listPublic.innerHTML = '<div class="w-full text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed text-slate-500">Belum ada berita atau pengumuman saat ini.</div>';
+                if(beritas.length === 0 && listPublic) {
+                    listPublic.innerHTML = '<div class="w-full text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed text-slate-500">Belum ada berita atau pengumuman saat ini.</div>';
+                }
                 
                 if(listPublic && beritas.length > 0) {
-                    let gridCardsHtml = ''; let headlineSlidesHtml = '';
+                    let gridCardsHtml = ''; 
+                    let headlineSlidesHtml = '';
                     beritas.forEach((b, index) => {
                         let badgeColor = 'bg-sky-100 text-sky-800 border-sky-200'; 
                         if(b.kategori === 'Penting') badgeColor = 'bg-red-100 text-red-800 border-red-200'; 
                         else if(b.kategori === 'Regulasi') badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-200';
                         
-                        let images = []; if(b.fotoBase64) { images = Array.isArray(b.fotoBase64) ? b.fotoBase64 : [b.fotoBase64]; }
+                        let images = []; 
+                        if(b.fotoBase64) { images = Array.isArray(b.fotoBase64) ? b.fotoBase64 : [b.fotoBase64]; }
 
                         let imgHtmlSmall = '';
                         if(images.length > 0) {
                             const imgElements = images.map(img => `<img src="${img}" class="w-full h-full object-cover shrink-0 snap-center" alt="Berita">`).join('');
                             imgHtmlSmall = `<div class="relative w-full h-28 sm:h-32 overflow-hidden rounded-xl bg-slate-100 mb-2.5"><div class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full news-img-slider">${imgElements}</div>${images.length > 1 ? `<div class="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">${images.length} Foto</div>` : ''}</div>`;
-                        } else { imgHtmlSmall = `<div class="w-full h-28 sm:h-32 bg-slate-100 rounded-xl mb-2.5 flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>`; }
+                        } else { 
+                            imgHtmlSmall = `<div class="w-full h-28 sm:h-32 bg-slate-100 rounded-xl mb-2.5 flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>`; 
+                        }
 
                         gridCardsHtml += `<div onclick="window.bacaBerita('${b.id}')" class="flex flex-col group cursor-pointer hover:-translate-y-0.5 transition-transform">${imgHtmlSmall}<div class="flex items-center justify-between mb-1"><span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${badgeColor}">${b.kategori}</span><span class="text-[9px] text-slate-400 font-semibold">${window.formatDate(b.timestamp)}</span></div><h3 class="font-extrabold text-slate-900 text-xs sm:text-sm line-clamp-2 leading-snug group-hover:text-safety-500 transition-colors">${b.judul}</h3></div>`;
 
@@ -2565,21 +3203,39 @@
             });
 
             onValue(ref(db, pathLiveCbt), (snapshot) => {
-                const liveTable = document.getElementById('live-cbt-table-body'); if(!liveTable) return;
-                const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0); const todayMs = startOfToday.getTime();
+                const liveTable = document.getElementById('live-cbt-table-body'); 
+                if(!liveTable) return;
+                
+                const startOfToday = new Date(); 
+                startOfToday.setHours(0, 0, 0, 0); 
+                const todayMs = startOfToday.getTime();
+                
                 let liveRecords = [];
-                if(snapshot.exists()) { snapshot.forEach(child => { const rec = child.val(); rec.id = child.key; if (rec.lastUpdate && rec.lastUpdate >= todayMs) { liveRecords.push(rec); } }); }
+                if(snapshot.exists()) { 
+                    snapshot.forEach(child => { 
+                        const rec = child.val(); 
+                        rec.id = child.key; 
+                        if (rec.lastUpdate && rec.lastUpdate >= todayMs) { liveRecords.push(rec); } 
+                    }); 
+                }
                 liveRecords.sort((a,b) => (b.skorLive || 0) - (a.skorLive || 0) || (b.lastUpdate || 0) - (a.lastUpdate || 0));
 
-                let totalExamToday = liveRecords.length; let activeCount = 0; let passedCount = 0; let highestScore = 0;
+                let totalExamToday = liveRecords.length; 
+                let activeCount = 0; 
+                let passedCount = 0; 
+                let highestScore = 0;
 
                 if(liveRecords.length === 0) {
                     liveTable.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-slate-400 text-sm">Belum ada aktivitas Ujian Live CBT saat ini. Siswa yang sedang atau baru selesai ujian akan muncul di layar ini secara otomatis.</td></tr>`;
                 } else {
                     let rowsHtml = '';
                     liveRecords.forEach((rec, idx) => {
-                        const rank = idx + 1; const isLive = rec.status === 'Ujian Berlangsung';
-                        if(isLive) activeCount++; if(rec.status === 'LULUS') passedCount++; if((rec.skorLive || 0) > highestScore) highestScore = rec.skorLive || 0;
+                        const rank = idx + 1; 
+                        const isLive = rec.status === 'Ujian Berlangsung';
+                        
+                        if(isLive) activeCount++; 
+                        if(rec.status === 'LULUS') passedCount++; 
+                        if((rec.skorLive || 0) > highestScore) highestScore = rec.skorLive || 0;
 
                         let statusBadge = '<span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-700 border border-blue-300 animate-pulse">SEDANG UJIAN</span>';
                         if(rec.status === 'LULUS') statusBadge = '<span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">LULUS ✓</span>';
@@ -2592,7 +3248,18 @@
 
                         const progSoal = rec.totalSoal ? `${rec.soalTerjawab || 0} / ${rec.totalSoal}` : '-';
 
-                        rowsHtml += `<tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100"><td class="px-5 py-4 text-center">${rankBadge}</td><td class="px-5 py-4"><p class="font-extrabold text-slate-900 text-sm leading-tight">${rec.namaPeserta || 'Peserta'}</p><p class="text-xs text-slate-500 font-medium">${rec.instansi || '-'}</p></td><td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-100 text-slate-800 border border-slate-200">${rec.kategori || 'K3 Umum'}</span></td><td class="px-5 py-4 text-center font-bold text-xs text-slate-600">${progSoal} Soal</td><td class="px-5 py-4 text-center"><span class="text-2xl font-black font-mono tracking-wider ${rec.status === 'LULUS' ? 'text-emerald-600' : (rec.status === 'TIDAK LULUS' ? 'text-red-500' : 'text-blue-600')}">${rec.skorLive || 0}</span></td><td class="px-5 py-4 text-right">${statusBadge}</td></tr>`;
+                        rowsHtml += `
+                        <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                            <td class="px-5 py-4 text-center">${rankBadge}</td>
+                            <td class="px-5 py-4">
+                                <p class="font-extrabold text-slate-900 text-sm leading-tight">${rec.namaPeserta || 'Peserta'}</p>
+                                <p class="text-xs text-slate-500 font-medium">${rec.instansi || '-'}</p>
+                            </td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-100 text-slate-800 border border-slate-200">${rec.kategori || 'K3 Umum'}</span></td>
+                            <td class="px-5 py-4 text-center font-bold text-xs text-slate-600">${progSoal} Soal</td>
+                            <td class="px-5 py-4 text-center"><span class="text-2xl font-black font-mono tracking-wider ${rec.status === 'LULUS' ? 'text-emerald-600' : (rec.status === 'TIDAK LULUS' ? 'text-red-500' : 'text-blue-600')}">${rec.skorLive || 0}</span></td>
+                            <td class="px-5 py-4 text-right">${statusBadge}</td>
+                        </tr>`;
                     });
                     liveTable.innerHTML = rowsHtml;
                 }
@@ -2606,35 +3273,55 @@
                 dataReviewAll = []; 
                 if(snapshot.exists()) { 
                     snapshot.forEach(child => { 
-                        const data = child.val(); data.id = child.key; dataReviewAll.push(data); 
+                        const data = child.val(); 
+                        data.id = child.key; 
+                        dataReviewAll.push(data); 
                     }); 
                 } 
                 window.renderReviewUI(); 
             });
 
             onValue(ref(db, pathTim), (snapshot) => {
-                dataTimAll = []; const selectKeg = document.getElementById('input-kegiatan-tim'); const listAdmin = document.getElementById('admin-list-tim'); const selectUjianTim = document.getElementById('select-ujian-tim');
+                dataTimAll = []; 
+                const selectKeg = document.getElementById('input-kegiatan-tim'); 
+                const listAdmin = document.getElementById('admin-list-tim'); 
+                const selectUjianTim = document.getElementById('select-ujian-tim');
+                
                 if(selectKeg) selectKeg.innerHTML = `<option value="" disabled selected>-- Pilih Tim --</option><option value="admin_utama" class="font-bold text-safety-600">Admin Utama (Tanpa WA)</option><option value="eldi_123" class="font-bold text-blue-600">Eldi Prayoga Firdaus</option>`;
                 if(selectUjianTim) selectUjianTim.innerHTML = `<option value="" disabled selected>-- Pilih Instruktur Anda --</option><option value="admin_utama" class="font-extrabold text-emerald-600 bg-emerald-50">Adrian (Admin Pusat)</option><option value="eldi_123" class="font-extrabold text-blue-600 bg-blue-50">Eldi Prayoga Firdaus</option>`;
                 if(listAdmin) listAdmin.innerHTML = '';
+                
                 if(snapshot.exists()) {
                     snapshot.forEach(childSnap => {
                         const data = childSnap.val(); data.id = childSnap.key; 
-                        
                         if (data.nama.toLowerCase().includes('eldi') || data.pin === 'eldi123') return;
 
                         dataTimAll.push(data);
                         if(selectKeg) selectKeg.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
                         if(selectUjianTim) selectUjianTim.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
+                        
                         if(listAdmin) {
                             const izin = data.izin || {}; let badges = '';
                             if(izin.nilai) badges += `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Nilai Ujian</span>`;
-                                if(izin.berita) badges += `<span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Berita</span>`;
-                                if(izin.modul) badges += `<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Modul</span>`;
-                                if(izin.keuangan) badges += `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Keuangan</span>`;
-                                if(!badges) badges = `<span class="text-[9px] text-slate-400 italic">Hanya akses dasar</span>`;
+                            if(izin.berita) badges += `<span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Berita</span>`;
+                            if(izin.modul) badges += `<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Modul</span>`;
+                            if(izin.keuangan) badges += `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Keuangan</span>`;
+                            if(!badges) badges = `<span class="text-[9px] text-slate-400 italic">Hanya akses dasar</span>`;
 
-                            listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm relative group"><div class="absolute top-2 right-2 flex space-x-1"><button onclick="window.editTim('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Edit Akses"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusTim('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Tim"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div><h4 class="font-bold text-slate-900 text-sm mb-1 pr-12">${data.nama}</h4><p class="text-xs text-slate-600 mb-1">📱 ${data.hp}</p><p class="text-xs text-slate-600 font-mono mb-2">🔑 PIN: <strong class="text-safety-600">${data.pin}</strong></p><div class="border-t border-slate-200 pt-2 mt-1"><p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Akses Khusus:</p><div>${badges}</div></div></div>`;
+                            listAdmin.innerHTML += `
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm relative group">
+                                <div class="absolute top-2 right-2 flex space-x-1">
+                                    <button onclick="window.editTim('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Edit Akses"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                    <button onclick="window.hapusTim('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Tim"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm mb-1 pr-12">${data.nama}</h4>
+                                <p class="text-xs text-slate-600 mb-1">📱 ${data.hp}</p>
+                                <p class="text-xs text-slate-600 font-mono mb-2">🔑 PIN: <strong class="text-safety-600">${data.pin}</strong></p>
+                                <div class="border-t border-slate-200 pt-2 mt-1">
+                                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Akses Khusus:</p>
+                                    <div>${badges}</div>
+                                </div>
+                            </div>`;
                         }
                     });
                 }
@@ -2642,9 +3329,16 @@
             });
             
             onValue(ref(db, pathPjk3), (snapshot) => {
-                const listPublic = document.getElementById('public-pjk3-container'); const listAdmin = document.getElementById('admin-list-pjk3');
-                if(listPublic) listPublic.innerHTML = ''; if(listAdmin) listAdmin.innerHTML = '';
-                let pjk3Data = []; if(snapshot.exists()) { snapshot.forEach(child => { const data = child.val(); data.id = child.key; pjk3Data.push(data); }); }
+                const listPublic = document.getElementById('public-pjk3-container'); 
+                const listAdmin = document.getElementById('admin-list-pjk3');
+                
+                if(listPublic) listPublic.innerHTML = ''; 
+                if(listAdmin) listAdmin.innerHTML = '';
+                
+                let pjk3Data = []; 
+                if(snapshot.exists()) { 
+                    snapshot.forEach(child => { const data = child.val(); data.id = child.key; pjk3Data.push(data); }); 
+                }
                 pjk3Data.sort((a,b) => b.timestamp - a.timestamp);
 
                 if(pjk3Data.length === 0) {
@@ -2655,8 +3349,20 @@
                 pjk3Data.forEach(p => {
                     const waText = encodeURIComponent(`Halo saya ingin bertanya seputar layanan PJK3 dari ${p.nama}`);
                     const waLink = `https://wa.me/628567725758?text=${waText}`;
-                    if(listPublic) { listPublic.innerHTML += `<a href="${waLink}" target="_blank" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 w-full h-28 flex items-center justify-center group overflow-hidden" title="Chat WA: ${p.nama}"><img src="${p.logoBase64}" onerror="this.onerror=null;this.src='https://placehold.co/200x100/f8fafc/94a3b8?text=${encodeURIComponent(p.nama)}'" alt="${p.nama}" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transform group-hover:scale-105 transition-all"></a>`; }
-                    if(listAdmin) { listAdmin.innerHTML += `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center text-center relative group"><button onclick="window.hapusPjk3('${p.id}')" class="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10" title="Hapus"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button><div class="w-full h-14 bg-white rounded-lg p-1 border border-slate-100 mb-1 flex items-center justify-center overflow-hidden"><img src="${p.logoBase64}" class="w-full h-full object-contain"></div><span class="text-xs font-bold text-slate-700 truncate w-full">${p.nama}</span></div>`; }
+                    
+                    if(listPublic) { 
+                        listPublic.innerHTML += `<a href="${waLink}" target="_blank" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 w-full h-28 flex items-center justify-center group overflow-hidden" title="Chat WA: ${p.nama}"><img src="${p.logoBase64}" onerror="this.onerror=null;this.src='https://placehold.co/200x100/f8fafc/94a3b8?text=${encodeURIComponent(p.nama)}'" alt="${p.nama}" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transform group-hover:scale-105 transition-all"></a>`; 
+                    }
+                    if(listAdmin) { 
+                        listAdmin.innerHTML += `
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center text-center relative group">
+                            <button onclick="window.hapusPjk3('${p.id}')" class="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10" title="Hapus"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                            <div class="w-full h-14 bg-white rounded-lg p-1 border border-slate-100 mb-1 flex items-center justify-center overflow-hidden">
+                                <img src="${p.logoBase64}" class="w-full h-full object-contain">
+                            </div>
+                            <span class="text-xs font-bold text-slate-700 truncate w-full">${p.nama}</span>
+                        </div>`; 
+                    }
                 });
             });
 
@@ -2667,7 +3373,9 @@
                 const adminList = document.getElementById('admin-list-running-text');
                 
                 let texts = [];
-                if(snapshot.exists()) { snapshot.forEach(child => { const data = child.val(); data.id = child.key; texts.push(data); }); }
+                if(snapshot.exists()) { 
+                    snapshot.forEach(child => { const data = child.val(); data.id = child.key; texts.push(data); }); 
+                }
                 texts.sort((a,b) => b.timestamp - a.timestamp);
 
                 if(texts.length > 0) {
@@ -2695,7 +3403,14 @@
                     } else {
                         let html = '';
                         texts.forEach(t => {
-                            html += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center space-x-4 mb-2"><div class="flex-grow"><span class="text-[10px] text-slate-500 mb-1 block">${window.formatDate(t.timestamp)}</span><p class="text-sm font-bold text-slate-800 leading-snug whitespace-pre-wrap">${t.isi}</p></div><button onclick="window.hapusRunningText('${t.id}')" class="shrink-0 p-2 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-red-200 shadow-sm" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
+                            html += `
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center space-x-4 mb-2">
+                                <div class="flex-grow">
+                                    <span class="text-[10px] text-slate-500 mb-1 block">${window.formatDate(t.timestamp)}</span>
+                                    <p class="text-sm font-bold text-slate-800 leading-snug whitespace-pre-wrap">${t.isi}</p>
+                                </div>
+                                <button onclick="window.hapusRunningText('${t.id}')" class="shrink-0 p-2 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-red-200 shadow-sm" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </div>`;
                         });
                         adminList.innerHTML = html;
                     }
@@ -2703,17 +3418,27 @@
             });
 
             onValue(ref(db, pathKegiatan), (snapshot) => { 
-                dataKegiatanAll = []; const liveContainer = document.getElementById('lms-live-class-list');
-                if(liveContainer) liveContainer.innerHTML = '';
-                if(snapshot.exists()) { snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); } 
+                dataKegiatanAll = []; 
+                if(snapshot.exists()) { 
+                    snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); 
+                } 
                 window.renderDashboardPendapatanHome();
             });
 
-            onValue(ref(db, pathPengeluaran), (snapshot) => { dataPengeluaranAll = []; if(snapshot.exists()) { snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); }); } window.renderDashboardPendapatanHome(); });
+            onValue(ref(db, pathPengeluaran), (snapshot) => { 
+                dataPengeluaranAll = []; 
+                if(snapshot.exists()) { 
+                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); }); 
+                } 
+                window.renderDashboardPendapatanHome(); 
+            });
 
             onValue(ref(db, pathModul), (snapshot) => {
-                const listPublic = document.getElementById('modul-list'); const listAdmin = document.getElementById('admin-list-modul');
-                if(listPublic) listPublic.innerHTML = ''; if(listAdmin) listAdmin.innerHTML = '';
+                const listPublic = document.getElementById('modul-list'); 
+                const listAdmin = document.getElementById('admin-list-modul');
+                
+                if(listPublic) listPublic.innerHTML = ''; 
+                if(listAdmin) listAdmin.innerHTML = '';
                 
                 function getEmbedVideoUrl(url) {
                     if (!url) return '';
@@ -2731,14 +3456,23 @@
                 let countModul = 0;
                 if(snapshot.exists()) {
                     snapshot.forEach(d => {
-                        countModul++; const data = d.val(); let badgeCol = 'bg-slate-100 text-slate-700';
-                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
+                        countModul++; 
+                        const data = d.val(); 
+                        let badgeCol = 'bg-slate-100 text-slate-700';
+                        
+                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; 
+                        if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; 
+                        if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; 
+                        if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
                         
                         let videoHtml = '';
                         if (data.videoUrl) {
                             const embed = getEmbedVideoUrl(data.videoUrl);
-                            if (embed.includes('youtube.com/embed')) videoHtml = `<div class="aspect-video w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black shadow-inner"><iframe src="${embed}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-                            else videoHtml = `<div class="w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black"><video src="${embed}" controls controlsList="nodownload" oncontextmenu="return false;" class="w-full max-h-80 object-cover"></video></div>`;
+                            if (embed.includes('youtube.com/embed')) {
+                                videoHtml = `<div class="aspect-video w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black shadow-inner"><iframe src="${embed}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                            } else {
+                                videoHtml = `<div class="w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black"><video src="${embed}" controls controlsList="nodownload" oncontextmenu="return false;" class="w-full max-h-80 object-cover"></video></div>`;
+                            }
                         }
 
                         let docHtml = '';
@@ -2747,15 +3481,34 @@
                             docHtml = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><div class="absolute inset-0 z-20 bg-transparent" oncontextmenu="return false;" onclick="return false;"></div><iframe src="${docEmbed}" class="w-full h-full border-0 relative z-10" frameborder="0" oncontextmenu="return false;"></iframe></div></div>`;
                         }
 
-                        if(listPublic) listPublic.innerHTML += `<div class="p-6 bg-white border border-slate-200/80 rounded-2xl hover:shadow-lg transition-all duration-300 relative group no-select" oncontextmenu="return false;"><span class="absolute top-4 right-4 text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase ${badgeCol}">${data.kategori}</span><h4 class="font-bold text-base text-slate-900 pr-16 mb-3 group-hover:text-safety-500 leading-snug">${data.judul}</h4>${videoHtml}${docHtml}<div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">${data.isi}</div></div>`;
-                        if(listAdmin) listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-2"><span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase ${badgeCol} mb-1 inline-block">${data.kategori}</span><h4 class="font-bold text-navy-900 text-sm">${data.judul}</h4>${data.videoUrl ? `<p class="text-[10px] text-blue-600 font-medium truncate my-1">📹 Video: ${data.videoUrl}</p>` : ''}${data.docUrl ? `<p class="text-[10px] text-emerald-600 font-medium truncate my-1">📄 Dokumen: ${data.docUrl}</p>` : ''}<p class="text-xs text-slate-600 mt-1 line-clamp-2">${data.isi}</p></div>`;
+                        if(listPublic) {
+                            listPublic.innerHTML += `
+                            <div class="p-6 bg-white border border-slate-200/80 rounded-2xl hover:shadow-lg transition-all duration-300 relative group no-select" oncontextmenu="return false;">
+                                <span class="absolute top-4 right-4 text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase ${badgeCol}">${data.kategori}</span>
+                                <h4 class="font-bold text-base text-slate-900 pr-16 mb-3 group-hover:text-safety-500 leading-snug">${data.judul}</h4>
+                                ${videoHtml}${docHtml}
+                                <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">${data.isi}</div>
+                            </div>`;
+                        }
+                        
+                        if(listAdmin) {
+                            listAdmin.innerHTML += `
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-2">
+                                <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase ${badgeCol} mb-1 inline-block">${data.kategori}</span>
+                                <h4 class="font-bold text-navy-900 text-sm">${data.judul}</h4>
+                                ${data.videoUrl ? `<p class="text-[10px] text-blue-600 font-medium truncate my-1">📹 Video: ${data.videoUrl}</p>` : ''}
+                                ${data.docUrl ? `<p class="text-[10px] text-emerald-600 font-medium truncate my-1">📄 Dokumen: ${data.docUrl}</p>` : ''}
+                                <p class="text-xs text-slate-600 mt-1 line-clamp-2">${data.isi}</p>
+                            </div>`;
+                        }
                     });
                 }
                 window.animateNumber('stat-total-modul-count', countModul);
             });
 
             onValue(ref(db, pathSoal), (snapshot) => {
-                quizDataFromDB = []; const listAdmin = document.getElementById('admin-list-soal');
+                quizDataFromDB = []; 
+                const listAdmin = document.getElementById('admin-list-soal');
                 if(listAdmin) listAdmin.innerHTML = '';
 
                 const seedQuestions = [
@@ -2794,23 +3547,47 @@
                     if(listAdmin) listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Menginisialisasi bank soal awal... Memuat ulang...</p>';
                     return; 
                 } else {
-                    snapshot.forEach(childSnap => { const data = childSnap.val(); data.id = childSnap.key; quizDataFromDB.push(data); });
+                    snapshot.forEach(childSnap => { 
+                        const data = childSnap.val(); 
+                        data.id = childSnap.key; 
+                        quizDataFromDB.push(data); 
+                    });
                 }
-
-                if (!snapshot.exists() && listAdmin) { listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Memuat data awal...</p>'; return; }
 
                 let categoryCounters = {};
                 
                 if(listAdmin) {
                     quizDataFromDB.forEach((data) => {
-                        const kat = data.kategori || 'Umum'; if (!categoryCounters[kat]) categoryCounters[kat] = 1; const noSoalBidang = categoryCounters[kat]++;
-                        const labels = ['A', 'B', 'C', 'D']; let htmlOpsi = '';
-                        if(data.opsi && Array.isArray(data.opsi)) { data.opsi.forEach((opt, idx) => { const isCorrect = idx === data.jawabanBenar; htmlOpsi += `<div class="text-xs mt-1 ${isCorrect ? 'font-bold text-green-600' : 'text-slate-500'}">${labels[idx]}. ${opt} ${isCorrect ? '✓' : ''}</div>`; }); }
+                        const kat = data.kategori || 'Umum'; 
+                        if (!categoryCounters[kat]) categoryCounters[kat] = 1; 
+                        const noSoalBidang = categoryCounters[kat]++;
+                        
+                        const labels = ['A', 'B', 'C', 'D']; 
+                        let htmlOpsi = '';
+                        
+                        if(data.opsi && Array.isArray(data.opsi)) { 
+                            data.opsi.forEach((opt, idx) => { 
+                                const isCorrect = idx === data.jawabanBenar; 
+                                htmlOpsi += `<div class="text-xs mt-1 ${isCorrect ? 'font-bold text-green-600' : 'text-slate-500'}">${labels[idx]}. ${opt} ${isCorrect ? '✓' : ''}</div>`; 
+                            }); 
+                        }
                         
                         let badgeCol = 'bg-slate-100 text-slate-700';
-                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
+                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; 
+                        if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; 
+                        if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; 
+                        if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
 
-                        listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 shadow-sm relative group"><div class="absolute top-3 right-3 flex space-x-2"><button onclick="window.editSoal('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm" title="Edit Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusSoal('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm" title="Hapus Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div><div class="mb-2"><span class="text-[10px] ${badgeCol} px-2 py-0.5 rounded font-bold uppercase">${data.kategori || 'Umum'}</span></div><h4 class="font-bold text-slate-800 text-sm mb-2 leading-relaxed pr-16">No. ${noSoalBidang} - ${data.pertanyaan}</h4><div class="pl-3 border-l-2 border-slate-200">${htmlOpsi}</div></div>`;
+                        listAdmin.innerHTML += `
+                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 shadow-sm relative group">
+                            <div class="absolute top-3 right-3 flex space-x-2">
+                                <button onclick="window.editSoal('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm" title="Edit Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                <button onclick="window.hapusSoal('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm" title="Hapus Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </div>
+                            <div class="mb-2"><span class="text-[10px] ${badgeCol} px-2 py-0.5 rounded font-bold uppercase">${data.kategori || 'Umum'}</span></div>
+                            <h4 class="font-bold text-slate-800 text-sm mb-2 leading-relaxed pr-16">No. ${noSoalBidang} - ${data.pertanyaan}</h4>
+                            <div class="pl-3 border-l-2 border-slate-200">${htmlOpsi}</div>
+                        </div>`;
                     });
                 }
             });
@@ -2822,7 +3599,13 @@
                     onValue(ref(db, `${pathPeserta}/${user.uid}`), (snap) => {
                         const data = snap.val();
                         if(data) {
-                            currentUser = { nama: data.nama, instansi: data.instansi, email: data.email || user.email, role: 'peserta', uid: user.uid };
+                            currentUser = { 
+                                nama: data.nama, 
+                                instansi: data.instansi, 
+                                email: data.email || user.email, 
+                                role: 'peserta', 
+                                uid: user.uid 
+                            };
                             window.renderAvatarUI(data.nama, 'Peserta');
                             document.getElementById('modul-locked')?.classList.add('hidden'); 
                             document.getElementById('modul-list')?.classList.remove('hidden');
@@ -2835,7 +3618,8 @@
                     const visitRef = ref(db, pathVisitor);
                     onValue(visitRef, (snap) => { 
                         const count = snap.val() || 0; 
-                        const vEl = document.getElementById('admin-visitor-count'); if(vEl) vEl.innerText = count.toLocaleString('id-ID'); 
+                        const vEl = document.getElementById('admin-visitor-count'); 
+                        if(vEl) vEl.innerText = count.toLocaleString('id-ID'); 
                         window.animateNumber('stat-total-visitors', count);
                     });
                     
@@ -2850,6 +3634,36 @@
             }
         });
 
+        document.getElementById('form-ulasan-instruktur')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            const rating = document.querySelector('input[name="rating"]:checked').value;
+            const ulasan = document.getElementById('input-ulasan-teks').value;
+            const btn = e.target.querySelector('button');
+            const ori = btn.innerText;
+            btn.innerText = "Mengirim...";
+            btn.disabled = true;
+            
+            try {
+                const quizTargetId = activeQuizData.length > 0 ? activeQuizData[0].idTimTarget : 'admin_utama';
+                await push(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), {
+                    idPeserta: currentUser.uid,
+                    namaPeserta: currentUser.nama,
+                    idTim: quizTargetId,
+                    rating: parseInt(rating),
+                    ulasan: ulasan,
+                    timestamp: Date.now()
+                });
+                window.showToast("Ulasan berhasil dikirim. Terima kasih!", "success");
+                window.closeModal();
+                e.target.reset();
+            } catch(err) {
+                window.showToast("Gagal mengirim ulasan.", "error");
+            }
+            btn.innerText = ori;
+            btn.disabled = false;
+        });
+
         if (typeof flatpickr !== 'undefined' && document.getElementById('input-kegiatan-tanggal')) {
             flatpickr("#input-kegiatan-tanggal", {
                 mode: "multiple",
@@ -2858,24 +3672,53 @@
             });
         }
 
-        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if(entry.isIntersecting) { entry.target.classList.add('active'); } }); }, { threshold: 0.1 });
+        const observer = new IntersectionObserver((entries) => { 
+            entries.forEach(entry => { 
+                if(entry.isIntersecting) { 
+                    entry.target.classList.add('active'); 
+                } 
+            }); 
+        }, { threshold: 0.1 });
+        
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         
         const beritaContainer = document.getElementById('public-berita-container');
-        const btnPrevBerita = document.getElementById('btn-berita-prev'); const btnNextBerita = document.getElementById('btn-berita-next');
+        const btnPrevBerita = document.getElementById('btn-berita-prev'); 
+        const btnNextBerita = document.getElementById('btn-berita-next');
+        
         if(beritaContainer && btnPrevBerita && btnNextBerita) {
             const scrollAmount = 420; 
-            btnPrevBerita.addEventListener('click', () => { beritaContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); });
-            btnNextBerita.addEventListener('click', () => { beritaContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' }); });
+            btnPrevBerita.addEventListener('click', () => { 
+                beritaContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); 
+            });
+            btnNextBerita.addEventListener('click', () => { 
+                beritaContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
+            });
         }
 
         setInterval(() => {
             const headlineCarousel = document.getElementById('headline-carousel');
-            if (headlineCarousel && headlineCarousel.scrollWidth > headlineCarousel.clientWidth) { const maxScroll = headlineCarousel.scrollWidth - headlineCarousel.clientWidth; if (headlineCarousel.scrollLeft >= maxScroll - 10) { headlineCarousel.scrollTo({ left: 0, behavior: 'smooth' }); } else { headlineCarousel.scrollBy({ left: headlineCarousel.clientWidth, behavior: 'smooth' }); } }
+            if (headlineCarousel && headlineCarousel.scrollWidth > headlineCarousel.clientWidth) { 
+                const maxScroll = headlineCarousel.scrollWidth - headlineCarousel.clientWidth; 
+                if (headlineCarousel.scrollLeft >= maxScroll - 10) { 
+                    headlineCarousel.scrollTo({ left: 0, behavior: 'smooth' }); 
+                } else { 
+                    headlineCarousel.scrollBy({ left: headlineCarousel.clientWidth, behavior: 'smooth' }); 
+                } 
+            }
+            
             const sliders = document.querySelectorAll('.news-img-slider');
-            sliders.forEach(slider => { if (slider.scrollWidth > slider.clientWidth) { const maxScroll = slider.scrollWidth - slider.clientWidth; if (slider.scrollLeft >= maxScroll - 5) { slider.scrollTo({ left: 0, behavior: 'smooth' }); } else { slider.scrollBy({ left: slider.clientWidth, behavior: 'smooth' }); } } });
+            sliders.forEach(slider => { 
+                if (slider.scrollWidth > slider.clientWidth) { 
+                    const maxScroll = slider.scrollWidth - slider.clientWidth; 
+                    if (slider.scrollLeft >= maxScroll - 5) { 
+                        slider.scrollTo({ left: 0, behavior: 'smooth' }); 
+                    } else { 
+                        slider.scrollBy({ left: slider.clientWidth, behavior: 'smooth' }); 
+                    } 
+                } 
+            });
         }, 4000); 
-
     </script>
 </body>
 </html>
