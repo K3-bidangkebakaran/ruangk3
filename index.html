@@ -1645,29 +1645,39 @@
         window.downloadPDF = function() {
             const originalElement = document.getElementById('pdf-content-container');
 
-            // 1. Buat Wrapper (Wadah) Sementara di lapis belakang
+            // 1. Buat Wrapper dengan posisi FIXED agar kebal dari efek scroll layar
             const tempWrapper = document.createElement('div');
-            tempWrapper.style.position = 'absolute';
+            tempWrapper.style.position = 'fixed'; // Mengunci posisi agar tidak tergeser
             tempWrapper.style.top = '0';
             tempWrapper.style.left = '0';
-            tempWrapper.style.zIndex = '-9999'; // Disembunyikan di belakang layout visual
-            tempWrapper.style.width = '800px'; // Ukuran baku PDF Kertas A4 Proporsi
+            tempWrapper.style.width = '800px'; // Ukuran baku PDF
             tempWrapper.style.background = 'white';
+            tempWrapper.style.zIndex = '-9999';
 
             // 2. Clone isi hasil jawaban dari DOM utama
             const clone = originalElement.cloneNode(true);
-            clone.classList.remove('hidden'); // Menjadikan clone ini "terlihat" bagi PDF generator
+            clone.classList.remove('hidden'); 
+            clone.style.width = '100%'; 
+            clone.style.margin = '0';
+            clone.style.padding = '40px'; // Memberi ruang aman untuk margin PDF
             
-            // 3. Masukkan ke dalam DOM (Harus masuk DOM agar CSS Tailwind terdeteksi oleh PDF)
+            // 3. Masukkan ke dalam DOM
             tempWrapper.appendChild(clone);
             document.body.appendChild(tempWrapper);
 
             let safeName = currentUser ? currentUser.nama.replace(/[^a-zA-Z0-9]/g, '_') : 'Anonim';
             const opt = {
-                margin:       [0.5, 0.5, 0.5, 0.5],
+                margin:       [0.4, 0.4, 0.4, 0.4],
                 filename:     `Laporan_CBT_RuangK3_${safeName}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, logging: false, useCORS: true, windowWidth: 800 },
+                html2canvas:  { 
+                    scale: 2, 
+                    logging: false, 
+                    useCORS: true, 
+                    scrollX: 0, // Kunci Anti-Terpotong 1
+                    scrollY: 0, // Kunci Anti-Terpotong 2
+                    windowWidth: 800
+                },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
 
@@ -1676,9 +1686,8 @@
             btn.innerText = "MENYIAPKAN PDF...";
             btn.disabled = true;
 
-            // 4. Generate PDF dari hasil Clone tersebut
-            html2pdf().set(opt).from(clone).save().then(() => {
-                // Bersihkan kembali elemen dari DOM setelah sukses
+            // 4. Generate PDF dari hasil tempWrapper
+            html2pdf().set(opt).from(tempWrapper).save().then(() => {
                 document.body.removeChild(tempWrapper);
                 btn.innerText = oriText;
                 btn.disabled = false;
