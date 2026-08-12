@@ -13,7 +13,7 @@
     <!-- Flatpickr (Kalender Multi-Tanggal) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
 
     <!-- Script EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -1540,6 +1540,18 @@
             localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
         };
 
+        window.sendWA_Fonnte = async function(target, textMessage) { 
+            try { 
+                const fd = new URLSearchParams(); 
+                fd.append("target", target); 
+                fd.append("message", textMessage); 
+                await fetch("https://api.fonnte.com/send", { method: 'POST', headers: { 'Authorization': 'TnG5G4e5L1XNiP9HfRts' }, body: fd }); 
+                return true; 
+            } catch (err) { 
+                return false; 
+            } 
+        };
+
         const overlay = document.getElementById('modal-overlay');
         window.openModal = function(modalId) {
             if(!overlay) return; overlay.classList.remove('hidden');
@@ -1850,6 +1862,14 @@
                 if (idEdit) { await update(ref(db, `${pathKegiatan}/${idEdit}`), dataToSave); document.getElementById('btn-batal-kegiatan')?.click(); btn.innerText = "Diperbarui!"; window.showToast("Kegiatan diperbarui.", "success"); } 
                 else {
                     dataToSave.timestamp = Date.now(); await push(ref(db, pathKegiatan), dataToSave);
+                    
+                    if (idTim !== 'admin_utama' && idTim !== 'eldi_123') { 
+                        const timData = dataTimAll.find(t => t.id === idTim); 
+                        if(timData && timData.hp) { 
+                            await window.sendWA_Fonnte(timData.hp, `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${timData.nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`); 
+                        } 
+                    }
+                    
                     btn.innerText = "Tersimpan!";
                     window.showToast("Kegiatan berhasil ditambahkan.", "success");
                 } 
@@ -2624,6 +2644,14 @@
                 try { await signInAnonymously(auth); } catch(e){} 
             }
         });
+
+        if (typeof flatpickr !== 'undefined' && document.getElementById('input-kegiatan-tanggal')) {
+            flatpickr("#input-kegiatan-tanggal", {
+                mode: "multiple",
+                dateFormat: "Y-m-d",
+                locale: "id"
+            });
+        }
 
         const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if(entry.isIntersecting) { entry.target.classList.add('active'); } }); }, { threshold: 0.1 });
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
