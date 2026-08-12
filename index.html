@@ -40,7 +40,7 @@
                     }
                 }
             }
-        }
+        };
     </script>
     
     <style>
@@ -226,37 +226,6 @@
                 </div>
             </section>
 
-            <section class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-xl font-bold">📚</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modul Tersedia</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-modul-count">0</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 text-xl font-bold">👥</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peserta Terdaftar</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-pendaftar">0</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 text-xl font-bold">🎓</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peserta Sudah Ujian</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-lulus">0</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 text-xl font-bold">🌐</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Kunjungan</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-visitors">0</p>
-                    </div>
-                </div>
-            </section>
-
             <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 reveal">
                 <div class="lg:col-span-2 space-y-6">
                     <div class="flex justify-between items-center">
@@ -314,6 +283,37 @@
                 </div>
                 <div id="public-pjk3-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 justify-items-center items-center">
                     <div class="col-span-full text-center py-8 text-slate-400 text-sm">Memuat data mitra PJK3...</div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal pt-8 mt-8 border-t border-slate-200">
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-xl font-bold">📚</div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modul Tersedia</p>
+                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-modul-count">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 text-xl font-bold">👥</div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peserta Terdaftar</p>
+                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-pendaftar">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 text-xl font-bold">🎓</div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peserta Sudah Ujian</p>
+                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-lulus">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 text-xl font-bold">🌐</div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Kunjungan</p>
+                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-visitors">0</p>
+                    </div>
                 </div>
             </section>
         </div>
@@ -662,15 +662,28 @@
                     <div id="pdf-review-list" class="space-y-5"></div>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-6 md:p-8 flex flex-col items-center justify-center min-h-0 text-center relative">
-                    <div id="quiz-icon-container" class="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl"></div>
-                    <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">Ujian Selesai!</h3>
-                    <div class="w-full max-w-md bg-white rounded-2xl py-6 md:py-8 mb-4 mt-2 md:mt-4 border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-safety-400 to-emerald-400"></div>
-                        <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1 md:mb-2">Nilai Akhir Anda</p>
-                        <p id="quiz-score" class="text-[4rem] md:text-[5rem] font-black leading-none text-slate-800">0</p>
-                        <p id="quiz-status-lulus" class="text-sm md:text-lg font-extrabold mt-3 md:mt-4 uppercase tracking-widest text-slate-900">MEMPROSES...</p>
-                        <p id="quiz-email-status" class="text-[10px] md:text-xs font-bold text-safety-600 mt-4 md:mt-5 hidden bg-emerald-50 py-1.5 px-3 rounded-lg border border-emerald-100 inline-block"></p>
+                <div class="flex-1 overflow-y-auto p-6 md:p-8 min-h-0 relative">
+                    <div class="max-w-4xl mx-auto flex flex-col items-center text-center">
+                        <div id="quiz-icon-container" class="w-20 h-20 md:w-24 md:h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl mt-2 md:mt-4"></div>
+                        <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">Ujian Selesai!</h3>
+                        <div class="w-full max-w-md bg-white rounded-2xl py-6 md:py-8 mb-4 mt-2 md:mt-4 border border-slate-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-safety-400 to-emerald-400"></div>
+                            <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1 md:mb-2">Nilai Akhir Anda</p>
+                            <p id="quiz-score" class="text-[4rem] md:text-[5rem] font-black leading-none text-slate-800">0</p>
+                            <p id="quiz-status-lulus" class="text-sm md:text-lg font-extrabold mt-3 md:mt-4 uppercase tracking-widest text-slate-900">MEMPROSES...</p>
+                            <p id="quiz-email-status" class="text-[10px] md:text-xs font-bold text-safety-600 mt-4 md:mt-5 hidden bg-emerald-50 py-1.5 px-3 rounded-lg border border-emerald-100 inline-block"></p>
+                        </div>
+
+                        <!-- On-Screen Review UI -->
+                        <div id="on-screen-review-container" class="w-full mt-8 bg-slate-100/50 rounded-2xl border border-slate-200 shadow-sm p-5 md:p-8 text-left">
+                            <div class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-slate-200 pb-4 mb-6">
+                                <div>
+                                    <h4 class="text-lg md:text-xl font-extrabold text-slate-900 flex items-center"><span class="text-safety-500 mr-2">📋</span> Pembahasan & Kunci Jawaban</h4>
+                                    <p class="text-xs text-slate-500 mt-1">Review hasil pekerjaan Anda di bawah ini secara langsung.</p>
+                                </div>
+                            </div>
+                            <div id="ui-review-list" class="space-y-6"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1285,7 +1298,7 @@
             currentUser = null; 
             try { await signInAnonymously(auth); } catch(e){}
             window.location.reload();
-        }
+        };
 
         window.renderVerifikasiUI = function() {
             const tbody = document.getElementById('admin-table-verifikasi');
@@ -1478,7 +1491,7 @@
                     if(headerTitle) headerTitle.innerText = e.currentTarget.querySelector('span:first-child').innerText || "Panel";
                 });
             });
-        }
+        };
 
         window.saveExamState = function() {
             if (!currentUser || !currentUser.uid) return;
@@ -1503,7 +1516,8 @@
             if (!currentUser || !currentUser.uid) return false;
             try {
                 const savedStateStr = localStorage.getItem(`ruangk3_exam_${currentUser.uid}`);
-                if (!savedStateStr) return false;
+                // Fix: Ensure we don't try to parse empty strings which causes SyntaxError
+                if (!savedStateStr || savedStateStr.trim() === '') return false;
                 
                 const savedState = JSON.parse(savedStateStr);
                 if (savedState && savedState.examEndTime && savedState.activeQuizData) {
@@ -1674,25 +1688,46 @@
             }
 
             let reviewHtml = '';
+            let uiReviewHtml = '';
             const labels = ['A', 'B', 'C', 'D'];
             activeQuizData.forEach((q, idx) => {
                 const userAnswer = userAnswers[idx];
                 const isCorrect = userAnswer === q.jawabanBenar;
 
                 let optionsHtml = '';
+                let uiOptionsHtml = '';
+                
                 q.opsi.forEach((opt, optIdx) => {
                     let optStyle = "text-slate-600";
                     let icon = "";
+                    
+                    let uiBgClass = "bg-white border-slate-200 text-slate-600";
+                    let uiIcon = `<span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">${labels[optIdx]}</span>`;
+
                     if (optIdx === q.jawabanBenar) {
                         optStyle = "text-emerald-600 font-bold";
                         icon = " ✓ (Kunci Jawaban)";
+                        
+                        uiBgClass = "bg-emerald-50 border-emerald-300 text-emerald-800 font-bold ring-1 ring-emerald-400";
+                        uiIcon = `<span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">✓</span>`;
                     } else if (optIdx === userAnswer && !isCorrect) {
                         optStyle = "text-red-500 font-bold";
                         icon = " ✗ (Jawaban Anda)";
+                        
+                        uiBgClass = "bg-red-50 border-red-300 text-red-800 font-bold";
+                        uiIcon = `<span class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">✗</span>`;
                     } else if (optIdx === userAnswer && isCorrect) {
                         icon = " (Jawaban Anda)";
                     }
+                    
                     optionsHtml += `<div class="text-xs mt-1 ${optStyle}">${labels[optIdx]}. ${opt}${icon}</div>`;
+                    
+                    uiOptionsHtml += `
+                    <div class="flex items-center p-3 mt-2 rounded-xl border ${uiBgClass} text-xs sm:text-sm">
+                        ${uiIcon}
+                        <span class="flex-1">${opt}</span>
+                        ${optIdx === userAnswer ? `<span class="ml-2 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded bg-white shadow-sm border border-slate-200 text-slate-800 shrink-0">Jawaban Anda</span>` : ''}
+                    </div>`;
                 });
 
                 reviewHtml += `
@@ -1702,8 +1737,22 @@
                         ${optionsHtml}
                     </div>
                 </div>`;
+                
+                uiReviewHtml += `
+                <div class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-white shadow-sm text-left">
+                    <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
+                        <p class="font-bold text-sm sm:text-base text-slate-900 leading-relaxed"><span class="text-safety-500 mr-1">${idx + 1}.</span> ${q.pertanyaan}</p>
+                        <span class="ml-3 shrink-0 px-2 py-1 rounded text-[10px] font-extrabold uppercase ${isCorrect ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${isCorrect ? 'BENAR' : 'SALAH'}</span>
+                    </div>
+                    <div class="space-y-1">
+                        ${uiOptionsHtml}
+                    </div>
+                </div>`;
             });
+            
             document.getElementById('pdf-review-list').innerHTML = reviewHtml;
+            const uiReviewList = document.getElementById('ui-review-list');
+            if(uiReviewList) uiReviewList.innerHTML = uiReviewHtml;
 
             if(currentUser && currentUser.uid) {
                 try {
@@ -2045,16 +2094,18 @@
             viewAdmin.classList.remove('hidden'); 
             viewAdmin.classList.add('flex'); 
             document.body.style.overflow = 'hidden'; 
-        }
+        };
+        
         window.closeAdminView = function() { 
             viewAdmin.classList.add('hidden'); 
             viewAdmin.classList.remove('flex'); 
             document.body.style.overflow = ''; 
-        }
+        };
+        
         window.toggleSidebar = function() { 
             adminSidebar.classList.toggle('-translate-x-full'); 
             adminOverlay.classList.toggle('hidden'); 
-        }
+        };
         
         document.getElementById('btn-open-admin-sidebar')?.addEventListener('click', window.toggleSidebar); 
         document.getElementById('btn-close-admin-sidebar')?.addEventListener('click', window.toggleSidebar); 
@@ -3696,28 +3747,33 @@
             });
         }
 
+        // Global interval for auto-sliding carousels
         setInterval(() => {
-            const headlineCarousel = document.getElementById('headline-carousel');
-            if (headlineCarousel && headlineCarousel.scrollWidth > headlineCarousel.clientWidth) { 
-                const maxScroll = headlineCarousel.scrollWidth - headlineCarousel.clientWidth; 
-                if (headlineCarousel.scrollLeft >= maxScroll - 10) { 
-                    headlineCarousel.scrollTo({ left: 0, behavior: 'smooth' }); 
-                } else { 
-                    headlineCarousel.scrollBy({ left: headlineCarousel.clientWidth, behavior: 'smooth' }); 
-                } 
-            }
-            
-            const sliders = document.querySelectorAll('.news-img-slider');
-            sliders.forEach(slider => { 
-                if (slider.scrollWidth > slider.clientWidth) { 
-                    const maxScroll = slider.scrollWidth - slider.clientWidth; 
-                    if (slider.scrollLeft >= maxScroll - 5) { 
-                        slider.scrollTo({ left: 0, behavior: 'smooth' }); 
+            try {
+                const headlineCarousel = document.getElementById('headline-carousel');
+                if (headlineCarousel && headlineCarousel.scrollWidth > headlineCarousel.clientWidth) { 
+                    const maxScroll = headlineCarousel.scrollWidth - headlineCarousel.clientWidth; 
+                    if (headlineCarousel.scrollLeft >= maxScroll - 10) { 
+                        headlineCarousel.scrollTo({ left: 0, behavior: 'smooth' }); 
                     } else { 
-                        slider.scrollBy({ left: slider.clientWidth, behavior: 'smooth' }); 
+                        headlineCarousel.scrollBy({ left: headlineCarousel.clientWidth, behavior: 'smooth' }); 
                     } 
-                } 
-            });
+                }
+                
+                const sliders = document.querySelectorAll('.news-img-slider');
+                sliders.forEach(slider => { 
+                    if (slider.scrollWidth > slider.clientWidth) { 
+                        const maxScroll = slider.scrollWidth - slider.clientWidth; 
+                        if (slider.scrollLeft >= maxScroll - 5) { 
+                            slider.scrollTo({ left: 0, behavior: 'smooth' }); 
+                        } else { 
+                            slider.scrollBy({ left: slider.clientWidth, behavior: 'smooth' }); 
+                        } 
+                    } 
+                });
+            } catch (err) {
+                console.warn("Carousel interval suppressed an error:", err);
+            }
         }, 4000); 
     </script>
 </body>
