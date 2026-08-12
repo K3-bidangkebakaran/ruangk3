@@ -1643,21 +1643,31 @@
         };
 
         window.downloadPDF = function() {
-            const element = document.getElementById('pdf-content-container');
+            const originalElement = document.getElementById('pdf-content-container');
 
-            // Memunculkan container PDF sementara secara tersembunyi (off-screen) agar dapat dirender
-            element.classList.remove('hidden');
-            element.style.position = 'absolute';
-            element.style.top = '-9999px';
-            element.style.left = '-9999px';
-            element.style.display = 'block';
+            // 1. Buat Wrapper (Wadah) Sementara di lapis belakang
+            const tempWrapper = document.createElement('div');
+            tempWrapper.style.position = 'absolute';
+            tempWrapper.style.top = '0';
+            tempWrapper.style.left = '0';
+            tempWrapper.style.zIndex = '-9999'; // Disembunyikan di belakang layout visual
+            tempWrapper.style.width = '800px'; // Ukuran baku PDF Kertas A4 Proporsi
+            tempWrapper.style.background = 'white';
+
+            // 2. Clone isi hasil jawaban dari DOM utama
+            const clone = originalElement.cloneNode(true);
+            clone.classList.remove('hidden'); // Menjadikan clone ini "terlihat" bagi PDF generator
+            
+            // 3. Masukkan ke dalam DOM (Harus masuk DOM agar CSS Tailwind terdeteksi oleh PDF)
+            tempWrapper.appendChild(clone);
+            document.body.appendChild(tempWrapper);
 
             let safeName = currentUser ? currentUser.nama.replace(/[^a-zA-Z0-9]/g, '_') : 'Anonim';
             const opt = {
                 margin:       [0.5, 0.5, 0.5, 0.5],
                 filename:     `Laporan_CBT_RuangK3_${safeName}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, logging: false, useCORS: true },
+                html2canvas:  { scale: 2, logging: false, useCORS: true, windowWidth: 800 },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
             };
 
@@ -1666,25 +1676,16 @@
             btn.innerText = "MENYIAPKAN PDF...";
             btn.disabled = true;
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Sembunyikan kembali setelah diunduh
-                element.style.display = 'none';
-                element.style.position = '';
-                element.style.top = '';
-                element.style.left = '';
-                element.classList.add('hidden');
-                
+            // 4. Generate PDF dari hasil Clone tersebut
+            html2pdf().set(opt).from(clone).save().then(() => {
+                // Bersihkan kembali elemen dari DOM setelah sukses
+                document.body.removeChild(tempWrapper);
                 btn.innerText = oriText;
                 btn.disabled = false;
                 window.showToast("Laporan PDF berhasil diunduh!", "success");
             }).catch(err => {
                 console.error(err);
-                element.style.display = 'none';
-                element.style.position = '';
-                element.style.top = '';
-                element.style.left = '';
-                element.classList.add('hidden');
-                
+                if(document.body.contains(tempWrapper)) document.body.removeChild(tempWrapper);
                 btn.innerText = oriText;
                 btn.disabled = false;
                 window.showToast("Gagal membuat dokumen PDF.", "error");
