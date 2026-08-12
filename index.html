@@ -87,6 +87,14 @@
         .star-rating input:checked ~ label,
         .star-rating label:hover,
         .star-rating label:hover ~ label { color: #f59e0b; }
+
+        @keyframes marqueeSeamless { 
+            0% { transform: translateX(0); } 
+            100% { transform: translateX(-50%); } 
+        }
+        .animate-marquee-seamless { display: flex; width: max-content; animation: marqueeSeamless 20s linear infinite; }
+        .animate-marquee-seamless:hover { animation-play-state: paused; }
+        .mask-edges { -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent); mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent); }
     </style>
 </head>
 
@@ -166,6 +174,22 @@
             </div>
         </div>
     </nav>
+
+    <!-- RUNNING TEXT BANNER -->
+    <div id="running-text-container" class="hidden bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 text-navy-950 overflow-hidden relative z-30 shadow-lg border-b-2 border-amber-500">
+        <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiMwMDAiLz48L3N2Zz4=')]"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center relative z-10">
+            <span class="font-black text-sm uppercase tracking-widest mr-4 shrink-0 flex items-center bg-white px-3 py-1.5 rounded-lg shadow-md text-amber-600 border border-amber-100 z-20">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse mr-2.5 shadow-[0_0_8px_rgba(220,38,38,0.8)]"></span> INFO PENTING
+            </span>
+            <div class="flex-1 overflow-hidden relative mask-edges flex items-center">
+                <div class="animate-marquee-seamless font-extrabold text-sm md:text-base tracking-wide text-navy-950 drop-shadow-sm cursor-pointer" id="marquee-track">
+                    <div id="running-text-content-1" class="flex items-center whitespace-nowrap px-4"></div>
+                    <div id="running-text-content-2" class="flex items-center whitespace-nowrap px-4" aria-hidden="true"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
@@ -673,6 +697,7 @@
                 <button id="nav-btn-keuangan" class="admin-nav-btn w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pendapatan"><span>Ringkasan Keuangan</span></button>
 
                 <div class="admin-utama-only eldi-access text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Menu Khusus</div>
+                <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-running-text"><span>Kelola Running Text</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-tim"><span>Kelola Akun Tim</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-soal"><span>Kelola Bank Soal</span></button>
@@ -1045,6 +1070,32 @@
                     </div>
                 </div>
 
+                <!-- Kelola Running Text -->
+                <div id="admin-panel-running-text" class="admin-panel hidden admin-utama-only">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-1">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
+                                <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Buat Pengumuman Baru</h3>
+                                <form id="form-running-text" class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Isi Info / Teks Berjalan</label>
+                                        <textarea id="input-running-text" required rows="4" placeholder="Tuliskan informasi penting atau peringatan di sini..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-slate-50 focus:bg-white transition-colors"></textarea>
+                                    </div>
+                                    <button type="submit" class="w-full py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm hover:bg-safety-600 transition-colors">Tampilkan di Beranda</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:p-6">
+                                <h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Running Text Aktif</h3>
+                                <div id="admin-list-running-text" class="space-y-3 max-h-[600px] overflow-y-auto admin-scroll pr-2">
+                                    <p class="text-sm text-slate-500 italic text-center py-4">Memuat data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
@@ -1115,6 +1166,7 @@
         const pathPjk3 = `artifacts/${cleanAppId}/public/data/pjk3_mitra`;
         const pathLiveCbt = `artifacts/${cleanAppId}/public/data/live_cbt`;
         const pathKategori = `artifacts/${cleanAppId}/public/data/kategori_k3`;
+        const pathRunningText = `artifacts/${cleanAppId}/public/data/running_text`;
 
         // GLOBAL VARIABLES
         let currentUser = null; 
@@ -1126,6 +1178,12 @@
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
         let isAppInitialized = false;
+
+        window.openAdminIfAllowed = function() {
+            if (currentUser && currentUser.role !== 'peserta') {
+                window.openAdminView();
+            }
+        };
 
         window.switchLmsTab = function(tabName) {
             ['dashboard', 'kelas', 'cbt', 'live'].forEach(t => {
@@ -1169,9 +1227,9 @@
             if(currentUser) {
                 let displayRole = currentUser.role === 'peserta' ? 'Peserta' : (roleText || 'Admin');
                 
-                deskContainer.innerHTML = `<div class="flex items-center space-x-3"><div class="text-right cursor-pointer" onclick="if(currentUser.role !== 'peserta') window.openAdminView();"><p class="text-sm font-bold text-white leading-none hover:text-safety-400 transition-colors">${nama.split(' ')[0]}</p><p class="text-[10px] uppercase font-bold text-safety-400 mt-0.5">${displayRole}</p></div><div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md cursor-pointer hover:scale-105 transition-transform" onclick="if(currentUser.role !== 'peserta') window.openAdminView();">${initial}</div><button onclick="window.processLogout()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 font-bold rounded-lg text-xs border border-red-500/30 transition-colors">Keluar</button></div>`;
+                deskContainer.innerHTML = `<div class="flex items-center space-x-3"><div class="text-right cursor-pointer" onclick="window.openAdminIfAllowed();"><p class="text-sm font-bold text-white leading-none hover:text-safety-400 transition-colors">${nama.split(' ')[0]}</p><p class="text-[10px] uppercase font-bold text-safety-400 mt-0.5">${displayRole}</p></div><div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md cursor-pointer hover:scale-105 transition-transform" onclick="window.openAdminIfAllowed();">${initial}</div><button onclick="window.processLogout()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/40 text-red-300 font-bold rounded-lg text-xs border border-red-500/30 transition-colors">Keluar</button></div>`;
                 
-                mobContainer.innerHTML = `<div class="bg-navy-800 p-3 rounded-xl mb-2 flex items-center space-x-3 border border-slate-700 cursor-pointer" onclick="if(currentUser.role !== 'peserta') window.openAdminView();"><div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs">${initial}</div><div><p class="font-bold text-white text-sm">${nama}</p><p class="text-[10px] text-safety-400 font-bold uppercase">${displayRole}</p></div></div><button onclick="window.processLogout()" class="w-full text-center bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 font-bold px-4 py-3 rounded-xl transition-colors">Keluar Akun</button>`;
+                mobContainer.innerHTML = `<div class="bg-navy-800 p-3 rounded-xl mb-2 flex items-center space-x-3 border border-slate-700 cursor-pointer" onclick="window.openAdminIfAllowed();"><div class="w-9 h-9 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-xs">${initial}</div><div><p class="font-bold text-white text-sm">${nama}</p><p class="text-[10px] text-safety-400 font-bold uppercase">${displayRole}</p></div></div><button onclick="window.processLogout()" class="w-full text-center bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 font-bold px-4 py-3 rounded-xl transition-colors">Keluar Akun</button>`;
                 
                 const wt = document.getElementById('lms-welcome-title'); 
                 if(wt) { wt.innerText = `Selamat Datang, ${nama.split(' ')[0]} di Portal RuangK3`; }
@@ -1946,6 +2004,20 @@
 
         window.hapusPjk3 = async function(id) { try { await remove(ref(db, `${pathPjk3}/${id}`)); window.showToast("Logo PJK3 berhasil dihapus.", "success"); } catch(e){ window.showToast("Gagal menghapus PJK3.", "error"); } };
 
+        document.getElementById('form-running-text')?.addEventListener('submit', async (e) => {
+            e.preventDefault(); if(!currentUser) return;
+            const btn = e.target.querySelector('button'); const ori = btn.innerText; btn.innerText = "Menyimpan...";
+            try {
+                await push(ref(db, pathRunningText), { isi: document.getElementById('input-running-text').value, timestamp: Date.now() });
+                e.target.reset(); window.showToast("Running Text berhasil ditambahkan.", "success");
+            } catch(err) { window.showToast("Gagal menambahkan teks.", "error"); }
+            setTimeout(() => { btn.innerText = ori; }, 2000);
+        });
+
+        window.hapusRunningText = async function(id) {
+            try { await remove(ref(db, `${pathRunningText}/${id}`)); window.showToast("Running text berhasil dihapus.", "success"); } catch(e) { window.showToast("Gagal menghapus data.", "error"); }
+        };
+
         window.bukaModalHutang = function() {
             try {
                 const container = document.getElementById('list-hutang-tim'); if(!container) return; container.innerHTML = ''; const hutangObj = window.currentHutangTimData || {}; const keys = Object.keys(hutangObj);
@@ -2495,6 +2567,48 @@
                     if(listPublic) { listPublic.innerHTML += `<a href="${waLink}" target="_blank" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 w-full h-28 flex items-center justify-center group overflow-hidden" title="Chat WA: ${p.nama}"><img src="${p.logoBase64}" onerror="this.onerror=null;this.src='https://placehold.co/200x100/f8fafc/94a3b8?text=${encodeURIComponent(p.nama)}'" alt="${p.nama}" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transform group-hover:scale-105 transition-all"></a>`; }
                     if(listAdmin) { listAdmin.innerHTML += `<div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center text-center relative group"><button onclick="window.hapusPjk3('${p.id}')" class="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10" title="Hapus"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button><div class="w-full h-14 bg-white rounded-lg p-1 border border-slate-100 mb-1 flex items-center justify-center overflow-hidden"><img src="${p.logoBase64}" class="w-full h-full object-contain"></div><span class="text-xs font-bold text-slate-700 truncate w-full">${p.nama}</span></div>`; }
                 });
+            });
+
+            onValue(ref(db, pathRunningText), (snapshot) => {
+                const publicContainer = document.getElementById('running-text-container');
+                const content1 = document.getElementById('running-text-content-1');
+                const content2 = document.getElementById('running-text-content-2');
+                const adminList = document.getElementById('admin-list-running-text');
+                
+                let texts = [];
+                if(snapshot.exists()) { snapshot.forEach(child => { const data = child.val(); data.id = child.key; texts.push(data); }); }
+                texts.sort((a,b) => b.timestamp - a.timestamp);
+
+                if(texts.length > 0) {
+                    if(publicContainer) publicContainer.classList.remove('hidden');
+                    
+                    const separator = '<span class="mx-6 text-navy-900/20 font-black flex items-center">///</span>';
+                    let combinedText = texts.map(t => t.isi).join(separator);
+                    
+                    if(combinedText.length < 150) {
+                        combinedText = [combinedText, combinedText, combinedText, combinedText, combinedText].join(separator);
+                    }
+                    combinedText += separator;
+
+                    if(content1 && content2) {
+                        content1.innerHTML = combinedText;
+                        content2.innerHTML = combinedText;
+                    }
+                } else {
+                    if(publicContainer) publicContainer.classList.add('hidden');
+                }
+
+                if(adminList) {
+                    if(texts.length === 0) {
+                        adminList.innerHTML = '<p class="text-slate-500 text-sm text-center py-4">Tidak ada running text aktif saat ini.</p>';
+                    } else {
+                        let html = '';
+                        texts.forEach(t => {
+                            html += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center space-x-4 mb-2"><div class="flex-grow"><span class="text-[10px] text-slate-500 mb-1 block">${window.formatDate(t.timestamp)}</span><p class="text-sm font-bold text-slate-800 leading-snug whitespace-pre-wrap">${t.isi}</p></div><button onclick="window.hapusRunningText('${t.id}')" class="shrink-0 p-2 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-red-200 shadow-sm" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
+                        });
+                        adminList.innerHTML = html;
+                    }
+                }
             });
 
             onValue(ref(db, pathKegiatan), (snapshot) => { 
