@@ -675,7 +675,7 @@
                 </div>
                 
                 <div class="p-4 md:p-6 bg-white border-t border-slate-200 shrink-0 flex flex-col sm:flex-row gap-3 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.03)] z-10">
-                    <button id="btn-download-pdf" class="flex-1 py-3.5 bg-navy-900 hover:bg-black text-white rounded-xl font-extrabold shadow-md flex items-center justify-center text-xs md:text-sm uppercase tracking-widest transition-all">Unduh Laporan (PDF)</button>
+                    <button id="btn-download-pdf" onclick="window.downloadPDF()" class="flex-1 py-3.5 bg-navy-900 hover:bg-black text-white rounded-xl font-extrabold shadow-md flex items-center justify-center text-xs md:text-sm uppercase tracking-widest transition-all">Unduh Laporan (PDF)</button>
                     <button class="btn-close-modal flex-1 py-3 md:py-3.5 bg-white border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-all text-xs md:text-sm" onclick="window.clearExamState()">Kembali ke Dashboard</button>
                 </div>
             </div>
@@ -1588,6 +1588,50 @@
                 else { iconContainer.innerHTML = '⚠️'; iconContainer.className = "w-20 h-20 md:w-24 md:h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner text-4xl text-red-500"; }
             }
 
+            // Menyuntikkan Data ke dalam Template Laporan PDF
+            document.getElementById('pdf-nama').innerText = currentUser ? currentUser.nama : 'Anonim';
+            document.getElementById('pdf-instansi').innerText = currentUser ? (currentUser.instansi || '-') : '-';
+            document.getElementById('pdf-kategori').innerText = activeQuizData[0] ? activeQuizData[0].kategori : 'Umum';
+            document.getElementById('pdf-nilai').innerText = finalScore;
+            
+            const pdfStatusEl = document.getElementById('pdf-status');
+            if(pdfStatusEl) {
+                pdfStatusEl.innerText = isLulus ? 'LULUS' : 'TIDAK LULUS';
+                pdfStatusEl.className = isLulus ? 'text-sm bg-emerald-100 px-2 py-0.5 rounded text-emerald-800 ml-1 font-bold' : 'text-sm bg-red-100 px-2 py-0.5 rounded text-red-800 ml-1 font-bold';
+            }
+
+            let reviewHtml = '';
+            const labels = ['A', 'B', 'C', 'D'];
+            activeQuizData.forEach((q, idx) => {
+                const userAnswer = userAnswers[idx];
+                const isCorrect = userAnswer === q.jawabanBenar;
+
+                let optionsHtml = '';
+                q.opsi.forEach((opt, optIdx) => {
+                    let optStyle = "text-slate-600";
+                    let icon = "";
+                    if (optIdx === q.jawabanBenar) {
+                        optStyle = "text-emerald-600 font-bold";
+                        icon = " ✓ (Kunci Jawaban)";
+                    } else if (optIdx === userAnswer && !isCorrect) {
+                        optStyle = "text-red-500 font-bold";
+                        icon = " ✗ (Jawaban Anda)";
+                    } else if (optIdx === userAnswer && isCorrect) {
+                        icon = " (Jawaban Anda)";
+                    }
+                    optionsHtml += `<div class="text-xs mt-1 ${optStyle}">${labels[optIdx]}. ${opt}${icon}</div>`;
+                });
+
+                reviewHtml += `
+                <div class="border-b border-slate-200 pb-3 mb-3 break-inside-avoid">
+                    <p class="font-bold text-sm text-slate-800 mb-1">${idx + 1}. ${q.pertanyaan}</p>
+                    <div class="pl-2 border-l-2 ${isCorrect ? 'border-emerald-400' : 'border-red-400'}">
+                        ${optionsHtml}
+                    </div>
+                </div>`;
+            });
+            document.getElementById('pdf-review-list').innerHTML = reviewHtml;
+
             if(currentUser && currentUser.uid) {
                 try {
                     await update(ref(db, `${pathPeserta}/${currentUser.uid}`), { skorUjian: finalScore, statusKelulusan: isLulus ? 'Lulus' : 'Tidak Lulus', tglUjian: Date.now() });
@@ -1598,16 +1642,53 @@
             localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
         };
 
-        window.sendWA_Fonnte = async function(target, textMessage) { 
-            try { 
-                const fd = new URLSearchParams(); 
-                fd.append("target", target); 
-                fd.append("message", textMessage); 
-                await fetch("https://api.fonnte.com/send", { method: 'POST', headers: { 'Authorization': 'TnG5G4e5L1XNiP9HfRts' }, body: fd }); 
-                return true; 
-            } catch (err) { 
-                return false; 
-            } 
+        window.downloadPDF = function() {
+            const element = document.getElementById('pdf-content-container');
+
+            // Memunculkan container PDF sementara secara tersembunyi (off-screen) agar dapat dirender
+            element.classList.remove('hidden');
+            element.style.position = 'absolute';
+            element.style.top = '-9999px';
+            element.style.left = '-9999px';
+            element.style.display = 'block';
+
+            let safeName = currentUser ? currentUser.nama.replace(/[^a-zA-Z0-9]/g, '_') : 'Anonim';
+            const opt = {
+                margin:       [0.5, 0.5, 0.5, 0.5],
+                filename:     `Laporan_CBT_RuangK3_${safeName}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, logging: false, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            const btn = document.getElementById('btn-download-pdf');
+            const oriText = btn.innerText;
+            btn.innerText = "MENYIAPKAN PDF...";
+            btn.disabled = true;
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Sembunyikan kembali setelah diunduh
+                element.style.display = 'none';
+                element.style.position = '';
+                element.style.top = '';
+                element.style.left = '';
+                element.classList.add('hidden');
+                
+                btn.innerText = oriText;
+                btn.disabled = false;
+                window.showToast("Laporan PDF berhasil diunduh!", "success");
+            }).catch(err => {
+                console.error(err);
+                element.style.display = 'none';
+                element.style.position = '';
+                element.style.top = '';
+                element.style.left = '';
+                element.classList.add('hidden');
+                
+                btn.innerText = oriText;
+                btn.disabled = false;
+                window.showToast("Gagal membuat dokumen PDF.", "error");
+            });
         };
 
         const overlay = document.getElementById('modal-overlay');
