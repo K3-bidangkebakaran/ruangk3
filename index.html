@@ -141,6 +141,7 @@
                         Simulasi CBT
                         <span class="ml-1.5 px-2 py-0.5 text-[9px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/40 rounded-full uppercase">Ujian</span>
                     </button>
+                    <button onclick="window.switchLmsTab('review')" id="nav-lms-review" class="py-7 text-slate-300 hover:text-safety-400 transition-all">Hasil &amp; Pembahasan</button>
                     <button onclick="window.switchLmsTab('live')" id="nav-lms-live" class="py-7 text-slate-300 hover:text-safety-400 transition-all flex items-center">
                         <span class="relative flex h-2 w-2 mr-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
                         Live CBT
@@ -165,6 +166,7 @@
                 <button onclick="window.switchLmsTab('dashboard'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Dashboard Siswa</button>
                 <button onclick="window.switchLmsTab('kelas'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Ruang Belajar (Materi)</button>
                 <button onclick="window.switchLmsTab('cbt'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Simulasi CBT Ujian</button>
+                <button onclick="window.switchLmsTab('review'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Hasil & Pembahasan Ujian</button>
                 <button onclick="window.switchLmsTab('live'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Live CBT & Sertifikasi</button>
                 
                 <div class="mt-4 pt-4 border-t border-slate-800 flex flex-col space-y-3" id="auth-container-mobile">
@@ -206,22 +208,31 @@
                         Akses modul digital K3, selesaikan Simulasi CBT interaktif, dan ikuti sertifikasi resmi Kemnaker RI.
                     </p>
                     
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                            <div class="flex items-center space-x-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">Indikator Kesiapan Ujian & Sertifikasi</span>
-                            </div>
-                            <span class="text-xs font-extrabold text-safety-400 bg-navy-950/60 px-2.5 py-1 rounded-lg border border-safety-400/30" id="lms-progress-text">Modul & CBT Ready</span>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
+                            <p class="text-[10px] uppercase tracking-widest text-slate-300 font-bold">Akreditasi</p>
+                            <p class="text-sm font-extrabold text-white mt-1 leading-snug">Standar Kemnaker RI</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Kurikulum sesuai regulasi K3 nasional</p>
                         </div>
-                        <div class="w-full bg-navy-950/80 rounded-full h-3 overflow-hidden p-0.5 border border-white/10">
-                            <div id="lms-progress-bar" class="bg-gradient-to-r from-safety-400 via-emerald-300 to-teal-300 h-2 rounded-full transition-all duration-1000" style="width: 85%"></div>
+                        <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
+                            <p class="text-[10px] uppercase tracking-widest text-slate-300 font-bold">Bidang Kompetensi</p>
+                            <p class="text-sm font-extrabold text-white mt-1 leading-snug">Umum • Kebakaran • Listrik • Konstruksi</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Modul digital multibidang</p>
                         </div>
-                        <div class="flex justify-between items-center text-[10px] text-slate-300 mt-2">
-                            <span>Modul & Regulasi K3</span>
-                            <span>Simulasi CBT Interaktif</span>
-                            <span class="text-safety-400 font-bold">Ujian Sertifikasi RI</span>
+                        <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
+                            <p class="text-[10px] uppercase tracking-widest text-slate-300 font-bold">Metode Evaluasi</p>
+                            <p class="text-sm font-extrabold text-white mt-1 leading-snug">CBT Terstandar 45 Menit</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Penilaian objektif & terdokumentasi</p>
                         </div>
+                        <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
+                            <p class="text-[10px] uppercase tracking-widest text-slate-300 font-bold">Output Peserta</p>
+                            <p class="text-sm font-extrabold text-white mt-1 leading-snug">Laporan Hasil & Pembahasan</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Dapat ditinjau ulang kapan saja</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-3 mt-5">
+                        <button onclick="window.switchLmsTab('cbt')" class="px-5 py-3 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl shadow-lg transition-all uppercase tracking-wider">Mulai Simulasi CBT</button>
+                        <button onclick="window.switchLmsTab('review')" class="px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 transition-all uppercase tracking-wider">Hasil &amp; Pembahasan</button>
                     </div>
                 </div>
             </section>
@@ -389,6 +400,66 @@
                             <p class="text-xs text-slate-500 mt-1">Skor Anda dikirim secara *live* ke layar Instruktur saat Anda mengerjakan soal.</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HASIL & PEMBAHASAN PESERTA -->
+        <div id="view-lms-review" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
+                <div>
+                    <span class="text-xs font-bold text-safety-500 uppercase tracking-widest">Evaluasi Pembelajaran</span>
+                    <h1 class="text-2xl font-extrabold text-slate-900">Hasil Ujian &amp; Pembahasan Soal</h1>
+                </div>
+                <button onclick="window.switchLmsTab('dashboard')" class="text-xs font-bold text-slate-500 hover:text-slate-900">&larr; Kembali ke Dashboard</button>
+            </div>
+
+            <div id="review-locked" class="hidden text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-xl mx-auto">
+                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🔒</div>
+                <h3 class="font-extrabold text-slate-900">Masuk untuk Melihat Hasil Ujian</h3>
+                <p class="text-sm text-slate-500 mt-2">Silakan masuk dengan akun peserta Anda untuk meninjau jawaban dan kunci jawaban ujian.</p>
+                <button onclick="window.openModal('modal-login')" class="mt-6 px-6 py-3 bg-safety-500 hover:bg-safety-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">Masuk / Daftar</button>
+            </div>
+
+            <div id="review-empty" class="hidden text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-xl mx-auto">
+                <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">📝</div>
+                <h3 class="font-extrabold text-slate-900">Belum Ada Riwayat Ujian</h3>
+                <p class="text-sm text-slate-500 mt-2">Selesaikan Simulasi CBT terlebih dahulu. Setelah ujian selesai, seluruh soal, jawaban Anda, dan kunci jawaban akan tersimpan di halaman ini untuk dipelajari kembali.</p>
+                <button onclick="window.switchLmsTab('cbt')" class="mt-6 px-6 py-3 bg-safety-500 hover:bg-safety-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-md">Mulai Simulasi CBT</button>
+            </div>
+
+            <div id="review-content" class="hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Nilai Akhir</p>
+                        <p class="text-3xl font-black text-slate-900 mt-1" id="review-skor">0</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Status</p>
+                        <p class="text-lg font-extrabold mt-2" id="review-status">-</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Jawaban Benar</p>
+                        <p class="text-lg font-extrabold text-slate-900 mt-2" id="review-benar">0 / 0</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Tanggal Ujian</p>
+                        <p class="text-sm font-extrabold text-slate-900 mt-2" id="review-tanggal">-</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 class="font-extrabold text-slate-900">Pembahasan Soal &amp; Kunci Jawaban</h2>
+                            <p class="text-xs text-slate-500 mt-1" id="review-kategori-info">Kategori: -</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="window.filterReviewList('all')" id="btn-review-all" class="px-3 py-2 rounded-lg text-[11px] font-bold bg-slate-900 text-white">Semua</button>
+                            <button onclick="window.filterReviewList('wrong')" id="btn-review-wrong" class="px-3 py-2 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">Hanya Salah</button>
+                        </div>
+                    </div>
+                    <div id="review-history-list" class="space-y-5"></div>
                 </div>
             </div>
         </div>
@@ -1163,7 +1234,7 @@
 
         const cleanAppId = 'k3-kebakaran-app-v5';
         const firebaseConfig = {
-          apiKey: "AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg",
+          apiKey: "@secret:GOOGLE_API_KEY",
           authDomain: "portal-k3-bidang-kebakaran.firebaseapp.com",
           databaseURL: "https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app",
           projectId: "portal-k3-bidang-kebakaran",
@@ -1188,6 +1259,7 @@
         const pathLiveCbt = `artifacts/${cleanAppId}/public/data/live_cbt`;
         const pathKategori = `artifacts/${cleanAppId}/public/data/kategori_k3`;
         const pathRunningText = `artifacts/${cleanAppId}/public/data/running_text`;
+        const pathRiwayatUjian = `artifacts/${cleanAppId}/public/data/riwayat_ujian`;
 
         // GLOBAL VARIABLES
         let currentUser = null; 
@@ -1212,12 +1284,13 @@
         };
 
         window.switchLmsTab = function(tabName) {
-            ['dashboard', 'kelas', 'cbt', 'live'].forEach(t => {
+            ['dashboard', 'kelas', 'cbt', 'live', 'review'].forEach(t => {
                 document.getElementById(`view-lms-${t}`)?.classList.add('hidden');
                 document.getElementById(`nav-lms-${t}`)?.classList.remove('tab-lms-active');
             });
             document.getElementById(`view-lms-${tabName}`)?.classList.remove('hidden');
             document.getElementById(`nav-lms-${tabName}`)?.classList.add('tab-lms-active');
+            if (tabName === 'review') { window.loadRiwayatUjian(); }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
@@ -1756,6 +1829,28 @@
 
             if(currentUser && currentUser.uid) {
                 try {
+                    await set(ref(db, `${pathRiwayatUjian}/${currentUser.uid}`), {
+                        nama: currentUser.nama || '-',
+                        instansi: currentUser.instansi || '-',
+                        kategori: activeQuizData[0] ? (activeQuizData[0].kategori || 'Umum') : 'Umum',
+                        skor: finalScore,
+                        status: isLulus ? 'LULUS' : 'TIDAK LULUS',
+                        benar: correctCount,
+                        total: total,
+                        tanggal: Date.now(),
+                        soal: activeQuizData.map((q, idx) => ({
+                            pertanyaan: q.pertanyaan || '',
+                            opsi: q.opsi || [],
+                            jawabanBenar: typeof q.jawabanBenar === 'number' ? q.jawabanBenar : -1,
+                            jawabanPeserta: (userAnswers[idx] === null || userAnswers[idx] === undefined) ? -1 : userAnswers[idx],
+                            pembahasan: q.pembahasan || ''
+                        }))
+                    });
+                } catch(e) {}
+            }
+
+            if(currentUser && currentUser.uid) {
+                try {
                     await update(ref(db, `${pathPeserta}/${currentUser.uid}`), { 
                         skorUjian: finalScore, 
                         statusKelulusan: isLulus ? 'Lulus' : 'Tidak Lulus', 
@@ -1771,6 +1866,87 @@
             }
             
             localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
+        };
+
+        let riwayatUjianData = null; let riwayatFilter = 'all';
+
+        window.loadRiwayatUjian = async function() {
+            const lockEl = document.getElementById('review-locked');
+            const emptyEl = document.getElementById('review-empty');
+            const contentEl = document.getElementById('review-content');
+            if(!lockEl || !emptyEl || !contentEl) return;
+
+            lockEl.classList.add('hidden'); emptyEl.classList.add('hidden'); contentEl.classList.add('hidden');
+
+            if(!currentUser || !currentUser.uid || currentUser.role !== 'peserta') {
+                lockEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const snap = await get(ref(db, `${pathRiwayatUjian}/${currentUser.uid}`));
+                const data = snap.exists() ? snap.val() : null;
+                if(!data || !data.soal || !data.soal.length) { emptyEl.classList.remove('hidden'); return; }
+                riwayatUjianData = data;
+                contentEl.classList.remove('hidden');
+
+                document.getElementById('review-skor').innerText = data.skor ?? 0;
+                const stEl = document.getElementById('review-status');
+                const lulus = (data.status || '').toUpperCase() === 'LULUS';
+                stEl.innerText = data.status || '-';
+                stEl.className = `text-lg font-extrabold mt-2 ${lulus ? 'text-emerald-600' : 'text-red-500'}`;
+                document.getElementById('review-benar').innerText = `${data.benar ?? 0} / ${data.total ?? (data.soal.length)}`;
+                document.getElementById('review-tanggal').innerText = window.formatDate(data.tanggal);
+                document.getElementById('review-kategori-info').innerText = `Kategori: ${data.kategori || 'Umum'} • ${data.soal.length} soal`;
+                window.filterReviewList(riwayatFilter);
+            } catch(e) {
+                emptyEl.classList.remove('hidden');
+            }
+        };
+
+        window.filterReviewList = function(mode) {
+            riwayatFilter = mode;
+            const btnAll = document.getElementById('btn-review-all');
+            const btnWrong = document.getElementById('btn-review-wrong');
+            if(btnAll && btnWrong) {
+                const on = "px-3 py-2 rounded-lg text-[11px] font-bold bg-slate-900 text-white";
+                const off = "px-3 py-2 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 hover:bg-slate-200";
+                btnAll.className = mode === 'all' ? on : off;
+                btnWrong.className = mode === 'wrong' ? on : off;
+            }
+            if(!riwayatUjianData) return;
+
+            const labels = ['A','B','C','D','E'];
+            const list = document.getElementById('review-history-list');
+            let html = '';
+            riwayatUjianData.soal.forEach((q, idx) => {
+                const isCorrect = q.jawabanPeserta === q.jawabanBenar;
+                if(mode === 'wrong' && isCorrect) return;
+                let opsiHtml = '';
+                (q.opsi || []).forEach((opt, oi) => {
+                    let cls = "bg-white border-slate-200 text-slate-600";
+                    let icon = `<span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">${labels[oi] || oi+1}</span>`;
+                    if(oi === q.jawabanBenar) {
+                        cls = "bg-emerald-50 border-emerald-300 text-emerald-800 font-bold ring-1 ring-emerald-400";
+                        icon = `<span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">✓</span>`;
+                    } else if(oi === q.jawabanPeserta) {
+                        cls = "bg-red-50 border-red-300 text-red-800 font-bold";
+                        icon = `<span class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">✗</span>`;
+                    }
+                    opsiHtml += `<div class="flex items-center p-3 mt-2 rounded-xl border ${cls} text-xs sm:text-sm">${icon}<span class="flex-1">${opt}</span>${oi === q.jawabanPeserta ? '<span class="ml-2 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded bg-white shadow-sm border border-slate-200 text-slate-800 shrink-0">Jawaban Anda</span>' : ''}${oi === q.jawabanBenar ? '<span class="ml-2 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded bg-emerald-600 text-white shrink-0">Kunci</span>' : ''}</div>`;
+                });
+                const unanswered = q.jawabanPeserta === -1;
+                html += `
+                <div class="border border-slate-200 rounded-2xl p-4 sm:p-5 bg-white shadow-sm text-left">
+                    <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-3">
+                        <p class="font-bold text-sm sm:text-base text-slate-900 leading-relaxed"><span class="text-safety-500 mr-1">${idx + 1}.</span> ${q.pertanyaan}</p>
+                        <span class="ml-3 shrink-0 px-2 py-1 rounded text-[10px] font-extrabold uppercase ${isCorrect ? 'bg-emerald-100 text-emerald-700' : (unanswered ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-700')}">${isCorrect ? 'BENAR' : (unanswered ? 'TIDAK DIJAWAB' : 'SALAH')}</span>
+                    </div>
+                    <div class="space-y-1">${opsiHtml}</div>
+                    ${q.pembahasan ? `<div class="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200"><p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1">Pembahasan</p><p class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">${q.pembahasan}</p></div>` : ''}
+                </div>`;
+            });
+            list.innerHTML = html || '<p class="text-sm text-slate-500 text-center py-10">Tidak ada soal yang salah. Kerja bagus!</p>';
         };
 
         window.downloadPDF = function() {
