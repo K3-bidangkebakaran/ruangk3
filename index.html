@@ -80,7 +80,7 @@
         .bg-grid-pattern-white { background-image: radial-gradient(rgba(255, 255, 255, 0.12) 2px, transparent 2px); background-size: 24px 24px; }
         
         /* Star Rating System */
-        .star-rating { display: flex; flex-direction: row-reverse; justify-content: center; gap: 0.5rem; }
+        .star-rating { display: flex; flex-row-reverse; justify-content: center; gap: 0.5rem; }
         .star-rating input { position: absolute; opacity: 0; width: 0; height: 0; }
         .star-rating label { cursor: pointer; color: #cbd5e1; transition: color 0.2s ease; font-size: 2.5rem; }
         .star-rating label svg { width: 48px; height: 48px; fill: currentColor; }
@@ -95,37 +95,6 @@
         .animate-marquee-seamless { display: flex; width: max-content; animation: marqueeSeamless 20s linear infinite; }
         .animate-marquee-seamless:hover { animation-play-state: paused; }
         .mask-edges { -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent); mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent); }
-
-        /* ================= PERBAIKAN TAMPILAN MOBILE ================= */
-        html { -webkit-text-size-adjust: 100%; }
-        body { overflow-x: hidden; }
-        img, svg, video, canvas { max-width: 100%; }
-
-        /* Overlay modal bisa di-scroll penuh pada layar kecil */
-        #modal-overlay {
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            align-items: flex-start;
-            padding: 1rem 1rem 2.5rem;
-        }
-        @media (min-width: 640px) { #modal-overlay { align-items: center; } }
-
-        /* Modal ujian tetap full-height namun aman di mobile browser (dvh) */
-        #modal-ujian { max-height: calc(100dvh - 1.5rem); }
-        @media (max-width: 767px) {
-            #modal-ujian { height: calc(100dvh - 1.5rem); }
-            #ujian-soal { flex-direction: column; }
-            #modal-overlay > div:not(#modal-ujian) { max-height: none; }
-        }
-
-        /* Panel admin dapat di-scroll di HP */
-        #view-admin { height: 100dvh; }
-        #admin-content-scroll { -webkit-overflow-scrolling: touch; }
-        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-        /* Riwayat ujian */
-        .riwayat-card { transition: transform .2s ease, box-shadow .2s ease; }
-        .riwayat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -10px rgba(15,23,42,.25); }
     </style>
 </head>
 
@@ -165,12 +134,15 @@
                     </div>
                 </div>
 
-                <div class="hidden md:flex space-x-8 text-sm font-semibold">
+                <div class="hidden md:flex space-x-6 text-sm font-semibold">
                     <button onclick="window.switchLmsTab('dashboard')" id="nav-lms-dashboard" class="py-7 tab-lms-active transition-all">Dashboard Siswa</button>
                     <button onclick="window.switchLmsTab('kelas')" id="nav-lms-kelas" class="py-7 text-slate-300 hover:text-safety-400 transition-all">Ruang Belajar (Materi)</button>
                     <button onclick="window.switchLmsTab('cbt')" id="nav-lms-cbt" class="py-7 text-slate-300 hover:text-safety-400 transition-all flex items-center">
                         Simulasi CBT
                         <span class="ml-1.5 px-2 py-0.5 text-[9px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/40 rounded-full uppercase">Ujian</span>
+                    </button>
+                    <button onclick="window.switchLmsTab('history')" id="nav-lms-history" class="py-7 text-slate-300 hover:text-safety-400 transition-all flex items-center">
+                        History Ujian
                     </button>
                     <button onclick="window.switchLmsTab('live')" id="nav-lms-live" class="py-7 text-slate-300 hover:text-safety-400 transition-all flex items-center">
                         <span class="relative flex h-2 w-2 mr-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
@@ -196,6 +168,7 @@
                 <button onclick="window.switchLmsTab('dashboard'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Dashboard Siswa</button>
                 <button onclick="window.switchLmsTab('kelas'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Ruang Belajar (Materi)</button>
                 <button onclick="window.switchLmsTab('cbt'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Simulasi CBT Ujian</button>
+                <button onclick="window.switchLmsTab('history'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">History Ujian Peserta</button>
                 <button onclick="window.switchLmsTab('live'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Live CBT & Sertifikasi</button>
                 
                 <div class="mt-4 pt-4 border-t border-slate-800 flex flex-col space-y-3" id="auth-container-mobile">
@@ -287,36 +260,6 @@
                         <h3 class="font-extrabold text-lg">Simulasi CBT Sertifikasi</h3>
                         <p class="text-xs text-slate-300 leading-relaxed">Uji pengetahuan Anda dalam ujian CBT berwaktu 45 menit. Dapatkan evaluasi instan dan unduh sertifikat/soal PDF.</p>
                         <button onclick="window.switchLmsTab('cbt')" class="w-full py-3.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Mulai Simulasi Ujian CBT &rarr;</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ============ RIWAYAT HASIL UJIAN PESERTA ============ -->
-            <section id="riwayat-ujian" class="pt-8 border-t border-slate-200 reveal">
-                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
-                    <div>
-                        <span class="text-[10px] font-extrabold text-safety-500 uppercase tracking-widest">Rekam Jejak Ujian</span>
-                        <h2 class="text-xl font-extrabold text-slate-900">Riwayat Hasil Ujian Saya</h2>
-                        <p class="text-xs text-slate-500 mt-1">Menampilkan seluruh hasil ujian CBT sesuai bidang &amp; kelas yang pernah Anda pilih.</p>
-                    </div>
-                    <div class="w-full sm:w-64">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Kelas / Kategori</label>
-                        <select id="filter-riwayat-kelas" class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl outline-none bg-white">
-                            <option value="all">Semua Kelas</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="riwayat-ujian-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 hidden">
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Ujian</p><p id="riwayat-stat-total" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Tertinggi</p><p id="riwayat-stat-max" class="text-2xl font-extrabold text-emerald-600 mt-1">0</p></div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rata-Rata</p><p id="riwayat-stat-avg" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lulus</p><p id="riwayat-stat-lulus" class="text-2xl font-extrabold text-safety-600 mt-1">0</p></div>
-                </div>
-
-                <div id="riwayat-ujian-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center">
-                        <p class="text-sm text-slate-500">Silakan masuk ke akun peserta untuk melihat riwayat hasil ujian Anda.</p>
                     </div>
                 </div>
             </section>
@@ -420,7 +363,7 @@
                 <h2 class="text-3xl font-extrabold text-slate-900 mb-4">Uji Pemahaman K3 Anda</h2>
                 <p class="text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
                     Ikuti simulasi ujian sertifikasi K3 yang disusun sesuai standar kompetensi. 
-                    Anda akan diberi waktu <strong>45 Menit</strong> untuk menyelesaikan soal-soal pilihan ganda secara acak. 
+                    Anda akan diberi waktu <strong>45 Menit</strong> untuk menyelesaikan seluruh soal pilihan ganda dari Bank Soal secara acak. 
                     Jika koneksi terputus, memori jawaban Anda akan otomatis tersimpan.
                 </p>
                 
@@ -451,6 +394,33 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- HISTORY UJIAN SCREEN (NEW) -->
+        <div id="view-lms-history" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4">
+                <div>
+                    <span class="text-xs font-bold text-safety-500 uppercase tracking-widest">Pembelajaran & Evaluasi</span>
+                    <h1 class="text-2xl font-extrabold text-slate-900">History Hasil Ujian Peserta</h1>
+                    <p class="text-slate-500 text-xs mt-1">Review dan pelajari kembali seluruh soal yang pernah Anda kerjakan lengkap dengan pilihan ganda dan kunci jawaban.</p>
+                </div>
+                <button onclick="window.switchLmsTab('dashboard')" class="text-xs font-bold text-slate-500 hover:text-slate-900">&larr; Kembali ke Dashboard</button>
+            </div>
+
+            <div id="history-locked" class="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-xl mx-auto my-8">
+                <div class="w-20 h-20 bg-emerald-50 text-safety-500 rounded-full flex items-center justify-center mx-auto mb-5 text-3xl shadow-inner">🔒</div>
+                <h3 class="text-xl font-extrabold text-slate-900 mb-2">Akses Terkunci - Silakan Login</h3>
+                <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+                    Silakan masuk dengan akun peserta Anda untuk melihat catatan riwayat dan pembahasan ujian yang telah Anda selesaikan.
+                </p>
+                <button onclick="window.openModal('modal-login')" class="px-6 py-3.5 bg-safety-500 hover:bg-safety-600 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all">
+                    Masuk / Daftar Akun Peserta &rarr;
+                </button>
+            </div>
+
+            <div id="history-container" class="hidden space-y-6">
+                <div id="history-list" class="space-y-6"></div>
             </div>
         </div>
 
@@ -526,7 +496,7 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col space-y-2 pointer-events-none"></div>
 
-    <div id="modal-overlay" class="fixed inset-0 bg-navy-950/80 z-[999] hidden flex items-start sm:items-center justify-center backdrop-blur-md p-4 transition-opacity">
+    <div id="modal-overlay" class="fixed inset-0 bg-navy-950/80 z-[999] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity">
         
         <!-- Modal Baca Berita Detail -->
         <div id="modal-baca-berita" class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl hidden relative flex-col max-h-[90vh] overflow-hidden z-[1050]">
@@ -605,7 +575,6 @@
                 <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500 text-3xl">⭐</div>
                 <h3 class="text-2xl font-extrabold text-slate-900">Beri Ulasan Instruktur</h3>
                 <p class="text-slate-500 text-sm mt-2">Bagaimana pengalaman Anda diajar oleh instruktur ini?</p>
-                <p id="ulasan-konteks-info" class="hidden mt-3 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"></p>
             </div>
             <form id="form-ulasan-instruktur" class="space-y-4">
                 <div class="flex justify-center flex-row-reverse star-rating">
@@ -624,8 +593,7 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Saran & Kritik</label>
                     <textarea id="input-ulasan-teks" required rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Tuliskan pengalaman Anda..."></textarea>
                 </div>
-                <button type="submit" class="w-full py-3.5 bg-navy-900 text-white rounded-xl font-bold shadow-lg mt-4">Kirim Ulasan &amp; Lihat Nilai</button>
-                <button type="button" id="btn-skip-ulasan" class="w-full py-2 text-slate-400 hover:text-slate-600 text-xs font-semibold hidden">Lewati ulasan &amp; langsung lihat nilai</button>
+                <button type="submit" class="w-full py-3.5 bg-navy-900 text-white rounded-xl font-bold shadow-lg mt-4">Kirim Ulasan & Lihat Nilai</button>
             </form>
         </div>
 
@@ -756,7 +724,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <!-- PANEL ADMIN -->
     <div id="view-admin" class="fixed inset-0 z-[100] bg-slate-100 hidden flex-col md:flex-row overflow-hidden">
@@ -795,7 +763,7 @@
                 </div>
             </header>
 
-            <div id="admin-content-scroll" class="flex-grow p-4 md:p-6 overflow-y-auto admin-scroll">
+            <div class="flex-grow p-4 md:p-6 overflow-y-auto admin-scroll">
                 
                 <!-- Kalender -->
                 <div id="admin-panel-home" class="admin-panel block">
@@ -1251,7 +1219,6 @@
         const pathLiveCbt = `artifacts/${cleanAppId}/public/data/live_cbt`;
         const pathKategori = `artifacts/${cleanAppId}/public/data/kategori_k3`;
         const pathRunningText = `artifacts/${cleanAppId}/public/data/running_text`;
-        const pathRiwayat = `artifacts/${cleanAppId}/public/data/riwayat_ujian`;
 
         // GLOBAL VARIABLES
         let currentUser = null; 
@@ -1262,12 +1229,19 @@
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
-        let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
-        const JUMLAH_SOAL_UJIAN = 25;
         let isAppInitialized = false;
 
+        // Fisher-Yates Array Shuffler
+        window.shuffleArray = function(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        };
+
         window.sendWA_Fonnte = async function(hp, message) {
-            // Placeholder for WhatsApp API integration
             console.log(`[WA Simulator] Sent to ${hp}: \n${message}`);
         };
 
@@ -1278,13 +1252,17 @@
         };
 
         window.switchLmsTab = function(tabName) {
-            ['dashboard', 'kelas', 'cbt', 'live'].forEach(t => {
+            ['dashboard', 'kelas', 'cbt', 'history', 'live'].forEach(t => {
                 document.getElementById(`view-lms-${t}`)?.classList.add('hidden');
                 document.getElementById(`nav-lms-${t}`)?.classList.remove('tab-lms-active');
             });
             document.getElementById(`view-lms-${tabName}`)?.classList.remove('hidden');
             document.getElementById(`nav-lms-${tabName}`)?.classList.add('tab-lms-active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (tabName === 'history') {
+                window.renderHistoryUjian();
+            }
         };
 
         window.animateNumber = function(id, endValue) {
@@ -1366,6 +1344,169 @@
             window.location.reload();
         };
 
+        // Render History Ujian Peserta
+        window.renderHistoryUjian = function() {
+            const lockedEl = document.getElementById('history-locked');
+            const containerEl = document.getElementById('history-container');
+            const listEl = document.getElementById('history-list');
+            if (!listEl) return;
+
+            if (!currentUser || currentUser.role !== 'peserta') {
+                if (lockedEl) lockedEl.classList.remove('hidden');
+                if (containerEl) containerEl.classList.add('hidden');
+                return;
+            }
+
+            if (lockedEl) lockedEl.classList.add('hidden');
+            if (containerEl) containerEl.classList.remove('hidden');
+
+            listEl.innerHTML = `
+                <div class="text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-400">
+                    <svg class="w-8 h-8 animate-spin mx-auto text-safety-500 mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Memuat riwayat ujian Anda...
+                </div>
+            `;
+
+            const pathHistoryPeserta = `artifacts/${cleanAppId}/public/data/peserta/${currentUser.uid}/history_ujian`;
+            onValue(ref(db, pathHistoryPeserta), (snapshot) => {
+                let historyData = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        const item = child.val();
+                        item.id = child.key;
+                        historyData.push(item);
+                    });
+                }
+                historyData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                if (historyData.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="text-center py-16 bg-white rounded-3xl border border-slate-200 shadow-sm p-8 max-w-xl mx-auto">
+                            <div class="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">📝</div>
+                            <h3 class="text-lg font-extrabold text-slate-900 mb-1">Belum Ada Riwayat Ujian</h3>
+                            <p class="text-slate-500 text-xs mb-6">Anda belum pernah menyelesaikan simulasi ujian CBT. Silakan ikuti simulasi ujian untuk melatih pemahaman K3 Anda.</p>
+                            <button onclick="window.switchLmsTab('cbt')" class="px-6 py-3.5 bg-safety-500 hover:bg-safety-600 text-white font-extrabold text-xs rounded-xl shadow-md transition-all">Mulai Ujian CBT &rarr;</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const labels = ['A', 'B', 'C', 'D'];
+                let html = '';
+                historyData.forEach((h) => {
+                    const isLulus = h.status === 'Lulus' || (h.skor >= 70);
+                    const statusBadge = isLulus
+                        ? `<span class="px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full text-[10px] font-black uppercase">LULUS ✓</span>`
+                        : `<span class="px-3 py-1 bg-red-100 text-red-700 border border-red-300 rounded-full text-[10px] font-black uppercase">TIDAK LULUS</span>`;
+
+                    let itemsHtml = '';
+                    if (h.items && Array.isArray(h.items)) {
+                        h.items.forEach((q, qIdx) => {
+                            const isCorrect = q.jawabanPeserta === q.jawabanBenar;
+                            let optsHtml = '';
+                            (q.opsi || []).forEach((opt, optIdx) => {
+                                let optClass = "bg-slate-50 border-slate-200 text-slate-700";
+                                let icon = `<span class="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mr-3 text-slate-500">${labels[optIdx]}</span>`;
+                                let tag = '';
+
+                                if (optIdx === q.jawabanBenar) {
+                                    optClass = "bg-emerald-50 border-emerald-300 text-emerald-900 font-bold ring-1 ring-emerald-400";
+                                    icon = `<span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">✓</span>`;
+                                    tag = `<span class="ml-2 text-[9px] font-extrabold px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded shrink-0">Kunci Jawaban</span>`;
+                                } else if (optIdx === q.jawabanPeserta && !isCorrect) {
+                                    optClass = "bg-red-50 border-red-300 text-red-900 font-bold";
+                                    icon = `<span class="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mr-3">✗</span>`;
+                                    tag = `<span class="ml-2 text-[9px] font-extrabold px-2 py-0.5 bg-red-200 text-red-900 rounded shrink-0">Pilihan Anda</span>`;
+                                } else if (optIdx === q.jawabanPeserta && isCorrect) {
+                                    tag = `<span class="ml-2 text-[9px] font-extrabold px-2 py-0.5 bg-emerald-200 text-emerald-900 rounded shrink-0">Pilihan Anda (Benar)</span>`;
+                                }
+
+                                optsHtml += `
+                                    <div class="flex items-center p-3 rounded-xl border ${optClass} text-xs sm:text-sm">
+                                        ${icon}
+                                        <span class="flex-1">${opt}</span>
+                                        ${tag}
+                                    </div>
+                                `;
+                            });
+
+                            itemsHtml += `
+                                <div class="border border-slate-200 rounded-2xl p-4 sm:p-5 bg-white shadow-sm space-y-3">
+                                    <div class="flex justify-between items-start border-b border-slate-100 pb-3 gap-2">
+                                        <p class="font-bold text-sm sm:text-base text-slate-900 leading-relaxed">
+                                            <span class="text-safety-500 font-extrabold mr-1.5">No. ${qIdx + 1}</span> ${q.pertanyaan}
+                                        </p>
+                                        <span class="shrink-0 px-2.5 py-1 rounded text-[10px] font-black uppercase ${isCorrect ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'}">
+                                            ${isCorrect ? 'BENAR' : (q.jawabanPeserta === null || q.jawabanPeserta === undefined ? 'TIDAK DIJAWAB' : 'SALAH')}
+                                        </span>
+                                    </div>
+                                    <div class="space-y-2">
+                                        ${optsHtml}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        itemsHtml = `<p class="text-xs text-slate-400 italic">Rincian soal tidak tersedia untuk ujian ini.</p>`;
+                    }
+
+                    html += `
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                            <div class="p-6 sm:p-7 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
+                                <div class="space-y-1">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-navy-900 text-white">${h.kategori || 'K3'}</span>
+                                        <span class="text-xs text-slate-400 font-medium">${window.formatDate(h.timestamp)}</span>
+                                    </div>
+                                    <h3 class="text-lg sm:text-xl font-black text-slate-900">Hasil Simulasi Ujian CBT</h3>
+                                    <p class="text-xs text-slate-500 font-medium">Jawaban Benar: <strong class="text-slate-800">${h.jawabanBenar !== undefined ? h.jawabanBenar : '-'} / ${h.totalSoal || '-'} Soal</strong></p>
+                                </div>
+                                <div class="flex items-center space-x-4 self-stretch md:self-auto justify-between md:justify-end">
+                                    <div class="text-right">
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skor Akhir</p>
+                                        <p class="text-3xl sm:text-4xl font-black font-mono leading-none ${isLulus ? 'text-emerald-600' : 'text-red-500'}">${h.skor || 0}</p>
+                                    </div>
+                                    <div class="flex flex-col items-end space-y-2">
+                                        ${statusBadge}
+                                        <button onclick="window.toggleHistoryDetail('${h.id}')" id="btn-toggle-hist-${h.id}" class="text-xs font-extrabold text-safety-600 hover:text-safety-700 underline flex items-center">
+                                            Buka Pembahasan & Kunci &darr;
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="detail-hist-${h.id}" class="hidden p-6 sm:p-8 bg-slate-50 border-t border-slate-200/60 space-y-4">
+                                <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-2">
+                                    <h4 class="font-extrabold text-sm sm:text-base text-slate-900 flex items-center">
+                                        <span class="text-safety-500 mr-2">📚</span> Pembahasan Soal & Kunci Jawaban Lengkap
+                                    </h4>
+                                    <span class="text-xs text-slate-500 font-bold">${h.items ? h.items.length : 0} Pertanyaan</span>
+                                </div>
+                                <div class="space-y-4">
+                                    ${itemsHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                listEl.innerHTML = html;
+            });
+        };
+
+        window.toggleHistoryDetail = function(id) {
+            const detailEl = document.getElementById(`detail-hist-${id}`);
+            const btnEl = document.getElementById(`btn-toggle-hist-${id}`);
+            if (!detailEl || !btnEl) return;
+            
+            if (detailEl.classList.contains('hidden')) {
+                detailEl.classList.remove('hidden');
+                btnEl.innerHTML = 'Tutup Pembahasan &uarr;';
+            } else {
+                detailEl.classList.add('hidden');
+                btnEl.innerHTML = 'Buka Pembahasan & Kunci &darr;';
+            }
+        };
+
         window.renderVerifikasiUI = function() {
             const tbody = document.getElementById('admin-table-verifikasi');
             const badge = document.getElementById('badge-verif');
@@ -1443,10 +1584,6 @@
                         <span class="text-[10px] text-slate-500">${window.formatDate(r.timestamp)}</span>
                     </div>
                     <div class="text-sm mb-1 text-amber-500">${stars}</div>
-                    <div class="flex flex-wrap gap-1.5 mb-1.5">
-                        ${r.kategori ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-200 text-slate-700">${r.kategori}</span>` : ''}
-                        ${r.namaInstruktur ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-700">${r.namaInstruktur}</span>` : ''}
-                    </div>
                     <p class="text-xs text-slate-600 italic">"${r.ulasan || 'Tidak ada komentar'}"</p>
                 </div>`;
             });
@@ -1479,134 +1616,6 @@
                     }
                 });
             } catch(e) {}
-        };
-
-        /* ================= UTILITAS ACAK SOAL ================= */
-        window.shuffleArray = function(arr) {
-            const a = arr.slice();
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
-            }
-            return a;
-        };
-
-        window.getNamaTim = function(idTim) {
-            const sel = document.getElementById('select-ujian-tim');
-            if(sel) {
-                const opt = Array.from(sel.options).find(o => o.value === idTim);
-                if(opt && opt.text) return opt.text.trim();
-            }
-            const t = (dataTimAll || []).find(x => x.id === idTim);
-            return t ? (t.nama || t.namaTim || 'Instruktur') : 'Instruktur';
-        };
-
-        /* Ambil soal dari Bank Soal admin sesuai Bidang + Kelas, lalu diacak */
-        window.buildSoalUjian = function(bidang, kelas, idTim) {
-            const kategori = `${bidang} - ${kelas}`;
-            let pool = (quizDataFromDB || []).filter(q => (q.kategori || '') === kategori);
-
-            // Fallback bertingkat: soal se-bidang, lalu seluruh bank soal
-            if (pool.length === 0) pool = (quizDataFromDB || []).filter(q => (q.kategori || '').startsWith(bidang));
-            if (pool.length === 0) pool = (quizDataFromDB || []).slice();
-
-            // Acak urutan soal (Fisher-Yates) + batasi jumlah soal
-            pool = window.shuffleArray(pool).slice(0, JUMLAH_SOAL_UJIAN);
-
-            // Acak posisi opsi jawaban tiap soal agar peserta sulit menyontek
-            return pool.map(q => {
-                const opsiAsli = Array.isArray(q.opsi) ? q.opsi : [];
-                const idxAcak = window.shuffleArray(opsiAsli.map((_, i) => i));
-                const opsiBaru = idxAcak.map(i => opsiAsli[i]);
-                const jawabanBaru = idxAcak.indexOf(Number(q.jawabanBenar));
-                return {
-                    ...q,
-                    opsi: opsiBaru,
-                    jawabanBenar: jawabanBaru < 0 ? 0 : jawabanBaru,
-                    kategori: kategori,
-                    idTimTarget: idTim
-                };
-            });
-        };
-
-        /* ================= RIWAYAT UJIAN PESERTA ================= */
-        window.listenRiwayatUjian = function(uid) {
-            if(!uid) return;
-            onValue(ref(db, `${pathRiwayat}/${uid}`), (snap) => {
-                dataRiwayatUjian = [];
-                if(snap.exists()) {
-                    snap.forEach(child => { dataRiwayatUjian.push({ id: child.key, ...child.val() }); });
-                }
-                dataRiwayatUjian.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-                window.renderRiwayatUjian();
-            });
-        };
-
-        window.renderRiwayatUjian = function() {
-            const list = document.getElementById('riwayat-ujian-list');
-            const filterEl = document.getElementById('filter-riwayat-kelas');
-            const statsBox = document.getElementById('riwayat-ujian-stats');
-            if(!list || !filterEl) return;
-
-            if(!currentUser || currentUser.role !== 'peserta') {
-                list.innerHTML = `<div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center"><p class="text-sm text-slate-500">Silakan masuk ke akun peserta untuk melihat riwayat hasil ujian Anda.</p></div>`;
-                if(statsBox) statsBox.classList.add('hidden');
-                return;
-            }
-
-            // Susun opsi filter kelas sesuai kelas yang pernah diikuti
-            const kategoriUnik = [...new Set(dataRiwayatUjian.map(r => r.kategori).filter(Boolean))];
-            const nilaiFilter = filterEl.value || 'all';
-            filterEl.innerHTML = `<option value="all">Semua Kelas</option>` + kategoriUnik.map(k => `<option value="${k}">${k}</option>`).join('');
-            filterEl.value = kategoriUnik.includes(nilaiFilter) ? nilaiFilter : 'all';
-
-            const data = filterEl.value === 'all' ? dataRiwayatUjian : dataRiwayatUjian.filter(r => r.kategori === filterEl.value);
-
-            if(data.length === 0) {
-                list.innerHTML = `<div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center"><p class="text-sm text-slate-500">Belum ada riwayat ujian pada kelas ini. Ikuti Simulasi CBT untuk mulai mencatat hasil Anda.</p></div>`;
-                if(statsBox) statsBox.classList.add('hidden');
-                return;
-            }
-
-            const nilaiArr = data.map(r => Number(r.skor) || 0);
-            const totalLulus = data.filter(r => (Number(r.skor)||0) >= 70).length;
-            if(statsBox) {
-                statsBox.classList.remove('hidden');
-                document.getElementById('riwayat-stat-total').innerText = data.length;
-                document.getElementById('riwayat-stat-max').innerText = Math.max(...nilaiArr);
-                document.getElementById('riwayat-stat-avg').innerText = Math.round(nilaiArr.reduce((a,b)=>a+b,0) / nilaiArr.length);
-                document.getElementById('riwayat-stat-lulus').innerText = totalLulus;
-            }
-
-            list.innerHTML = data.map((r, i) => {
-                const skor = Number(r.skor) || 0;
-                const lulus = skor >= 70;
-                const badge = lulus ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200';
-                const ring = lulus ? 'text-emerald-600' : 'text-red-500';
-                return `
-                <div class="riwayat-card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <div class="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                            <span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200">${r.kategori || 'Umum'}</span>
-                            <p class="text-[11px] text-slate-400 font-semibold mt-2">Percobaan ke-${data.length - i} &bull; ${window.formatDate(r.timestamp)}</p>
-                        </div>
-                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase border ${badge}">${lulus ? 'Lulus' : 'Tidak Lulus'}</span>
-                    </div>
-                    <div class="flex items-end justify-between">
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Akhir</p>
-                            <p class="text-4xl font-black leading-none ${ring}">${skor}</p>
-                        </div>
-                        <div class="text-right text-[11px] text-slate-500 leading-relaxed">
-                            <p>Benar <strong class="text-slate-800">${r.jumlahBenar ?? '-'}</strong> dari <strong class="text-slate-800">${r.totalSoal ?? '-'}</strong> soal</p>
-                            <p>Instruktur: <strong class="text-slate-800">${r.namaInstruktur || '-'}</strong></p>
-                        </div>
-                    </div>
-                    <div class="mt-3 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                        <div class="h-2 rounded-full ${lulus ? 'bg-emerald-500' : 'bg-red-400'}" style="width: ${Math.min(skor,100)}%"></div>
-                    </div>
-                </div>`;
-            }).join('');
         };
 
         window.setupAdminUI = function(role) {
@@ -1694,7 +1703,6 @@
         window.saveExamState = function() {
             if (!currentUser || !currentUser.uid) return;
             const examState = {
-                currentExamMeta: currentExamMeta,
                 userAnswers: userAnswers,
                 userFlags: userFlags,
                 examEndTime: examEndTime,
@@ -1715,7 +1723,6 @@
             if (!currentUser || !currentUser.uid) return false;
             try {
                 const savedStateStr = localStorage.getItem(`ruangk3_exam_${currentUser.uid}`);
-                // Fix: Ensure we don't try to parse empty strings which causes SyntaxError
                 if (!savedStateStr || savedStateStr.trim() === '') return false;
                 
                 const savedState = JSON.parse(savedStateStr);
@@ -1723,7 +1730,6 @@
                     const now = Date.now();
                     if (now < savedState.examEndTime) {
                         activeQuizData = savedState.activeQuizData;
-                        currentExamMeta = savedState.currentExamMeta || null;
                         userAnswers = savedState.userAnswers || new Array(activeQuizData.length).fill(null);
                         userFlags = savedState.userFlags || new Array(activeQuizData.length).fill(false);
                         currentQuizIndex = savedState.currentQuizIndex || 0;
@@ -1776,7 +1782,7 @@
             
             let htmlOptions = '';
             const labels = ['A', 'B', 'C', 'D'];
-            q.opsi.forEach((opt, idx) => {
+            (q.opsi || []).forEach((opt, idx) => {
                 const isChecked = userAnswers[currentQuizIndex] === idx ? 'checked' : '';
                 const baseClass = "flex items-center p-3 sm:p-4 rounded-xl border cursor-pointer transition-all duration-200 select-none bg-white border-slate-200 hover:border-safety-400 hover:bg-slate-50";
                 const activeClass = isChecked ? "ring-2 ring-safety-500 bg-emerald-50 border-safety-500" : "";
@@ -1890,14 +1896,25 @@
             let reviewHtml = '';
             let uiReviewHtml = '';
             const labels = ['A', 'B', 'C', 'D'];
+            
+            // Format data items for saving history
+            const historyItemsPayload = [];
+
             activeQuizData.forEach((q, idx) => {
                 const userAnswer = userAnswers[idx];
                 const isCorrect = userAnswer === q.jawabanBenar;
 
+                historyItemsPayload.push({
+                    pertanyaan: q.pertanyaan,
+                    opsi: q.opsi || [],
+                    jawabanBenar: q.jawabanBenar,
+                    jawabanPeserta: userAnswer !== undefined ? userAnswer : null
+                });
+
                 let optionsHtml = '';
                 let uiOptionsHtml = '';
                 
-                q.opsi.forEach((opt, optIdx) => {
+                (q.opsi || []).forEach((opt, optIdx) => {
                     let optStyle = "text-slate-600";
                     let icon = "";
                     
@@ -1954,6 +1971,7 @@
             const uiReviewList = document.getElementById('ui-review-list');
             if(uiReviewList) uiReviewList.innerHTML = uiReviewHtml;
 
+            // Simpan Hasil & History Ujian ke Firebase
             if(currentUser && currentUser.uid) {
                 try {
                     await update(ref(db, `${pathPeserta}/${currentUser.uid}`), { 
@@ -1967,29 +1985,23 @@
                         lastUpdate: Date.now(), 
                         soalTerjawab: total 
                     });
-                } catch(e) {}
+
+                    // Simpan Arsip History Hasil Ujian untuk menu History Peserta
+                    const historyRecord = {
+                        kategori: activeQuizData[0] ? activeQuizData[0].kategori : 'K3 Umum',
+                        skor: finalScore,
+                        totalSoal: total,
+                        jawabanBenar: correctCount,
+                        status: isLulus ? 'Lulus' : 'Tidak Lulus',
+                        timestamp: Date.now(),
+                        items: historyItemsPayload
+                    };
+                    await push(ref(db, `${pathPeserta}/${currentUser.uid}/history_ujian`), historyRecord);
+                } catch(e) {
+                    console.error("Gagal mencatat history ujian:", e);
+                }
             }
             
-            // Simpan ke riwayat ujian peserta (per kelas)
-            if(currentUser && currentUser.uid) {
-                try {
-                    await push(ref(db, `${pathRiwayat}/${currentUser.uid}`), {
-                        kategori: currentExamMeta ? currentExamMeta.kategori : (activeQuizData[0] ? activeQuizData[0].kategori : 'Umum'),
-                        bidang: currentExamMeta ? currentExamMeta.bidang : '-',
-                        kelas: currentExamMeta ? currentExamMeta.kelas : '-',
-                        idTim: currentExamMeta ? currentExamMeta.idTim : '-',
-                        namaInstruktur: currentExamMeta ? currentExamMeta.namaInstruktur : '-',
-                        namaPeserta: currentUser.nama,
-                        instansi: currentUser.instansi || '-',
-                        skor: finalScore,
-                        jumlahBenar: correctCount,
-                        totalSoal: total,
-                        status: isLulus ? 'Lulus' : 'Tidak Lulus',
-                        timestamp: Date.now()
-                    });
-                } catch(e) {}
-            }
-
             localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
         };
 
@@ -2210,6 +2222,7 @@
             btn.innerText = ori;
         });
 
+        // Request Ujian CBT & Pengacakan Soal
         document.getElementById('btn-request-quiz')?.addEventListener('click', async () => {
             if(!currentUser) { window.showToast("Silakan login dulu!", "error"); return; }
             const bdg = document.getElementById('select-ujian-bidang').value; 
@@ -2239,19 +2252,16 @@
                 if(snap.val() === 'approved') {
                     window.showToast("Instruktur menyetujui. Memulai Ujian!", "success");
                     
-                    // Soal diambil dari Bank Soal admin sesuai Bidang & Kelas, lalu diacak
-                    activeQuizData = window.buildSoalUjian(bdg, kls, idTim);
-                    currentExamMeta = {
-                        bidang: bdg,
-                        kelas: kls,
-                        kategori: `${bdg} - ${kls}`,
-                        idTim: idTim,
-                        namaInstruktur: window.getNamaTim(idTim)
-                    };
-
-                    if(activeQuizData.length === 0) {
-                        window.showToast("Bank soal untuk kelas ini masih kosong. Hubungi admin.", "error");
-                        return;
+                    // Ambil seluruh soal sesuai Bidang & Kelas dari Bank Soal
+                    const targetKategori = `${bdg} - ${kls}`;
+                    const matchingQuestions = quizDataFromDB.filter(q => q.kategori === targetKategori);
+                    
+                    if (matchingQuestions.length > 0) {
+                        // Tampilkan semua soal pada kategori tersebut dengan nomor urut yang diacak unik untuk peserta ini
+                        activeQuizData = window.shuffleArray(matchingQuestions);
+                    } else {
+                        // Jika kategori baru belum ada soal, ambil seluruh soal umum yang diacak
+                        activeQuizData = quizDataFromDB.length > 0 ? window.shuffleArray(quizDataFromDB) : [];
                     }
                     
                     userAnswers = new Array(activeQuizData.length).fill(null);
@@ -2314,32 +2324,7 @@
             if(unans > 0) { 
                 if(!confirm(`Masih ada ${unans} soal yang belum dijawab. Yakin selesai?`)) return; 
             }
-            // Wajib mengisi ulasan instruktur sebelum nilai ditampilkan
-            window.openUlasanSebelumSelesai();
-        });
-
-        window.openUlasanSebelumSelesai = function() {
-            pendingFinishQuiz = true;
-            const info = document.getElementById('ulasan-konteks-info');
-            if(info && currentExamMeta) {
-                info.innerHTML = `Kelas: <strong class="text-slate-800">${currentExamMeta.kategori}</strong> &bull; Instruktur: <strong class="text-slate-800">${currentExamMeta.namaInstruktur}</strong>`;
-                info.classList.remove('hidden');
-            }
-            const skip = document.getElementById('btn-skip-ulasan');
-            if(skip) skip.classList.remove('hidden');
-            window.openModal('modal-ulasan-instruktur');
-        };
-
-        window.lanjutkanSetelahUlasan = function() {
-            pendingFinishQuiz = false;
-            const skip = document.getElementById('btn-skip-ulasan');
-            if(skip) skip.classList.add('hidden');
-            window.openModal('modal-ujian');
             window.finishQuiz();
-        };
-
-        document.getElementById('btn-skip-ulasan')?.addEventListener('click', () => {
-            if(pendingFinishQuiz) window.lanjutkanSetelahUlasan();
         });
 
         const viewAdmin = document.getElementById('view-admin'); 
@@ -2967,7 +2952,7 @@
                     await push(ref(db, pathSoal), dataToSave); 
                     e.target.reset(); 
                     window.showToast("Soal tersimpan.", "success"); 
-                }
+                } 
             } catch(err) { 
                 window.showToast("Gagal menyimpan.", "error"); 
             } 
@@ -3106,941 +3091,4 @@
                                 colorClass = "bg-green-100 text-green-800 hover:bg-green-200"; 
                                 borderColor = "border-green-300"; 
                                 topBorderColor = "border-green-300"; 
-                            } else if (evtDate > todayDateOnly) { 
-                                colorClass = "bg-blue-100 text-blue-800 hover:bg-blue-200"; 
-                                borderColor = "border-blue-300"; 
-                                topBorderColor = "border-blue-300"; 
-                            } else { 
-                                colorClass = "bg-red-100 text-red-800 hover:bg-red-200"; 
-                                borderColor = "border-red-300"; 
-                                topBorderColor = "border-red-300"; 
-                            }
-
-                            const teamHTML = isBisaLihatTim ? `<div class="text-[9px] opacity-75 truncate mt-0.5 border-t ${topBorderColor} pt-0.5">${evt.namaTim}</div>` : '';
-                            eventsHtml += `<div onclick="window.editKegiatan('${evt.id}')" class="mt-1 px-1.5 py-1 text-[10px] leading-tight ${colorClass} border ${borderColor} rounded cursor-pointer shadow-sm"><div class="font-bold truncate">${evt.pjk3}</div>${teamHTML}</div>`;
-                        });
-
-                        const isToday = day === todayDateOnly.getDate() && month === todayDateOnly.getMonth() && year === todayDateOnly.getFullYear();
-                        const dayClass = isToday ? "bg-emerald-50/60 ring-1 ring-inset ring-emerald-200" : "bg-white";
-                        const numClass = isToday ? "bg-safety-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-sm" : "text-slate-700 font-semibold text-xs";
-                        
-                        calendarBody.innerHTML += `<div class="min-h-[90px] p-1.5 flex flex-col ${dayClass}"><div class="mb-1 flex justify-end"><span class="${numClass}">${day}</span></div><div class="flex-grow space-y-1 overflow-y-auto admin-scroll max-h-[70px] pr-1">${eventsHtml}</div></div>`;
-                    }
-                    
-                    const totalCells = firstDay + daysInMonth; 
-                    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-                    for(let i = 0; i < remainingCells; i++) { 
-                        calendarBody.innerHTML += `<div class="bg-slate-100/50 min-h-[90px] p-1"></div>`; 
-                    }
-                }
-
-                const tbodyPendapatan = document.getElementById('admin-table-pendapatan');
-                if(tbodyPendapatan) {
-                    tbodyPendapatan.innerHTML = ''; 
-                    
-                    let totalMasukBulanIni = 0; 
-                    let totalTertundaBulanIni = 0; 
-                    let totalMasukAllTime = 0; 
-                    let totalHutangTimAllTime = 0; 
-                    let hutangTimDataAllTime = {}; 
-                    let countTabelBulanIni = 0; 
-                    let tbodyHtml = '';
-
-                    const thNamaTim = document.getElementById('th-nama-tim');
-                    if(thNamaTim) { 
-                        if(isBisaLihatTim) thNamaTim.classList.remove('hidden'); 
-                        else thNamaTim.classList.add('hidden'); 
-                    }
-                    
-                    const thAksi = document.getElementById('th-aksi-pendapatan');
-                    if(thAksi) { 
-                        if(isBisaEdit) thAksi.classList.remove('hidden'); 
-                        else thAksi.classList.add('hidden'); 
-                    }
-
-                    let sortedPendapatan = [...filteredKegiatan].sort((a,b) => { 
-                        const dateA = a.tanggal ? a.tanggal.split(',')[0].trim() : ''; 
-                        const dateB = b.tanggal ? b.tanggal.split(',')[0].trim() : ''; 
-                        return new Date(dateA) - new Date(dateB); 
-                    });
-
-                    sortedPendapatan.forEach(k => {
-                        const dates = k.tanggal ? k.tanggal.split(',').map(d => d.trim()) : []; 
-                        const nominalPerHari = (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') ? (Number(k.pendapatanManagement) || 0) : (Number(k.pendapatanTim) || 0);
-                        const nominalTotal = dates.length > 0 ? (nominalPerHari * dates.length) : nominalPerHari;
-
-                        const statusBayarDates = k.statusBayarDates || {}; 
-                        let lunasCount = 0; 
-                        let checkHtml = ''; 
-                        let isKegiatanDiBulanIni = false; 
-                        
-                        dates.forEach(d => {
-                            let isLunasDate = false; 
-                            if (statusBayarDates.hasOwnProperty(d)) { 
-                                isLunasDate = statusBayarDates[d] === true; 
-                            } else { 
-                                isLunasDate = k.statusBayar === true; 
-                            }
-                            
-                            if(isLunasDate) {
-                                lunasCount++;
-                                totalMasukAllTime += nominalPerHari;
-                            }
-
-                            const dDate = new Date(d);
-                            if (dDate.getMonth() === month && dDate.getFullYear() === year) {
-                                isKegiatanDiBulanIni = true;
-                                if(isLunasDate) { 
-                                    totalMasukBulanIni += nominalPerHari; 
-                                } else { 
-                                    totalTertundaBulanIni += nominalPerHari; 
-                                }
-                            }
-
-                            if(isBisaEdit) { 
-                                checkHtml += `<label class="flex items-center space-x-2 mt-1 cursor-pointer"><input type="checkbox" ${isLunasDate?'checked':''} onchange="window.toggleStatusBayarTgl('${k.id}', '${d}', this.checked)" class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5"><span class="text-[10px] text-slate-700 font-medium">${window.formatDate(d)}</span></label>`; 
-                            } else { 
-                                checkHtml += `<div class="text-[10px] text-slate-500 flex items-center mt-1"><span class="w-1.5 h-1.5 rounded-full mr-1.5 ${isLunasDate ? 'bg-green-500' : 'bg-slate-300'}"></span>${window.formatDate(d)}</div>`; 
-                            }
-                        });
-                        
-                        if (dates.length === 0) { 
-                            let kDate = new Date(k.timestamp);
-                            if (k.statusBayar === true) {
-                                totalMasukAllTime += nominalPerHari;
-                            }
-                            if (kDate.getMonth() === month && kDate.getFullYear() === year) {
-                                isKegiatanDiBulanIni = true;
-                                if (k.statusBayar === true) { 
-                                    totalMasukBulanIni += nominalPerHari; 
-                                    lunasCount = 1; 
-                                } else { 
-                                    totalTertundaBulanIni += nominalPerHari; 
-                                }
-                            }
-                        }
-                        
-                        if((currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') && k.idTim && k.idTim !== 'admin_utama' && k.idTim !== 'eldi_123' && k.statusBayarTim !== true) {
-                            const nominalTimPerHari = Number(k.pendapatanTim) || 0;
-                            const totalPendapatanTimKegiatan = dates.length > 0 ? (nominalTimPerHari * dates.length) : nominalTimPerHari;
-                            
-                            totalHutangTimAllTime += totalPendapatanTimKegiatan;
-                            if(!hutangTimDataAllTime[k.idTim]) {
-                                hutangTimDataAllTime[k.idTim] = { nama: k.namaTim, nominal: 0, kegiatans: [] };
-                            }
-                            hutangTimDataAllTime[k.idTim].nominal += totalPendapatanTimKegiatan; 
-                            hutangTimDataAllTime[k.idTim].kegiatans.push({...k, totalPendapatanTim: totalPendapatanTimKegiatan});
-                        }
-
-                        if (isKegiatanDiBulanIni) {
-                            countTabelBulanIni++;
-                            let badgeStatus = ''; 
-                            const isLunasTotal = (dates.length > 0 && lunasCount === dates.length) || (dates.length === 0 && k.statusBayar === true);
-                            
-                            if (lunasCount === 0 && !isLunasTotal) {
-                                badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">BELUM BAYAR</span>`;
-                            } else if (isLunasTotal) {
-                                badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">LUNAS</span>`;
-                            } else {
-                                badgeStatus = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">SEBAGIAN</span>`;
-                            }
-                            
-                            let aksiHtml = '';
-                            if(isBisaEdit) { 
-                                aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; 
-                            }
-                            
-                            const tdTeam = isBisaLihatTim ? `<td class="px-5 py-3 text-xs text-slate-700 font-medium align-top">${k.namaTim}</td>` : '';
-                            
-                            tbodyHtml += `
-                            <tr class="hover:bg-slate-50 border-b border-slate-100">
-                                <td class="px-5 py-3 text-xs text-slate-600 align-top">${checkHtml}</td>
-                                <td class="px-5 py-3 text-sm font-semibold text-slate-900 align-top">${k.namaKegiatan} <br><span class="font-normal text-slate-500 text-xs">${k.pjk3}</span></td>
-                                ${tdTeam}
-                                <td class="px-5 py-3 whitespace-nowrap text-sm font-bold ${isLunasTotal ? 'text-green-600' : 'text-slate-500'} align-top">${window.formatRupiah(nominalTotal)}<br><span class="text-[9px] text-slate-400 font-normal">(${window.formatRupiah(nominalPerHari)} / Hari)</span></td>
-                                <td class="px-5 py-3 whitespace-nowrap align-top">${badgeStatus}</td>
-                                ${aksiHtml}
-                            </tr>`;
-                        }
-                    });
-
-                    if (countTabelBulanIni === 0) {
-                        tbodyPendapatan.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500 text-sm">Belum ada rincian kegiatan di bulan yang dipilih.</td></tr>';
-                    } else {
-                        tbodyPendapatan.innerHTML = tbodyHtml;
-                    }
-                    
-                    window.currentHutangTimData = hutangTimDataAllTime;
-                    
-                    const elMasuk = document.getElementById('stat-uang-masuk'); 
-                    const elTertunda = document.getElementById('stat-uang-tertunda');
-                    
-                    if(elMasuk) elMasuk.innerText = window.formatRupiah(totalMasukBulanIni); 
-                    if(elTertunda) elTertunda.innerText = window.formatRupiah(totalTertundaBulanIni);
-                    
-                    if(currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') {
-                        let totalKeluarBulanIni = 0; 
-                        let totalKeluarAllTime = 0; 
-                        let tbodyPengeluaranHtml = ''; 
-                        let countKeluarBulanIni = 0;
-                        
-                        let sortedPengeluaran = [...dataPengeluaranAll].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
-                        
-                        sortedPengeluaran.forEach(p => { 
-                            const valKeluar = (Number(p.jumlah) || 0);
-                            totalKeluarAllTime += valKeluar;
-
-                            const pDate = new Date(p.tanggal);
-                            if (pDate.getMonth() === month && pDate.getFullYear() === year) {
-                                totalKeluarBulanIni += valKeluar; 
-                                countKeluarBulanIni++;
-                                
-                                const btnAksi = currentUser.role === 'admin_utama' 
-                                    ? `<button onclick="window.hapusPengeluaran('${p.id}')" class="text-red-400 hover:text-red-600 p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` 
-                                    : `<span class="text-[10px] text-slate-400 italic">Read-Only</span>`;
-                                    
-                                tbodyPengeluaranHtml += `
-                                <tr class="hover:bg-slate-50 border-b border-slate-100">
-                                    <td class="px-5 py-2 text-xs text-slate-600">${window.formatDate(p.tanggal)}</td>
-                                    <td class="px-5 py-2 text-xs font-semibold text-slate-800">${p.deskripsi}</td>
-                                    <td class="px-5 py-2 text-xs font-bold text-red-500">${window.formatRupiah(p.jumlah)}</td>
-                                    <td class="px-5 py-2 text-right">${btnAksi}</td>
-                                </tr>`;
-                            }
-                        });
-
-                        const tbodyPengeluaran = document.getElementById('admin-table-pengeluaran');
-                        if(tbodyPengeluaran) {
-                            if (countKeluarBulanIni === 0) {
-                                tbodyPengeluaran.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-500 text-sm">Tidak ada pengeluaran di bulan ini.</td></tr>';
-                            } else {
-                                tbodyPengeluaran.innerHTML = tbodyPengeluaranHtml;
-                            }
-                        }
-
-                        const elHutangTim = document.getElementById('stat-hutang-tim'); 
-                        if(elHutangTim) elHutangTim.innerText = window.formatRupiah(totalHutangTimAllTime);
-                        
-                        const elKeluar = document.getElementById('stat-uang-keluar'); 
-                        const elSaldo = document.getElementById('stat-uang-saldo');
-                        
-                        if(elKeluar) elKeluar.innerText = window.formatRupiah(totalKeluarBulanIni);
-                        
-                        if(elSaldo) { 
-                            const saldoAkhirTotal = totalMasukAllTime - totalKeluarAllTime; 
-                            elSaldo.innerText = window.formatRupiah(saldoAkhirTotal); 
-                            elSaldo.className = saldoAkhirTotal >= 0 ? "text-lg font-bold tracking-tight text-blue-700 truncate" : "text-lg font-bold tracking-tight text-red-600 truncate"; 
-                        }
-                    }
-                }
-            } catch(e) { console.error(e); }
-        };
-
-        document.getElementById('btn-prev-month')?.addEventListener('click', () => { 
-            currentCalDate.setMonth(currentCalDate.getMonth() - 1); 
-            window.renderDashboardPendapatanHome(); 
-        });
-        document.getElementById('btn-next-month')?.addEventListener('click', () => { 
-            currentCalDate.setMonth(currentCalDate.getMonth() + 1); 
-            window.renderDashboardPendapatanHome(); 
-        });
-
-        window.approveUjian = async function(uid) { 
-            try { 
-                await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved' }); 
-            } catch(e){} 
-        };
-
-        window.fetchDataRealtime = function() {
-            onValue(ref(db, pathVerifikasi), (snapshot) => {
-                rawVerifikasiSnap = snapshot;
-                window.renderVerifikasiUI();
-            });
-
-            onValue(ref(db, pathKategori), (snapshot) => {
-                dataKategoriAll = []; 
-                const listAdminKategori = document.getElementById('admin-list-kategori');
-                
-                const defaultKat = [
-                    { id: 'def_1', bidang: 'Kebakaran', nama: 'Kelas D (Petugas Peran Kebakaran)', timestamp: Date.now() },
-                    { id: 'def_2', bidang: 'Kebakaran', nama: 'Kelas C (Regu Penanggulangan)', timestamp: Date.now() },
-                    { id: 'def_3', bidang: 'Kebakaran', nama: 'Kelas B (Koordinator)', timestamp: Date.now() },
-                    { id: 'def_4', bidang: 'Kebakaran', nama: 'Kelas A (Ahli K3 Spesialis)', timestamp: Date.now() },
-                    { id: 'def_5', bidang: 'PAA', nama: 'Operator Forklift', timestamp: Date.now() },
-                    { id: 'def_6', bidang: 'PAA', nama: 'Operator Crane', timestamp: Date.now() },
-                    { id: 'def_7', bidang: 'PAA', nama: 'Rigger / Juru Ikat', timestamp: Date.now() }
-                ];
-
-                dataKategoriAll.push(...defaultKat);
-
-                if(snapshot.exists()) {
-                    snapshot.forEach(childSnap => { 
-                        const data = childSnap.val(); 
-                        data.id = childSnap.key; 
-                        dataKategoriAll.push(data); 
-                    });
-                }
-                
-                const grouped = {};
-                let uniqueBidang = [];
-                dataKategoriAll.forEach(k => {
-                    const b = k.bidang || 'Lainnya';
-                    if(!uniqueBidang.includes(b)) uniqueBidang.push(b);
-                    if(!grouped[b]) grouped[b] = [];
-                    grouped[b].push(k);
-                });
-
-                if(listAdminKategori) listAdminKategori.innerHTML = '';
-                
-                for(const [bidang, kats] of Object.entries(grouped)) {
-                    if(listAdminKategori) {
-                        listAdminKategori.innerHTML += `<div class="col-span-full mt-4 mb-1"><span class="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-200 px-2 py-1 rounded">Bidang ${bidang}</span></div>`;
-                    }
-                    
-                    kats.forEach(k => {
-                        if(listAdminKategori) {
-                            const btnHapus = k.id.startsWith('def_') 
-                                ? '<span class="text-[9px] text-slate-400 font-bold bg-slate-200 px-2 py-1 rounded tracking-widest">BAWAAN</span>' 
-                                : `<button onclick="window.hapusKategori('${k.id}')" class="text-red-500 hover:text-red-700 bg-white p-1.5 rounded shadow-sm border border-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`;
-                            listAdminKategori.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center ml-2 lg:ml-4 mb-2"><span class="font-bold text-slate-800 text-sm">${k.nama}</span>${btnHapus}</div>`;
-                        }
-                    });
-                }
-
-                const bidangOptions = `<option value="" disabled selected>-- Pilih Bidang K3 --</option>` + uniqueBidang.map(b => `<option value="${b}">${b}</option>`).join('');
-                const bidangModulOptions = `<option value="Umum">Umum / Semua Bidang</option>` + uniqueBidang.map(b => `<option value="${b}">${b}</option>`).join('');
-                
-                const sBidangModul = document.getElementById('input-bidang-modul'); 
-                if(sBidangModul) { const val = sBidangModul.value; sBidangModul.innerHTML = bidangModulOptions; if(val) sBidangModul.value = val; }
-                
-                const sBidangSoal = document.getElementById('input-bidang-soal'); 
-                if(sBidangSoal) { const val = sBidangSoal.value; sBidangSoal.innerHTML = bidangOptions; if(val) sBidangSoal.value = val; }
-                
-                const sBidangUjian = document.getElementById('select-ujian-bidang'); 
-                if(sBidangUjian) { const val = sBidangUjian.value; sBidangUjian.innerHTML = bidangOptions; if(val) sBidangUjian.value = val; }
-            });
-
-            onValue(ref(db, pathPeserta), (snapshot) => {
-                const tbodyAdmin = document.getElementById('admin-table-peserta'); 
-                if(tbodyAdmin) tbodyAdmin.innerHTML = ''; 
-                let countDaftar = 0; let countLulus = 0;
-                
-                if(!snapshot.exists() && tbodyAdmin) { 
-                    tbodyAdmin.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-500 italic text-sm">Belum ada data peserta.</td></tr>'; 
-                } else if (snapshot.exists()) { 
-                    snapshot.forEach(childSnap => { 
-                        countDaftar++; 
-                        const data = childSnap.val(); 
-                        let skorText = 'Belum Ujian'; 
-                        let colorSkor = 'bg-slate-100 text-slate-600';
-                        
-                        if (data.skorUjian && data.skorUjian !== '-') {
-                            countLulus++; 
-                            if (data.statusKelulusan === 'Tidak Lulus') { 
-                                skorText = `Tidak Lulus (${data.skorUjian})`; 
-                                colorSkor = 'bg-red-100 text-red-800 font-bold border border-red-200'; 
-                            } else { 
-                                skorText = `Lulus (${data.skorUjian})`; 
-                                colorSkor = 'bg-green-100 text-green-800 font-bold border border-green-200'; 
-                            }
-                        }
-                        if(tbodyAdmin) {
-                            tbodyAdmin.innerHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`; 
-                        }
-                    }); 
-                }
-                window.animateNumber('stat-total-pendaftar', countDaftar); 
-                window.animateNumber('stat-total-lulus', countLulus);
-            });
-
-            onValue(ref(db, pathBerita), (snapshot) => {
-                const listPublic = document.getElementById('public-berita-container'); 
-                const listAdmin = document.getElementById('admin-list-berita');
-                if(listPublic) listPublic.innerHTML = ''; 
-                if(listAdmin) listAdmin.innerHTML = '';
-                
-                let beritas = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(childSnap => { 
-                        const data = childSnap.val(); 
-                        data.id = childSnap.key; 
-                        beritas.push(data); 
-                    }); 
-                }
-                beritas.sort((a,b) => b.timestamp - a.timestamp);
-                
-                window.dataBeritaAll = beritas;
-
-                if(beritas.length === 0 && listPublic) {
-                    listPublic.innerHTML = '<div class="w-full text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed text-slate-500">Belum ada berita atau pengumuman saat ini.</div>';
-                }
-                
-                if(listPublic && beritas.length > 0) {
-                    let gridCardsHtml = ''; 
-                    let headlineSlidesHtml = '';
-                    beritas.forEach((b, index) => {
-                        let badgeColor = 'bg-sky-100 text-sky-800 border-sky-200'; 
-                        if(b.kategori === 'Penting') badgeColor = 'bg-red-100 text-red-800 border-red-200'; 
-                        else if(b.kategori === 'Regulasi') badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                        
-                        let images = []; 
-                        if(b.fotoBase64) { images = Array.isArray(b.fotoBase64) ? b.fotoBase64 : [b.fotoBase64]; }
-
-                        let imgHtmlSmall = '';
-                        if(images.length > 0) {
-                            const imgElements = images.map(img => `<img src="${img}" class="w-full h-full object-cover shrink-0 snap-center" alt="Berita">`).join('');
-                            imgHtmlSmall = `<div class="relative w-full h-28 sm:h-32 overflow-hidden rounded-xl bg-slate-100 mb-2.5"><div class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full news-img-slider">${imgElements}</div>${images.length > 1 ? `<div class="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">${images.length} Foto</div>` : ''}</div>`;
-                        } else { 
-                            imgHtmlSmall = `<div class="w-full h-28 sm:h-32 bg-slate-100 rounded-xl mb-2.5 flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>`; 
-                        }
-
-                        gridCardsHtml += `<div onclick="window.bacaBerita('${b.id}')" class="flex flex-col group cursor-pointer hover:-translate-y-0.5 transition-transform">${imgHtmlSmall}<div class="flex items-center justify-between mb-1"><span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${badgeColor}">${b.kategori}</span><span class="text-[9px] text-slate-400 font-semibold">${window.formatDate(b.timestamp)}</span></div><h3 class="font-extrabold text-slate-900 text-xs sm:text-sm line-clamp-2 leading-snug group-hover:text-safety-500 transition-colors">${b.judul}</h3></div>`;
-
-                        let heroImg = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&w=1200&q=80';
-                        headlineSlidesHtml += `<div onclick="window.bacaBerita('${b.id}')" class="w-full shrink-0 snap-center relative h-72 sm:h-96 rounded-2xl overflow-hidden shadow-lg group cursor-pointer border border-slate-200"><img src="${heroImg}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Headline Utama"><div class="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/60 to-transparent flex flex-col justify-end p-6 sm:p-8 text-white"><div class="flex items-center space-x-2 mb-2"><span class="px-2.5 py-1 bg-red-600 text-white rounded text-[10px] font-extrabold uppercase tracking-widest shadow">HEADLINE UTAMA (${index + 1}/${beritas.length})</span><span class="px-2 py-0.5 bg-white/20 backdrop-blur rounded text-[10px] font-bold uppercase text-slate-200">${b.kategori}</span><span class="text-xs text-slate-300 font-medium ml-auto">${window.formatDate(b.timestamp)}</span></div><h3 class="text-lg sm:text-2xl md:text-3xl font-extrabold leading-snug group-hover:text-safety-400 transition-colors mb-2">${b.judul}</h3><p class="text-xs sm:text-sm text-slate-300 line-clamp-2 font-normal leading-relaxed">${b.isi}</p></div></div>`;
-
-                        if(listAdmin) { 
-                            const adminThumb = images.length > 0 ? `<div class="relative shrink-0"><img src="${images[0]}" class="w-16 h-16 rounded object-cover shadow-sm">${images.length>1?`<div class="absolute -top-2 -right-2 bg-black text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">+${images.length-1}</div>`:''}</div>` : `<div class="w-16 h-16 rounded bg-slate-100 shrink-0 flex items-center justify-center text-[8px] text-center px-1 font-bold text-slate-400">No Img</div>`;
-                            listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-start space-x-4">${adminThumb}<div><div class="flex items-center space-x-2 mb-1"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${badgeColor}">${b.kategori}</span><span class="text-[10px] text-slate-500">${window.formatDate(b.timestamp)}</span></div><h4 class="font-bold text-slate-900 text-sm">${b.judul}</h4><p class="text-xs text-slate-600 line-clamp-1 mt-1">${b.isi}</p></div></div>`; 
-                        }
-                    });
-
-                    listPublic.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">${gridCardsHtml}</div><div class="relative w-full mt-4"><div id="headline-carousel" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar space-x-4 w-full">${headlineSlidesHtml}</div></div>`;
-                }
-            });
-
-            onValue(ref(db, pathLiveCbt), (snapshot) => {
-                const liveTable = document.getElementById('live-cbt-table-body'); 
-                if(!liveTable) return;
-                
-                const startOfToday = new Date(); 
-                startOfToday.setHours(0, 0, 0, 0); 
-                const todayMs = startOfToday.getTime();
-                
-                let liveRecords = [];
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { 
-                        const rec = child.val(); 
-                        rec.id = child.key; 
-                        if (rec.lastUpdate && rec.lastUpdate >= todayMs) { liveRecords.push(rec); } 
-                    }); 
-                }
-                liveRecords.sort((a,b) => (b.skorLive || 0) - (a.skorLive || 0) || (b.lastUpdate || 0) - (a.lastUpdate || 0));
-
-                let totalExamToday = liveRecords.length; 
-                let activeCount = 0; 
-                let passedCount = 0; 
-                let highestScore = 0;
-
-                if(liveRecords.length === 0) {
-                    liveTable.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-slate-400 text-sm">Belum ada aktivitas Ujian Live CBT saat ini. Siswa yang sedang atau baru selesai ujian akan muncul di layar ini secara otomatis.</td></tr>`;
-                } else {
-                    let rowsHtml = '';
-                    liveRecords.forEach((rec, idx) => {
-                        const rank = idx + 1; 
-                        const isLive = rec.status === 'Ujian Berlangsung';
-                        
-                        if(isLive) activeCount++; 
-                        if(rec.status === 'LULUS') passedCount++; 
-                        if((rec.skorLive || 0) > highestScore) highestScore = rec.skorLive || 0;
-
-                        let statusBadge = '<span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-700 border border-blue-300 animate-pulse">SEDANG UJIAN</span>';
-                        if(rec.status === 'LULUS') statusBadge = '<span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">LULUS ✓</span>';
-                        else if(rec.status === 'TIDAK LULUS') statusBadge = '<span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-red-100 text-red-700 border border-red-300">TIDAK LULUS</span>';
-
-                        let rankBadge = `<span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-extrabold text-xs flex items-center justify-center mx-auto">${rank}</span>`;
-                        if(rank === 1) rankBadge = `<span class="w-8 h-8 rounded-lg bg-amber-400 text-navy-950 font-black text-sm flex items-center justify-center mx-auto shadow-sm">🥇 1</span>`;
-                        else if(rank === 2) rankBadge = `<span class="w-8 h-8 rounded-lg bg-slate-300 text-slate-900 font-black text-sm flex items-center justify-center mx-auto shadow-sm">🥈 2</span>`;
-                        else if(rank === 3) rankBadge = `<span class="w-8 h-8 rounded-lg bg-amber-700 text-white font-black text-sm flex items-center justify-center mx-auto shadow-sm">🥉 3</span>`;
-
-                        const progSoal = rec.totalSoal ? `${rec.soalTerjawab || 0} / ${rec.totalSoal}` : '-';
-
-                        rowsHtml += `
-                        <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
-                            <td class="px-5 py-4 text-center">${rankBadge}</td>
-                            <td class="px-5 py-4">
-                                <p class="font-extrabold text-slate-900 text-sm leading-tight">${rec.namaPeserta || 'Peserta'}</p>
-                                <p class="text-xs text-slate-500 font-medium">${rec.instansi || '-'}</p>
-                            </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-100 text-slate-800 border border-slate-200">${rec.kategori || 'K3 Umum'}</span></td>
-                            <td class="px-5 py-4 text-center font-bold text-xs text-slate-600">${progSoal} Soal</td>
-                            <td class="px-5 py-4 text-center"><span class="text-2xl font-black font-mono tracking-wider ${rec.status === 'LULUS' ? 'text-emerald-600' : (rec.status === 'TIDAK LULUS' ? 'text-red-500' : 'text-blue-600')}">${rec.skorLive || 0}</span></td>
-                            <td class="px-5 py-4 text-right">${statusBadge}</td>
-                        </tr>`;
-                    });
-                    liveTable.innerHTML = rowsHtml;
-                }
-                const elAktif = document.getElementById('live-stat-aktif'); if(elAktif) elAktif.innerText = activeCount;
-                const elTotal = document.getElementById('live-stat-total'); if(elTotal) elTotal.innerText = totalExamToday;
-                const elLulus = document.getElementById('live-stat-lulus'); if(elLulus) elLulus.innerText = passedCount;
-                const elHigh = document.getElementById('live-stat-highest'); if(elHigh) elHigh.innerText = highestScore;
-            });
-
-            onValue(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), (snapshot) => {
-                dataReviewAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { 
-                        const data = child.val(); 
-                        data.id = child.key; 
-                        dataReviewAll.push(data); 
-                    }); 
-                } 
-                window.renderReviewUI(); 
-            });
-
-            onValue(ref(db, pathTim), (snapshot) => {
-                dataTimAll = []; 
-                const selectKeg = document.getElementById('input-kegiatan-tim'); 
-                const listAdmin = document.getElementById('admin-list-tim'); 
-                const selectUjianTim = document.getElementById('select-ujian-tim');
-                
-                if(selectKeg) selectKeg.innerHTML = `<option value="" disabled selected>-- Pilih Tim --</option><option value="admin_utama" class="font-bold text-safety-600">Admin Utama (Tanpa WA)</option><option value="eldi_123" class="font-bold text-blue-600">Eldi Prayoga Firdaus</option>`;
-                if(selectUjianTim) selectUjianTim.innerHTML = `<option value="" disabled selected>-- Pilih Instruktur Anda --</option><option value="admin_utama" class="font-extrabold text-emerald-600 bg-emerald-50">Adrian (Admin Pusat)</option><option value="eldi_123" class="font-extrabold text-blue-600 bg-blue-50">Eldi Prayoga Firdaus</option>`;
-                if(listAdmin) listAdmin.innerHTML = '';
-                
-                if(snapshot.exists()) {
-                    snapshot.forEach(childSnap => {
-                        const data = childSnap.val(); data.id = childSnap.key; 
-                        if (data.nama.toLowerCase().includes('eldi') || data.pin === 'eldi123') return;
-
-                        dataTimAll.push(data);
-                        if(selectKeg) selectKeg.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
-                        if(selectUjianTim) selectUjianTim.innerHTML += `<option value="${data.id}">${data.nama}</option>`;
-                        
-                        if(listAdmin) {
-                            const izin = data.izin || {}; let badges = '';
-                            if(izin.nilai) badges += `<span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Nilai Ujian</span>`;
-                            if(izin.berita) badges += `<span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Berita</span>`;
-                            if(izin.modul) badges += `<span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Modul</span>`;
-                            if(izin.keuangan) badges += `<span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[8px] mr-1 inline-block">Keuangan</span>`;
-                            if(!badges) badges = `<span class="text-[9px] text-slate-400 italic">Hanya akses dasar</span>`;
-
-                            listAdmin.innerHTML += `
-                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm relative group">
-                                <div class="absolute top-2 right-2 flex space-x-1">
-                                    <button onclick="window.editTim('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Edit Akses"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                                    <button onclick="window.hapusTim('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Tim"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                                </div>
-                                <h4 class="font-bold text-slate-900 text-sm mb-1 pr-12">${data.nama}</h4>
-                                <p class="text-xs text-slate-600 mb-1">📱 ${data.hp}</p>
-                                <p class="text-xs text-slate-600 font-mono mb-2">🔑 PIN: <strong class="text-safety-600">${data.pin}</strong></p>
-                                <div class="border-t border-slate-200 pt-2 mt-1">
-                                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Akses Khusus:</p>
-                                    <div>${badges}</div>
-                                </div>
-                            </div>`;
-                        }
-                    });
-                }
-                window.renderReviewUI(); 
-            });
-            
-            onValue(ref(db, pathPjk3), (snapshot) => {
-                const listPublic = document.getElementById('public-pjk3-container'); 
-                const listAdmin = document.getElementById('admin-list-pjk3');
-                
-                if(listPublic) listPublic.innerHTML = ''; 
-                if(listAdmin) listAdmin.innerHTML = '';
-                
-                let pjk3Data = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { const data = child.val(); data.id = child.key; pjk3Data.push(data); }); 
-                }
-                pjk3Data.sort((a,b) => b.timestamp - a.timestamp);
-
-                if(pjk3Data.length === 0) {
-                    if(listPublic) listPublic.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400 text-sm">Belum ada data mitra PJK3 yang diunggah.</div>';
-                    if(listAdmin) listAdmin.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400 text-sm">Belum ada logo PJK3 tersimpan.</div>';
-                }
-                
-                pjk3Data.forEach(p => {
-                    const waText = encodeURIComponent(`Halo saya ingin bertanya seputar layanan PJK3 dari ${p.nama}`);
-                    const waLink = `https://wa.me/628567725758?text=${waText}`;
-                    
-                    if(listPublic) { 
-                        listPublic.innerHTML += `<a href="${waLink}" target="_blank" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg hover:border-emerald-200 transition-all duration-300 w-full h-28 flex items-center justify-center group overflow-hidden" title="Chat WA: ${p.nama}"><img src="${p.logoBase64}" onerror="this.onerror=null;this.src='https://placehold.co/200x100/f8fafc/94a3b8?text=${encodeURIComponent(p.nama)}'" alt="${p.nama}" class="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transform group-hover:scale-105 transition-all"></a>`; 
-                    }
-                    if(listAdmin) { 
-                        listAdmin.innerHTML += `
-                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col items-center text-center relative group">
-                            <button onclick="window.hapusPjk3('${p.id}')" class="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100 z-10" title="Hapus"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                            <div class="w-full h-14 bg-white rounded-lg p-1 border border-slate-100 mb-1 flex items-center justify-center overflow-hidden">
-                                <img src="${p.logoBase64}" class="w-full h-full object-contain">
-                            </div>
-                            <span class="text-xs font-bold text-slate-700 truncate w-full">${p.nama}</span>
-                        </div>`; 
-                    }
-                });
-            });
-
-            onValue(ref(db, pathRunningText), (snapshot) => {
-                const publicContainer = document.getElementById('running-text-container');
-                const content1 = document.getElementById('running-text-content-1');
-                const content2 = document.getElementById('running-text-content-2');
-                const adminList = document.getElementById('admin-list-running-text');
-                
-                let texts = [];
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { const data = child.val(); data.id = child.key; texts.push(data); }); 
-                }
-                texts.sort((a,b) => b.timestamp - a.timestamp);
-
-                if(texts.length > 0) {
-                    if(publicContainer) publicContainer.classList.remove('hidden');
-                    
-                    const separator = '<span class="mx-6 text-navy-900/20 font-black flex items-center">///</span>';
-                    let combinedText = texts.map(t => t.isi).join(separator);
-                    
-                    if(combinedText.length < 150) {
-                        combinedText = [combinedText, combinedText, combinedText, combinedText, combinedText].join(separator);
-                    }
-                    combinedText += separator;
-
-                    if(content1 && content2) {
-                        content1.innerHTML = combinedText;
-                        content2.innerHTML = combinedText;
-                    }
-                } else {
-                    if(publicContainer) publicContainer.classList.add('hidden');
-                }
-
-                if(adminList) {
-                    if(texts.length === 0) {
-                        adminList.innerHTML = '<p class="text-slate-500 text-sm text-center py-4">Tidak ada running text aktif saat ini.</p>';
-                    } else {
-                        let html = '';
-                        texts.forEach(t => {
-                            html += `
-                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center space-x-4 mb-2">
-                                <div class="flex-grow">
-                                    <span class="text-[10px] text-slate-500 mb-1 block">${window.formatDate(t.timestamp)}</span>
-                                    <p class="text-sm font-bold text-slate-800 leading-snug whitespace-pre-wrap">${t.isi}</p>
-                                </div>
-                                <button onclick="window.hapusRunningText('${t.id}')" class="shrink-0 p-2 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-red-200 shadow-sm" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                            </div>`;
-                        });
-                        adminList.innerHTML = html;
-                    }
-                }
-            });
-
-            onValue(ref(db, pathKegiatan), (snapshot) => { 
-                dataKegiatanAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); 
-                } 
-                window.renderDashboardPendapatanHome();
-            });
-
-            onValue(ref(db, pathPengeluaran), (snapshot) => { 
-                dataPengeluaranAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); }); 
-                } 
-                window.renderDashboardPendapatanHome(); 
-            });
-
-            onValue(ref(db, pathModul), (snapshot) => {
-                const listPublic = document.getElementById('modul-list'); 
-                const listAdmin = document.getElementById('admin-list-modul');
-                
-                if(listPublic) listPublic.innerHTML = ''; 
-                if(listAdmin) listAdmin.innerHTML = '';
-                
-                function getEmbedVideoUrl(url) {
-                    if (!url) return '';
-                    if (url.includes('youtube.com/watch?v=')) return `https://www.youtube.com/embed/${url.split('v=')[1]?.split('&')[0]}`;
-                    if (url.includes('youtu.be/')) return `https://www.youtube.com/embed/${url.split('youtu.be/')[1]?.split('?')[0]}`;
-                    return url;
-                }
-                function getEmbedDocUrl(url) {
-                    if (!url) return '';
-                    if (url.includes('drive.google.com')) return url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
-                    if (url.endsWith('.pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
-                    return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
-                }
-
-                let countModul = 0;
-                if(snapshot.exists()) {
-                    snapshot.forEach(d => {
-                        countModul++; 
-                        const data = d.val(); 
-                        let badgeCol = 'bg-slate-100 text-slate-700';
-                        
-                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
-                        
-                        let videoHtml = '';
-                        if (data.videoUrl) {
-                            const embed = getEmbedVideoUrl(data.videoUrl);
-                            if (embed.includes('youtube.com/embed')) {
-                                videoHtml = `<div class="aspect-video w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black shadow-inner"><iframe src="${embed}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-                            } else {
-                                videoHtml = `<div class="w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black"><video src="${embed}" controls controlsList="nodownload" oncontextmenu="return false;" class="w-full max-h-80 object-cover"></video></div>`;
-                            }
-                        }
-
-                        let docHtml = '';
-                        if (data.docUrl) {
-                            const docEmbed = getEmbedDocUrl(data.docUrl);
-                            docHtml = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><div class="absolute inset-0 z-20 bg-transparent" oncontextmenu="return false;" onclick="return false;"></div><iframe src="${docEmbed}" class="w-full h-full border-0 relative z-10" frameborder="0" oncontextmenu="return false;"></iframe></div></div>`;
-                        }
-
-                        if(listPublic) {
-                            listPublic.innerHTML += `
-                            <div class="p-6 bg-white border border-slate-200/80 rounded-2xl hover:shadow-lg transition-all duration-300 relative group no-select" oncontextmenu="return false;">
-                                <span class="absolute top-4 right-4 text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase ${badgeCol}">${data.kategori}</span>
-                                <h4 class="font-bold text-base text-slate-900 pr-16 mb-3 group-hover:text-safety-500 leading-snug">${data.judul}</h4>
-                                ${videoHtml}${docHtml}
-                                <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">${data.isi}</div>
-                            </div>`;
-                        }
-                        
-                        if(listAdmin) {
-                            listAdmin.innerHTML += `
-                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-2">
-                                <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase ${badgeCol} mb-1 inline-block">${data.kategori}</span>
-                                <h4 class="font-bold text-navy-900 text-sm">${data.judul}</h4>
-                                ${data.videoUrl ? `<p class="text-[10px] text-blue-600 font-medium truncate my-1">📹 Video: ${data.videoUrl}</p>` : ''}
-                                ${data.docUrl ? `<p class="text-[10px] text-emerald-600 font-medium truncate my-1">📄 Dokumen: ${data.docUrl}</p>` : ''}
-                                <p class="text-xs text-slate-600 mt-1 line-clamp-2">${data.isi}</p>
-                            </div>`;
-                        }
-                    });
-                }
-                window.animateNumber('stat-total-modul-count', countModul);
-            });
-
-            onValue(ref(db, pathSoal), (snapshot) => {
-                quizDataFromDB = []; 
-                const listAdmin = document.getElementById('admin-list-soal');
-                if(listAdmin) listAdmin.innerHTML = '';
-
-                const seedQuestions = [
-                    {
-                        id: 'seed_q1',
-                        kategori: 'Kebakaran - Kelas D (Petugas Peran Kebakaran)',
-                        pertanyaan: 'Sistem proteksi kebakaran aktif terdiri dari:',
-                        opsi: [
-                            'APAR, hidran, detektor dan alarm, sprinkler',
-                            'Sarana jalan keluar, kompartemenisasi, titik kumpul',
-                            'Struktur bangunan, tangga darurat, pintu tahan api',
-                            'APD, rambu-rambu, prosedur tanggap darurat'
-                        ],
-                        jawabanBenar: 0
-                    },
-                    {
-                        id: 'seed_q2',
-                        kategori: 'Kebakaran - Kelas C (Regu Penanggulangan)',
-                        pertanyaan: 'Berikut ini adalah contoh proteksi kebakaran pasif, kecuali:',
-                        opsi: [
-                            'Fire stop',
-                            'Detector',
-                            'Fire proofing',
-                            'Sistem pengendali asap'
-                        ],
-                        jawabanBenar: 1
-                    }
-                ];
-
-                if (!snapshot.exists()) {
-                    seedQuestions.forEach(q => {
-                        const { id, ...qData } = q;
-                        qData.timestamp = Date.now();
-                        push(ref(db, pathSoal), qData);
-                    });
-                    if(listAdmin) listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Menginisialisasi bank soal awal... Memuat ulang...</p>';
-                    return; 
-                } else {
-                    snapshot.forEach(childSnap => { 
-                        const data = childSnap.val(); 
-                        data.id = childSnap.key; 
-                        quizDataFromDB.push(data); 
-                    });
-                }
-
-                let categoryCounters = {};
-                
-                if(listAdmin) {
-                    quizDataFromDB.forEach((data) => {
-                        const kat = data.kategori || 'Umum'; 
-                        if (!categoryCounters[kat]) categoryCounters[kat] = 1; 
-                        const noSoalBidang = categoryCounters[kat]++;
-                        
-                        const labels = ['A', 'B', 'C', 'D']; 
-                        let htmlOpsi = '';
-                        
-                        if(data.opsi && Array.isArray(data.opsi)) { 
-                            data.opsi.forEach((opt, idx) => { 
-                                const isCorrect = idx === data.jawabanBenar; 
-                                htmlOpsi += `<div class="text-xs mt-1 ${isCorrect ? 'font-bold text-green-600' : 'text-slate-500'}">${labels[idx]}. ${opt} ${isCorrect ? '✓' : ''}</div>`; 
-                            }); 
-                        }
-                        
-                        let badgeCol = 'bg-slate-100 text-slate-700';
-                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
-
-                        listAdmin.innerHTML += `
-                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 shadow-sm relative group">
-                            <div class="absolute top-3 right-3 flex space-x-2">
-                                <button onclick="window.editSoal('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm" title="Edit Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                                <button onclick="window.hapusSoal('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm" title="Hapus Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                            </div>
-                            <div class="mb-2"><span class="text-[10px] ${badgeCol} px-2 py-0.5 rounded font-bold uppercase">${data.kategori || 'Umum'}</span></div>
-                            <h4 class="font-bold text-slate-800 text-sm mb-2 leading-relaxed pr-16">No. ${noSoalBidang} - ${data.pertanyaan}</h4>
-                            <div class="pl-3 border-l-2 border-slate-200">${htmlOpsi}</div>
-                        </div>`;
-                    });
-                }
-            });
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                if (!user.isAnonymous && currentUser === null) {
-                    onValue(ref(db, `${pathPeserta}/${user.uid}`), (snap) => {
-                        const data = snap.val();
-                        if(data) {
-                            currentUser = { 
-                                nama: data.nama, 
-                                instansi: data.instansi, 
-                                email: data.email || user.email, 
-                                role: 'peserta', 
-                                uid: user.uid 
-                            };
-                            window.renderAvatarUI(data.nama, 'Peserta');
-                            document.getElementById('modul-locked')?.classList.add('hidden'); 
-                            document.getElementById('modul-list')?.classList.remove('hidden');
-                            window.checkAndResumeExam();
-                            window.listenRiwayatUjian(user.uid);
-                        }
-                    }, { onlyOnce: true });
-                }
-                if (!isAppInitialized) {
-                    isAppInitialized = true;
-                    const visitRef = ref(db, pathVisitor);
-                    onValue(visitRef, (snap) => { 
-                        const count = snap.val() || 0; 
-                        const vEl = document.getElementById('admin-visitor-count'); 
-                        if(vEl) vEl.innerText = count.toLocaleString('id-ID'); 
-                        window.animateNumber('stat-total-visitors', count);
-                    });
-                    
-                    get(visitRef).then(snap => {
-                        set(visitRef, (snap.val() || 0) + 1).catch(()=>{});
-                    }).catch(()=>{});
-                    
-                    window.fetchDataRealtime();
-                }
-            } else { 
-                try { await signInAnonymously(auth); } catch(e){} 
-            }
-        });
-
-        document.getElementById('filter-riwayat-kelas')?.addEventListener('change', () => window.renderRiwayatUjian());
-
-        document.getElementById('form-ulasan-instruktur')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!currentUser) return;
-            const rating = document.querySelector('input[name="rating"]:checked').value;
-            const ulasan = document.getElementById('input-ulasan-teks').value;
-            const btn = e.target.querySelector('button');
-            const ori = btn.innerText;
-            btn.innerText = "Mengirim...";
-            btn.disabled = true;
-            
-            try {
-                const quizTargetId = (currentExamMeta && currentExamMeta.idTim) ? currentExamMeta.idTim : (activeQuizData.length > 0 ? activeQuizData[0].idTimTarget : 'admin_utama');
-                await push(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), {
-                    idPeserta: currentUser.uid,
-                    namaPeserta: currentUser.nama,
-                    instansi: currentUser.instansi || '-',
-                    idTim: quizTargetId,
-                    namaInstruktur: currentExamMeta ? currentExamMeta.namaInstruktur : window.getNamaTim(quizTargetId),
-                    kategori: currentExamMeta ? currentExamMeta.kategori : '-',
-                    rating: parseInt(rating),
-                    ulasan: ulasan,
-                    timestamp: Date.now()
-                });
-                window.showToast("Ulasan berhasil dikirim. Terima kasih!", "success");
-                e.target.reset();
-                if(pendingFinishQuiz) {
-                    window.lanjutkanSetelahUlasan();
-                } else {
-                    window.closeModal();
-                }
-            } catch(err) {
-                window.showToast("Gagal mengirim ulasan.", "error");
-            }
-            btn.innerText = ori;
-            btn.disabled = false;
-        });
-
-        if (typeof flatpickr !== 'undefined' && document.getElementById('input-kegiatan-tanggal')) {
-            flatpickr("#input-kegiatan-tanggal", {
-                mode: "multiple",
-                dateFormat: "Y-m-d",
-                locale: "id"
-            });
-        }
-
-        const observer = new IntersectionObserver((entries) => { 
-            entries.forEach(entry => { 
-                if(entry.isIntersecting) { 
-                    entry.target.classList.add('active'); 
-                } 
-            }); 
-        }, { threshold: 0.1 });
-        
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-        
-        const beritaContainer = document.getElementById('public-berita-container');
-        const btnPrevBerita = document.getElementById('btn-berita-prev'); 
-        const btnNextBerita = document.getElementById('btn-berita-next');
-        
-        if(beritaContainer && btnPrevBerita && btnNextBerita) {
-            const scrollAmount = 420; 
-            btnPrevBerita.addEventListener('click', () => { 
-                beritaContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); 
-            });
-            btnNextBerita.addEventListener('click', () => { 
-                beritaContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' }); 
-            });
-        }
-
-        // Global interval for auto-sliding carousels
-        setInterval(() => {
-            try {
-                const headlineCarousel = document.getElementById('headline-carousel');
-                if (headlineCarousel && headlineCarousel.scrollWidth > headlineCarousel.clientWidth) { 
-                    const maxScroll = headlineCarousel.scrollWidth - headlineCarousel.clientWidth; 
-                    if (headlineCarousel.scrollLeft >= maxScroll - 10) { 
-                        headlineCarousel.scrollTo({ left: 0, behavior: 'smooth' }); 
-                    } else { 
-                        headlineCarousel.scrollBy({ left: headlineCarousel.clientWidth, behavior: 'smooth' }); 
-                    } 
-                }
-                
-                const sliders = document.querySelectorAll('.news-img-slider');
-                sliders.forEach(slider => { 
-                    if (slider.scrollWidth > slider.clientWidth) { 
-                        const maxScroll = slider.scrollWidth - slider.clientWidth; 
-                        if (slider.scrollLeft >= maxScroll - 5) { 
-                            slider.scrollTo({ left: 0, behavior: 'smooth' }); 
-                        } else { 
-                            slider.scrollBy({ left: slider.clientWidth, behavior: 'smooth' }); 
-                        } 
-                    } 
-                });
-            } catch (err) {
-                console.warn("Carousel interval suppressed an error:", err);
-            }
-        }, 4000); 
-    </script>
-</body>
-</html>
+                            } else if (evtDate > today
