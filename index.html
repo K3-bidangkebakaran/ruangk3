@@ -95,6 +95,37 @@
         .animate-marquee-seamless { display: flex; width: max-content; animation: marqueeSeamless 20s linear infinite; }
         .animate-marquee-seamless:hover { animation-play-state: paused; }
         .mask-edges { -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent); mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent); }
+
+        /* ================= PERBAIKAN TAMPILAN MOBILE ================= */
+        html { -webkit-text-size-adjust: 100%; }
+        body { overflow-x: hidden; }
+        img, svg, video, canvas { max-width: 100%; }
+
+        /* Overlay modal bisa di-scroll penuh pada layar kecil */
+        #modal-overlay {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            align-items: flex-start;
+            padding: 1rem 1rem 2.5rem;
+        }
+        @media (min-width: 640px) { #modal-overlay { align-items: center; } }
+
+        /* Modal ujian tetap full-height namun aman di mobile browser (dvh) */
+        #modal-ujian { max-height: calc(100dvh - 1.5rem); }
+        @media (max-width: 767px) {
+            #modal-ujian { height: calc(100dvh - 1.5rem); }
+            #ujian-soal { flex-direction: column; }
+            #modal-overlay > div:not(#modal-ujian) { max-height: none; }
+        }
+
+        /* Panel admin dapat di-scroll di HP */
+        #view-admin { height: 100dvh; }
+        #admin-content-scroll { -webkit-overflow-scrolling: touch; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+        /* Riwayat ujian */
+        .riwayat-card { transition: transform .2s ease, box-shadow .2s ease; }
+        .riwayat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -10px rgba(15,23,42,.25); }
     </style>
 </head>
 
@@ -256,6 +287,36 @@
                         <h3 class="font-extrabold text-lg">Simulasi CBT Sertifikasi</h3>
                         <p class="text-xs text-slate-300 leading-relaxed">Uji pengetahuan Anda dalam ujian CBT berwaktu 45 menit. Dapatkan evaluasi instan dan unduh sertifikat/soal PDF.</p>
                         <button onclick="window.switchLmsTab('cbt')" class="w-full py-3.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Mulai Simulasi Ujian CBT &rarr;</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ RIWAYAT HASIL UJIAN PESERTA ============ -->
+            <section id="riwayat-ujian" class="pt-8 border-t border-slate-200 reveal">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+                    <div>
+                        <span class="text-[10px] font-extrabold text-safety-500 uppercase tracking-widest">Rekam Jejak Ujian</span>
+                        <h2 class="text-xl font-extrabold text-slate-900">Riwayat Hasil Ujian Saya</h2>
+                        <p class="text-xs text-slate-500 mt-1">Menampilkan seluruh hasil ujian CBT sesuai bidang &amp; kelas yang pernah Anda pilih.</p>
+                    </div>
+                    <div class="w-full sm:w-64">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Kelas / Kategori</label>
+                        <select id="filter-riwayat-kelas" class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl outline-none bg-white">
+                            <option value="all">Semua Kelas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="riwayat-ujian-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 hidden">
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Ujian</p><p id="riwayat-stat-total" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Tertinggi</p><p id="riwayat-stat-max" class="text-2xl font-extrabold text-emerald-600 mt-1">0</p></div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rata-Rata</p><p id="riwayat-stat-avg" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
+                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lulus</p><p id="riwayat-stat-lulus" class="text-2xl font-extrabold text-safety-600 mt-1">0</p></div>
+                </div>
+
+                <div id="riwayat-ujian-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center">
+                        <p class="text-sm text-slate-500">Silakan masuk ke akun peserta untuk melihat riwayat hasil ujian Anda.</p>
                     </div>
                 </div>
             </section>
@@ -465,7 +526,7 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-[9999] flex flex-col space-y-2 pointer-events-none"></div>
 
-    <div id="modal-overlay" class="fixed inset-0 bg-navy-950/80 z-[999] hidden flex items-center justify-center backdrop-blur-md p-4 transition-opacity">
+    <div id="modal-overlay" class="fixed inset-0 bg-navy-950/80 z-[999] hidden flex items-start sm:items-center justify-center backdrop-blur-md p-4 transition-opacity">
         
         <!-- Modal Baca Berita Detail -->
         <div id="modal-baca-berita" class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl hidden relative flex-col max-h-[90vh] overflow-hidden z-[1050]">
@@ -544,6 +605,7 @@
                 <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-500 text-3xl">⭐</div>
                 <h3 class="text-2xl font-extrabold text-slate-900">Beri Ulasan Instruktur</h3>
                 <p class="text-slate-500 text-sm mt-2">Bagaimana pengalaman Anda diajar oleh instruktur ini?</p>
+                <p id="ulasan-konteks-info" class="hidden mt-3 text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"></p>
             </div>
             <form id="form-ulasan-instruktur" class="space-y-4">
                 <div class="flex justify-center flex-row-reverse star-rating">
@@ -562,7 +624,8 @@
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Saran & Kritik</label>
                     <textarea id="input-ulasan-teks" required rows="3" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Tuliskan pengalaman Anda..."></textarea>
                 </div>
-                <button type="submit" class="w-full py-3.5 bg-navy-900 text-white rounded-xl font-bold shadow-lg mt-4">Kirim Ulasan & Lihat Nilai</button>
+                <button type="submit" class="w-full py-3.5 bg-navy-900 text-white rounded-xl font-bold shadow-lg mt-4">Kirim Ulasan &amp; Lihat Nilai</button>
+                <button type="button" id="btn-skip-ulasan" class="w-full py-2 text-slate-400 hover:text-slate-600 text-xs font-semibold hidden">Lewati ulasan &amp; langsung lihat nilai</button>
             </form>
         </div>
 
@@ -732,7 +795,7 @@
                 </div>
             </header>
 
-            <div class="flex-grow p-4 md:p-6 overflow-y-auto admin-scroll">
+            <div id="admin-content-scroll" class="flex-grow p-4 md:p-6 overflow-y-auto admin-scroll">
                 
                 <!-- Kalender -->
                 <div id="admin-panel-home" class="admin-panel block">
@@ -1188,6 +1251,7 @@
         const pathLiveCbt = `artifacts/${cleanAppId}/public/data/live_cbt`;
         const pathKategori = `artifacts/${cleanAppId}/public/data/kategori_k3`;
         const pathRunningText = `artifacts/${cleanAppId}/public/data/running_text`;
+        const pathRiwayat = `artifacts/${cleanAppId}/public/data/riwayat_ujian`;
 
         // GLOBAL VARIABLES
         let currentUser = null; 
@@ -1198,6 +1262,8 @@
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
+        let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
+        const JUMLAH_SOAL_UJIAN = 25;
         let isAppInitialized = false;
 
         window.sendWA_Fonnte = async function(hp, message) {
@@ -1377,6 +1443,10 @@
                         <span class="text-[10px] text-slate-500">${window.formatDate(r.timestamp)}</span>
                     </div>
                     <div class="text-sm mb-1 text-amber-500">${stars}</div>
+                    <div class="flex flex-wrap gap-1.5 mb-1.5">
+                        ${r.kategori ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-200 text-slate-700">${r.kategori}</span>` : ''}
+                        ${r.namaInstruktur ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-700">${r.namaInstruktur}</span>` : ''}
+                    </div>
                     <p class="text-xs text-slate-600 italic">"${r.ulasan || 'Tidak ada komentar'}"</p>
                 </div>`;
             });
@@ -1409,6 +1479,134 @@
                     }
                 });
             } catch(e) {}
+        };
+
+        /* ================= UTILITAS ACAK SOAL ================= */
+        window.shuffleArray = function(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+
+        window.getNamaTim = function(idTim) {
+            const sel = document.getElementById('select-ujian-tim');
+            if(sel) {
+                const opt = Array.from(sel.options).find(o => o.value === idTim);
+                if(opt && opt.text) return opt.text.trim();
+            }
+            const t = (dataTimAll || []).find(x => x.id === idTim);
+            return t ? (t.nama || t.namaTim || 'Instruktur') : 'Instruktur';
+        };
+
+        /* Ambil soal dari Bank Soal admin sesuai Bidang + Kelas, lalu diacak */
+        window.buildSoalUjian = function(bidang, kelas, idTim) {
+            const kategori = `${bidang} - ${kelas}`;
+            let pool = (quizDataFromDB || []).filter(q => (q.kategori || '') === kategori);
+
+            // Fallback bertingkat: soal se-bidang, lalu seluruh bank soal
+            if (pool.length === 0) pool = (quizDataFromDB || []).filter(q => (q.kategori || '').startsWith(bidang));
+            if (pool.length === 0) pool = (quizDataFromDB || []).slice();
+
+            // Acak urutan soal (Fisher-Yates) + batasi jumlah soal
+            pool = window.shuffleArray(pool).slice(0, JUMLAH_SOAL_UJIAN);
+
+            // Acak posisi opsi jawaban tiap soal agar peserta sulit menyontek
+            return pool.map(q => {
+                const opsiAsli = Array.isArray(q.opsi) ? q.opsi : [];
+                const idxAcak = window.shuffleArray(opsiAsli.map((_, i) => i));
+                const opsiBaru = idxAcak.map(i => opsiAsli[i]);
+                const jawabanBaru = idxAcak.indexOf(Number(q.jawabanBenar));
+                return {
+                    ...q,
+                    opsi: opsiBaru,
+                    jawabanBenar: jawabanBaru < 0 ? 0 : jawabanBaru,
+                    kategori: kategori,
+                    idTimTarget: idTim
+                };
+            });
+        };
+
+        /* ================= RIWAYAT UJIAN PESERTA ================= */
+        window.listenRiwayatUjian = function(uid) {
+            if(!uid) return;
+            onValue(ref(db, `${pathRiwayat}/${uid}`), (snap) => {
+                dataRiwayatUjian = [];
+                if(snap.exists()) {
+                    snap.forEach(child => { dataRiwayatUjian.push({ id: child.key, ...child.val() }); });
+                }
+                dataRiwayatUjian.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+                window.renderRiwayatUjian();
+            });
+        };
+
+        window.renderRiwayatUjian = function() {
+            const list = document.getElementById('riwayat-ujian-list');
+            const filterEl = document.getElementById('filter-riwayat-kelas');
+            const statsBox = document.getElementById('riwayat-ujian-stats');
+            if(!list || !filterEl) return;
+
+            if(!currentUser || currentUser.role !== 'peserta') {
+                list.innerHTML = `<div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center"><p class="text-sm text-slate-500">Silakan masuk ke akun peserta untuk melihat riwayat hasil ujian Anda.</p></div>`;
+                if(statsBox) statsBox.classList.add('hidden');
+                return;
+            }
+
+            // Susun opsi filter kelas sesuai kelas yang pernah diikuti
+            const kategoriUnik = [...new Set(dataRiwayatUjian.map(r => r.kategori).filter(Boolean))];
+            const nilaiFilter = filterEl.value || 'all';
+            filterEl.innerHTML = `<option value="all">Semua Kelas</option>` + kategoriUnik.map(k => `<option value="${k}">${k}</option>`).join('');
+            filterEl.value = kategoriUnik.includes(nilaiFilter) ? nilaiFilter : 'all';
+
+            const data = filterEl.value === 'all' ? dataRiwayatUjian : dataRiwayatUjian.filter(r => r.kategori === filterEl.value);
+
+            if(data.length === 0) {
+                list.innerHTML = `<div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center"><p class="text-sm text-slate-500">Belum ada riwayat ujian pada kelas ini. Ikuti Simulasi CBT untuk mulai mencatat hasil Anda.</p></div>`;
+                if(statsBox) statsBox.classList.add('hidden');
+                return;
+            }
+
+            const nilaiArr = data.map(r => Number(r.skor) || 0);
+            const totalLulus = data.filter(r => (Number(r.skor)||0) >= 70).length;
+            if(statsBox) {
+                statsBox.classList.remove('hidden');
+                document.getElementById('riwayat-stat-total').innerText = data.length;
+                document.getElementById('riwayat-stat-max').innerText = Math.max(...nilaiArr);
+                document.getElementById('riwayat-stat-avg').innerText = Math.round(nilaiArr.reduce((a,b)=>a+b,0) / nilaiArr.length);
+                document.getElementById('riwayat-stat-lulus').innerText = totalLulus;
+            }
+
+            list.innerHTML = data.map((r, i) => {
+                const skor = Number(r.skor) || 0;
+                const lulus = skor >= 70;
+                const badge = lulus ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200';
+                const ring = lulus ? 'text-emerald-600' : 'text-red-500';
+                return `
+                <div class="riwayat-card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200">${r.kategori || 'Umum'}</span>
+                            <p class="text-[11px] text-slate-400 font-semibold mt-2">Percobaan ke-${data.length - i} &bull; ${window.formatDate(r.timestamp)}</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase border ${badge}">${lulus ? 'Lulus' : 'Tidak Lulus'}</span>
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Akhir</p>
+                            <p class="text-4xl font-black leading-none ${ring}">${skor}</p>
+                        </div>
+                        <div class="text-right text-[11px] text-slate-500 leading-relaxed">
+                            <p>Benar <strong class="text-slate-800">${r.jumlahBenar ?? '-'}</strong> dari <strong class="text-slate-800">${r.totalSoal ?? '-'}</strong> soal</p>
+                            <p>Instruktur: <strong class="text-slate-800">${r.namaInstruktur || '-'}</strong></p>
+                        </div>
+                    </div>
+                    <div class="mt-3 w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div class="h-2 rounded-full ${lulus ? 'bg-emerald-500' : 'bg-red-400'}" style="width: ${Math.min(skor,100)}%"></div>
+                    </div>
+                </div>`;
+            }).join('');
         };
 
         window.setupAdminUI = function(role) {
@@ -1496,6 +1694,7 @@
         window.saveExamState = function() {
             if (!currentUser || !currentUser.uid) return;
             const examState = {
+                currentExamMeta: currentExamMeta,
                 userAnswers: userAnswers,
                 userFlags: userFlags,
                 examEndTime: examEndTime,
@@ -1524,6 +1723,7 @@
                     const now = Date.now();
                     if (now < savedState.examEndTime) {
                         activeQuizData = savedState.activeQuizData;
+                        currentExamMeta = savedState.currentExamMeta || null;
                         userAnswers = savedState.userAnswers || new Array(activeQuizData.length).fill(null);
                         userFlags = savedState.userFlags || new Array(activeQuizData.length).fill(false);
                         currentQuizIndex = savedState.currentQuizIndex || 0;
@@ -1770,6 +1970,26 @@
                 } catch(e) {}
             }
             
+            // Simpan ke riwayat ujian peserta (per kelas)
+            if(currentUser && currentUser.uid) {
+                try {
+                    await push(ref(db, `${pathRiwayat}/${currentUser.uid}`), {
+                        kategori: currentExamMeta ? currentExamMeta.kategori : (activeQuizData[0] ? activeQuizData[0].kategori : 'Umum'),
+                        bidang: currentExamMeta ? currentExamMeta.bidang : '-',
+                        kelas: currentExamMeta ? currentExamMeta.kelas : '-',
+                        idTim: currentExamMeta ? currentExamMeta.idTim : '-',
+                        namaInstruktur: currentExamMeta ? currentExamMeta.namaInstruktur : '-',
+                        namaPeserta: currentUser.nama,
+                        instansi: currentUser.instansi || '-',
+                        skor: finalScore,
+                        jumlahBenar: correctCount,
+                        totalSoal: total,
+                        status: isLulus ? 'Lulus' : 'Tidak Lulus',
+                        timestamp: Date.now()
+                    });
+                } catch(e) {}
+            }
+
             localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
         };
 
@@ -2019,9 +2239,20 @@
                 if(snap.val() === 'approved') {
                     window.showToast("Instruktur menyetujui. Memulai Ujian!", "success");
                     
-                    activeQuizData = quizDataFromDB.filter(q => q.kategori === `${bdg} - ${kls}`);
-                    if(activeQuizData.length === 0) activeQuizData = quizDataFromDB.slice(0, 10);
-                    activeQuizData.sort(() => Math.random() - 0.5);
+                    // Soal diambil dari Bank Soal admin sesuai Bidang & Kelas, lalu diacak
+                    activeQuizData = window.buildSoalUjian(bdg, kls, idTim);
+                    currentExamMeta = {
+                        bidang: bdg,
+                        kelas: kls,
+                        kategori: `${bdg} - ${kls}`,
+                        idTim: idTim,
+                        namaInstruktur: window.getNamaTim(idTim)
+                    };
+
+                    if(activeQuizData.length === 0) {
+                        window.showToast("Bank soal untuk kelas ini masih kosong. Hubungi admin.", "error");
+                        return;
+                    }
                     
                     userAnswers = new Array(activeQuizData.length).fill(null);
                     userFlags = new Array(activeQuizData.length).fill(false);
@@ -2083,7 +2314,32 @@
             if(unans > 0) { 
                 if(!confirm(`Masih ada ${unans} soal yang belum dijawab. Yakin selesai?`)) return; 
             }
+            // Wajib mengisi ulasan instruktur sebelum nilai ditampilkan
+            window.openUlasanSebelumSelesai();
+        });
+
+        window.openUlasanSebelumSelesai = function() {
+            pendingFinishQuiz = true;
+            const info = document.getElementById('ulasan-konteks-info');
+            if(info && currentExamMeta) {
+                info.innerHTML = `Kelas: <strong class="text-slate-800">${currentExamMeta.kategori}</strong> &bull; Instruktur: <strong class="text-slate-800">${currentExamMeta.namaInstruktur}</strong>`;
+                info.classList.remove('hidden');
+            }
+            const skip = document.getElementById('btn-skip-ulasan');
+            if(skip) skip.classList.remove('hidden');
+            window.openModal('modal-ulasan-instruktur');
+        };
+
+        window.lanjutkanSetelahUlasan = function() {
+            pendingFinishQuiz = false;
+            const skip = document.getElementById('btn-skip-ulasan');
+            if(skip) skip.classList.add('hidden');
+            window.openModal('modal-ujian');
             window.finishQuiz();
+        };
+
+        document.getElementById('btn-skip-ulasan')?.addEventListener('click', () => {
+            if(pendingFinishQuiz) window.lanjutkanSetelahUlasan();
         });
 
         const viewAdmin = document.getElementById('view-admin'); 
@@ -3661,6 +3917,7 @@
                             document.getElementById('modul-locked')?.classList.add('hidden'); 
                             document.getElementById('modul-list')?.classList.remove('hidden');
                             window.checkAndResumeExam();
+                            window.listenRiwayatUjian(user.uid);
                         }
                     }, { onlyOnce: true });
                 }
@@ -3685,6 +3942,8 @@
             }
         });
 
+        document.getElementById('filter-riwayat-kelas')?.addEventListener('change', () => window.renderRiwayatUjian());
+
         document.getElementById('form-ulasan-instruktur')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             if(!currentUser) return;
@@ -3696,18 +3955,25 @@
             btn.disabled = true;
             
             try {
-                const quizTargetId = activeQuizData.length > 0 ? activeQuizData[0].idTimTarget : 'admin_utama';
+                const quizTargetId = (currentExamMeta && currentExamMeta.idTim) ? currentExamMeta.idTim : (activeQuizData.length > 0 ? activeQuizData[0].idTimTarget : 'admin_utama');
                 await push(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), {
                     idPeserta: currentUser.uid,
                     namaPeserta: currentUser.nama,
+                    instansi: currentUser.instansi || '-',
                     idTim: quizTargetId,
+                    namaInstruktur: currentExamMeta ? currentExamMeta.namaInstruktur : window.getNamaTim(quizTargetId),
+                    kategori: currentExamMeta ? currentExamMeta.kategori : '-',
                     rating: parseInt(rating),
                     ulasan: ulasan,
                     timestamp: Date.now()
                 });
                 window.showToast("Ulasan berhasil dikirim. Terima kasih!", "success");
-                window.closeModal();
                 e.target.reset();
+                if(pendingFinishQuiz) {
+                    window.lanjutkanSetelahUlasan();
+                } else {
+                    window.closeModal();
+                }
             } catch(err) {
                 window.showToast("Gagal mengirim ulasan.", "error");
             }
