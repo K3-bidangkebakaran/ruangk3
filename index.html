@@ -2330,13 +2330,25 @@
         window.openModal = function(modalId) {
             if(!overlay) return; 
             overlay.classList.remove('hidden');
-            document.querySelectorAll('#modal-overlay > div').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#modal-overlay > div').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            });
             const mod = document.getElementById(modalId); 
-            if(mod) mod.classList.remove('hidden');
+            if(mod) {
+                mod.classList.remove('hidden');
+                if (mod.classList.contains('flex-col')) {
+                    mod.classList.add('flex');
+                }
+            }
         };
         
         window.closeModal = function() { 
             if(overlay) overlay.classList.add('hidden'); 
+            document.querySelectorAll('#modal-overlay > div').forEach(el => {
+                el.classList.remove('flex');
+                el.classList.add('hidden');
+            });
         };
         
         document.querySelectorAll('.btn-close-modal').forEach(btn => btn.addEventListener('click', window.closeModal));
