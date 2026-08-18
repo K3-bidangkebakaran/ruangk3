@@ -824,9 +824,10 @@
 
                 <div class="admin-utama-only eldi-access text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Menu Khusus</div>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-running-text"><span>Kelola Running Text</span></button>
-                <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
+                <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium bidang-access" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-tim"><span>Kelola Akun Tim</span></button>
-                <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-soal"><span>Kelola Bank Soal</span></button>
+                <button id="nav-btn-akun-bidang" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-akun-bidang"><span>Akun Bidang Lain</span></button>
+                <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium bidang-access" data-target="admin-panel-soal"><span>Kelola Bank Soal</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kategori"><span>Kelola Kategori K3</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pjk3"><span>Kelola Mitra PJK3</span></button>
             </nav>
@@ -997,7 +998,7 @@
                 </div>
 
                 <!-- Input Kegiatan Baru -->
-                <div id="admin-panel-kegiatan" class="admin-panel hidden eldi-access admin-utama-only">
+                <div id="admin-panel-kegiatan" class="admin-panel hidden eldi-access admin-utama-only bidang-access">
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 md:p-8 max-w-3xl mx-auto relative overflow-hidden">
                         <h3 class="text-xl font-bold text-slate-900 mb-2 border-b pb-3">Form Input Kegiatan Training Baru</h3>
                         <form id="form-kegiatan" class="space-y-5 mt-5">
@@ -1056,6 +1057,34 @@
                         </div>
                         <div class="lg:col-span-2">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5"><h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Akun Tim Aktif</h3><div id="admin-list-tim" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Akun Bidang Lain (Khusus Admin Pusat) -->
+                <div id="admin-panel-akun-bidang" class="admin-panel hidden admin-utama-only">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-1">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
+                                <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Buat Akun Bidang Lain</h3>
+                                <form id="form-akun-bidang" class="space-y-4">
+                                    <input type="text" id="input-bidang-nama" required placeholder="Nama Akun (contoh: Divisi Listrik)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <input type="text" id="input-bidang-label" placeholder="Bidang K3 (opsional)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <input type="text" id="input-bidang-hp" placeholder="No. WA (opsional)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <input type="text" id="input-bidang-pin" required placeholder="PIN Akses" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <p class="text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-2">Menu Otomatis Aktif:</p>
+                                        <p class="text-[11px] text-slate-600 leading-relaxed">Kalender Kegiatan (milik sendiri), Input Kegiatan, Ringkasan Keuangan (milik sendiri), Kelola Bank Soal, Kelola Berita, dan Kelola Modul Materi. Seluruh data yang diinput otomatis masuk ke data Admin Pusat.</p>
+                                    </div>
+                                    <button type="submit" class="w-full py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm">Simpan Akun Bidang</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2">
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                                <h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Akun Bidang Aktif</h3>
+                                <div id="admin-list-akun-bidang" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1129,7 +1158,7 @@
                 </div>
 
                 <!-- Bank Soal -->
-                <div id="admin-panel-soal" class="admin-panel hidden eldi-access admin-utama-only">
+                <div id="admin-panel-soal" class="admin-panel hidden eldi-access admin-utama-only bidang-access">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-1">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
@@ -1302,6 +1331,7 @@
         const pathKategori = `artifacts/${cleanAppId}/public/data/kategori_k3`;
         const pathRunningText = `artifacts/${cleanAppId}/public/data/running_text`;
         const pathRiwayat = `artifacts/${cleanAppId}/public/data/riwayat_ujian`;
+        const pathAkunBidang = `artifacts/${cleanAppId}/public/data/akun_bidang`;
 
         // GLOBAL VARIABLES
         let currentUser = null; 
@@ -1313,6 +1343,7 @@
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
+        let dataAkunBidangAll = [];
         const JUMLAH_SOAL_UJIAN = 25;
         let isAppInitialized = false;
 
@@ -1471,7 +1502,7 @@
             if(!container || !ctx) return;
 
             let filteredReviews = dataReviewAll || [];
-            if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi')) {
+            if(currentUser && (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi' || currentUser.role === 'admin_bidang')) {
                 filteredReviews = dataReviewAll.filter(r => r.idTim === currentUser.idTim);
             }
 
@@ -1883,9 +1914,11 @@
             const isUtama = role === 'admin_utama';
             const isViewer = role === 'viewer_kalender';
             const isEldi = role === 'admin_eldi';
+            const isBidang = role === 'admin_bidang';
             
             document.querySelectorAll('.admin-utama-only').forEach(el => {
                 if (isUtama) { el.classList.remove('hidden'); } 
+                else if (isBidang && el.classList.contains('bidang-access')) { el.classList.remove('hidden'); } 
                 else if (isEldi && el.classList.contains('eldi-access')) { el.classList.remove('hidden'); } 
                 else if (isViewer && el.closest('#admin-panel-pendapatan')) { el.classList.remove('hidden'); } 
                 else { el.classList.add('hidden'); }
@@ -1895,7 +1928,7 @@
             const fieldTim = document.getElementById('field-pilih-tim');
             const selectTim = document.getElementById('input-kegiatan-tim');
 
-            if (isEldi) {
+            if (isEldi || isBidang) {
                 if (fieldMgmt) fieldMgmt.classList.add('hidden');
                 if (fieldTim) fieldTim.classList.add('hidden');
                 if (selectTim) selectTim.removeAttribute('required');
@@ -1911,7 +1944,16 @@
             const btnModul = document.getElementById('nav-btn-modul');
             const btnReview = document.getElementById('nav-btn-review');
             
-            if (isUtama || isEldi) {
+            if (isBidang) {
+                if(btnNilai) btnNilai.classList.add('hidden');
+                if(btnReview) btnReview.classList.add('hidden');
+                if(btnBerita) btnBerita.classList.remove('hidden');
+                if(btnModul) btnModul.classList.remove('hidden');
+                if(btnKeuangan) btnKeuangan.classList.remove('hidden');
+                document.querySelectorAll('.admin-nav-btn[data-target="admin-panel-verifikasi"]').forEach(b => b.classList.add('hidden'));
+                const panelVerif = document.getElementById('admin-panel-verifikasi');
+                if(panelVerif) panelVerif.classList.add('hidden');
+            } else if (isUtama || isEldi) {
                 if(btnNilai) btnNilai.classList.remove('hidden'); 
                 if(btnBerita) btnBerita.classList.remove('hidden'); 
                 if(btnKeuangan) btnKeuangan.classList.remove('hidden'); 
@@ -1933,7 +1975,7 @@
             }
 
             document.getElementById('admin-name-display').innerText = currentUser.nama;
-            document.getElementById('admin-role-display').innerText = isUtama ? 'Admin Utama' : (isEldi ? 'Instruktur / Manajemen' : (isViewer ? 'Pemantau' : 'Tim Pengajar'));
+            document.getElementById('admin-role-display').innerText = isUtama ? 'Admin Utama' : (isEldi ? 'Instruktur / Manajemen' : (isBidang ? (currentUser.bidang ? `Admin ${currentUser.bidang}` : 'Admin Bidang') : (isViewer ? 'Pemantau' : 'Tim Pengajar')));
             document.getElementById('admin-avatar-initial').innerText = currentUser.nama.substring(0,2).toUpperCase();
             
             document.querySelectorAll('.admin-nav-btn').forEach(btn => {
@@ -2697,6 +2739,17 @@
                 window.renderDashboardPendapatanHome(); 
                 window.renderVerifikasiUI(); 
                 window.renderReviewUI();
+            } else if ((dataAkunBidangAll || []).some(a => a.pin === pin)) {
+                const akun = dataAkunBidangAll.find(a => a.pin === pin);
+                currentUser = { nama: akun.nama, role: 'admin_bidang', uid: akun.id, idTim: akun.id, bidang: akun.bidang || '' };
+                window.renderAvatarUI(akun.nama, akun.bidang ? `Admin ${akun.bidang}` : 'Admin Bidang');
+                window.setupAdminUI('admin_bidang');
+                window.openAdminView();
+                e.target.reset();
+                window.closeModal();
+                window.renderDashboardPendapatanHome();
+                window.renderVerifikasiUI();
+                window.renderReviewUI();
             } else {
                 const timFound = dataTimAll.find(t => t.pin === pin);
                 if (timFound) { 
@@ -2869,15 +2922,16 @@
             btn.disabled = true;
             
             const isEldi = currentUser.role === 'admin_eldi';
+            const isBidang = currentUser.role === 'admin_bidang';
             const idEdit = document.getElementById('input-kegiatan-id').value; 
             const selectTim = document.getElementById('input-kegiatan-tim'); 
             
-            const idTim = isEldi ? 'eldi_123' : selectTim.value; 
-            const namaTim = isEldi ? 'Eldi Prayoga Firdaus' : selectTim.options[selectTim.selectedIndex]?.text; 
+            const idTim = isEldi ? 'eldi_123' : (isBidang ? currentUser.uid : selectTim.value); 
+            const namaTim = isEldi ? 'Eldi Prayoga Firdaus' : (isBidang ? currentUser.nama : selectTim.options[selectTim.selectedIndex]?.text); 
             const tanggal = document.getElementById('input-kegiatan-tanggal').value; 
             const namaKeg = document.getElementById('input-kegiatan-nama').value; 
             const pjk3 = document.getElementById('input-kegiatan-pjk3').value; 
-            const pendapatanManagement = isEldi ? 0 : (parseInt(document.getElementById('input-kegiatan-pendapatan').value) || 0); 
+            const pendapatanManagement = (isEldi || isBidang) ? 0 : (parseInt(document.getElementById('input-kegiatan-pendapatan').value) || 0); 
             const pendapatanTim = parseInt(document.getElementById('input-kegiatan-pendapatan-tim').value) || 0;
             
             const dataToSave = { idTim, namaTim, tanggal, namaKegiatan: namaKeg, pjk3, pendapatanManagement, pendapatanTim };
@@ -2891,7 +2945,7 @@
                     dataToSave.timestamp = Date.now(); 
                     await push(ref(db, pathKegiatan), dataToSave);
                     
-                    if (idTim !== 'admin_utama' && idTim !== 'eldi_123') { 
+                    if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { 
                         const timData = dataTimAll.find(t => t.id === idTim); 
                         if(timData && timData.hp) { 
                             await window.sendWA_Fonnte(timData.hp, `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${timData.nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`); 
@@ -2913,7 +2967,9 @@
 
         window.editKegiatan = function(id) {
             if (currentUser && currentUser.role === 'viewer_kalender') return window.showToast("Akses Ditolak: Membaca Kalender saja.", "error");
-            if (currentUser && (currentUser.role !== 'admin_utama' && currentUser.role !== 'admin_eldi')) return window.showToast("Akses Ditolak: Hanya Admin Pusat & Instruktur Utama.", "error");
+            const dataCek = dataKegiatanAll.find(k => k.id === id);
+            const isBidangPemilik = currentUser && currentUser.role === 'admin_bidang' && dataCek && dataCek.idTim === currentUser.uid;
+            if (currentUser && (currentUser.role !== 'admin_utama' && currentUser.role !== 'admin_eldi') && !isBidangPemilik) return window.showToast("Akses Ditolak: Hanya Admin Pusat & Instruktur Utama.", "error");
             
             const data = dataKegiatanAll.find(k => k.id === id); 
             if(!data) return;
@@ -3021,6 +3077,122 @@
             } 
             setTimeout(() => { if(btn) btn.innerText = ori; }, 2000); 
         });
+
+
+        // ================= AKUN BIDANG LAIN (Admin Pusat) =================
+        window.batalEditAkunBidang = function() {
+            const form = document.getElementById('form-akun-bidang');
+            if(!form) return;
+            form.reset();
+            document.getElementById('input-bidang-nama').removeAttribute('data-edit-id');
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) btn.innerText = "Simpan Akun Bidang";
+            document.getElementById('btn-batal-akun-bidang')?.classList.add('hidden');
+        };
+
+        window.editAkunBidang = function(id) {
+            const data = (dataAkunBidangAll || []).find(a => a.id === id);
+            if(!data) return;
+            document.getElementById('input-bidang-nama').value = data.nama || '';
+            document.getElementById('input-bidang-nama').setAttribute('data-edit-id', id);
+            document.getElementById('input-bidang-label').value = data.bidang || '';
+            document.getElementById('input-bidang-hp').value = data.hp || '';
+            document.getElementById('input-bidang-pin').value = data.pin || '';
+            const form = document.getElementById('form-akun-bidang');
+            const btn = form?.querySelector('button[type="submit"]');
+            if(btn) btn.innerText = "Simpan Perubahan";
+            let batalBtn = document.getElementById('btn-batal-akun-bidang');
+            if(!batalBtn && form) {
+                batalBtn = document.createElement('button');
+                batalBtn.id = 'btn-batal-akun-bidang';
+                batalBtn.type = 'button';
+                batalBtn.className = 'w-full mt-2 py-2 border border-slate-300 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-50';
+                batalBtn.innerText = 'Batal Edit';
+                batalBtn.onclick = window.batalEditAkunBidang;
+                form.appendChild(batalBtn);
+            }
+            batalBtn?.classList.remove('hidden');
+            document.getElementById('admin-panel-akun-bidang')?.scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.hapusAkunBidang = async function(id) {
+            try {
+                await remove(ref(db, `${pathAkunBidang}/${id}`));
+                window.showToast("Akun bidang berhasil dihapus.", "success");
+            } catch(e) {
+                window.showToast("Gagal menghapus akun bidang.", "error");
+            }
+        };
+
+        document.getElementById('form-akun-bidang')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser || currentUser.role !== 'admin_utama') return window.showToast("Akses Ditolak: Khusus Admin Pusat.", "error");
+            const btn = e.target.querySelector('button[type="submit"]');
+            const ori = btn ? btn.innerText : '';
+            if(btn) btn.innerText = "Menyimpan...";
+            const editId = document.getElementById('input-bidang-nama').getAttribute('data-edit-id');
+            try {
+                const dataToSave = {
+                    nama: document.getElementById('input-bidang-nama').value.trim(),
+                    bidang: document.getElementById('input-bidang-label').value.trim(),
+                    hp: document.getElementById('input-bidang-hp').value.trim(),
+                    pin: document.getElementById('input-bidang-pin').value.trim()
+                };
+                if(editId) {
+                    await update(ref(db, `${pathAkunBidang}/${editId}`), dataToSave);
+                    window.showToast("Akun bidang berhasil diperbarui.", "success");
+                    window.batalEditAkunBidang();
+                } else {
+                    dataToSave.timestamp = Date.now();
+                    await push(ref(db, pathAkunBidang), dataToSave);
+                    window.showToast("Akun bidang berhasil ditambahkan.", "success");
+                    e.target.reset();
+                }
+            } catch(err) {
+                window.showToast("Gagal menyimpan akun bidang.", "error");
+            }
+            setTimeout(() => { if(btn) btn.innerText = ori; }, 2000);
+        });
+
+        window.syncOpsiAkunBidang = function() {
+            const selectUjianTim = document.getElementById('select-ujian-tim');
+            if(!selectUjianTim) return;
+            selectUjianTim.querySelectorAll('option[data-bidang="1"]').forEach(o => o.remove());
+            (dataAkunBidangAll || []).forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.id;
+                opt.setAttribute('data-bidang', '1');
+                opt.textContent = a.bidang ? `${a.nama} (${a.bidang})` : a.nama;
+                selectUjianTim.appendChild(opt);
+            });
+        };
+
+        window.renderAkunBidangUI = function() {
+            const list = document.getElementById('admin-list-akun-bidang');
+            if(!list) return;
+            if(!dataAkunBidangAll || dataAkunBidangAll.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-500 italic col-span-2">Belum ada akun bidang lain yang dibuat.</p>';
+                return;
+            }
+            list.innerHTML = dataAkunBidangAll.map(a => `
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
+                    <p class="text-sm font-bold text-slate-900">${a.nama || '-'}</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">${a.bidang ? 'Bidang: ' + a.bidang : 'Bidang belum diisi'}</p>
+                    <p class="text-[11px] text-slate-500">PIN: <span class="font-mono font-bold text-slate-700">${a.pin || '-'}</span>${a.hp ? ' &middot; WA: ' + a.hp : ''}</p>
+                    <div class="mt-2 flex flex-wrap gap-1">
+                        <span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[8px]">Bank Soal</span>
+                        <span class="bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded text-[8px]">Kalender</span>
+                        <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[8px]">Kegiatan</span>
+                        <span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[8px]">Keuangan</span>
+                        <span class="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[8px]">Berita</span>
+                        <span class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded text-[8px]">Modul</span>
+                    </div>
+                    <div class="mt-3 flex gap-2">
+                        <button onclick="window.editAkunBidang('${a.id}')" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded text-[11px] font-bold">Edit</button>
+                        <button onclick="window.hapusAkunBidang('${a.id}')" class="px-3 py-1.5 bg-red-50 text-red-600 rounded text-[11px] font-bold">Hapus</button>
+                    </div>
+                </div>`).join('');
+        };
 
         document.getElementById('form-pengeluaran')?.addEventListener('submit', async (e) => { 
             e.preventDefault(); 
@@ -3355,7 +3527,7 @@
 
                 let filteredKegiatan = dataKegiatanAll; 
                 
-                if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi') {
+                if(currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi' || currentUser.role === 'admin_bidang') {
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
                 } else if (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') {
                     filteredKegiatan = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
@@ -3880,6 +4052,19 @@
                 window.renderReviewUI(); 
             });
 
+            onValue(ref(db, pathAkunBidang), (snapshot) => {
+                dataAkunBidangAll = [];
+                if(snapshot.exists()) {
+                    snapshot.forEach(childSnap => {
+                        const data = childSnap.val() || {};
+                        data.id = childSnap.key;
+                        dataAkunBidangAll.push(data);
+                    });
+                }
+                window.renderAkunBidangUI();
+                window.syncOpsiAkunBidang();
+            });
+
             onValue(ref(db, pathTim), (snapshot) => {
                 dataTimAll = []; 
                 const selectKeg = document.getElementById('input-kegiatan-tim'); 
@@ -3924,6 +4109,7 @@
                         }
                     });
                 }
+                window.syncOpsiAkunBidang();
                 window.renderReviewUI(); 
             });
             
