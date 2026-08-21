@@ -131,6 +131,18 @@
 
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen" oncontextmenu="return false;">
 
+    <!-- Safety-net: pastikan konten (.reveal) tetap tampil walau script utama (module/Firebase) gagal dimuat -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                document.querySelectorAll('.reveal:not(.active)').forEach(function(el) {
+                    el.classList.add('active');
+                });
+            }, 1200);
+        });
+    </script>
+
+
     <nav id="navbar" class="w-full z-40 glass-nav transition-all duration-300 shadow-md sticky top-0 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
@@ -2122,9 +2134,18 @@
             window.saveExamState();
             window.renderQuestion();
             
-            if(currentUser && currentUser.uid) {
+            if(currentUser && currentUser.uid && activeQuizData && activeQuizData.length > 0) {
+                const totalSoal = activeQuizData.length;
+                const soalTerjawab = userAnswers.filter(x => x !== null).length;
+                let correctSoFar = 0;
+                activeQuizData.forEach((q, i) => { 
+                    if(userAnswers[i] !== null && userAnswers[i] === q.jawabanBenar) correctSoFar++; 
+                });
+                const skorLive = Math.round((correctSoFar / totalSoal) * 100);
+                
                 update(ref(db, `${pathLiveCbt}/${currentUser.uid}`), {
-                    soalTerjawab: userAnswers.filter(x => x !== null).length,
+                    soalTerjawab: soalTerjawab,
+                    skorLive: skorLive,
                     lastUpdate: Date.now()
                 }).catch(()=>{});
             }
@@ -2589,8 +2610,8 @@
                     userAnswers = new Array(activeQuizData.length).fill(null);
                     userFlags = new Array(activeQuizData.length).fill(false);
                     currentQuizIndex = 0;
-                    // Durasi menyesuaikan jumlah soal bank (min 45 menit, 1,5 menit/soal)
-                    examEndTime = Date.now() + (Math.max(45, Math.ceil(activeQuizData.length * 1.5)) * 60 * 1000);
+                    // Durasi ujian CBT tetap 45 menit
+                    examEndTime = Date.now() + (45 * 60 * 1000);
 
                     
                     window.saveExamState();
