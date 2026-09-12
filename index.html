@@ -278,22 +278,30 @@
                         Akses modul digital K3, selesaikan Simulasi CBT interaktif, dan ikuti sertifikasi resmi Kemnaker RI.
                     </p>
 
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <div id="lms-readiness-card" class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
+                        <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center space-x-2">
                                 <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">Indikator Kesiapan Ujian & Sertifikasi</span>
+                                <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
                             </div>
-                            <span class="text-xs font-extrabold text-safety-400 bg-navy-950/60 px-2.5 py-1 rounded-lg border border-safety-400/30" id="lms-progress-text">Modul & CBT Ready</span>
+                            <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
                         </div>
-                        <div class="w-full bg-navy-950/80 rounded-full h-3 overflow-hidden p-0.5 border border-white/10">
-                            <div id="lms-progress-bar" class="bg-gradient-to-r from-safety-400 via-emerald-300 to-teal-300 h-2 rounded-full transition-all duration-1000" style="width: 85%"></div>
+                        <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
+                        <div class="grid grid-cols-3 gap-2 mb-4">
+                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                                <div class="text-lg mb-1">📚</div>
+                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
+                            </div>
+                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                                <div class="text-lg mb-1">📝</div>
+                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
+                            </div>
+                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                                <div class="text-lg mb-1">🎓</div>
+                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
+                            </div>
                         </div>
-                        <div class="flex justify-between items-center text-[10px] text-slate-300 mt-2">
-                            <span>Modul & Regulasi K3</span>
-                            <span>Simulasi CBT Interaktif</span>
-                            <span class="text-safety-400 font-bold">Ujian Sertifikasi RI</span>
-                        </div>
+                        <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
                     </div>
                 </div>
             </section>
@@ -863,6 +871,7 @@
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-running-text"><span>Kelola Running Text</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium bidang-access" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-tim"><span>Kelola Akun Tim</span></button>
+                <button id="nav-btn-akun-peserta" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-akun-peserta"><span>Kelola Akun Peserta</span></button>
                 <button id="nav-btn-akun-bidang" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-akun-bidang"><span>Akun Bidang Lain</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium bidang-access" data-target="admin-panel-soal"><span>Kelola Bank Soal</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-kategori"><span>Kelola Kategori K3</span></button>
@@ -928,6 +937,25 @@
                             <table class="w-full text-left border-collapse">
                                 <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Nama Peserta</th><th class="px-6 py-4 font-semibold">Instansi</th><th class="px-6 py-4 font-semibold">Status / Nilai Akhir</th></tr></thead>
                                 <tbody id="admin-table-peserta" class="divide-y divide-slate-100 bg-white"><tr><td colspan="3" class="text-center py-8 text-slate-500">Memuat data...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kelola Akun Peserta (khusus Admin Pusat) -->
+                <div id="admin-panel-akun-peserta" class="admin-panel hidden admin-utama-only">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Kelola Akun Peserta</h3>
+                                <p class="text-xs text-slate-500 mt-1 max-w-lg">Daftar seluruh akun peserta yang sudah mendaftar. Bekukan akun yang mengganggu website, mencoba meretas, atau berbuat curang &mdash; akun yang dibekukan tidak dapat login sampai diaktifkan kembali.</p>
+                            </div>
+                            <input type="text" id="input-cari-peserta" placeholder="Cari nama / email / instansi..." class="w-full sm:w-64 px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Peserta</th><th class="px-6 py-4 font-semibold">Instansi</th><th class="px-6 py-4 font-semibold">Email</th><th class="px-6 py-4 font-semibold">Status</th><th class="px-6 py-4 font-semibold text-right">Aksi</th></tr></thead>
+                                <tbody id="admin-table-akun-peserta" class="divide-y divide-slate-100 bg-white"><tr><td colspan="5" class="text-center py-8 text-slate-500">Memuat data...</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -1181,8 +1209,29 @@
                                         </div>
                                     </div>
                                     <input type="text" id="input-judul-modul" required placeholder="Judul Modul" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
-                                    <input type="url" id="input-video-modul" placeholder="Link Video (YouTube / MP4) - Opsional" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
-                                    <input type="url" id="input-doc-modul" placeholder="Link Dokumen PDF / PPT - Opsional" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+
+                                    <div class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <label class="block text-xs font-bold text-slate-700">Dokumen Materi (PDF)</label>
+                                        <div class="flex items-center justify-center w-full">
+                                            <label for="input-doc-modul-file" class="flex flex-col items-center justify-center w-full h-16 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-slate-100 transition-colors">
+                                                <p class="text-[11px] text-slate-500 font-semibold text-center px-2" id="label-nama-file-doc-modul">Klik untuk upload file PDF<br><span class="font-normal">(Opsional, maks 15MB)</span></p>
+                                            </label>
+                                            <input id="input-doc-modul-file" type="file" accept="application/pdf" class="hidden" />
+                                        </div>
+                                        <input type="url" id="input-doc-modul" placeholder="atau tempel Link Dokumen (PDF/Google Drive) - Opsional" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                                    </div>
+
+                                    <div class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <label class="block text-xs font-bold text-slate-700">Video Materi</label>
+                                        <div class="flex items-center justify-center w-full">
+                                            <label for="input-video-modul-file" class="flex flex-col items-center justify-center w-full h-16 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-slate-100 transition-colors">
+                                                <p class="text-[11px] text-slate-500 font-semibold text-center px-2" id="label-nama-file-video-modul">Klik untuk upload file video<br><span class="font-normal">(Opsional, maks 100MB)</span></p>
+                                            </label>
+                                            <input id="input-video-modul-file" type="file" accept="video/*" class="hidden" />
+                                        </div>
+                                        <input type="url" id="input-video-modul" placeholder="atau tempel Link YouTube - Opsional" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                                    </div>
+
                                     <textarea id="input-isi-modul" required rows="6" placeholder="Salin/Tulis seluruh isi materi di sini..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none"></textarea>
                                     <button type="submit" class="w-full py-2.5 bg-amber-500 text-white rounded-lg font-bold shadow-sm text-sm">Simpan Modul</button>
                                 </form>
@@ -1294,8 +1343,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, push, onValue, set, update, remove, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -1350,9 +1400,10 @@
           messagingSenderId: "497833559757",
           appId: "1:497833559757:web:01c2de15cd5f56dbb18b84"
         };
-        const app = initializeApp(firebaseConfig); 
-        const db = getDatabase(app); 
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
         const auth = getAuth(app);
+        const storage = getStorage(app);
 
         const pathPeserta = `artifacts/${cleanAppId}/public/data/peserta`;
         const pathModul = `artifacts/${cleanAppId}/public/data/modul`;
@@ -1380,6 +1431,7 @@
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
+        let dataPesertaAll = [];
         let dataAkunBidangAll = [];
         const JUMLAH_SOAL_UJIAN = 25;
         let isAppInitialized = false;
@@ -1475,9 +1527,97 @@
                 </div>
                 <button onclick="window.processLogout()" class="w-full text-center bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 font-bold px-4 py-3 rounded-xl transition-colors">Keluar Akun</button>`;
                 
-                const wt = document.getElementById('lms-welcome-title'); 
+                const wt = document.getElementById('lms-welcome-title');
                 if(wt) { wt.innerText = `Selamat Datang, ${nama.split(' ')[0]} di Portal RuangK3`; }
+
+                window.renderReadinessCard();
             }
+        };
+
+        /* Kartu "Perjalanan Sertifikasi" di beranda: menampilkan progres NYATA milik
+           peserta yang sedang login (bukan angka statis), atau ajakan masuk/daftar
+           untuk pengunjung yang belum login. */
+        window.renderReadinessCard = function() {
+            const card = document.getElementById('lms-readiness-card');
+            if (!card) return;
+
+            if (!currentUser || currentUser.role !== 'peserta') {
+                card.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
+                        <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
+                    </div>
+                    <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                        <div class="text-lg mb-1">📚</div>
+                        <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
+                    </div>
+                    <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                        <div class="text-lg mb-1">📝</div>
+                        <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
+                    </div>
+                    <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                        <div class="text-lg mb-1">🎓</div>
+                        <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
+                    </div>
+                </div>
+                <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>`;
+                return;
+            }
+
+            const totalUjian = (dataRiwayatUjian || []).length;
+            const skorArr = (dataRiwayatUjian || []).map(r => Number(r.skor) || 0);
+            const nilaiTertinggi = skorArr.length ? Math.max(...skorArr) : 0;
+            const sudahLulus = (dataRiwayatUjian || []).some(r => (Number(r.skor) || 0) >= 70);
+
+            const step2Done = totalUjian > 0;
+            const step3Done = sudahLulus;
+            const stepsDone = 1 + (step2Done ? 1 : 0) + (step3Done ? 1 : 0);
+            const pct = Math.round((stepsDone / 3) * 100);
+            const initial = (currentUser.nama || 'P').substring(0, 2).toUpperCase();
+
+            const stepBadge = (done, icon, label) => `
+                <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border ${done ? 'border-safety-400/60' : 'border-white/10'} relative">
+                    ${done ? `<div class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center text-navy-950 text-[9px] font-black shadow">✓</div>` : ''}
+                    <div class="text-lg mb-1">${icon}</div>
+                    <p class="text-[9px] font-bold ${done ? 'text-safety-300' : 'text-slate-400'} leading-tight">${label}</p>
+                </div>`;
+
+            card.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
+                    <span class="text-xs font-bold text-white">Progres Sertifikasi Saya</span>
+                </div>
+                <span class="text-xs font-extrabold text-safety-400 bg-navy-950/60 px-2.5 py-1 rounded-lg border border-safety-400/30">${pct}% Selesai</span>
+            </div>
+
+            <div class="flex items-center space-x-3 mb-4 pb-4 border-b border-white/10">
+                <div class="w-11 h-11 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">${initial}</div>
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-white truncate">${currentUser.nama || 'Peserta'}</p>
+                    <p class="text-[10px] text-slate-300 truncate">${currentUser.instansi || currentUser.email || 'Peserta RuangK3'}</p>
+                </div>
+            </div>
+
+            <div class="w-full bg-navy-950/80 rounded-full h-3 overflow-hidden p-0.5 border border-white/10 mb-3">
+                <div class="bg-gradient-to-r from-safety-400 via-emerald-300 to-teal-300 h-2 rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                ${stepBadge(true, '👤', 'Akun Aktif')}
+                ${stepBadge(step2Done, '📝', totalUjian > 0 ? `${totalUjian}x Simulasi CBT` : 'Simulasi CBT')}
+                ${stepBadge(step3Done, '🎓', 'Lulus Sertifikasi')}
+            </div>
+
+            ${step3Done
+                ? `<div class="flex items-center justify-center text-center space-x-2 bg-emerald-400/10 border border-emerald-400/30 rounded-xl py-2.5 px-2"><span class="text-emerald-300 text-xs font-extrabold">🎉 Selamat, Anda telah lulus! Nilai tertinggi: ${nilaiTertinggi}</span></div>`
+                : `<button onclick="window.switchLmsTab('${totalUjian > 0 ? 'cbt' : 'kelas'}')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">${totalUjian > 0 ? 'Coba Lagi Simulasi CBT &rarr;' : 'Mulai Belajar Modul K3 &rarr;'}</button>`
+            }`;
         };
 
         window.processLogout = async function() {
@@ -1725,6 +1865,8 @@
             const filterEl = document.getElementById('filter-riwayat-kelas');
             const statsBox = document.getElementById('riwayat-ujian-stats');
             if(!list || !filterEl) return;
+
+            window.renderReadinessCard();
 
             if(!currentUser || currentUser.role !== 'peserta') {
                 list.innerHTML = `<div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center"><p class="text-sm text-slate-500">Silakan masuk ke akun peserta untuk melihat riwayat hasil ujian Anda.</p></div>`;
@@ -2549,14 +2691,22 @@
             const btn = document.getElementById('btn-do-login'); 
             const ori = btn.innerText; 
             btn.innerText = "Memeriksa...";
-            try { 
-                await signInWithEmailAndPassword(auth, email, p); 
-                window.closeModal(); 
-                e.target.reset(); 
+            try {
+                const cred = await signInWithEmailAndPassword(auth, email, p);
+                const snapAkun = await get(ref(db, `${pathPeserta}/${cred.user.uid}`));
+                const dataAkun = snapAkun.val();
+                if (dataAkun && dataAkun.status === 'dibekukan') {
+                    await signOut(auth).catch(() => {});
+                    showAuthMsg("Akun Anda telah dibekukan oleh Admin Pusat. Hubungi pengelola RuangK3 untuk informasi lebih lanjut.");
+                    btn.innerText = ori;
+                    return;
+                }
+                window.closeModal();
+                e.target.reset();
                 window.showToast('Login berhasil!', 'success');
-            } catch (err) { 
-                showAuthMsg("Gagal: Email atau Sandi salah."); 
-            } 
+            } catch (err) {
+                showAuthMsg("Gagal: Email atau Sandi salah.");
+            }
             btn.innerText = ori;
         });
 
@@ -2570,14 +2720,15 @@
             const ori = btn.innerText; 
             btn.innerText = "Mendaftarkan...";
             try { 
-                const userCred = await createUserWithEmailAndPassword(auth, email, p); 
-                await set(ref(db, `${pathPeserta}/${userCred.user.uid}`), { 
-                    email: email, 
-                    nama: nama, 
-                    instansi: instansi, 
-                    role: 'peserta', 
-                    timestamp: Date.now() 
-                }); 
+                const userCred = await createUserWithEmailAndPassword(auth, email, p);
+                await set(ref(db, `${pathPeserta}/${userCred.user.uid}`), {
+                    email: email,
+                    nama: nama,
+                    instansi: instansi,
+                    role: 'peserta',
+                    status: 'aktif',
+                    timestamp: Date.now()
+                });
                 showAuthMsg("Berhasil daftar! Silakan Masuk.", false); 
                 switchTab(true); 
                 e.target.reset(); 
@@ -2892,13 +3043,80 @@
                     window.compressImage(file, 500, 500, 0.8, function(dataUrl) { 
                         window.compressedBase64Pjk3 = dataUrl; 
                     }); 
-                } else { 
-                    labelFilePjk3.innerText = "Upload Logo PJK3"; 
-                    labelFilePjk3.classList.remove('text-safety-600'); 
-                    window.compressedBase64Pjk3 = null; 
-                } 
-            }); 
+                } else {
+                    labelFilePjk3.innerText = "Upload Logo PJK3";
+                    labelFilePjk3.classList.remove('text-safety-600');
+                    window.compressedBase64Pjk3 = null;
+                }
+            });
         }
+
+        /* ================= UPLOAD FILE PDF / VIDEO UNTUK MODUL MATERI (Firebase Storage) ================= */
+        window.selectedDocModulFile = null;
+        window.selectedVideoModulFile = null;
+
+        window.resetLabelDocModul = function() {
+            const lbl = document.getElementById('label-nama-file-doc-modul');
+            if (lbl) { lbl.innerHTML = 'Klik untuk upload file PDF<br><span class="font-normal">(Opsional, maks 15MB)</span>'; lbl.classList.remove('text-safety-600'); }
+        };
+        window.resetLabelVideoModul = function() {
+            const lbl = document.getElementById('label-nama-file-video-modul');
+            if (lbl) { lbl.innerHTML = 'Klik untuk upload file video<br><span class="font-normal">(Opsional, maks 100MB)</span>'; lbl.classList.remove('text-safety-600'); }
+        };
+
+        const inputDocModulFile = document.getElementById('input-doc-modul-file');
+        if (inputDocModulFile) {
+            inputDocModulFile.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const lbl = document.getElementById('label-nama-file-doc-modul');
+                if (!file) { window.selectedDocModulFile = null; window.resetLabelDocModul(); return; }
+                if (file.type !== 'application/pdf') {
+                    window.showToast("File dokumen harus berformat PDF.", "error");
+                    e.target.value = ''; window.selectedDocModulFile = null; window.resetLabelDocModul(); return;
+                }
+                if (file.size > 15 * 1024 * 1024) {
+                    window.showToast("Ukuran PDF maksimal 15MB.", "error");
+                    e.target.value = ''; window.selectedDocModulFile = null; window.resetLabelDocModul(); return;
+                }
+                window.selectedDocModulFile = file;
+                if (lbl) { lbl.innerHTML = `<span class="font-bold text-green-600">${file.name}</span>`; }
+            });
+        }
+
+        const inputVideoModulFile = document.getElementById('input-video-modul-file');
+        if (inputVideoModulFile) {
+            inputVideoModulFile.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                const lbl = document.getElementById('label-nama-file-video-modul');
+                if (!file) { window.selectedVideoModulFile = null; window.resetLabelVideoModul(); return; }
+                if (!file.type.startsWith('video/')) {
+                    window.showToast("File harus berformat video.", "error");
+                    e.target.value = ''; window.selectedVideoModulFile = null; window.resetLabelVideoModul(); return;
+                }
+                if (file.size > 100 * 1024 * 1024) {
+                    window.showToast("Ukuran video maksimal 100MB.", "error");
+                    e.target.value = ''; window.selectedVideoModulFile = null; window.resetLabelVideoModul(); return;
+                }
+                window.selectedVideoModulFile = file;
+                if (lbl) { lbl.innerHTML = `<span class="font-bold text-green-600">${file.name}</span>`; }
+            });
+        }
+
+        window.uploadFileToStorage = function(file, folder, onProgress) {
+            return new Promise((resolve, reject) => {
+                const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                const path = `${folder}/${Date.now()}_${safeName}`;
+                const fileRef = storageRef(storage, path);
+                const task = uploadBytesResumable(fileRef, file);
+                task.on('state_changed', (snap) => {
+                    const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                    if (onProgress) onProgress(pct);
+                }, (err) => reject(err), async () => {
+                    try { const url = await getDownloadURL(task.snapshot.ref); resolve(url); }
+                    catch (e) { reject(e); }
+                });
+            });
+        };
 
         document.getElementById('form-kategori')?.addEventListener('submit', async (e) => {
             e.preventDefault(); 
@@ -3297,9 +3515,70 @@
             } catch(e){ console.error(e); } 
         };
 
-        window.hapusPjk3 = async function(id) { 
-            try { await remove(ref(db, `${pathPjk3}/${id}`)); window.showToast("Logo PJK3 berhasil dihapus.", "success"); } 
-            catch(e){ window.showToast("Gagal menghapus PJK3.", "error"); } 
+        window.hapusPjk3 = async function(id) {
+            try { await remove(ref(db, `${pathPjk3}/${id}`)); window.showToast("Logo PJK3 berhasil dihapus.", "success"); }
+            catch(e){ window.showToast("Gagal menghapus PJK3.", "error"); }
+        };
+
+        /* ================= KELOLA AKUN PESERTA (khusus Admin Pusat) ================= */
+        window.renderAkunPeserta = function() {
+            const tbody = document.getElementById('admin-table-akun-peserta');
+            if (!tbody) return;
+
+            const q = (document.getElementById('input-cari-peserta')?.value || '').toLowerCase().trim();
+            const filtered = q ? dataPesertaAll.filter(p =>
+                (p.nama || '').toLowerCase().includes(q) ||
+                (p.email || '').toLowerCase().includes(q) ||
+                (p.instansi || '').toLowerCase().includes(q)
+            ) : dataPesertaAll;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 italic text-sm">${dataPesertaAll.length === 0 ? 'Belum ada akun peserta yang terdaftar.' : 'Tidak ditemukan peserta yang cocok.'}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => {
+                const isFrozen = p.status === 'dibekukan';
+                const statusBadge = isFrozen
+                    ? `<span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider bg-red-100 text-red-800 font-bold border border-red-200">🔒 Dibekukan</span>`
+                    : `<span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">Aktif</span>`;
+                const actionBtn = isFrozen
+                    ? `<button onclick="window.toggleStatusPeserta('${p.id}', false)" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">Aktifkan Kembali</button>`
+                    : `<button onclick="window.toggleStatusPeserta('${p.id}', true)" class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">Bekukan Akun</button>`;
+                return `<tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="px-6 py-3 font-bold text-slate-900 text-sm">${p.nama || '-'}</td>
+                    <td class="px-6 py-3 text-xs text-slate-600">${p.instansi || '-'}</td>
+                    <td class="px-6 py-3 text-xs text-slate-600">${p.email || '-'}</td>
+                    <td class="px-6 py-3">${statusBadge}</td>
+                    <td class="px-6 py-3 text-right">${actionBtn}</td>
+                </tr>`;
+            }).join('');
+        };
+
+        document.getElementById('input-cari-peserta')?.addEventListener('input', () => window.renderAkunPeserta());
+
+        window.toggleStatusPeserta = async function(id, freeze) {
+            if (!currentUser || currentUser.role !== 'admin_utama') {
+                window.showToast("Hanya Admin Pusat yang dapat melakukan aksi ini.", "error");
+                return;
+            }
+            const target = dataPesertaAll.find(p => p.id === id);
+            const nama = target?.nama || 'peserta ini';
+            const confirmMsg = freeze
+                ? `Yakin ingin membekukan akun "${nama}"? Peserta tidak akan bisa login sampai akunnya diaktifkan kembali.`
+                : `Aktifkan kembali akun "${nama}"?`;
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                await update(ref(db, `${pathPeserta}/${id}`), {
+                    status: freeze ? 'dibekukan' : 'aktif',
+                    bekuInfo: freeze ? { oleh: currentUser.nama || 'Admin Pusat', waktu: Date.now() } : null
+                });
+                window.showToast(freeze ? `Akun "${nama}" berhasil dibekukan.` : `Akun "${nama}" berhasil diaktifkan kembali.`, "success");
+            } catch (e) {
+                console.error(e);
+                window.showToast("Gagal mengubah status akun peserta.", "error");
+            }
         };
 
         document.getElementById('form-running-text')?.addEventListener('submit', async (e) => {
@@ -3406,26 +3685,46 @@
         document.getElementById('input-bidang-soal')?.addEventListener('change', () => window.updateKelasDropdown('input-bidang-soal', 'input-kelas-soal'));
         document.getElementById('select-ujian-bidang')?.addEventListener('change', () => window.updateKelasDropdown('select-ujian-bidang', 'select-ujian-kelas'));
 
-        document.getElementById('form-modul')?.addEventListener('submit', async (e) => { 
-            e.preventDefault(); 
-            if(!currentUser) return; 
-            const btn = e.target.querySelector('button'); 
-            const ori = btn.innerText; 
-            btn.innerText = "..."; 
-            try { 
+        document.getElementById('form-modul')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            const btn = e.target.querySelector('button');
+            const ori = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "...";
+            try {
                 const valKategori = document.getElementById('input-bidang-modul').value + ' - ' + document.getElementById('input-kelas-modul').value;
-                await push(ref(db, pathModul), { 
-                    kategori: valKategori, 
-                    judul: document.getElementById('input-judul-modul').value, 
-                    videoUrl: document.getElementById('input-video-modul').value.trim(), 
-                    docUrl: document.getElementById('input-doc-modul').value.trim(), 
-                    isi: document.getElementById('input-isi-modul').value, 
-                    timestamp: Date.now() 
-                }); 
-                e.target.reset(); 
-                window.showToast("Modul Tersimpan", "success"); 
-            } catch(err){} 
-            setTimeout(() => { btn.innerText = ori; }, 2000); 
+                let videoUrl = document.getElementById('input-video-modul').value.trim();
+                let docUrl = document.getElementById('input-doc-modul').value.trim();
+
+                if (window.selectedDocModulFile) {
+                    docUrl = await window.uploadFileToStorage(window.selectedDocModulFile, 'modul_dokumen', (pct) => { btn.innerText = `Upload PDF ${pct}%...`; });
+                }
+                if (window.selectedVideoModulFile) {
+                    videoUrl = await window.uploadFileToStorage(window.selectedVideoModulFile, 'modul_video', (pct) => { btn.innerText = `Upload Video ${pct}%...`; });
+                }
+
+                btn.innerText = "Menyimpan...";
+                await push(ref(db, pathModul), {
+                    kategori: valKategori,
+                    judul: document.getElementById('input-judul-modul').value,
+                    videoUrl: videoUrl,
+                    docUrl: docUrl,
+                    isi: document.getElementById('input-isi-modul').value,
+                    timestamp: Date.now()
+                });
+                e.target.reset();
+                window.selectedDocModulFile = null;
+                window.selectedVideoModulFile = null;
+                window.resetLabelDocModul();
+                window.resetLabelVideoModul();
+                window.showToast("Modul Tersimpan", "success");
+            } catch(err) {
+                console.error(err);
+                window.showToast("Gagal menyimpan modul. Jika mengupload file, pastikan Firebase Storage sudah aktif & rules mengizinkan upload.", "error");
+            }
+            btn.disabled = false;
+            setTimeout(() => { btn.innerText = ori; }, 1200);
         });
         
         document.getElementById('form-pjk3')?.addEventListener('submit', async (e) => { 
@@ -3943,36 +4242,39 @@
             });
 
             onValue(ref(db, pathPeserta), (snapshot) => {
-                const tbodyAdmin = document.getElementById('admin-table-peserta'); 
-                if(tbodyAdmin) tbodyAdmin.innerHTML = ''; 
+                const tbodyAdmin = document.getElementById('admin-table-peserta');
+                if(tbodyAdmin) tbodyAdmin.innerHTML = '';
                 let countDaftar = 0; let countLulus = 0;
-                
-                if(!snapshot.exists() && tbodyAdmin) { 
-                    tbodyAdmin.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-500 italic text-sm">Belum ada data peserta.</td></tr>'; 
-                } else if (snapshot.exists()) { 
-                    snapshot.forEach(childSnap => { 
-                        countDaftar++; 
-                        const data = childSnap.val(); 
-                        let skorText = 'Belum Ujian'; 
+                dataPesertaAll = [];
+
+                if(!snapshot.exists() && tbodyAdmin) {
+                    tbodyAdmin.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-500 italic text-sm">Belum ada data peserta.</td></tr>';
+                } else if (snapshot.exists()) {
+                    snapshot.forEach(childSnap => {
+                        countDaftar++;
+                        const data = childSnap.val();
+                        dataPesertaAll.push({ id: childSnap.key, ...data });
+                        let skorText = 'Belum Ujian';
                         let colorSkor = 'bg-slate-100 text-slate-600';
-                        
+
                         if (data.skorUjian && data.skorUjian !== '-') {
-                            countLulus++; 
-                            if (data.statusKelulusan === 'Tidak Lulus') { 
-                                skorText = `Tidak Lulus (${data.skorUjian})`; 
-                                colorSkor = 'bg-red-100 text-red-800 font-bold border border-red-200'; 
-                            } else { 
-                                skorText = `Lulus (${data.skorUjian})`; 
-                                colorSkor = 'bg-green-100 text-green-800 font-bold border border-green-200'; 
+                            countLulus++;
+                            if (data.statusKelulusan === 'Tidak Lulus') {
+                                skorText = `Tidak Lulus (${data.skorUjian})`;
+                                colorSkor = 'bg-red-100 text-red-800 font-bold border border-red-200';
+                            } else {
+                                skorText = `Lulus (${data.skorUjian})`;
+                                colorSkor = 'bg-green-100 text-green-800 font-bold border border-green-200';
                             }
                         }
                         if(tbodyAdmin) {
-                            tbodyAdmin.innerHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`; 
+                            tbodyAdmin.innerHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
                         }
-                    }); 
+                    });
                 }
-                window.animateNumber('stat-total-pendaftar', countDaftar); 
+                window.animateNumber('stat-total-pendaftar', countDaftar);
                 window.animateNumber('stat-total-lulus', countLulus);
+                window.renderAkunPeserta();
             });
 
             onValue(ref(db, pathBerita), (snapshot) => {
@@ -4295,6 +4597,18 @@
                     if (url.endsWith('.pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
                     return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
                 }
+                /* Watermark identitas peserta di atas materi (video & dokumen) sebagai jejak anti-bocor.
+                   Screenshot/rekam layar tidak bisa diblokir sepenuhnya oleh website manapun,
+                   tapi watermark ini membuat identitas pengunggah terlihat jika materi disebarkan. */
+                function getModulWatermarkHtml() {
+                    if (!currentUser || currentUser.role !== 'peserta') return '';
+                    const label = `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
+                    if (!label) return '';
+                    const esc = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    const line = (esc + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;').repeat(5);
+                    const rows = Array(16).fill(`<span>${line}</span>`).join('<br>');
+                    return `<div class="absolute inset-0 z-30 overflow-hidden pointer-events-none select-none" style="opacity:.6;"><div style="position:absolute; top:-40%; left:-40%; width:180%; height:180%; transform:rotate(-22deg); color:rgba(255,255,255,.55); text-shadow:0 1px 3px rgba(0,0,0,.9); font-size:11px; font-weight:700; line-height:2.6em; letter-spacing:1px; white-space:nowrap;">${rows}</div></div>`;
+                }
 
                 let countModul = 0;
                 if(snapshot.exists()) {
@@ -4308,20 +4622,22 @@
                         if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; 
                         if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
                         
+                        const watermarkHtml = getModulWatermarkHtml();
+
                         let videoHtml = '';
                         if (data.videoUrl) {
                             const embed = getEmbedVideoUrl(data.videoUrl);
                             if (embed.includes('youtube.com/embed')) {
-                                videoHtml = `<div class="aspect-video w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black shadow-inner"><iframe src="${embed}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                                videoHtml = `<div class="relative aspect-video w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black shadow-inner no-select" oncontextmenu="return false;"><iframe src="${embed}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>${watermarkHtml}</div>`;
                             } else {
-                                videoHtml = `<div class="w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black"><video src="${embed}" controls controlsList="nodownload" oncontextmenu="return false;" class="w-full max-h-80 object-cover"></video></div>`;
+                                videoHtml = `<div class="relative w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black no-select"><video src="${embed}" controls controlsList="nodownload noremoteplayback noplaybackrate" disablePictureInPicture disableRemotePlayback draggable="false" oncontextmenu="return false;" class="w-full max-h-80 object-cover pointer-events-auto"></video>${watermarkHtml}</div>`;
                             }
                         }
 
                         let docHtml = '';
                         if (data.docUrl) {
                             const docEmbed = getEmbedDocUrl(data.docUrl);
-                            docHtml = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><div class="absolute inset-0 z-20 bg-transparent" oncontextmenu="return false;" onclick="return false;"></div><iframe src="${docEmbed}" class="w-full h-full border-0 relative z-10" frameborder="0" oncontextmenu="return false;"></iframe></div></div>`;
+                            docHtml = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><div class="absolute inset-0 z-20 bg-transparent" oncontextmenu="return false;" onclick="return false;"></div><iframe src="${docEmbed}" class="w-full h-full border-0 relative z-10" frameborder="0" oncontextmenu="return false;"></iframe>${watermarkHtml}</div></div>`;
                         }
 
                         if(listPublic) {
@@ -4442,15 +4758,20 @@
                     onValue(ref(db, `${pathPeserta}/${user.uid}`), (snap) => {
                         const data = snap.val();
                         if(data) {
-                            currentUser = { 
-                                nama: data.nama, 
-                                instansi: data.instansi, 
-                                email: data.email || user.email, 
-                                role: 'peserta', 
-                                uid: user.uid 
+                            if (data.status === 'dibekukan') {
+                                signOut(auth).catch(() => {});
+                                window.showToast("Akun Anda telah dibekukan oleh Admin Pusat.", "error");
+                                return;
+                            }
+                            currentUser = {
+                                nama: data.nama,
+                                instansi: data.instansi,
+                                email: data.email || user.email,
+                                role: 'peserta',
+                                uid: user.uid
                             };
                             window.renderAvatarUI(data.nama, 'Peserta');
-                            document.getElementById('modul-locked')?.classList.add('hidden'); 
+                            document.getElementById('modul-locked')?.classList.add('hidden');
                             document.getElementById('modul-list')?.classList.remove('hidden');
                             window.checkAndResumeExam();
                             window.listenRiwayatUjian(user.uid);
