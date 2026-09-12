@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RuangK3 - Pusat Edukasi & Informasi K3</title>
-    
+
     <!-- Tailwind CSS & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-    
+
     <!-- Flatpickr (Kalender Multi-Tanggal) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -29,11 +29,11 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { 
-                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'], 
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
                         brand: ['Poppins', 'sans-serif']
                     },
-                    colors: { 
+                    colors: {
                         navy: { 800: '#2C3E50', 900: '#1A252C', 950: '#0F171C' },
                         safety: { 400: '#2ECC71', 500: '#27AE60', 600: '#1E8449' },
                         brand: { 50: '#e8f8f0', 100: '#d1f2e1', 500: '#2ecc71', 600: '#27ae60', 700: '#1e8449', 900: '#145a32' }
@@ -42,7 +42,7 @@
             }
         };
     </script>
-    
+
     <style>
         html { scroll-behavior: smooth; }
         .glass-nav { background: rgba(26, 37, 44, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(52, 73, 94, 0.6); }
@@ -51,16 +51,16 @@
         ::-webkit-scrollbar-thumb { background: #34495e; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #2ecc71; }
         .admin-scroll::-webkit-scrollbar-thumb { background: #334155; }
-        
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+
         .tab-lms-active { color: #2ecc71; border-bottom: 3px solid #2ecc71; font-weight: 800; }
 
         .no-select { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
-        @media print { 
-            .no-print { display: none !important; } 
-            body { display: none !important; } 
+        @media print {
+            .no-print { display: none !important; }
+            body { display: none !important; }
         }
 
         .grid-nav-btn { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s; border: 2px solid #e5e7eb; background: white; color: #4b5563; }
@@ -70,15 +70,15 @@
 
         .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.5, 0, 0, 1); }
         .reveal.active { opacity: 1; transform: translateY(0); }
-        
+
         .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .hover-lift:hover { transform: translateY(-6px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        
+
         .bg-animate-ruangk3 { background-size: 200% 200%; animation: gradientBG 10s ease infinite; background-image: linear-gradient(135deg, #1A252C 0%, #2C3E50 50%, #1A252C 100%); }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        
+
         .bg-grid-pattern-white { background-image: radial-gradient(rgba(255, 255, 255, 0.12) 2px, transparent 2px); background-size: 24px 24px; }
-        
+
         /* Star Rating System */
         .star-rating { display: flex; flex-direction: row-reverse; justify-content: center; gap: 0.5rem; }
         .star-rating input { position: absolute; opacity: 0; width: 0; height: 0; }
@@ -88,9 +88,9 @@
         .star-rating label:hover,
         .star-rating label:hover ~ label { color: #f59e0b; }
 
-        @keyframes marqueeSeamless { 
-            0% { transform: translateX(0); } 
-            100% { transform: translateX(-50%); } 
+        @keyframes marqueeSeamless {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
         .animate-marquee-seamless { display: flex; width: max-content; animation: marqueeSeamless 20s linear infinite; }
         .animate-marquee-seamless:hover { animation-play-state: paused; }
@@ -126,6 +126,11 @@
         /* Riwayat ujian */
         .riwayat-card { transition: transform .2s ease, box-shadow .2s ease; cursor: pointer; }
         .riwayat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -10px rgba(15,23,42,.25); border-color: #2ecc71; }
+
+        /* ================= KARTU BERITA BERANDA (Diperbaiki agar tidak terpotong) ================= */
+        .berita-card-img { aspect-ratio: 4 / 3; }
+        .berita-card-title { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .berita-card-excerpt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 
@@ -139,6 +144,26 @@
                     el.classList.add('active');
                 });
             }, 1200);
+
+            /* Safety-net tambahan: jika script utama (type="module") gagal dieksekusi
+               (mis. file dibuka langsung lewat file:// sehingga diblokir kebijakan CORS
+               browser, atau CDN/Firebase diblokir oleh jaringan/ad-blocker), maka SEMUA
+               tombol/menu yang memakai onclick="window.xxx(...)" tidak akan merespons
+               klik sama sekali, walau halaman tetap tampil normal. Peringatan ini
+               memberi tahu pengguna secara jelas apa yang terjadi dan cara mengatasinya. */
+            setTimeout(function() {
+                if (typeof window.switchLmsTab !== 'function') {
+                    var isFileProtocol = (window.location.protocol === 'file:');
+                    var banner = document.createElement('div');
+                    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;padding:14px 16px;font-family:sans-serif;font-size:13px;line-height:1.6;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3);';
+                    banner.innerHTML = '<strong>⚠ Menu/tombol tidak berfungsi:</strong> Script utama gagal dimuat. ' +
+                        (isFileProtocol
+                            ? 'Anda membuka file ini langsung dari komputer (file://). Browser memblokir hal ini demi keamanan. <u>Solusi:</u> upload ke GitHub lalu buka lewat GitHub Pages, atau jalankan lewat local server (mis. ekstensi "Live Server" di VS Code / <code>python -m http.server</code>), jangan dibuka dengan cara diklik dua kali.'
+                            : 'Kemungkinan koneksi internet terputus, atau CDN/Firebase diblokir oleh firewall/ad-blocker. Coba refresh halaman, matikan ad-blocker, atau cek koneksi internet Anda. Jika masih gagal, buka Console browser (F12) untuk melihat pesan error detail.') +
+                        ' <span style="text-decoration:underline;cursor:pointer;font-weight:bold;" onclick="this.parentElement.remove()">[Tutup]</span>';
+                    document.body.prepend(banner);
+                }
+            }, 4000);
         });
     </script>
 
@@ -213,7 +238,7 @@
                 <button onclick="window.switchLmsTab('hasil'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Hasil Ujian</button>
                 <button onclick="window.switchLmsTab('live'); document.getElementById('mobile-menu').classList.add('hidden');" class="text-left font-bold text-slate-200 p-3 rounded-lg hover:bg-navy-800">Live CBT & Sertifikasi</button>
 
-                
+
                 <div class="mt-4 pt-4 border-t border-slate-800 flex flex-col space-y-3" id="auth-container-mobile">
                     <button id="btn-login-mobile" onclick="window.openModal('modal-login'); document.getElementById('mobile-menu').classList.add('hidden');" class="w-full text-center bg-safety-400 text-navy-900 font-extrabold px-4 py-3.5 rounded-xl shadow-md">Masuk / Daftar Akun</button>
                     <button id="btn-login-admin-mobile" onclick="window.openModal('modal-login-admin'); document.getElementById('mobile-menu').classList.add('hidden');" class="w-full text-center text-slate-300 font-bold px-4 py-3.5 bg-navy-800 hover:bg-slate-800 rounded-xl transition-colors border border-slate-700">Login Admin</button>
@@ -239,7 +264,7 @@
     </div>
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         <!-- DASHBOARD SISWA LMS -->
         <div id="view-lms-dashboard" class="space-y-8">
             <section class="relative overflow-hidden bg-animate-ruangk3 rounded-3xl p-8 sm:p-10 text-white shadow-2xl reveal">
@@ -252,7 +277,7 @@
                     <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
                         Akses modul digital K3, selesaikan Simulasi CBT interaktif, dan ikuti sertifikasi resmi Kemnaker RI.
                     </p>
-                    
+
                     <div class="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/20">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                             <div class="flex items-center space-x-2">
@@ -461,11 +486,11 @@
                 </div>
                 <h2 class="text-3xl font-extrabold text-slate-900 mb-4">Uji Pemahaman K3 Anda</h2>
                 <p class="text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
-                    Ikuti simulasi ujian sertifikasi K3 yang disusun sesuai standar kompetensi. 
-                    Anda akan diberi waktu <strong>45 Menit</strong> untuk menyelesaikan soal-soal pilihan ganda secara acak. 
+                    Ikuti simulasi ujian sertifikasi K3 yang disusun sesuai standar kompetensi.
+                    Anda akan diberi waktu <strong>45 Menit</strong> untuk menyelesaikan soal-soal pilihan ganda secara acak.
                     Jika koneksi terputus, memori jawaban Anda akan otomatis tersimpan.
                 </p>
-                
+
                 <button onclick="window.openModal('modal-ujian')" class="px-8 py-4 bg-safety-500 hover:bg-safety-600 text-white rounded-xl font-extrabold shadow-lg transition-all text-sm uppercase tracking-widest">
                     Pilih Kelas & Mulai Ujian &rarr;
                 </button>
@@ -2934,6 +2959,18 @@
             setTimeout(() => { btn.innerHTML = ori; btn.disabled = false; }, 2000);
         });
 
+        /* Hapus satu berita/pengumuman dari Kelola Berita (menu admin) */
+        window.hapusBerita = async function(id) {
+            if(!currentUser) return;
+            if(!confirm("Yakin ingin menghapus berita ini secara permanen?")) return;
+            try {
+                await remove(ref(db, `${pathBerita}/${id}`));
+                window.showToast("Berita berhasil dihapus.", "success");
+            } catch(e) {
+                window.showToast("Gagal menghapus berita.", "error");
+            }
+        };
+
         document.getElementById('form-kegiatan')?.addEventListener('submit', async (e) => {
             e.preventDefault(); 
             if(!currentUser) return; 
@@ -3974,23 +4011,23 @@
                         let imgHtmlSmall = '';
                         if(images.length > 0) {
                             const imgElements = images.map(img => `<img src="${img}" class="w-full h-full object-cover shrink-0 snap-center" alt="Berita">`).join('');
-                            imgHtmlSmall = `<div class="relative w-full h-28 sm:h-32 overflow-hidden rounded-xl bg-slate-100 mb-2.5"><div class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full news-img-slider">${imgElements}</div>${images.length > 1 ? `<div class="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">${images.length} Foto</div>` : ''}</div>`;
+                            imgHtmlSmall = `<div class="relative w-full berita-card-img overflow-hidden rounded-xl bg-slate-100 mb-3"><div class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full news-img-slider">${imgElements}</div>${images.length > 1 ? `<div class="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">${images.length} Foto</div>` : ''}</div>`;
                         } else { 
-                            imgHtmlSmall = `<div class="w-full h-28 sm:h-32 bg-slate-100 rounded-xl mb-2.5 flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>`; 
+                            imgHtmlSmall = `<div class="w-full berita-card-img bg-slate-100 rounded-xl mb-3 flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>`; 
                         }
 
-                        gridCardsHtml += `<div onclick="window.bacaBerita('${b.id}')" class="flex flex-col group cursor-pointer hover:-translate-y-0.5 transition-transform">${imgHtmlSmall}<div class="flex items-center justify-between mb-1"><span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${badgeColor}">${b.kategori}</span><span class="text-[9px] text-slate-400 font-semibold">${window.formatDate(b.timestamp)}</span></div><h3 class="font-extrabold text-slate-900 text-xs sm:text-sm line-clamp-2 leading-snug group-hover:text-safety-500 transition-colors">${b.judul}</h3></div>`;
+                        gridCardsHtml += `<div onclick="window.bacaBerita('${b.id}')" class="flex flex-col group cursor-pointer hover:-translate-y-0.5 transition-transform h-full">${imgHtmlSmall}<div class="flex items-center justify-between mb-1.5"><span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${badgeColor}">${b.kategori}</span><span class="text-[9px] text-slate-400 font-semibold">${window.formatDate(b.timestamp)}</span></div><h3 class="berita-card-title font-extrabold text-slate-900 text-xs sm:text-sm leading-snug group-hover:text-safety-500 transition-colors mb-1.5">${b.judul}</h3><p class="berita-card-excerpt text-[11px] text-slate-500 leading-relaxed">${b.isi || ''}</p></div>`;
 
                         let heroImg = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&w=1200&q=80';
-                        headlineSlidesHtml += `<div onclick="window.bacaBerita('${b.id}')" class="w-full shrink-0 snap-center relative h-72 sm:h-96 rounded-2xl overflow-hidden shadow-lg group cursor-pointer border border-slate-200"><img src="${heroImg}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Headline Utama"><div class="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/60 to-transparent flex flex-col justify-end p-6 sm:p-8 text-white"><div class="flex items-center space-x-2 mb-2"><span class="px-2.5 py-1 bg-red-600 text-white rounded text-[10px] font-extrabold uppercase tracking-widest shadow">HEADLINE UTAMA (${index + 1}/${beritas.length})</span><span class="px-2 py-0.5 bg-white/20 backdrop-blur rounded text-[10px] font-bold uppercase text-slate-200">${b.kategori}</span><span class="text-xs text-slate-300 font-medium ml-auto">${window.formatDate(b.timestamp)}</span></div><h3 class="text-lg sm:text-2xl md:text-3xl font-extrabold leading-snug group-hover:text-safety-400 transition-colors mb-2">${b.judul}</h3><p class="text-xs sm:text-sm text-slate-300 line-clamp-2 font-normal leading-relaxed">${b.isi}</p></div></div>`;
+                        headlineSlidesHtml += `<div onclick="window.bacaBerita('${b.id}')" class="w-full shrink-0 snap-center relative h-72 sm:h-96 rounded-2xl overflow-hidden shadow-lg group cursor-pointer border border-slate-200"><img src="${heroImg}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Headline Utama"><div class="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/60 to-transparent flex flex-col justify-end p-6 sm:p-8 text-white"><div class="flex items-center space-x-2 mb-2"><span class="px-2.5 py-1 bg-red-600 text-white rounded text-[10px] font-extrabold uppercase tracking-widest shadow">HEADLINE UTAMA (${index + 1}/${beritas.length})</span><span class="px-2 py-0.5 bg-white/20 backdrop-blur rounded text-[10px] font-bold uppercase text-slate-200">${b.kategori}</span><span class="text-xs text-slate-300 font-medium ml-auto">${window.formatDate(b.timestamp)}</span></div><h3 class="text-lg sm:text-2xl md:text-3xl font-extrabold leading-snug group-hover:text-safety-400 transition-colors mb-2">${b.judul}</h3><p class="text-xs sm:text-sm text-slate-300 line-clamp-3 font-normal leading-relaxed">${b.isi}</p></div></div>`;
 
                         if(listAdmin) { 
                             const adminThumb = images.length > 0 ? `<div class="relative shrink-0"><img src="${images[0]}" class="w-16 h-16 rounded object-cover shadow-sm">${images.length>1?`<div class="absolute -top-2 -right-2 bg-black text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">+${images.length-1}</div>`:''}</div>` : `<div class="w-16 h-16 rounded bg-slate-100 shrink-0 flex items-center justify-center text-[8px] text-center px-1 font-bold text-slate-400">No Img</div>`;
-                            listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-start space-x-4">${adminThumb}<div><div class="flex items-center space-x-2 mb-1"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${badgeColor}">${b.kategori}</span><span class="text-[10px] text-slate-500">${window.formatDate(b.timestamp)}</span></div><h4 class="font-bold text-slate-900 text-sm">${b.judul}</h4><p class="text-xs text-slate-600 line-clamp-1 mt-1">${b.isi}</p></div></div>`; 
+                            listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-start space-x-4"><button onclick="window.hapusBerita('${b.id}')" title="Hapus berita ini" class="shrink-0 order-last ml-auto p-2 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-red-200 shadow-sm self-start"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>${adminThumb}<div class="flex-1 min-w-0"><div class="flex items-center space-x-2 mb-1"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${badgeColor}">${b.kategori}</span><span class="text-[10px] text-slate-500">${window.formatDate(b.timestamp)}</span></div><h4 class="font-bold text-slate-900 text-sm">${b.judul}</h4><p class="text-xs text-slate-600 line-clamp-1 mt-1">${b.isi}</p></div></div>`; 
                         }
                     });
 
-                    listPublic.innerHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">${gridCardsHtml}</div><div class="relative w-full mt-4"><div id="headline-carousel" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar space-x-4 w-full">${headlineSlidesHtml}</div></div>`;
+                    listPublic.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">${gridCardsHtml}</div><div class="relative w-full mt-6"><div id="headline-carousel" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar space-x-4 w-full">${headlineSlidesHtml}</div></div>`;
                 }
             });
 
