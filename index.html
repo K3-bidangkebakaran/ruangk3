@@ -309,24 +309,32 @@
             <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 reveal">
                 <div class="lg:col-span-2 space-y-6">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-extrabold text-slate-900">Ruang Belajar Materi K3</h2>
+                        <h2 class="text-xl font-extrabold text-slate-900">Silabus Pembelajaran K3</h2>
                         <button onclick="window.switchLmsTab('kelas')" class="text-xs font-bold text-safety-500 hover:text-safety-600">Lihat Semua Modul &rarr;</button>
                     </div>
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row gap-6 items-start sm:items-center">
-                        <div class="w-full sm:w-48 h-36 bg-navy-900 rounded-xl relative overflow-hidden shrink-0 cursor-pointer" onclick="window.switchLmsTab('kelas')">
-                            <img src="https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&w=400&q=80" class="w-full h-full object-cover group-hover:scale-105 transition-transform" alt="Sertifikasi K3">
-                            <div class="absolute inset-0 bg-navy-950/50 flex items-center justify-center">
-                                <div class="w-11 h-11 rounded-full bg-safety-400 text-navy-900 flex items-center justify-center font-bold pl-0.5 shadow-lg">▶</div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
+                        <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center mb-5">
+                            <div class="w-full sm:w-48 h-36 bg-gradient-to-br from-navy-900 via-navy-800 to-safety-600 rounded-xl relative overflow-hidden shrink-0 cursor-pointer group flex items-center justify-center shadow-inner" onclick="window.switchLmsTab('kelas')">
+                                <span class="text-5xl drop-shadow-lg">📖</span>
+                                <div class="absolute inset-0 bg-navy-950/0 group-hover:bg-navy-950/40 flex items-center justify-center transition-colors">
+                                    <div class="w-11 h-11 rounded-full bg-safety-400 text-navy-900 flex items-center justify-center font-bold pl-0.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">▶</div>
+                                </div>
+                            </div>
+                            <div class="flex-grow space-y-2.5 w-full">
+                                <div class="flex justify-between items-center">
+                                    <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold uppercase">Silabus Pembelajaran Multibidang K3</span>
+                                    <span class="text-xs text-slate-400 font-medium">Digital Course</span>
+                                </div>
+                                <h3 class="font-bold text-lg text-slate-900 hover:text-safety-500 cursor-pointer" onclick="window.switchLmsTab('kelas')">Sertifikasi & Pemahaman K3 Lintas Bidang</h3>
+                                <p id="silabus-home-subjudul" class="text-xs text-slate-500 line-clamp-2">Memuat data bidang & materi terbaru...</p>
+                                <button onclick="window.switchLmsTab('kelas')" class="px-5 py-2.5 bg-safety-500 hover:bg-safety-600 text-white text-xs font-bold rounded-xl shadow-md">Buka Modul Pembelajaran</button>
                             </div>
                         </div>
-                        <div class="flex-grow space-y-2.5 w-full">
-                            <div class="flex justify-between items-center">
-                                <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold uppercase">Silabus Pembelajaran Multibidang K3</span>
-                                <span class="text-xs text-slate-400 font-medium">Digital Course</span>
+                        <div class="pt-5 border-t border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Bidang Tersedia &mdash; Klik untuk Langsung Membuka</p>
+                            <div id="silabus-home-bidang-list" class="flex flex-wrap gap-2">
+                                <span class="text-xs text-slate-400 italic">Memuat data bidang...</span>
                             </div>
-                            <h3 class="font-bold text-lg text-slate-900 hover:text-safety-500 cursor-pointer" onclick="window.switchLmsTab('kelas')">Sertifikasi & Pemahaman K3 (Umum, Kebakaran, Listrik, Konstruksi)</h3>
-                            <p class="text-xs text-slate-500 line-clamp-2">Akses modul pembelajaran dari dasar hukum K3, manajemen risiko, K3 Kebakaran, K3 Listrik, K3 Konstruksi, hingga sistem manajemen K3 (SMK3).</p>
-                            <button onclick="window.switchLmsTab('kelas')" class="px-5 py-2.5 bg-safety-500 hover:bg-safety-600 text-white text-xs font-bold rounded-xl shadow-md">Buka Modul Pembelajaran</button>
                         </div>
                     </div>
                 </div>
@@ -449,7 +457,13 @@
                 </button>
             </div>
 
-            <div id="modul-list" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            <div id="modul-list" class="hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+                    <div id="modul-browse-breadcrumb" class="flex flex-wrap items-center gap-1.5 text-xs"></div>
+                    <button id="btn-modul-browse-back" onclick="window.modulBrowseBack()" class="hidden self-start sm:self-auto text-xs font-bold text-slate-500 hover:text-safety-500 bg-slate-50 hover:bg-slate-100 px-3 py-2 rounded-lg transition-colors">&larr; Kembali</button>
+                </div>
+                <div id="modul-browse-root" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+            </div>
         </div>
 
         <!-- ============ HASIL UJIAN (HISTORY JAWABAN PESERTA) ============ -->
@@ -620,6 +634,20 @@
                 </div>
                 <div id="baca-berita-isi" class="text-slate-700 text-sm sm:text-base leading-relaxed whitespace-pre-wrap"></div>
                 <div id="baca-berita-galeri" class="mt-6"></div>
+            </div>
+        </div>
+
+        <!-- Modal Detail Satu Materi Modul -->
+        <div id="modal-lihat-modul" class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl hidden relative flex-col max-h-[90vh] overflow-hidden z-[1050]">
+            <button class="btn-close-modal absolute top-4 right-4 z-20 bg-black/50 text-white hover:bg-red-500 p-2 rounded-full backdrop-blur-sm transition-colors">✕</button>
+            <div class="p-6 sm:p-8 pb-4 border-b border-slate-100 shrink-0">
+                <span id="lihat-modul-kategori" class="inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase mb-2 bg-slate-100 text-slate-700"></span>
+                <h2 id="lihat-modul-judul" class="text-xl sm:text-2xl font-black text-slate-900 leading-tight pr-8"></h2>
+            </div>
+            <div class="p-6 sm:p-8 pt-4 overflow-y-auto flex-grow bg-white no-select" oncontextmenu="return false;">
+                <div id="lihat-modul-video-wrap"></div>
+                <div id="lihat-modul-doc-wrap"></div>
+                <div id="lihat-modul-isi" class="text-slate-700 text-sm sm:text-base leading-relaxed whitespace-pre-wrap"></div>
             </div>
         </div>
 
@@ -1434,7 +1462,67 @@
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
         let dataPesertaAll = [];
         let dataAkunBidangAll = [];
+        let dataModulAll = [];
+        let modulBrowseState = { bidang: null, kelas: null };
         const JUMLAH_SOAL_UJIAN = 25;
+
+        // Helper lintas-fungsi untuk Ruang Belajar (Materi): parsing kategori & tampilan embed.
+        // Dipisah ke scope luar (bukan di dalam onValue) supaya bisa dipakai ulang baik saat
+        // merender daftar materi maupun saat membuka modal detail satu materi (bukaDetailModul).
+        function parseKategoriModul(kategoriStr) {
+            if (!kategoriStr) return { bidang: 'Umum', kelas: 'Umum' };
+            const idx = kategoriStr.indexOf(' - ');
+            if (idx === -1) return { bidang: kategoriStr.trim(), kelas: 'Umum' };
+            return { bidang: kategoriStr.slice(0, idx).trim() || 'Umum', kelas: kategoriStr.slice(idx + 3).trim() || 'Umum' };
+        }
+        function getIkonBidang(bidang) {
+            const b = (bidang || '').toLowerCase();
+            if (b.includes('kebakaran')) return '🔥';
+            if (b.includes('paa') || b.includes('ketinggian')) return '🏗️';
+            if (b.includes('listrik')) return '⚡';
+            if (b.includes('konstruksi')) return '🏢';
+            if (b.includes('umum')) return '📘';
+            return '📚';
+        }
+        function getWarnaBidang(bidang) {
+            const b = (bidang || '').toLowerCase();
+            if (b.includes('kebakaran')) return { bg: 'bg-red-50', text: 'text-red-700', badge: 'bg-red-100 text-red-700' };
+            if (b.includes('paa') || b.includes('ketinggian')) return { bg: 'bg-amber-50', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700' };
+            if (b.includes('listrik')) return { bg: 'bg-sky-50', text: 'text-sky-700', badge: 'bg-sky-100 text-sky-700' };
+            if (b.includes('konstruksi')) return { bg: 'bg-emerald-50', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700' };
+            return { bg: 'bg-slate-100', text: 'text-slate-700', badge: 'bg-slate-100 text-slate-700' };
+        }
+        function getEmbedVideoUrl(url) {
+            if (!url) return '';
+            if (url.includes('youtube.com/watch?v=')) return `https://www.youtube.com/embed/${url.split('v=')[1]?.split('&')[0]}`;
+            if (url.includes('youtu.be/')) return `https://www.youtube.com/embed/${url.split('youtu.be/')[1]?.split('?')[0]}`;
+            return url;
+        }
+        function getEmbedDocUrl(url) {
+            if (!url) return '';
+            // PDF hasil upload langsung (disimpan sebagai base64 data URI) dirender langsung
+            // oleh browser tanpa lewat Google Docs Viewer, karena data URI tidak bisa
+            // diambil (fetch) oleh server Google — hanya ada di browser pengguna.
+            if (url.startsWith('data:application/pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
+            if (url.includes('drive.google.com')) return url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
+            if (url.endsWith('.pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
+            return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+        }
+        /* Watermark identitas peserta di atas materi (video & dokumen) sebagai jejak anti-bocor.
+           Screenshot/rekam layar tidak bisa diblokir sepenuhnya oleh website manapun,
+           tapi watermark ini membuat identitas pengunggah terlihat jika materi disebarkan. */
+        function getModulWatermarkHtml() {
+            if (!currentUser || currentUser.role !== 'peserta') return '';
+            const label = `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
+            if (!label) return '';
+            const esc = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const line = (esc + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;').repeat(5);
+            const rows = Array(16).fill(`<span>${line}</span>`).join('<br>');
+            return `<div class="absolute inset-0 z-30 overflow-hidden pointer-events-none select-none" style="opacity:.6;"><div style="position:absolute; top:-40%; left:-40%; width:180%; height:180%; transform:rotate(-22deg); color:rgba(255,255,255,.55); text-shadow:0 1px 3px rgba(0,0,0,.9); font-size:11px; font-weight:700; line-height:2.6em; letter-spacing:1px; white-space:nowrap;">${rows}</div></div>`;
+        }
+        function escHtml(str) {
+            return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
         let isAppInitialized = false;
 
         window.sendWA_Fonnte = async function(hp, message) {
@@ -1448,7 +1536,7 @@
             }
         };
 
-        window.switchLmsTab = function(tabName) {
+        window.switchLmsTab = function(tabName, opts) {
             ['dashboard', 'kelas', 'cbt', 'hasil', 'live'].forEach(t => {
                 document.getElementById(`view-lms-${t}`)?.classList.add('hidden');
                 document.getElementById(`nav-lms-${t}`)?.classList.remove('tab-lms-active');
@@ -1456,8 +1544,206 @@
             document.getElementById(`view-lms-${tabName}`)?.classList.remove('hidden');
             document.getElementById(`nav-lms-${tabName}`)?.classList.add('tab-lms-active');
             if (tabName === 'hasil' && typeof window.renderHasilUjian === 'function') window.renderHasilUjian();
+            if (tabName === 'kelas') {
+                // Setiap kali menu Materi dibuka, selalu mulai dari layar pilih Bidang & Kelas
+                // dulu (sesuai permintaan), kecuali dipanggil dengan opts.keepBidang (dipakai
+                // dari kartu Silabus beranda yang langsung mengarah ke satu bidang tertentu).
+                modulBrowseState = (opts && opts.keepBidang) ? { bidang: opts.bidang || null, kelas: null } : { bidang: null, kelas: null };
+                window.renderModulBrowse();
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
+        };
+
+        /* ===================== RUANG BELAJAR (MATERI): BROWSE BIDANG -> KELAS -> MATERI ===================== */
+        window.renderModulBrowse = function() {
+            const root = document.getElementById('modul-browse-root');
+            const breadcrumb = document.getElementById('modul-browse-breadcrumb');
+            const btnBack = document.getElementById('btn-modul-browse-back');
+            if (!root) return;
+            const state = modulBrowseState;
+
+            const grouped = {};
+            dataModulAll.forEach(item => {
+                const { bidang, kelas } = parseKategoriModul(item.kategori);
+                if (!grouped[bidang]) grouped[bidang] = {};
+                if (!grouped[bidang][kelas]) grouped[bidang][kelas] = [];
+                grouped[bidang][kelas].push(item);
+            });
+            const bidangList = Object.keys(grouped).sort();
+
+            if (breadcrumb) {
+                let bc = `<button data-bcgo="home" class="modul-bc-btn font-extrabold ${!state.bidang ? 'text-slate-900' : 'text-slate-400 hover:text-safety-500'}">📚 Pilih Bidang</button>`;
+                if (state.bidang) {
+                    bc += `<span class="text-slate-300">/</span><button data-bcgo="bidang" class="modul-bc-btn font-extrabold ${state.bidang && !state.kelas ? 'text-slate-900' : 'text-slate-400 hover:text-safety-500'}">${escHtml(state.bidang)}</button>`;
+                }
+                if (state.bidang && state.kelas) {
+                    bc += `<span class="text-slate-300">/</span><span class="font-extrabold text-slate-900">${escHtml(state.kelas)}</span>`;
+                }
+                breadcrumb.innerHTML = bc;
+                breadcrumb.querySelectorAll('.modul-bc-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const go = btn.getAttribute('data-bcgo');
+                        if (go === 'home') window.modulBrowseGoto(null, null);
+                        else if (go === 'bidang') window.modulBrowseGoto(state.bidang, null);
+                    });
+                });
+            }
+            if (btnBack) btnBack.classList.toggle('hidden', !state.bidang);
+
+            if (dataModulAll.length === 0) {
+                root.className = 'grid grid-cols-1 gap-5';
+                root.innerHTML = `<div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center text-slate-500 text-sm">Belum ada modul materi yang diupload oleh Admin.</div>`;
+                return;
+            }
+
+            // Level 3: daftar materi per masing-masing (bidang + kelas terpilih)
+            if (state.bidang && state.kelas) {
+                const items = (grouped[state.bidang] && grouped[state.bidang][state.kelas]) || [];
+                const warna = getWarnaBidang(state.bidang);
+                root.className = 'grid grid-cols-1 md:grid-cols-2 gap-5';
+                root.innerHTML = items.length ? items.map(item => {
+                    const hasVideo = !!item.videoUrl, hasDoc = !!item.docUrl;
+                    const excerpt = (item.isi || '').replace(/<[^>]*>/g, '');
+                    return `<div data-openmodul="${escHtml(item.id)}" class="modul-materi-card cursor-pointer group bg-white border border-slate-200/80 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
+                        <div class="flex items-center gap-2 mb-3">
+                            ${hasVideo ? '<span class="text-[9px] font-extrabold px-2 py-1 rounded-full bg-red-100 text-red-600 uppercase">▶ Video</span>' : ''}
+                            ${hasDoc ? '<span class="text-[9px] font-extrabold px-2 py-1 rounded-full bg-sky-100 text-sky-600 uppercase">📄 PDF</span>' : ''}
+                            ${(!hasVideo && !hasDoc) ? '<span class="text-[9px] font-extrabold px-2 py-1 rounded-full ' + warna.badge + ' uppercase">📝 Materi Bacaan</span>' : ''}
+                        </div>
+                        <h4 class="font-bold text-base text-slate-900 group-hover:text-safety-500 transition-colors mb-2 leading-snug">${escHtml(item.judul)}</h4>
+                        <p class="text-xs text-slate-500 line-clamp-2 mb-4">${escHtml(excerpt)}</p>
+                        <span class="inline-flex items-center text-xs font-bold text-safety-500 group-hover:translate-x-1 transition-transform">Buka Materi &rarr;</span>
+                    </div>`;
+                }).join('') : `<div class="col-span-full text-center text-slate-400 text-sm py-10 bg-white border border-dashed border-slate-300 rounded-2xl">Belum ada materi pada kelas ini.</div>`;
+                root.querySelectorAll('.modul-materi-card').forEach(card => {
+                    card.addEventListener('click', () => window.bukaDetailModul(card.getAttribute('data-openmodul')));
+                });
+                return;
+            }
+
+            // Level 2: daftar kelas dalam satu bidang terpilih
+            if (state.bidang) {
+                const kelasObj = grouped[state.bidang] || {};
+                const kelasList = Object.keys(kelasObj).sort();
+                const warna = getWarnaBidang(state.bidang);
+                root.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5';
+                root.innerHTML = kelasList.length ? kelasList.map(kelas => {
+                    const items = kelasObj[kelas];
+                    return `<div data-gobidang="${escHtml(state.bidang)}" data-gokelas="${escHtml(kelas)}" class="modul-kelas-card cursor-pointer group bg-white border border-slate-200/80 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <div class="w-11 h-11 rounded-xl ${warna.bg} flex items-center justify-center text-xl mb-3">📂</div>
+                        <h4 class="font-bold text-base text-slate-900 group-hover:text-safety-500 transition-colors mb-1 leading-snug">${escHtml(kelas)}</h4>
+                        <p class="text-xs text-slate-500 mb-3">${items.length} Materi Tersedia</p>
+                        <span class="inline-flex items-center text-xs font-bold text-safety-500 group-hover:translate-x-1 transition-transform">Lihat Materi &rarr;</span>
+                    </div>`;
+                }).join('') : `<div class="col-span-full text-center text-slate-400 text-sm py-10 bg-white border border-dashed border-slate-300 rounded-2xl">Belum ada kelas pada bidang ini.</div>`;
+                root.querySelectorAll('.modul-kelas-card').forEach(card => {
+                    card.addEventListener('click', () => window.modulBrowseGoto(card.getAttribute('data-gobidang'), card.getAttribute('data-gokelas')));
+                });
+                return;
+            }
+
+            // Level 1: daftar bidang (semua materi yang sudah diupload admin dikelompokkan bidangnya)
+            root.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5';
+            root.innerHTML = bidangList.map(bidang => {
+                let totalMateri = 0, totalKelas = 0;
+                Object.values(grouped[bidang]).forEach(arr => { totalMateri += arr.length; totalKelas++; });
+                const warna = getWarnaBidang(bidang);
+                return `<div data-gobidang="${escHtml(bidang)}" class="modul-bidang-card cursor-pointer group bg-white border border-slate-200/80 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                    <div class="w-14 h-14 rounded-2xl ${warna.bg} flex items-center justify-center text-3xl mb-4 shadow-inner">${getIkonBidang(bidang)}</div>
+                    <h4 class="font-extrabold text-lg text-slate-900 group-hover:text-safety-500 transition-colors mb-1">${escHtml(bidang)}</h4>
+                    <p class="text-xs text-slate-500 mb-4">${totalKelas} Kelas &bull; ${totalMateri} Materi</p>
+                    <span class="inline-flex items-center text-xs font-bold text-safety-500 group-hover:translate-x-1 transition-transform">Lihat Kelas &rarr;</span>
+                </div>`;
+            }).join('');
+            root.querySelectorAll('.modul-bidang-card').forEach(card => {
+                card.addEventListener('click', () => window.modulBrowseGoto(card.getAttribute('data-gobidang'), null));
+            });
+        };
+
+        window.modulBrowseGoto = function(bidang, kelas) {
+            modulBrowseState = { bidang: bidang || null, kelas: kelas || null };
+            window.renderModulBrowse();
+            const view = document.getElementById('view-lms-kelas');
+            if (view) window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.modulBrowseBack = function() {
+            if (modulBrowseState.kelas) window.modulBrowseGoto(modulBrowseState.bidang, null);
+            else window.modulBrowseGoto(null, null);
+        };
+
+        window.bukaDetailModul = function(id) {
+            const data = dataModulAll.find(m => m.id === id);
+            if (!data) { window.showToast('Materi tidak ditemukan.', 'error'); return; }
+
+            const watermarkHtml = getModulWatermarkHtml();
+
+            const videoWrap = document.getElementById('lihat-modul-video-wrap');
+            if (videoWrap) {
+                let videoHtml = '';
+                if (data.videoUrl) {
+                    const embed = getEmbedVideoUrl(data.videoUrl);
+                    if (embed.includes('youtube.com/embed')) {
+                        videoHtml = `<div class="relative aspect-video w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black shadow-inner no-select" oncontextmenu="return false;"><iframe src="${embed}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>${watermarkHtml}</div>`;
+                    } else {
+                        videoHtml = `<div class="relative w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black no-select"><video src="${embed}" controls controlsList="nodownload noremoteplayback noplaybackrate" disablePictureInPicture disableRemotePlayback draggable="false" oncontextmenu="return false;" class="w-full max-h-80 object-cover pointer-events-auto"></video>${watermarkHtml}</div>`;
+                    }
+                }
+                videoWrap.innerHTML = videoHtml;
+            }
+
+            const docWrap = document.getElementById('lihat-modul-doc-wrap');
+            if (docWrap) {
+                let docHtml = '';
+                if (data.docUrl) {
+                    const docEmbed = getEmbedDocUrl(data.docUrl);
+                    docHtml = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><div class="absolute inset-0 z-20 bg-transparent" oncontextmenu="return false;" onclick="return false;"></div><iframe src="${docEmbed}" class="w-full h-full border-0 relative z-10" frameborder="0" oncontextmenu="return false;"></iframe>${watermarkHtml}</div></div>`;
+                }
+                docWrap.innerHTML = docHtml;
+            }
+
+            const kategoriEl = document.getElementById('lihat-modul-kategori');
+            if (kategoriEl) kategoriEl.innerText = data.kategori || '';
+            const judulEl = document.getElementById('lihat-modul-judul');
+            if (judulEl) judulEl.innerText = data.judul || '';
+            const isiEl = document.getElementById('lihat-modul-isi');
+            if (isiEl) isiEl.innerText = data.isi || '';
+
+            window.openModal('modal-lihat-modul');
+        };
+
+        /* Kartu Silabus di halaman beranda: menampilkan ringkasan bidang & jumlah materi NYATA
+           yang sudah diupload admin (mengikuti isi menu Materi), bukan lagi teks statis. */
+        window.renderSilabusHome = function() {
+            const wrap = document.getElementById('silabus-home-bidang-list');
+            const subEl = document.getElementById('silabus-home-subjudul');
+            if (!wrap) return;
+
+            const grouped = {};
+            dataModulAll.forEach(item => {
+                const { bidang } = parseKategoriModul(item.kategori);
+                grouped[bidang] = (grouped[bidang] || 0) + 1;
+            });
+            const bidangList = Object.keys(grouped).sort();
+
+            if (bidangList.length === 0) {
+                wrap.innerHTML = `<span class="text-xs text-slate-400 italic">Belum ada materi diupload admin.</span>`;
+                if (subEl) subEl.innerText = 'Akses modul pembelajaran K3 lintas bidang begitu tersedia.';
+                return;
+            }
+
+            if (subEl) subEl.innerText = `Mencakup ${bidangList.length} bidang K3 dengan total ${dataModulAll.length} materi: ${bidangList.join(', ')}.`;
+
+            wrap.innerHTML = bidangList.map(bidang => {
+                const warna = getWarnaBidang(bidang);
+                return `<span data-silabusbidang="${escHtml(bidang)}" class="silabus-bidang-chip cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold ${warna.badge} hover:opacity-80 transition-opacity">${getIkonBidang(bidang)} ${escHtml(bidang)} <span class="opacity-60">(${grouped[bidang]})</span></span>`;
+            }).join('');
+            wrap.querySelectorAll('.silabus-bidang-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    window.switchLmsTab('kelas', { keepBidang: true, bidang: chip.getAttribute('data-silabusbidang') });
+                });
+            });
         };
 
         window.animateNumber = function(id, endValue) {
@@ -4553,81 +4839,24 @@
             });
 
             onValue(ref(db, pathModul), (snapshot) => {
-                const listPublic = document.getElementById('modul-list'); 
                 const listAdmin = document.getElementById('admin-list-modul');
-                
-                if(listPublic) listPublic.innerHTML = ''; 
                 if(listAdmin) listAdmin.innerHTML = '';
-                
-                function getEmbedVideoUrl(url) {
-                    if (!url) return '';
-                    if (url.includes('youtube.com/watch?v=')) return `https://www.youtube.com/embed/${url.split('v=')[1]?.split('&')[0]}`;
-                    if (url.includes('youtu.be/')) return `https://www.youtube.com/embed/${url.split('youtu.be/')[1]?.split('?')[0]}`;
-                    return url;
-                }
-                function getEmbedDocUrl(url) {
-                    if (!url) return '';
-                    // PDF hasil upload langsung (disimpan sebagai base64 data URI) dirender langsung
-                    // oleh browser tanpa lewat Google Docs Viewer, karena data URI tidak bisa
-                    // diambil (fetch) oleh server Google — hanya ada di browser pengguna.
-                    if (url.startsWith('data:application/pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
-                    if (url.includes('drive.google.com')) return url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
-                    if (url.endsWith('.pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
-                    return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
-                }
-                /* Watermark identitas peserta di atas materi (video & dokumen) sebagai jejak anti-bocor.
-                   Screenshot/rekam layar tidak bisa diblokir sepenuhnya oleh website manapun,
-                   tapi watermark ini membuat identitas pengunggah terlihat jika materi disebarkan. */
-                function getModulWatermarkHtml() {
-                    if (!currentUser || currentUser.role !== 'peserta') return '';
-                    const label = `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
-                    if (!label) return '';
-                    const esc = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-                    const line = (esc + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;').repeat(5);
-                    const rows = Array(16).fill(`<span>${line}</span>`).join('<br>');
-                    return `<div class="absolute inset-0 z-30 overflow-hidden pointer-events-none select-none" style="opacity:.6;"><div style="position:absolute; top:-40%; left:-40%; width:180%; height:180%; transform:rotate(-22deg); color:rgba(255,255,255,.55); text-shadow:0 1px 3px rgba(0,0,0,.9); font-size:11px; font-weight:700; line-height:2.6em; letter-spacing:1px; white-space:nowrap;">${rows}</div></div>`;
-                }
 
+                dataModulAll = [];
                 let countModul = 0;
                 if(snapshot.exists()) {
                     snapshot.forEach(d => {
-                        countModul++; 
-                        const data = d.val(); 
+                        countModul++;
+                        const data = d.val();
+                        data.id = d.key;
+                        dataModulAll.push(data);
+
                         let badgeCol = 'bg-slate-100 text-slate-700';
-                        
-                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; 
+                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700';
+                        if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700';
+                        if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700';
                         if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
-                        
-                        const watermarkHtml = getModulWatermarkHtml();
 
-                        let videoHtml = '';
-                        if (data.videoUrl) {
-                            const embed = getEmbedVideoUrl(data.videoUrl);
-                            if (embed.includes('youtube.com/embed')) {
-                                videoHtml = `<div class="relative aspect-video w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black shadow-inner no-select" oncontextmenu="return false;"><iframe src="${embed}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>${watermarkHtml}</div>`;
-                            } else {
-                                videoHtml = `<div class="relative w-full rounded-xl overflow-hidden mb-4 border border-slate-200 bg-black no-select"><video src="${embed}" controls controlsList="nodownload noremoteplayback noplaybackrate" disablePictureInPicture disableRemotePlayback draggable="false" oncontextmenu="return false;" class="w-full max-h-80 object-cover pointer-events-auto"></video>${watermarkHtml}</div>`;
-                            }
-                        }
-
-                        let docHtml = '';
-                        if (data.docUrl) {
-                            const docEmbed = getEmbedDocUrl(data.docUrl);
-                            docHtml = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><div class="absolute inset-0 z-20 bg-transparent" oncontextmenu="return false;" onclick="return false;"></div><iframe src="${docEmbed}" class="w-full h-full border-0 relative z-10" frameborder="0" oncontextmenu="return false;"></iframe>${watermarkHtml}</div></div>`;
-                        }
-
-                        if(listPublic) {
-                            listPublic.innerHTML += `
-                            <div class="p-6 bg-white border border-slate-200/80 rounded-2xl hover:shadow-lg transition-all duration-300 relative group no-select" oncontextmenu="return false;">
-                                <span class="absolute top-4 right-4 text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase ${badgeCol}">${data.kategori}</span>
-                                <h4 class="font-bold text-base text-slate-900 pr-16 mb-3 group-hover:text-safety-500 leading-snug">${data.judul}</h4>
-                                ${videoHtml}${docHtml}
-                                <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">${data.isi}</div>
-                            </div>`;
-                        }
-                        
                         if(listAdmin) {
                             // Jangan tampilkan string base64 PDF mentah (bisa jutaan karakter) ke DOM,
                             // cukup label ramah supaya panel admin tetap ringan & terbaca.
@@ -4646,6 +4875,8 @@
                     });
                 }
                 window.animateNumber('stat-total-modul-count', countModul);
+                window.renderModulBrowse();
+                window.renderSilabusHome();
             });
 
             onValue(ref(db, pathSoal), (snapshot) => {
