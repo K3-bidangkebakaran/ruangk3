@@ -25,6 +25,16 @@
     <!-- Chart.js (Untuk Grafik Rating) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- PDF.js (Pratinjau PDF Modul Materi sebagai gambar/canvas, BUKAN plugin PDF bawaan
+         browser -> tidak ada tombol/menu Download atau Print bawaan, dan bisa discroll
+         secara normal seperti halaman biasa) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        if (window['pdfjsLib']) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -1508,12 +1518,93 @@
             if (url.endsWith('.pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
             return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
         }
+        /* Render PDF (base64 data URI hasil upload admin) sebagai deretan gambar <canvas> di
+           dalam kotak yang bisa discroll biasa — BUKAN lewat <iframe>/plugin PDF bawaan
+           browser. Ini sengaja dipilih supaya:
+           1) Bisa discroll normal (plugin PDF bawaan beberapa browser, terutama Safari,
+              punya scroll internal sendiri yang suka bentrok saat dikunci dalam kotak kecil).
+           2) Tidak ada tombol/menu Download atau Print bawaan sama sekali, karena yang
+              ditampilkan cuma gambar hasil render, bukan dokumen PDF asli yang dibaca plugin.
+           3) Teks di dalam PDF tidak bisa diblok/dicopy-paste, karena hanya berupa gambar.
+           4) Watermark identitas peserta digambar LANGSUNG di atas piksel setiap halaman
+              (bukan lapisan HTML terpisah), sehingga selalu ikut ter-scroll bersama halaman
+              dan tetap ada di posisi manapun peserta men-scroll.
+           Catatan jujur ke admin: cara ini tidak bisa mencegah screenshot/perekaman layar —
+           tidak ada teknologi web manapun yang bisa melakukan itu sepenuhnya. */
+        function base64PdfToUint8Array(dataUri) {
+            const base64 = (dataUri.split(',')[1] || '').trim();
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return bytes;
+        }
+        async function renderPdfIntoContainer(dataUri, containerEl, watermarkLabel) {
+            containerEl.innerHTML = `<div class="w-full h-[480px] flex items-center justify-center bg-slate-900 rounded-xl border border-slate-200 text-slate-400 text-xs">Memuat pratinjau dokumen...</div>`;
+            try {
+                if (!window.pdfjsLib) throw new Error('pdfjs-belum-siap');
+                const loadingTask = pdfjsLib.getDocument({ data: base64PdfToUint8Array(dataUri) });
+                const pdf = await loadingTask.promise;
+
+                const scrollBox = document.createElement('div');
+                scrollBox.className = 'relative w-full h-[480px] overflow-y-auto overflow-x-hidden bg-slate-800 rounded-xl border border-slate-200 shadow-inner no-select';
+                scrollBox.setAttribute('oncontextmenu', 'return false;');
+                const pagesWrap = document.createElement('div');
+                pagesWrap.className = 'flex flex-col items-center gap-3 p-3';
+                scrollBox.appendChild(pagesWrap);
+                containerEl.innerHTML = '';
+                containerEl.appendChild(scrollBox);
+
+                const targetWidth = Math.max(scrollBox.clientWidth - 24, 280);
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const baseViewport = page.getViewport({ scale: 1 });
+                    const scale = targetWidth / baseViewport.width;
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    canvas.className = 'max-w-full rounded shadow-md pointer-events-none select-none';
+                    canvas.setAttribute('draggable', 'false');
+                    canvas.setAttribute('oncontextmenu', 'return false;');
+                    const ctx = canvas.getContext('2d');
+                    await page.render({ canvasContext: ctx, viewport }).promise;
+                    if (watermarkLabel) drawWatermarkOnCanvas(ctx, canvas.width, canvas.height, watermarkLabel);
+                    pagesWrap.appendChild(canvas);
+                }
+            } catch (err) {
+                console.error('Gagal merender PDF via pdf.js, fallback ke iframe:', err);
+                // Fallback: jika PDF.js gagal dimuat (mis. CDN diblokir), tetap tampilkan
+                // dokumennya lewat iframe bawaan browser supaya peserta tidak buntu total.
+                const docEmbed = `${dataUri}#toolbar=0&navpanes=0&scrollbar=0`;
+                containerEl.innerHTML = `<div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><iframe src="${docEmbed}" class="w-full h-full border-0" frameborder="0" oncontextmenu="return false;"></iframe></div>`;
+            }
+        }
+        function drawWatermarkOnCanvas(ctx, width, height, label) {
+            ctx.save();
+            ctx.globalAlpha = 0.16;
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 13px Arial, sans-serif';
+            ctx.textBaseline = 'middle';
+            ctx.translate(width / 2, height / 2);
+            ctx.rotate(-22 * Math.PI / 180);
+            ctx.translate(-width, -height);
+            const stepX = 190, stepY = 70;
+            for (let y = -height * 0.5; y < height * 2; y += stepY) {
+                for (let x = -width * 0.5; x < width * 2; x += stepX) {
+                    ctx.fillText(label, x, y);
+                }
+            }
+            ctx.restore();
+        }
         /* Watermark identitas peserta di atas materi (video & dokumen) sebagai jejak anti-bocor.
            Screenshot/rekam layar tidak bisa diblokir sepenuhnya oleh website manapun,
            tapi watermark ini membuat identitas pengunggah terlihat jika materi disebarkan. */
-        function getModulWatermarkHtml() {
+        function getModulWatermarkLabel() {
             if (!currentUser || currentUser.role !== 'peserta') return '';
-            const label = `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
+            return `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
+        }
+        function getModulWatermarkHtml() {
+            const label = getModulWatermarkLabel();
             if (!label) return '';
             const esc = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             const line = (esc + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;').repeat(5);
@@ -1695,12 +1786,21 @@
 
             const docWrap = document.getElementById('lihat-modul-doc-wrap');
             if (docWrap) {
-                let docHtml = '';
-                if (data.docUrl) {
+                if (data.docUrl && data.docUrl.startsWith('data:application/pdf')) {
+                    // PDF hasil upload admin (base64): render sebagai gambar/canvas yang bisa
+                    // discroll normal, tanpa tombol Download/Print bawaan browser sama sekali.
+                    docWrap.innerHTML = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div id="lihat-modul-doc-canvas-box"></div></div>`;
+                    const canvasBox = document.getElementById('lihat-modul-doc-canvas-box');
+                    if (canvasBox) renderPdfIntoContainer(data.docUrl, canvasBox, getModulWatermarkLabel());
+                } else if (data.docUrl) {
+                    // Link eksternal (Google Drive / URL PDF lain di luar server kita) — tetap
+                    // lewat iframe karena kita tidak bisa mengambil isi file mentahnya langsung
+                    // dari domain lain untuk dirender sebagai gambar.
                     const docEmbed = getEmbedDocUrl(data.docUrl);
-                    docHtml = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><div class="absolute inset-0 z-20 bg-transparent" oncontextmenu="return false;" onclick="return false;"></div><iframe src="${docEmbed}" class="w-full h-full border-0 relative z-10" frameborder="0" oncontextmenu="return false;"></iframe>${watermarkHtml}</div></div>`;
+                    docWrap.innerHTML = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><iframe src="${docEmbed}" class="w-full h-full border-0" frameborder="0" oncontextmenu="return false;"></iframe>${watermarkHtml}</div></div>`;
+                } else {
+                    docWrap.innerHTML = '';
                 }
-                docWrap.innerHTML = docHtml;
             }
 
             const kategoriEl = document.getElementById('lihat-modul-kategori');
