@@ -1214,22 +1214,18 @@
                                         <label class="block text-xs font-bold text-slate-700">Dokumen Materi (PDF)</label>
                                         <div class="flex items-center justify-center w-full">
                                             <label for="input-doc-modul-file" class="flex flex-col items-center justify-center w-full h-16 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-slate-100 transition-colors">
-                                                <p class="text-[11px] text-slate-500 font-semibold text-center px-2" id="label-nama-file-doc-modul">Klik untuk upload file PDF<br><span class="font-normal">(Opsional, maks 15MB)</span></p>
+                                                <p class="text-[11px] text-slate-500 font-semibold text-center px-2" id="label-nama-file-doc-modul">Klik untuk upload file PDF<br><span class="font-normal">(Opsional, maks 3MB)</span></p>
                                             </label>
                                             <input id="input-doc-modul-file" type="file" accept="application/pdf" class="hidden" />
                                         </div>
                                         <input type="url" id="input-doc-modul" placeholder="atau tempel Link Dokumen (PDF/Google Drive) - Opsional" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                                        <p class="text-[10px] text-slate-400 leading-relaxed">PDF disimpan langsung ke database (gratis, tanpa Firebase Storage) sehingga ukurannya dibatasi kecil. Untuk file lebih besar, gunakan link Google Drive di atas.</p>
                                     </div>
 
                                     <div class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
                                         <label class="block text-xs font-bold text-slate-700">Video Materi</label>
-                                        <div class="flex items-center justify-center w-full">
-                                            <label for="input-video-modul-file" class="flex flex-col items-center justify-center w-full h-16 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-slate-100 transition-colors">
-                                                <p class="text-[11px] text-slate-500 font-semibold text-center px-2" id="label-nama-file-video-modul">Klik untuk upload file video<br><span class="font-normal">(Opsional, maks 100MB)</span></p>
-                                            </label>
-                                            <input id="input-video-modul-file" type="file" accept="video/*" class="hidden" />
-                                        </div>
-                                        <input type="url" id="input-video-modul" placeholder="atau tempel Link YouTube - Opsional" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                                        <input type="url" id="input-video-modul" placeholder="Tempel Link YouTube - Opsional" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                        <p class="text-[10px] text-slate-400 leading-relaxed">Upload file video langsung memerlukan paket Firebase berbayar (Blaze), jadi untuk saat ini gunakan link YouTube (gratis &amp; tanpa batas ukuran).</p>
                                     </div>
 
                                     <textarea id="input-isi-modul" required rows="6" placeholder="Salin/Tulis seluruh isi materi di sini..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none"></textarea>
@@ -1345,7 +1341,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, push, onValue, set, update, remove, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        /* Catatan: Firebase Storage (upload file besar seperti PDF/video langsung) memerlukan
+           paket Blaze (berbayar) di Firebase. Karena project ini masih di paket Spark (gratis),
+           upload PDF materi disimpan sebagai base64 langsung di Realtime Database (lihat
+           window.readFileAsBase64 di bawah), dan video materi memakai link YouTube.
+           Kalau nanti project di-upgrade ke Blaze, fitur upload file video langsung bisa
+           diaktifkan kembali dengan menambahkan kembali import & fungsi Firebase Storage. */
 
         window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -1404,7 +1405,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
 
         const pathPeserta = `artifacts/${cleanAppId}/public/data/peserta`;
         const pathModul = `artifacts/${cleanAppId}/public/data/modul`;
@@ -3052,17 +3052,19 @@
             });
         }
 
-        /* ================= UPLOAD FILE PDF / VIDEO UNTUK MODUL MATERI (Firebase Storage) ================= */
+        /* ================= UPLOAD PDF UNTUK MODUL MATERI (disimpan sebagai base64 di Realtime Database) =================
+           Project ini masih pakai paket Firebase gratis (Spark), yang tidak menyediakan Firebase
+           Storage untuk upload file besar. Karena itu file PDF dikonversi jadi teks base64 dan
+           disimpan langsung sebagai bagian data modul di Realtime Database (yang memang gratis).
+           Konsekuensinya: ukuran file harus dibatasi kecil (maks 3MB) supaya tidak membuat data
+           modul membengkak dan lambat dimuat oleh semua pengunjung. Video materi hanya lewat
+           link YouTube karena raw video terlalu besar untuk disimpan dengan cara ini. */
         window.selectedDocModulFile = null;
-        window.selectedVideoModulFile = null;
+        const MAX_PDF_MODUL_BYTES = 3 * 1024 * 1024;
 
         window.resetLabelDocModul = function() {
             const lbl = document.getElementById('label-nama-file-doc-modul');
-            if (lbl) { lbl.innerHTML = 'Klik untuk upload file PDF<br><span class="font-normal">(Opsional, maks 15MB)</span>'; lbl.classList.remove('text-safety-600'); }
-        };
-        window.resetLabelVideoModul = function() {
-            const lbl = document.getElementById('label-nama-file-video-modul');
-            if (lbl) { lbl.innerHTML = 'Klik untuk upload file video<br><span class="font-normal">(Opsional, maks 100MB)</span>'; lbl.classList.remove('text-safety-600'); }
+            if (lbl) { lbl.innerHTML = 'Klik untuk upload file PDF<br><span class="font-normal">(Opsional, maks 3MB)</span>'; lbl.classList.remove('text-safety-600'); }
         };
 
         const inputDocModulFile = document.getElementById('input-doc-modul-file');
@@ -3075,8 +3077,8 @@
                     window.showToast("File dokumen harus berformat PDF.", "error");
                     e.target.value = ''; window.selectedDocModulFile = null; window.resetLabelDocModul(); return;
                 }
-                if (file.size > 15 * 1024 * 1024) {
-                    window.showToast("Ukuran PDF maksimal 15MB.", "error");
+                if (file.size > MAX_PDF_MODUL_BYTES) {
+                    window.showToast("Ukuran PDF maksimal 3MB (disimpan langsung di database). Untuk file lebih besar, gunakan link Google Drive.", "error");
                     e.target.value = ''; window.selectedDocModulFile = null; window.resetLabelDocModul(); return;
                 }
                 window.selectedDocModulFile = file;
@@ -3084,67 +3086,12 @@
             });
         }
 
-        const inputVideoModulFile = document.getElementById('input-video-modul-file');
-        if (inputVideoModulFile) {
-            inputVideoModulFile.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                const lbl = document.getElementById('label-nama-file-video-modul');
-                if (!file) { window.selectedVideoModulFile = null; window.resetLabelVideoModul(); return; }
-                if (!file.type.startsWith('video/')) {
-                    window.showToast("File harus berformat video.", "error");
-                    e.target.value = ''; window.selectedVideoModulFile = null; window.resetLabelVideoModul(); return;
-                }
-                if (file.size > 100 * 1024 * 1024) {
-                    window.showToast("Ukuran video maksimal 100MB.", "error");
-                    e.target.value = ''; window.selectedVideoModulFile = null; window.resetLabelVideoModul(); return;
-                }
-                window.selectedVideoModulFile = file;
-                if (lbl) { lbl.innerHTML = `<span class="font-bold text-green-600">${file.name}</span>`; }
-            });
-        }
-
-        window.uploadFileToStorage = function(file, folder, onProgress, timeoutMs = 45000) {
+        window.readFileAsBase64 = function(file) {
             return new Promise((resolve, reject) => {
-                const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-                const path = `${folder}/${Date.now()}_${safeName}`;
-                const fileRef = storageRef(storage, path);
-                const task = uploadBytesResumable(fileRef, file);
-
-                let settled = false;
-                let gotFirstProgress = false;
-
-                // Safety-net: JANGAN pernah biarkan proses upload menggantung selamanya.
-                // Kalau Firebase Storage belum aktif / rules menolak tanpa error yang jelas,
-                // upload bisa diam tanpa pernah memanggil callback sukses maupun error sama
-                // sekali — tanpa batas waktu ini tombol "Simpan" akan macet permanen seperti
-                // yang dilaporkan (stuck di "Upload 0%...").
-                const timer = setTimeout(() => {
-                    if (settled) return;
-                    settled = true;
-                    try { task.cancel(); } catch (e) {}
-                    reject(new Error(
-                        gotFirstProgress
-                            ? `Upload terhenti di tengah jalan (lebih dari ${Math.round(timeoutMs/1000)} detik tanpa progres). Cek koneksi internet Anda dan coba lagi.`
-                            : `Upload tidak merespons sama sekali dalam ${Math.round(timeoutMs/1000)} detik. Kemungkinan besar Firebase Storage belum diaktifkan, atau Storage Rules di Firebase Console belum mengizinkan upload untuk project ini.`
-                    ));
-                }, timeoutMs);
-
-                task.on('state_changed', (snap) => {
-                    gotFirstProgress = true;
-                    const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-                    if (onProgress) onProgress(pct);
-                }, (err) => {
-                    if (settled) return;
-                    settled = true;
-                    clearTimeout(timer);
-                    reject(err);
-                }, async () => {
-                    if (settled) return;
-                    settled = true;
-                    clearTimeout(timer);
-                    try { const url = await getDownloadURL(task.snapshot.ref); resolve(url); }
-                    catch (e) { reject(e); }
-                });
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Gagal membaca file PDF.'));
+                reader.readAsDataURL(file);
             });
         };
 
@@ -3728,10 +3675,8 @@
                 let docUrl = document.getElementById('input-doc-modul').value.trim();
 
                 if (window.selectedDocModulFile) {
-                    docUrl = await window.uploadFileToStorage(window.selectedDocModulFile, 'modul_dokumen', (pct) => { btn.innerText = `Upload PDF ${pct}%...`; });
-                }
-                if (window.selectedVideoModulFile) {
-                    videoUrl = await window.uploadFileToStorage(window.selectedVideoModulFile, 'modul_video', (pct) => { btn.innerText = `Upload Video ${pct}%...`; });
+                    btn.innerText = "Memproses PDF...";
+                    docUrl = await window.readFileAsBase64(window.selectedDocModulFile);
                 }
 
                 btn.innerText = "Menyimpan...";
@@ -3745,9 +3690,7 @@
                 });
                 e.target.reset();
                 window.selectedDocModulFile = null;
-                window.selectedVideoModulFile = null;
                 window.resetLabelDocModul();
-                window.resetLabelVideoModul();
                 window.showToast("Modul Tersimpan", "success");
             } catch(err) {
                 console.error(err);
@@ -4624,6 +4567,10 @@
                 }
                 function getEmbedDocUrl(url) {
                     if (!url) return '';
+                    // PDF hasil upload langsung (disimpan sebagai base64 data URI) dirender langsung
+                    // oleh browser tanpa lewat Google Docs Viewer, karena data URI tidak bisa
+                    // diambil (fetch) oleh server Google — hanya ada di browser pengguna.
+                    if (url.startsWith('data:application/pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
                     if (url.includes('drive.google.com')) return url.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
                     if (url.endsWith('.pdf')) return `${url}#toolbar=0&navpanes=0&scrollbar=0`;
                     return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
@@ -4682,12 +4629,17 @@
                         }
                         
                         if(listAdmin) {
+                            // Jangan tampilkan string base64 PDF mentah (bisa jutaan karakter) ke DOM,
+                            // cukup label ramah supaya panel admin tetap ringan & terbaca.
+                            const docLabel = data.docUrl
+                                ? (data.docUrl.startsWith('data:') ? '📄 Dokumen: File PDF terupload' : `📄 Dokumen: ${data.docUrl}`)
+                                : '';
                             listAdmin.innerHTML += `
                             <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-2">
                                 <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase ${badgeCol} mb-1 inline-block">${data.kategori}</span>
                                 <h4 class="font-bold text-navy-900 text-sm">${data.judul}</h4>
                                 ${data.videoUrl ? `<p class="text-[10px] text-blue-600 font-medium truncate my-1">📹 Video: ${data.videoUrl}</p>` : ''}
-                                ${data.docUrl ? `<p class="text-[10px] text-emerald-600 font-medium truncate my-1">📄 Dokumen: ${data.docUrl}</p>` : ''}
+                                ${docLabel ? `<p class="text-[10px] text-emerald-600 font-medium truncate my-1">${docLabel}</p>` : ''}
                                 <p class="text-xs text-slate-600 mt-1 line-clamp-2">${data.isi}</p>
                             </div>`;
                         }
