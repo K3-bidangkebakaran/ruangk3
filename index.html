@@ -5210,7 +5210,7 @@
                             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center space-x-4 mb-2">
                                 <div class="flex-grow">
                                     <span class="text-[10px] text-slate-500 mb-1 block">${window.formatDate(t.timestamp)}</span>
-                                    <p class="text-sm font-bold text-slate-800 leading-snug whitespace-pre-wrap">${t.isi}</p>
+                                    <p class="text-sm font-bold text-slate-800 leading-snug whitespace-pre-wrap">${window.escapeHtmlSoal(t.isi)}</p>
                                 </div>
                                 <button onclick="window.hapusRunningText('${t.id}')" class="shrink-0 p-2 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-red-200 shadow-sm" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                             </div>`;
@@ -5335,41 +5335,64 @@
                 }
 
                 let categoryCounters = {};
-                
-                if(listAdmin) {
-                    quizDataFromDB.forEach((data) => {
-                        const kat = data.kategori || 'Umum'; 
-                        if (!categoryCounters[kat]) categoryCounters[kat] = 1; 
-                        const noSoalBidang = categoryCounters[kat]++;
-                        
-                        const labels = ['A', 'B', 'C', 'D']; 
-                        let htmlOpsi = '';
-                        
-                        if(data.opsi && Array.isArray(data.opsi)) { 
-                            data.opsi.forEach((opt, idx) => { 
-                                const isCorrect = idx === data.jawabanBenar; 
-                                htmlOpsi += `<div class="text-xs mt-1 ${isCorrect ? 'font-bold text-green-600' : 'text-slate-500'}">${labels[idx]}. ${opt} ${isCorrect ? '✓' : ''}</div>`; 
-                            }); 
-                        }
-                        
-                        let badgeCol = 'bg-slate-100 text-slate-700';
-                        if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700'; 
-                        if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
 
-                        listAdmin.innerHTML += `
-                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 shadow-sm relative group">
-                            <div class="absolute top-3 right-3 flex space-x-2">
-                                <button onclick="window.editSoal('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm" title="Edit Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                                <button onclick="window.hapusSoal('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm" title="Hapus Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                            </div>
-                            <div class="mb-2"><span class="text-[10px] ${badgeCol} px-2 py-0.5 rounded font-bold uppercase">${data.kategori || 'Umum'}</span></div>
-                            <h4 class="font-bold text-slate-800 text-sm mb-2 leading-relaxed pr-16">No. ${noSoalBidang} - ${data.pertanyaan}</h4>
-                            ${data.gambarUrl ? `<img src="${data.gambarUrl}" oncontextmenu="return false;" draggable="false" class="max-h-28 rounded-lg border border-slate-200 object-contain mb-2 select-none">` : ''}
-                            <div class="pl-3 border-l-2 border-slate-200">${htmlOpsi}</div>
-                        </div>`;
+                if(listAdmin) {
+                    // PENTING: teks pertanyaan/opsi/kategori WAJIB di-escape (escapeHtmlSoal)
+                    // sebelum masuk innerHTML. Sebelumnya teks dimasukkan MENTAH -- kalau ada
+                    // satu saja soal lama yang isinya memuat karakter "<" atau ">" (mis. "suhu
+                    // < 100°C", "A -> B"), browser salah mem-parsing HTML dari titik itu dan
+                    // menyeret soal-soal LAIN yang sebenarnya baik-baik saja ikut hilang dari
+                    // tampilan (padahal datanya tetap aman di database). Selain itu, render
+                    // sekarang dikumpulkan dulu ke array & digabung SEKALI di akhir (bukan
+                    // innerHTML += di dalam loop), dan setiap item dibungkus try/catch supaya
+                    // satu data soal yang rusak/formatnya aneh tidak menggagalkan seluruh daftar.
+                    const htmlParts = [];
+                    let gagalDirender = 0;
+
+                    quizDataFromDB.forEach((data) => {
+                        try {
+                            const kat = data.kategori || 'Umum';
+                            if (!categoryCounters[kat]) categoryCounters[kat] = 1;
+                            const noSoalBidang = categoryCounters[kat]++;
+
+                            const labels = ['A', 'B', 'C', 'D'];
+                            let htmlOpsi = '';
+
+                            if(data.opsi && Array.isArray(data.opsi)) {
+                                data.opsi.forEach((opt, idx) => {
+                                    const isCorrect = idx === data.jawabanBenar;
+                                    htmlOpsi += `<div class="text-xs mt-1 ${isCorrect ? 'font-bold text-green-600' : 'text-slate-500'}">${labels[idx] || (idx+1)}. ${window.escapeHtmlSoal(opt)} ${isCorrect ? '✓' : ''}</div>`;
+                                });
+                            }
+
+                            let badgeCol = 'bg-slate-100 text-slate-700';
+                            if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700';
+                            if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700';
+                            if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700';
+                            if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
+
+                            htmlParts.push(`
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 shadow-sm relative group">
+                                <div class="absolute top-3 right-3 flex space-x-2">
+                                    <button onclick="window.editSoal('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm" title="Edit Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                    <button onclick="window.hapusSoal('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm" title="Hapus Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                </div>
+                                <div class="mb-2"><span class="text-[10px] ${badgeCol} px-2 py-0.5 rounded font-bold uppercase">${window.escapeHtmlSoal(data.kategori || 'Umum')}</span></div>
+                                <h4 class="font-bold text-slate-800 text-sm mb-2 leading-relaxed pr-16">No. ${noSoalBidang} - ${window.escapeHtmlSoal(data.pertanyaan)}</h4>
+                                ${data.gambarUrl ? `<img src="${data.gambarUrl}" oncontextmenu="return false;" draggable="false" class="max-h-28 rounded-lg border border-slate-200 object-contain mb-2 select-none">` : ''}
+                                <div class="pl-3 border-l-2 border-slate-200">${htmlOpsi}</div>
+                            </div>`);
+                        } catch (errItem) {
+                            gagalDirender++;
+                            console.error('Gagal render 1 soal di Bank Soal (dilewati, soal lain tetap tampil):', data && data.id, errItem);
+                        }
                     });
+
+                    if (htmlParts.length === 0 && quizDataFromDB.length === 0) {
+                        listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Belum ada soal tersimpan.</p>';
+                    } else {
+                        listAdmin.innerHTML = htmlParts.join('') + (gagalDirender > 0 ? `<p class="text-xs text-red-500 italic text-center py-2">${gagalDirender} soal gagal ditampilkan (format data bermasalah). Hubungi pengembang jika ini berulang.</p>` : '');
+                    }
                 }
             });
         };
