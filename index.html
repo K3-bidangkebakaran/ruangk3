@@ -257,22 +257,6 @@
         </div>
     </nav>
 
-    <!-- RUNNING TEXT BANNER -->
-    <div id="running-text-container" class="hidden bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 text-navy-950 overflow-hidden relative z-30 shadow-lg border-b-2 border-amber-500">
-        <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiMwMDAiLz48L3N2Zz4=')]"></div>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center relative z-10">
-            <span class="font-black text-sm uppercase tracking-widest mr-4 shrink-0 flex items-center bg-white px-3 py-1.5 rounded-lg shadow-md text-amber-600 border border-amber-100 z-20">
-                <span class="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse mr-2.5 shadow-[0_0_8px_rgba(220,38,38,0.8)]"></span> INFO PENTING
-            </span>
-            <div class="flex-1 overflow-hidden relative mask-edges flex items-center">
-                <div class="animate-marquee-seamless font-extrabold text-sm md:text-base tracking-wide text-navy-950 drop-shadow-sm cursor-pointer" id="marquee-track">
-                    <div id="running-text-content-1" class="flex items-center whitespace-nowrap px-4"></div>
-                    <div id="running-text-content-2" class="flex items-center whitespace-nowrap px-4" aria-hidden="true"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <!-- DASHBOARD SISWA LMS -->
@@ -661,6 +645,25 @@
             </div>
         </div>
 
+        <!-- Modal Info Penting / Pengumuman Beranda (pop up peringatan, sumber data dari
+             menu admin "Kelola Info Pop Up Beranda" -- dulunya tampil sebagai running text
+             berjalan). Muncul otomatis setiap peserta membuka/kembali ke halaman Beranda. -->
+        <div id="modal-info-penting" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg hidden relative flex-col max-h-[85vh] overflow-hidden z-[1050]">
+            <button class="btn-close-modal absolute top-4 right-4 z-20 bg-black/10 hover:bg-red-500 hover:text-white text-slate-500 p-2 rounded-full transition-colors">✕</button>
+            <div class="bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 p-6 sm:p-8 pb-5 text-navy-950 shrink-0 relative overflow-hidden">
+                <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiMwMDAiLz48L3N2Zz4=')]"></div>
+                <div class="relative z-10">
+                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-md mb-3">⚠️</div>
+                    <h2 class="text-xl sm:text-2xl font-black leading-tight">Info Penting</h2>
+                    <p class="text-xs sm:text-sm font-semibold text-navy-900/70 mt-1">Pengumuman dari Admin RuangK3</p>
+                </div>
+            </div>
+            <div id="modal-info-penting-list" class="p-6 sm:p-8 overflow-y-auto flex-grow bg-white space-y-4"></div>
+            <div class="p-4 sm:p-5 border-t border-slate-100 shrink-0 bg-slate-50">
+                <button class="btn-close-modal w-full py-3 bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm rounded-xl transition-colors">Saya Mengerti</button>
+            </div>
+        </div>
+
         <!-- Modal Login Peserta -->
         <div id="modal-login" class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 hidden relative transform transition-all">
             <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
@@ -908,7 +911,7 @@
                 <button id="nav-btn-keuangan" class="admin-nav-btn w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pendapatan"><span>Ringkasan Keuangan</span></button>
 
                 <div class="admin-utama-only eldi-access text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Menu Khusus</div>
-                <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-running-text"><span>Kelola Running Text</span></button>
+                <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-running-text"><span>Kelola Info Pop Up Beranda</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium bidang-access" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-tim"><span>Kelola Akun Tim</span></button>
                 <button id="nav-btn-akun-peserta" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-akun-peserta"><span>Kelola Akun Peserta</span></button>
@@ -1378,24 +1381,26 @@
                     </div>
                 </div>
 
-                <!-- Kelola Running Text -->
+                <!-- Kelola Info Pop Up Beranda (dulu "Kelola Running Text"; cara input & data
+                     tersimpan tetap sama, hanya tampilan ke peserta yang berubah jadi pop up) -->
                 <div id="admin-panel-running-text" class="admin-panel hidden admin-utama-only">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-1">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Buat Pengumuman Baru</h3>
+                                <p class="text-xs text-slate-500 -mt-2 mb-4 leading-relaxed">Pengumuman akan muncul sebagai jendela pop up peringatan setiap peserta membuka atau kembali ke halaman Beranda.</p>
                                 <form id="form-running-text" class="space-y-4">
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Isi Info / Teks Berjalan</label>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Isi Pengumuman / Peringatan</label>
                                         <textarea id="input-running-text" required rows="4" placeholder="Tuliskan informasi penting atau peringatan di sini..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-slate-50 focus:bg-white transition-colors"></textarea>
                                     </div>
-                                    <button type="submit" class="w-full py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm hover:bg-safety-600 transition-colors">Tampilkan di Beranda</button>
+                                    <button type="submit" class="w-full py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm hover:bg-safety-600 transition-colors">Tampilkan sebagai Pop Up di Beranda</button>
                                 </form>
                             </div>
                         </div>
                         <div class="lg:col-span-2">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:p-6">
-                                <h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Running Text Aktif</h3>
+                                <h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Pop Up Aktif</h3>
                                 <div id="admin-list-running-text" class="space-y-3 max-h-[600px] overflow-y-auto admin-scroll pr-2">
                                     <p class="text-sm text-slate-500 italic text-center py-4">Memuat data...</p>
                                 </div>
@@ -1507,6 +1512,12 @@
         let dataAkunBidangAll = [];
         let dataModulAll = [];
         let modulBrowseState = { bidang: null, kelas: null };
+        // Data "Info Pop Up Beranda" (dulu tampil sebagai running text berjalan, sekarang
+        // ditampilkan sebagai jendela pop up peringatan setiap peserta membuka/kembali ke
+        // halaman Beranda). Sumber data & cara admin menginput TETAP SAMA (path/isi field
+        // tidak berubah) -- hanya cara menampilkannya ke peserta yang berubah.
+        let dataRunningTextAll = [];
+        let infoPentingShownInitially = false;
         const JUMLAH_SOAL_UJIAN = 25;
         // Nama persis kelas "dasar" Kebakaran yang otomatis terbuka untuk peserta baru yang
         // mendaftar pelatihan Kebakaran (harus sama persis dengan nama di defaultKat/kategori_k3).
@@ -1698,6 +1709,9 @@
             });
             document.getElementById(`view-lms-${tabName}`)?.classList.remove('hidden');
             document.getElementById(`nav-lms-${tabName}`)?.classList.add('tab-lms-active');
+            // Setiap kembali ke halaman Beranda (Dashboard Siswa), tampilkan lagi pop up info
+            // penting/pengumuman aktif (jika ada) -- sesuai permintaan Admin.
+            if (tabName === 'dashboard' && typeof window.tampilkanInfoPenting === 'function') window.tampilkanInfoPenting();
             if (tabName === 'hasil' && typeof window.renderHasilUjian === 'function') window.renderHasilUjian();
             if (tabName === 'kelas') {
                 // Setiap kali menu Materi dibuka, selalu mulai dari layar pilih Bidang & Kelas
@@ -2271,6 +2285,25 @@
             return m ? `kelas ${m[1]}` : '';
         };
 
+        /* Pecah nama kelas jadi beberapa "varian" penulisan yang dianggap sama, supaya soal
+           tetap terbaca walau admin/data lama menulis nama kelasnya tidak lengkap/beda gaya.
+           Contoh: "Kelas D (Petugas Peran Kebakaran)" -> ["kelas d", "petugas peran kebakaran"]
+           Jadi soal yang kategorinya hanya memuat "Kelas D" SAJA, atau hanya "Petugas Peran
+           Kebakaran" SAJA (tanpa kata "Kelas D"), keduanya tetap terhitung untuk kelas ini. */
+        window.kelasNameVariants = function(kelasStr) {
+            const s = String(kelasStr || '').trim();
+            if (!s) return [];
+            const variants = [];
+            const m = s.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+            if (m) {
+                if (m[1].trim()) variants.push(m[1].trim());
+                if (m[2].trim()) variants.push(m[2].trim());
+            } else {
+                variants.push(s);
+            }
+            return variants.map(window.normKat).filter(Boolean);
+        };
+
         /* Ambil SELURUH soal LANGSUNG dari Bank Soal admin (Firebase) sesuai Bidang + Kelas, diacak per peserta */
         window.buildSoalUjian = async function(bidang, kelas, idTim) {
             const kategori = `${bidang} - ${kelas}`;
@@ -2278,6 +2311,7 @@
             const bidNorm = window.normKat(bidang);
             const klsNorm = window.normKat(kelas);
             const klsKode = window.kodeKelas(kelas);
+            const klsVarian = window.kelasNameVariants(kelas);
 
             // Ambil snapshot terbaru langsung dari path bank soal admin (bukan cache lama)
             let bank = [];
@@ -2297,29 +2331,35 @@
 
             const katOf = (q) => window.normKat(q.kategori || ((q.bidang && q.kelas) ? `${q.bidang} - ${q.kelas}` : ''));
 
-            // 1. Cocokkan persis "Bidang - Kelas"
-            let pool = bank.filter(q => katOf(q) === katNorm);
+            // 1. Bidang sama + kelas cocok -- SEMUA kriteria berikut DIGABUNG (union), bukan
+            //    berhenti begitu satu kriteria dapat hasil. Ini memperbaiki bug soal Kelas D
+            //    yang hanya terbaca kalau kategorinya "Kelas D (Petugas Peran Kebakaran)"
+            //    persis: sekarang soal yang kategorinya cuma "Kelas D" saja, atau cuma
+            //    "Petugas Peran Kebakaran" saja (tanpa kata "Kelas D"), ikut masuk juga.
+            let pool = bank.filter(q => {
+                const kat = katOf(q);
+                const sameBidang = kat.startsWith(bidNorm) || window.normKat(q.bidang) === bidNorm;
+                if (!sameBidang) return false;
+                if (kat === katNorm) return true;
+                if (klsKode && window.kodeKelas(kat) === klsKode) return true;
+                if (klsNorm && (kat.includes(klsNorm) || window.normKat(q.kelas) === klsNorm)) return true;
+                if (klsVarian.length && klsVarian.some(v => v && (kat.includes(v) || window.normKat(q.kelas).includes(v)))) return true;
+                return false;
+            });
 
-            // 2. Cocokkan bidang sama + kode kelas sama (toleran perbedaan teks dalam kurung)
-            if (pool.length === 0) {
+            // 2. Fallback: nama/varian kelas cocok tanpa memandang bidang (data lama yang
+            //    bidang-nya salah ketik/berbeda)
+            if (pool.length === 0 && (klsNorm || klsVarian.length)) {
                 pool = bank.filter(q => {
                     const kat = katOf(q);
-                    const sameBidang = kat.startsWith(bidNorm) || window.normKat(q.bidang) === bidNorm;
-                    if (!sameBidang) return false;
-                    if (klsKode) return window.kodeKelas(kat) === klsKode;
-                    return kat.includes(klsNorm) || window.normKat(q.kelas) === klsNorm;
+                    if (klsNorm && kat.includes(klsNorm)) return true;
+                    if (klsKode && window.kodeKelas(kat) === klsKode) return true;
+                    if (klsVarian.length && klsVarian.some(v => v && kat.includes(v))) return true;
+                    return false;
                 });
             }
 
-            // 3. Fallback: nama kelas cocok tanpa memandang bidang
-            if (pool.length === 0 && klsNorm) {
-                pool = bank.filter(q => {
-                    const kat = katOf(q);
-                    return kat.includes(klsNorm) || (klsKode && window.kodeKelas(kat) === klsKode);
-                });
-            }
-
-            // 4. Fallback terakhir: seluruh soal pada bidang yang sama
+            // 3. Fallback terakhir: seluruh soal pada bidang yang sama
             if (pool.length === 0) {
                 pool = bank.filter(q => katOf(q).startsWith(bidNorm) || window.normKat(q.bidang) === bidNorm);
             }
@@ -4212,21 +4252,38 @@
                     isi: document.getElementById('input-running-text').value, 
                     timestamp: Date.now() 
                 });
-                e.target.reset(); 
-                window.showToast("Running Text berhasil ditambahkan.", "success");
-            } catch(err) { 
-                window.showToast("Gagal menambahkan teks.", "error"); 
+                e.target.reset();
+                window.showToast("Pop up pengumuman berhasil ditambahkan.", "success");
+            } catch(err) {
+                window.showToast("Gagal menambahkan teks.", "error");
             }
             setTimeout(() => { btn.innerText = ori; }, 2000);
         });
 
         window.hapusRunningText = async function(id) {
-            try { 
-                await remove(ref(db, `${pathRunningText}/${id}`)); 
-                window.showToast("Running text berhasil dihapus.", "success"); 
-            } catch(e) { 
-                window.showToast("Gagal menghapus data.", "error"); 
+            try {
+                await remove(ref(db, `${pathRunningText}/${id}`));
+                window.showToast("Pop up pengumuman berhasil dihapus.", "success");
+            } catch(e) {
+                window.showToast("Gagal menghapus data.", "error");
             }
+        };
+
+        /* Tampilkan pop up "Info Penting" berisi seluruh pengumuman aktif (dari path yang
+           sama dengan fitur lama "Running Text"). Dipanggil otomatis: (1) sekali saat data
+           pertama kali dimuat di halaman (= membuka halaman Beranda), dan (2) setiap kali
+           peserta kembali ke tab Dashboard/Beranda lewat window.switchLmsTab('dashboard'). */
+        window.tampilkanInfoPenting = function() {
+            if(!dataRunningTextAll || dataRunningTextAll.length === 0) return;
+            const list = document.getElementById('modal-info-penting-list');
+            if(list) {
+                list.innerHTML = dataRunningTextAll.map(t => `
+                    <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                        <p class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">${window.escapeHtmlSoal ? window.escapeHtmlSoal(t.isi) : t.isi}</p>
+                        <p class="text-[10px] text-slate-400 mt-2 font-semibold">${window.formatDate(t.timestamp)}</p>
+                    </div>`).join('');
+            }
+            window.openModal('modal-info-penting');
         };
 
         window.bukaModalHutang = function() {
@@ -5134,39 +5191,18 @@
             });
 
             onValue(ref(db, pathRunningText), (snapshot) => {
-                const publicContainer = document.getElementById('running-text-container');
-                const content1 = document.getElementById('running-text-content-1');
-                const content2 = document.getElementById('running-text-content-2');
                 const adminList = document.getElementById('admin-list-running-text');
-                
+
                 let texts = [];
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { const data = child.val(); data.id = child.key; texts.push(data); }); 
+                if(snapshot.exists()) {
+                    snapshot.forEach(child => { const data = child.val(); data.id = child.key; texts.push(data); });
                 }
                 texts.sort((a,b) => b.timestamp - a.timestamp);
-
-                if(texts.length > 0) {
-                    if(publicContainer) publicContainer.classList.remove('hidden');
-                    
-                    const separator = '<span class="mx-6 text-navy-900/20 font-black flex items-center">///</span>';
-                    let combinedText = texts.map(t => t.isi).join(separator);
-                    
-                    if(combinedText.length < 150) {
-                        combinedText = [combinedText, combinedText, combinedText, combinedText, combinedText].join(separator);
-                    }
-                    combinedText += separator;
-
-                    if(content1 && content2) {
-                        content1.innerHTML = combinedText;
-                        content2.innerHTML = combinedText;
-                    }
-                } else {
-                    if(publicContainer) publicContainer.classList.add('hidden');
-                }
+                dataRunningTextAll = texts;
 
                 if(adminList) {
                     if(texts.length === 0) {
-                        adminList.innerHTML = '<p class="text-slate-500 text-sm text-center py-4">Tidak ada running text aktif saat ini.</p>';
+                        adminList.innerHTML = '<p class="text-slate-500 text-sm text-center py-4">Tidak ada pop up aktif saat ini.</p>';
                     } else {
                         let html = '';
                         texts.forEach(t => {
@@ -5181,6 +5217,15 @@
                         });
                         adminList.innerHTML = html;
                     }
+                }
+
+                // Munculkan pop up otomatis saat data pertama kali dimuat (=peserta/tamu baru
+                // membuka halaman), asalkan bukan sedang berada di panel Admin.
+                if(!infoPentingShownInitially) {
+                    infoPentingShownInitially = true;
+                    const viewAdminEl = document.getElementById('view-admin');
+                    const isAdminActive = viewAdminEl && !viewAdminEl.classList.contains('hidden');
+                    if(!isAdminActive) window.tampilkanInfoPenting();
                 }
             });
 
