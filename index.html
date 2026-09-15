@@ -1510,6 +1510,11 @@
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
         let dataPesertaAll = [];
         let dataAkunBidangAll = [];
+        // Ringkasan riwayat ujian CBT SELURUH peserta (bukan cuma peserta yang sedang login),
+        // dipakai di panel admin "Izin Kelas Kebakaran" untuk menampilkan keterangan kelas apa
+        // saja yang sudah pernah diselesaikan tiap peserta. Struktur:
+        // { [uid]: { [bidang - kelas]: { lulus: boolean, bestSkor: number, attempts: number } } }
+        let dataRiwayatSemuaPeserta = {};
         let dataModulAll = [];
         let modulBrowseState = { bidang: null, kelas: null };
         // Data "Info Pop Up Beranda" (dulu tampil sebagai running text berjalan, sekarang
@@ -4154,6 +4159,25 @@
            (tidak ada pemilihan bidang saat mendaftar). Kelas D selalu tampil otomatis aktif
            (tidak bisa diubah); Kelas C/B/A punya tombol Berikan Izin / Cabut Izin, dan badge
            "Menunggu" kalau peserta sudah mengajukan permintaan lewat layar terkunci di menu Materi. */
+        /* Bangun keterangan singkat "sudah menyelesaikan ujian CBT kelas apa saja" untuk satu
+           peserta, dipakai di panel admin "Izin Kelas Kebakaran". Mencakup SEMUA bidang/kelas
+           yang pernah diikuti peserta (tidak dibatasi Kebakaran saja), supaya admin punya
+           konteks lengkap sebelum memberi izin kelas berikutnya. */
+        window.ringkasanRiwayatUjianPeserta = function(uid) {
+            const perKelas = dataRiwayatSemuaPeserta[uid];
+            if (!perKelas || Object.keys(perKelas).length === 0) {
+                return `<span class="italic text-slate-400">Belum pernah mengikuti ujian CBT</span>`;
+            }
+            const badges = Object.keys(perKelas).sort().map(key => {
+                const r = perKelas[key];
+                const label = r.kelas || key;
+                const cls = r.lulus ? 'text-emerald-600' : 'text-amber-600';
+                const statusTxt = r.lulus ? 'Lulus' : 'Belum Lulus';
+                return `<span class="${cls} font-semibold">${escHtml(label)} &middot; ${statusTxt} (${r.bestSkor})</span>`;
+            });
+            return `Riwayat Ujian: ${badges.join(' &bull; ')}`;
+        };
+
         window.renderIzinKelasKebakaran = function() {
             const tbody = document.getElementById('admin-table-izin-kelas');
             if (!tbody) return;
@@ -4202,6 +4226,7 @@
                     <td class="px-6 py-3">
                         <p class="font-bold text-slate-900 text-sm">${escHtml(p.nama || '-')}</p>
                         <p class="text-[10px] text-slate-400">${escHtml(p.instansi || '-')} &bull; ${escHtml(p.email || '-')}</p>
+                        <p class="text-[10px] text-slate-500 mt-1 leading-relaxed">${window.ringkasanRiwayatUjianPeserta(p.id)}</p>
                     </td>
                     ${cells}
                 </tr>`;
@@ -4854,6 +4879,34 @@
             onValue(ref(db, pathVerifikasi), (snapshot) => {
                 rawVerifikasiSnap = snapshot;
                 window.renderVerifikasiUI();
+            });
+
+            // Riwayat ujian CBT SELURUH peserta (dipakai panel admin "Izin Kelas Kebakaran"
+            // untuk menampilkan keterangan kelas apa saja yang sudah diselesaikan tiap peserta).
+            // "Lulus" bersifat sticky: begitu pernah lulus di suatu kelas, status tetap tercatat
+            // Lulus walau ada percobaan lain yang gagal; skor terbaik yang ditampilkan.
+            onValue(ref(db, pathRiwayat), (snapshot) => {
+                dataRiwayatSemuaPeserta = {};
+                if (snapshot.exists()) {
+                    snapshot.forEach(uidSnap => {
+                        const perKelas = {};
+                        uidSnap.forEach(attemptSnap => {
+                            const att = attemptSnap.val();
+                            if (!att) return;
+                            const bidangAtt = att.bidang && att.bidang !== '-' ? att.bidang : '';
+                            const kelasAtt = att.kelas && att.kelas !== '-' ? att.kelas : (att.kategori || 'Umum');
+                            const key = bidangAtt ? `${bidangAtt} - ${kelasAtt}` : kelasAtt;
+                            const skor = Number(att.skor) || 0;
+                            const lulus = att.status === 'Lulus' || skor >= 70;
+                            if (!perKelas[key]) perKelas[key] = { lulus: false, bestSkor: 0, attempts: 0, bidang: bidangAtt, kelas: kelasAtt };
+                            perKelas[key].attempts++;
+                            if (skor > perKelas[key].bestSkor) perKelas[key].bestSkor = skor;
+                            if (lulus) perKelas[key].lulus = true;
+                        });
+                        dataRiwayatSemuaPeserta[uidSnap.key] = perKelas;
+                    });
+                }
+                window.renderIzinKelasKebakaran();
             });
 
             onValue(ref(db, pathKategori), (snapshot) => {
