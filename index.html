@@ -300,6 +300,16 @@
                 </div>
             </section>
 
+            <!-- ============ TUTORIAL PENGGUNAAN WEBSITE (video panduan singkat) ============ -->
+            <section id="tutorial-video" class="reveal">
+                <div class="mb-5">
+                    <span class="text-[10px] font-extrabold text-safety-500 uppercase tracking-widest">Panduan Singkat</span>
+                    <h2 class="text-xl font-extrabold text-slate-900">Tutorial Penggunaan RuangK3</h2>
+                    <p class="text-xs text-slate-500 mt-1">Tonton video panduan singkat berikut sebelum mulai menggunakan portal ini.</p>
+                </div>
+                <div id="tutorial-video-list" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+            </section>
+
             <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 reveal">
                 <div class="lg:col-span-2 space-y-6">
                     <div class="flex justify-between items-center">
@@ -662,6 +672,17 @@
             <div class="p-4 sm:p-5 border-t border-slate-100 shrink-0 bg-slate-50">
                 <button class="btn-close-modal w-full py-3 bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm rounded-xl transition-colors">Saya Mengerti</button>
             </div>
+        </div>
+
+        <!-- Modal Pemutar Video Tutorial (dipanggil dari kartu "Tutorial Penggunaan RuangK3"
+             di halaman Beranda). Elemen <video> disuntikkan lewat JS saat dibuka, dan
+             dihentikan/direset otomatis saat modal ditutup (lihat window.closeModal). -->
+        <div id="modal-tutorial-video" class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl hidden relative flex-col max-h-[90vh] overflow-hidden z-[1050]">
+            <div class="flex justify-between items-center px-5 sm:px-6 py-4 border-b border-slate-100 shrink-0">
+                <h3 id="modal-tutorial-video-title" class="font-extrabold text-base sm:text-lg text-slate-900 pr-8">Tutorial</h3>
+                <button class="btn-close-modal text-slate-400 hover:text-slate-800 bg-slate-100 p-2 rounded-full transition-colors shrink-0">✕</button>
+            </div>
+            <div id="modal-tutorial-video-wrap" class="p-4 sm:p-5 bg-slate-950 overflow-y-auto"></div>
         </div>
 
         <!-- Modal Login Peserta -->
@@ -3127,15 +3148,74 @@
             }
         };
         
-        window.closeModal = function() { 
-            if(overlay) overlay.classList.add('hidden'); 
+        window.closeModal = function() {
+            if(overlay) overlay.classList.add('hidden');
             document.querySelectorAll('#modal-overlay > div').forEach(el => {
                 el.classList.remove('flex');
                 el.classList.add('hidden');
             });
+            // Hentikan pemutaran video (kalau ada) supaya suara tidak tetap berjalan di
+            // belakang layar setelah modal (mis. modal-tutorial-video) ditutup.
+            document.querySelectorAll('#modal-overlay video').forEach(v => { try { v.pause(); v.currentTime = 0; } catch(e) {} });
         };
-        
+
         document.querySelectorAll('.btn-close-modal').forEach(btn => btn.addEventListener('click', window.closeModal));
+
+        /* ============ TUTORIAL PENGGUNAAN WEBSITE (video panduan singkat di Beranda) ============
+           Daftar video tutorial bersifat statis (dikelola lewat kode, bukan lewat panel admin).
+           File video-nya sendiri disimpan sebagai aset statis di repo (folder "video-tutorial/",
+           sejajar dengan index.html), diputar langsung lewat tag <video> saat kartu diklik. */
+        const DATA_TUTORIAL_VIDEO = [
+            {
+                id: 'pendaftaran-akun',
+                judul: 'Cara Mendaftar Akun Peserta',
+                deskripsi: 'Panduan langkah demi langkah membuat akun peserta baru di RuangK3.',
+                src: 'video-tutorial/tutorial-pendaftaran-akun.mp4',
+                emoji: '📝'
+            },
+            {
+                id: 'ujian-cbt-kebakaran',
+                judul: 'Cara Mengerjakan Ujian CBT Kebakaran',
+                deskripsi: 'Panduan mengikuti Simulasi CBT untuk sertifikasi bidang Kebakaran.',
+                src: 'video-tutorial/tutorial-ujian-cbt-kebakaran.mp4',
+                emoji: '🔥'
+            }
+        ];
+
+        window.renderTutorialVideos = function() {
+            const container = document.getElementById('tutorial-video-list');
+            if (!container) return;
+            container.innerHTML = DATA_TUTORIAL_VIDEO.map(t => `
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer group tutorial-video-card" data-tutorial-id="${escHtml(t.id)}">
+                    <div class="relative w-full aspect-video bg-gradient-to-br from-navy-900 via-navy-800 to-safety-600 flex items-center justify-center overflow-hidden">
+                        <span class="text-4xl drop-shadow-lg">${t.emoji}</span>
+                        <div class="absolute inset-0 bg-navy-950/10 group-hover:bg-navy-950/40 flex items-center justify-center transition-colors">
+                            <div class="w-14 h-14 rounded-full bg-safety-400 text-navy-900 flex items-center justify-center font-bold text-lg pl-1 shadow-lg group-hover:scale-110 transition-transform">▶</div>
+                        </div>
+                    </div>
+                    <div class="p-4 space-y-1">
+                        <h3 class="font-bold text-sm text-slate-900 group-hover:text-safety-600 transition-colors">${escHtml(t.judul)}</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">${escHtml(t.deskripsi)}</p>
+                    </div>
+                </div>`).join('');
+            container.querySelectorAll('.tutorial-video-card').forEach(card => {
+                card.addEventListener('click', () => window.putarTutorialVideo(card.getAttribute('data-tutorial-id')));
+            });
+        };
+
+        window.putarTutorialVideo = function(id) {
+            const t = DATA_TUTORIAL_VIDEO.find(x => x.id === id);
+            if (!t) return;
+            const titleEl = document.getElementById('modal-tutorial-video-title');
+            if (titleEl) titleEl.innerText = t.judul;
+            const wrap = document.getElementById('modal-tutorial-video-wrap');
+            if (wrap) {
+                wrap.innerHTML = `<video src="${t.src}" controls autoplay playsinline controlsList="nodownload noremoteplayback noplaybackrate" disablePictureInPicture disableRemotePlayback class="w-full max-h-[70vh] rounded-xl bg-black"></video>`;
+            }
+            window.openModal('modal-tutorial-video');
+        };
+
+        window.renderTutorialVideos();
 
         const mobileMenu = document.getElementById('mobile-menu');
         document.getElementById('mobile-menu-button')?.addEventListener('click', () => { 
