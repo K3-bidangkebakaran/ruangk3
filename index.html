@@ -1354,6 +1354,7 @@
                                         <label for="input-soal-gambar" class="flex items-center justify-center w-full px-3 py-2 border border-dashed border-slate-300 rounded-lg text-xs text-slate-500 cursor-pointer hover:bg-slate-50 hover:border-safety-400 transition-colors text-center">
                                             <span id="label-nama-file-soal">Klik untuk upload gambar pertanyaan (jika ada)</span>
                                         </label>
+                                        <p class="text-[10px] text-slate-400 mt-1">Atau langsung tempel gambar yang sudah dicopy (Ctrl+V / Cmd+V) di halaman ini.</p>
                                         <input type="file" id="input-soal-gambar" accept="image/*" class="hidden">
                                     </div>
                                     <div class="space-y-2">
@@ -3727,6 +3728,38 @@
         }
         document.getElementById('btn-hapus-gambar-soal')?.addEventListener('click', () => {
             window.resetGambarSoalUI();
+        });
+
+        /* Izinkan admin menempel (paste) gambar dari clipboard langsung ke form Gambar Soal,
+           tanpa harus klik upload & memilih file lewat dialog. Aktif HANYA saat panel admin
+           "Kelola Bank Soal" sedang terbuka, dan HANYA kalau isi clipboard benar-benar berupa
+           gambar -- supaya paste teks biasa ke field lain (di panel manapun) tidak terganggu
+           sama sekali. */
+        document.addEventListener('paste', function(e) {
+            const panelSoal = document.getElementById('admin-panel-soal');
+            // Cek juga status "aktif" tombol nav-nya (bukan cuma class hidden di panelnya),
+            // karena class hidden pada panel admin-utama-only sempat dilepas otomatis oleh
+            // window.setupAdminUI() saat login (untuk urusan hak akses), sebelum admin benar-benar
+            // mengklik menu "Kelola Bank Soal" -- jadi class hidden saja belum tentu berarti
+            // panel ini yang sedang aktif dilihat admin.
+            const navBtnSoal = document.querySelector('.admin-nav-btn[data-target="admin-panel-soal"]');
+            const panelSoalAktif = panelSoal && !panelSoal.classList.contains('hidden') && navBtnSoal && navBtnSoal.classList.contains('bg-safety-500');
+            if (!panelSoalAktif) return;
+            if (!e.clipboardData || !e.clipboardData.items) return;
+            let imageFile = null;
+            for (const item of e.clipboardData.items) {
+                if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
+                    imageFile = item.getAsFile();
+                    break;
+                }
+            }
+            if (!imageFile) return;
+            e.preventDefault();
+            if (labelGambarSoal) labelGambarSoal.innerText = "Memproses gambar dari clipboard...";
+            window.compressImage(imageFile, 700, 700, 0.75, function(dataUrl) {
+                window.tampilkanPreviewGambarSoal(dataUrl);
+                if (typeof window.showToast === 'function') window.showToast('Gambar dari clipboard berhasil ditempel.', 'success');
+            });
         });
 
         /* ================= UPLOAD PDF UNTUK MODUL MATERI (disimpan sebagai base64 di Realtime Database) =================
