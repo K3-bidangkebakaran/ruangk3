@@ -2394,14 +2394,30 @@
             //    yang hanya terbaca kalau kategorinya "Kelas D (Petugas Peran Kebakaran)"
             //    persis: sekarang soal yang kategorinya cuma "Kelas D" saja, atau cuma
             //    "Petugas Peran Kebakaran" saja (tanpa kata "Kelas D"), ikut masuk juga.
+            //
+            //    PERBAIKAN (soal lama hilang saat ujian, walau terlihat banyak di Bank Soal):
+            //    sebagian besar soal lama TERNYATA disimpan dengan kategori HANYA nama kelasnya
+            //    saja (mis. "Kelas D"), tanpa bidang sama sekali (bukan "Kebakaran - Kelas D...").
+            //    Sebelumnya soal seperti ini otomatis GUGUR di kriteria "sameBidang" (kategorinya
+            //    tidak diawali "kebakaran"), dan fallback #2 di bawah (yang mengabaikan bidang)
+            //    baru jalan kalau pool-nya BENAR-BENAR KOSONG -- jadi begitu ada 1-2 soal saja
+            //    yang kebetulan tertulis lengkap "Kebakaran - Kelas D ...", puluhan soal Kelas D
+            //    versi lama itu tetap tidak pernah ikut ditampilkan ke peserta. Sekarang soal yang
+            //    kategorinya murni nama kelas saja (tanpa bidang & tanpa tanda pemisah " - ") tetap
+            //    dihitung asal nama kelasnya jelas cocok, walau bidang-nya tidak pernah diisi.
             let pool = bank.filter(q => {
                 const kat = katOf(q);
+                const kategoriTanpaBidang = !q.bidang && !String(q.kategori || '').includes(' - ');
                 const sameBidang = kat.startsWith(bidNorm) || window.normKat(q.bidang) === bidNorm;
-                if (!sameBidang) return false;
-                if (kat === katNorm) return true;
-                if (klsKode && window.kodeKelas(kat) === klsKode) return true;
-                if (klsNorm && (kat.includes(klsNorm) || window.normKat(q.kelas) === klsNorm)) return true;
-                if (klsVarian.length && klsVarian.some(v => v && (kat.includes(v) || window.normKat(q.kelas).includes(v)))) return true;
+                const kelasCocok = (klsKode && window.kodeKelas(kat) === klsKode)
+                    || (klsNorm && (kat.includes(klsNorm) || window.normKat(q.kelas) === klsNorm))
+                    || (klsVarian.length && klsVarian.some(v => v && (kat.includes(v) || window.normKat(q.kelas).includes(v))));
+
+                if (sameBidang) {
+                    if (kat === katNorm) return true;
+                    return kelasCocok;
+                }
+                if (kategoriTanpaBidang && kelasCocok) return true;
                 return false;
             });
 
