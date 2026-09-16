@@ -3076,26 +3076,29 @@
             const uiReviewList = document.getElementById('ui-review-list');
             if(uiReviewList) uiReviewList.innerHTML = uiReviewHtml;
 
-            if(currentUser && currentUser.uid) {
-                try {
-                    await update(ref(db, `${pathPeserta}/${currentUser.uid}`), { 
-                        skorUjian: finalScore, 
-                        statusKelulusan: isLulus ? 'Lulus' : 'Tidak Lulus', 
-                        tglUjian: Date.now() 
-                    });
-                    await update(ref(db, `${pathLiveCbt}/${currentUser.uid}`), { 
-                        skorLive: finalScore, 
-                        status: isLulus ? 'LULUS' : 'TIDAK LULUS', 
-                        lastUpdate: Date.now(), 
-                        soalTerjawab: total 
-                    });
-                } catch(e) {}
-            }
-            
-            // Simpan ke riwayat ujian peserta (per kelas)
-            if(currentUser && currentUser.uid) {
-                try {
-                    await push(ref(db, `${pathRiwayat}/${currentUser.uid}`), {
+            // ------------------------------------------------------------------------------
+            // Simpan hasil ujian ke server. Tampilan skor/pembahasan di atas SUDAH selesai
+            // dirender dari data lokal (activeQuizData/userAnswers) di titik ini -- jadi peserta
+            // TETAP melihat hasilnya walau langkah simpan-ke-server di bawah ini gagal karena
+            // sinyal internet lemot/putus. Supaya nilai TIDAK HILANG saat itu terjadi, backup
+            // lokal (localStorage) baru dihapus SETELAH benar-benar berhasil tersimpan ke server;
+            // kalau gagal, dicoba lagi otomatis di belakang layar (lihat window.retryHasilUjianPending
+            // di bawah) -- baik saat koneksi pulih (event 'online') maupun saat peserta buka lagi
+            // halaman ini nanti (dicek ulang tiap login), tanpa peserta perlu mengulang ujian.
+            if (currentUser && currentUser.uid) {
+                const hasilPayload = {
+                    pesertaUpdate: {
+                        skorUjian: finalScore,
+                        statusKelulusan: isLulus ? 'Lulus' : 'Tidak Lulus',
+                        tglUjian: Date.now()
+                    },
+                    liveCbtUpdate: {
+                        skorLive: finalScore,
+                        status: isLulus ? 'LULUS' : 'TIDAK LULUS',
+                        lastUpdate: Date.now(),
+                        soalTerjawab: total
+                    },
+                    riwayat: {
                         kategori: currentExamMeta ? currentExamMeta.kategori : (activeQuizData[0] ? activeQuizData[0].kategori : 'Umum'),
                         bidang: currentExamMeta ? currentExamMeta.bidang : '-',
                         kelas: currentExamMeta ? currentExamMeta.kelas : '-',
@@ -3116,13 +3119,92 @@
                             pembahasan: q.pembahasan || ''
                         })),
                         timestamp: Date.now()
+                    }
+                };
 
-                    });
-                } catch(e) {}
+                const berhasil = await window.simpanHasilUjianKeServer(currentUser.uid, hasilPayload);
+
+                // Sesi ujian ini sudah SELESAI (bukan lagi "sedang berlangsung"), jadi backup
+                // resume-nya tidak relevan lagi apa pun hasilnya -- dihapus supaya peserta tidak
+                // ke-arahkan balik ke layar mengerjakan soal kalau membuka halaman ini lagi.
+                localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
+
+                if (berhasil) {
+                    // Kalau sebelumnya sempat ada hasil ujian LAIN yang masih tertunda (gagal
+                    // tersimpan), bersihkan juga penandanya di sini supaya tidak tertimpa.
+                    localStorage.removeItem(`ruangk3_pending_hasil_${currentUser.uid}`);
+                } else {
+                    try {
+                        localStorage.setItem(`ruangk3_pending_hasil_${currentUser.uid}`, JSON.stringify({ hasilPayload, savedAt: Date.now(), percobaan: 0 }));
+                    } catch (e) {}
+                    window.showToast("Koneksi terputus saat menyimpan nilai. Nilai Anda tetap aman di perangkat ini dan akan otomatis disimpan ulang begitu koneksi internet pulih.", "warning");
+                    window.jadwalkanRetryHasilUjian(currentUser.uid, 4000);
+                }
+            } else {
+                localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
             }
-
-            localStorage.removeItem(`ruangk3_exam_${currentUser.uid}`);
         };
+
+        // Melakukan 3 penulisan hasil ujian (peserta, live_cbt, riwayat_ujian) sekaligus.
+        // Mengembalikan true HANYA kalau SEMUANYA berhasil -- kalau salah satu gagal (mis.
+        // koneksi terputus di tengah jalan), dianggap gagal semua supaya window.finishQuiz()
+        // TIDAK menghapus backup lokalnya (lebih aman menyimpan ulang semuanya daripada
+        // meninggalkan data yang tersimpan sebagian di server).
+        window.simpanHasilUjianKeServer = async function(uid, hasilPayload) {
+            try {
+                await update(ref(db, `${pathPeserta}/${uid}`), hasilPayload.pesertaUpdate);
+                await update(ref(db, `${pathLiveCbt}/${uid}`), hasilPayload.liveCbtUpdate);
+                await push(ref(db, `${pathRiwayat}/${uid}`), hasilPayload.riwayat);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        };
+
+        // Coba simpan ulang hasil ujian yang sempat gagal tersimpan (ditandai di localStorage
+        // saat window.finishQuiz gagal menghubungi server). Dipanggil dari 3 pemicu: (1) retry
+        // terjadwal otomatis setelah kegagalan pertama, (2) begitu browser mendeteksi koneksi
+        // pulih (event 'online'), (3) setiap kali peserta login/membuka halaman ini lagi -- supaya
+        // hasil ujian tetap tersimpan walau peserta menutup halaman sebelum retry sempat berhasil.
+        window.retryHasilUjianPending = async function(uid) {
+            if (!uid) return;
+            const key = `ruangk3_pending_hasil_${uid}`;
+            let state;
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return;
+                state = JSON.parse(raw);
+            } catch (e) { return; }
+            if (!state || !state.hasilPayload) { localStorage.removeItem(key); return; }
+
+            const berhasil = await window.simpanHasilUjianKeServer(uid, state.hasilPayload);
+            if (berhasil) {
+                localStorage.removeItem(key);
+                if (currentUser && currentUser.uid === uid) {
+                    window.showToast("Koneksi pulih -- nilai ujian Anda yang sempat tertunda berhasil disimpan.", "success");
+                }
+            } else {
+                // Batasi jumlah percobaan otomatis (backoff) supaya tidak membanjiri koneksi yang
+                // memang sedang bermasalah -- tetap akan dicoba lagi saat event 'online' atau saat
+                // peserta login berikutnya walau batas ini sudah tercapai.
+                const percobaanBaru = (state.percobaan || 0) + 1;
+                try { localStorage.setItem(key, JSON.stringify({ ...state, percobaan: percobaanBaru })); } catch (e) {}
+                if (percobaanBaru < 5) {
+                    window.jadwalkanRetryHasilUjian(uid, Math.min(60000, 4000 * Math.pow(2, percobaanBaru)));
+                }
+            }
+        };
+
+        window.jadwalkanRetryHasilUjian = function(uid, delayMs) {
+            setTimeout(() => { window.retryHasilUjianPending(uid); }, delayMs);
+        };
+
+        // Begitu browser mendeteksi koneksi internet kembali normal, langsung coba simpan ulang
+        // (tidak menunggu jadwal backoff berikutnya) -- ini yang membuat pemulihannya terasa cepat
+        // buat peserta walau sinyalnya sempat putus-nyambung berkali-kali.
+        window.addEventListener('online', () => {
+            if (currentUser && currentUser.uid) window.retryHasilUjianPending(currentUser.uid);
+        });
 
         window.downloadPDF = function() {
             const originalElement = document.getElementById('pdf-content-container');
@@ -5774,6 +5856,11 @@
                             document.getElementById('modul-locked')?.classList.add('hidden');
                             document.getElementById('modul-list')?.classList.remove('hidden');
                             window.checkAndResumeExam();
+                            // Kalau ada hasil ujian yang sempat gagal tersimpan saat koneksi
+                            // peserta bermasalah (lihat window.finishQuiz), coba simpan ulang di
+                            // sini juga -- supaya tetap tersinkron walau peserta sempat menutup
+                            // halaman sebelum retry otomatis sebelumnya berhasil.
+                            window.retryHasilUjianPending(user.uid);
                             window.listenRiwayatUjian(user.uid);
                             window.renderModulBrowse();
                             window.renderSilabusHome();
