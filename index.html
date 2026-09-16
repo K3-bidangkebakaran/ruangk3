@@ -1339,9 +1339,10 @@
                                         </div>
                                         <div>
                                             <label class="block text-xs font-semibold text-slate-700 mb-1">Kelas</label>
-                                            <select id="input-kelas-soal" required class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none bg-white text-sm">
-                                                <option value="" disabled selected>Pilih Bidang Dulu</option>
-                                            </select>
+                                            <div id="input-kelas-soal-wrap" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm max-h-32 overflow-y-auto space-y-1.5">
+                                                <p class="text-xs text-slate-400 italic">Pilih Bidang Dulu</p>
+                                            </div>
+                                            <p class="text-[10px] text-slate-400 mt-1">Saat menambah soal baru, boleh centang lebih dari 1 kelas supaya soal yang sama otomatis tersimpan untuk semua kelas itu (tidak perlu input ulang).</p>
                                         </div>
                                     </div>
                                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Pertanyaan</label><textarea id="input-tanya" required rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none text-sm"></textarea></div>
@@ -4497,8 +4498,32 @@
         };
 
         document.getElementById('input-bidang-modul')?.addEventListener('change', () => window.updateKelasDropdown('input-bidang-modul', 'input-kelas-modul'));
-        document.getElementById('input-bidang-soal')?.addEventListener('change', () => window.updateKelasDropdown('input-bidang-soal', 'input-kelas-soal'));
+        document.getElementById('input-bidang-soal')?.addEventListener('change', () => window.updateKelasCheckboxSoal());
         document.getElementById('select-ujian-bidang')?.addEventListener('change', () => window.updateKelasDropdown('select-ujian-bidang', 'select-ujian-kelas'));
+
+        /* Kelas pada form soal berupa CHECKBOX (bukan dropdown biasa) supaya satu soal yang
+           sama bisa langsung disimpan untuk beberapa kelas sekaligus saat menambah soal baru
+           -- admin tidak perlu mengetik ulang pertanyaan yang sama satu per satu untuk tiap
+           kelas. Di balik layar tetap disimpan sebagai beberapa data soal terpisah (satu per
+           kelas), sama seperti struktur data sebelumnya -- supaya tidak mengubah logika
+           pencocokan soal ujian (window.buildSoalUjian) yang sudah ada. */
+        window.updateKelasCheckboxSoal = function() {
+            const bidang = document.getElementById('input-bidang-soal')?.value;
+            const wrap = document.getElementById('input-kelas-soal-wrap');
+            if (!wrap) return;
+            if (!bidang) {
+                wrap.innerHTML = `<p class="text-xs text-slate-400 italic">Pilih Bidang Dulu</p>`;
+                return;
+            }
+            if (bidang === 'Umum') {
+                wrap.innerHTML = `<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" class="kelas-soal-checkbox rounded border-slate-300 text-safety-500 focus:ring-safety-400" value="Umum" checked><span>Umum</span></label>`;
+                return;
+            }
+            const filteredClasses = dataKategoriAll.filter(k => (k.bidang || 'Lainnya') === bidang);
+            wrap.innerHTML = filteredClasses.length > 0
+                ? filteredClasses.map(k => `<label class="flex items-center space-x-2 cursor-pointer hover:text-safety-600"><input type="checkbox" class="kelas-soal-checkbox rounded border-slate-300 text-safety-500 focus:ring-safety-400" value="${escHtml(k.nama)}"><span>${escHtml(k.nama)}</span></label>`).join('')
+                : `<p class="text-xs text-slate-400 italic">Tidak ada kelas untuk bidang ini</p>`;
+        };
 
         document.getElementById('form-modul')?.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -4572,14 +4597,19 @@
             const idEditSoal = document.getElementById('input-soal-id').value;
             
             const bidang = document.getElementById('input-bidang-soal').value;
-            const kelas = document.getElementById('input-kelas-soal').value;
-            if(!bidang || !kelas) { 
-                btn.innerText = ori; 
-                return window.showToast("Pilih Bidang dan Kelas K3!", "warning"); 
+            const kelasTerpilih = Array.from(document.querySelectorAll('.kelas-soal-checkbox:checked')).map(cb => cb.value);
+            if(!bidang || kelasTerpilih.length === 0) {
+                btn.innerText = ori;
+                return window.showToast("Pilih Bidang dan minimal 1 Kelas K3!", "warning");
             }
-            
-            const dataToSave = {
-                kategori: `${bidang} - ${kelas}`,
+            // Mengedit soal yang sudah ada tetap 1 kelas per soal (record-nya cuma satu) --
+            // memilih beberapa kelas sekaligus hanya berlaku saat MENAMBAH soal baru.
+            if(idEditSoal && kelasTerpilih.length > 1) {
+                btn.innerText = ori;
+                return window.showToast("Saat mengedit soal yang sudah ada, pilih hanya 1 kelas.", "warning");
+            }
+
+            const dataBase = {
                 pertanyaan: document.getElementById('input-tanya').value,
                 gambarUrl: window.compressedBase64Soal || null,
                 opsi: [
@@ -4593,15 +4623,21 @@
 
             try {
                 if(idEditSoal) {
+                    const dataToSave = { ...dataBase, kategori: `${bidang} - ${kelasTerpilih[0]}` };
                     await update(ref(db, `${pathSoal}/${idEditSoal}`), dataToSave);
                     window.showToast("Soal diperbarui.", "success");
                     document.getElementById('btn-batal-soal')?.click();
                 } else {
-                    dataToSave.timestamp = Date.now();
-                    await push(ref(db, pathSoal), dataToSave);
+                    // Simpan soal yang SAMA untuk SETIAP kelas yang dicentang -- di database
+                    // tetap jadi beberapa data soal terpisah (satu per kelas), tapi admin cukup
+                    // isi form & pilih kelasnya sekali saja.
+                    for (const kelas of kelasTerpilih) {
+                        await push(ref(db, pathSoal), { ...dataBase, kategori: `${bidang} - ${kelas}`, timestamp: Date.now() });
+                    }
                     e.target.reset();
                     window.resetGambarSoalUI();
-                    window.showToast("Soal tersimpan.", "success");
+                    window.updateKelasCheckboxSoal();
+                    window.showToast(kelasTerpilih.length > 1 ? `Soal tersimpan untuk ${kelasTerpilih.length} kelas sekaligus.` : "Soal tersimpan.", "success");
                 }
             } catch(err) {
                 window.showToast("Gagal menyimpan.", "error");
@@ -4615,6 +4651,7 @@
             document.getElementById('btn-batal-soal').classList.add('hidden');
             document.getElementById('btn-submit-soal').innerHTML = "Simpan Soal";
             window.resetGambarSoalUI();
+            window.updateKelasCheckboxSoal();
         };
 
         window.editSoal = function(id) {
@@ -4628,10 +4665,10 @@
             let kelasVal = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
             
             const selBidang = document.getElementById('input-bidang-soal');
-            if(selBidang) { selBidang.value = bidangVal; window.updateKelasDropdown('input-bidang-soal', 'input-kelas-soal'); }
-            
-            const selKelas = document.getElementById('input-kelas-soal');
-            if(selKelas) { selKelas.value = kelasVal; }
+            if(selBidang) { selBidang.value = bidangVal; window.updateKelasCheckboxSoal(); }
+
+            // Mengedit soal yang sudah ada: centang HANYA kelas milik soal ini (1 kelas per soal).
+            document.querySelectorAll('.kelas-soal-checkbox').forEach(cb => { cb.checked = (cb.value === kelasVal); });
 
             document.getElementById('input-tanya').value = data.pertanyaan;
             window.tampilkanPreviewGambarSoal(data.gambarUrl || null);
