@@ -588,6 +588,18 @@
                     </div>
                 </div>
 
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0">Filter Bidang &amp; Kelas:</p>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <select id="filter-live-bidang" class="w-1/2 sm:w-48 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                            <option value="">Semua Bidang</option>
+                        </select>
+                        <select id="filter-live-kelas" class="w-1/2 sm:w-48 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                            <option value="">Semua Kelas</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -997,11 +1009,24 @@
                 <!-- Hasil Ujian -->
                 <div id="admin-panel-dashboard" class="admin-panel hidden">
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="p-6 border-b border-slate-200 bg-slate-50"><h3 class="text-lg font-bold text-slate-900">Rekap Nilai Ujian Peserta</h3></div>
+                        <div class="p-6 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Rekap Nilai Ujian Peserta</h3>
+                                <p class="text-xs text-slate-500 mt-1 max-w-lg">Pilih Bidang &amp; Kelas untuk hanya menampilkan peserta yang menyelesaikan ujian di kelas tersebut, supaya tidak tercampur dengan peserta dari bidang/kelas lain.</p>
+                            </div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <select id="filter-nilai-bidang" class="w-1/2 sm:w-44 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                    <option value="">Semua Bidang</option>
+                                </select>
+                                <select id="filter-nilai-kelas" class="w-1/2 sm:w-44 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                    <option value="">Semua Kelas</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Nama Peserta</th><th class="px-6 py-4 font-semibold">Instansi</th><th class="px-6 py-4 font-semibold">Status / Nilai Akhir</th></tr></thead>
-                                <tbody id="admin-table-peserta" class="divide-y divide-slate-100 bg-white"><tr><td colspan="3" class="text-center py-8 text-slate-500">Memuat data...</td></tr></tbody>
+                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Nama Peserta</th><th class="px-6 py-4 font-semibold">Instansi</th><th class="px-6 py-4 font-semibold">Bidang &amp; Kelas</th><th class="px-6 py-4 font-semibold">Status / Nilai Akhir</th></tr></thead>
+                                <tbody id="admin-table-peserta" class="divide-y divide-slate-100 bg-white"><tr><td colspan="4" class="text-center py-8 text-slate-500">Memuat data...</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -1331,6 +1356,7 @@
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Tambah / Edit Soal</h3>
                                 <form id="form-soal" class="space-y-4">
                                     <input type="hidden" id="input-soal-id" value="">
+                                    <input type="hidden" id="input-soal-kelas-asli" value="">
                                     <div class="grid grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-xs font-semibold text-slate-700 mb-1">Bidang K3</label>
@@ -1342,7 +1368,7 @@
                                             <div id="input-kelas-soal-wrap" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm max-h-32 overflow-y-auto space-y-1.5">
                                                 <p class="text-xs text-slate-400 italic">Pilih Bidang Dulu</p>
                                             </div>
-                                            <p class="text-[10px] text-slate-400 mt-1">Saat menambah soal baru, boleh centang lebih dari 1 kelas supaya soal yang sama otomatis tersimpan untuk semua kelas itu (tidak perlu input ulang).</p>
+                                            <p class="text-[10px] text-slate-400 mt-1">Boleh centang lebih dari 1 kelas -- baik saat menambah soal baru, maupun saat mengedit soal yang sudah ada (soal ini otomatis disalin juga ke kelas tambahan yang dicentang, tanpa perlu diketik ulang).</p>
                                         </div>
                                     </div>
                                     <div><label class="block text-xs font-semibold text-slate-700 mb-1">Pertanyaan</label><textarea id="input-tanya" required rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none text-sm"></textarea></div>
@@ -1538,6 +1564,10 @@
         // saja yang sudah pernah diselesaikan tiap peserta. Struktur:
         // { [uid]: { [bidang - kelas]: { lulus: boolean, bestSkor: number, attempts: number } } }
         let dataRiwayatSemuaPeserta = {};
+        // Salinan record live_cbt paling akhir dari Firebase (mentah, sebelum difilter Bidang/Kelas),
+        // disimpan supaya window.renderLiveCbtTable() bisa dipanggil ulang saat filter berubah tanpa
+        // menunggu update data baru dari server.
+        let dataLiveCbtAll = [];
         let dataModulAll = [];
         let modulBrowseState = { bidang: null, kelas: null };
         // Data "Info Pop Up Beranda" (dulu tampil sebagai running text berjalan, sekarang
@@ -4492,10 +4522,35 @@
             }
             
             const filteredClasses = dataKategoriAll.filter(k => (k.bidang || 'Lainnya') === bidang);
-            kelasSelect.innerHTML = filteredClasses.length > 0 
+            kelasSelect.innerHTML = filteredClasses.length > 0
                 ? filteredClasses.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('')
                 : `<option value="" disabled selected>Tidak ada kelas</option>`;
         };
+
+        // Versi khusus untuk dropdown FILTER (panel admin "Kelola Hasil Ujian" & menu "Live CBT"):
+        // selalu punya opsi "Semua Kelas" di awal supaya bisa dikosongkan lagi (beda dengan
+        // window.updateKelasDropdown di atas yang dipakai form input dan wajib pilih 1 kelas).
+        window.updateKelasFilterDropdown = function(bidangSelectId, kelasSelectId) {
+            const bidang = document.getElementById(bidangSelectId)?.value || '';
+            const kelasSelect = document.getElementById(kelasSelectId);
+            if (!kelasSelect) return;
+
+            if (!bidang) {
+                kelasSelect.innerHTML = `<option value="">Semua Kelas</option>`;
+                return;
+            }
+            if (bidang === 'Umum') {
+                kelasSelect.innerHTML = `<option value="">Semua Kelas</option><option value="Umum">Umum</option>`;
+                return;
+            }
+            const filteredClasses = dataKategoriAll.filter(k => (k.bidang || 'Lainnya') === bidang);
+            kelasSelect.innerHTML = `<option value="">Semua Kelas</option>` + filteredClasses.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
+        };
+
+        document.getElementById('filter-nilai-bidang')?.addEventListener('change', () => { window.updateKelasFilterDropdown('filter-nilai-bidang', 'filter-nilai-kelas'); if (typeof window.renderRekapNilaiAdmin === 'function') window.renderRekapNilaiAdmin(); });
+        document.getElementById('filter-nilai-kelas')?.addEventListener('change', () => { if (typeof window.renderRekapNilaiAdmin === 'function') window.renderRekapNilaiAdmin(); });
+        document.getElementById('filter-live-bidang')?.addEventListener('change', () => { window.updateKelasFilterDropdown('filter-live-bidang', 'filter-live-kelas'); if (typeof window.renderLiveCbtTable === 'function') window.renderLiveCbtTable(); });
+        document.getElementById('filter-live-kelas')?.addEventListener('change', () => { if (typeof window.renderLiveCbtTable === 'function') window.renderLiveCbtTable(); });
 
         document.getElementById('input-bidang-modul')?.addEventListener('change', () => window.updateKelasDropdown('input-bidang-modul', 'input-kelas-modul'));
         document.getElementById('input-bidang-soal')?.addEventListener('change', () => window.updateKelasCheckboxSoal());
@@ -4602,12 +4657,6 @@
                 btn.innerText = ori;
                 return window.showToast("Pilih Bidang dan minimal 1 Kelas K3!", "warning");
             }
-            // Mengedit soal yang sudah ada tetap 1 kelas per soal (record-nya cuma satu) --
-            // memilih beberapa kelas sekaligus hanya berlaku saat MENAMBAH soal baru.
-            if(idEditSoal && kelasTerpilih.length > 1) {
-                btn.innerText = ori;
-                return window.showToast("Saat mengedit soal yang sudah ada, pilih hanya 1 kelas.", "warning");
-            }
 
             const dataBase = {
                 pertanyaan: document.getElementById('input-tanya').value,
@@ -4623,9 +4672,20 @@
 
             try {
                 if(idEditSoal) {
-                    const dataToSave = { ...dataBase, kategori: `${bidang} - ${kelasTerpilih[0]}` };
+                    // Mengedit soal yang sudah ada: tetap 1 record untuk kelas aslinya (di-update
+                    // di tempat), TAPI kalau admin juga mencentang kelas LAIN (di bidang yang sama),
+                    // soal yang sama otomatis disalin (push record baru) ke kelas tambahan itu --
+                    // supaya tidak perlu input ulang manual utk tambah soal ini ke kelas lain.
+                    const kelasAsli = document.getElementById('input-soal-kelas-asli')?.value || '';
+                    const kelasUntukRecordIni = kelasTerpilih.includes(kelasAsli) ? kelasAsli : kelasTerpilih[0];
+                    const kelasTambahan = kelasTerpilih.filter(k => k !== kelasUntukRecordIni);
+
+                    const dataToSave = { ...dataBase, kategori: `${bidang} - ${kelasUntukRecordIni}` };
                     await update(ref(db, `${pathSoal}/${idEditSoal}`), dataToSave);
-                    window.showToast("Soal diperbarui.", "success");
+                    for (const kelas of kelasTambahan) {
+                        await push(ref(db, pathSoal), { ...dataBase, kategori: `${bidang} - ${kelas}`, timestamp: Date.now() });
+                    }
+                    window.showToast(kelasTambahan.length > 0 ? `Soal diperbarui, dan disalin juga ke ${kelasTambahan.length} kelas lain.` : "Soal diperbarui.", "success");
                     document.getElementById('btn-batal-soal')?.click();
                 } else {
                     // Simpan soal yang SAMA untuk SETIAP kelas yang dicentang -- di database
@@ -4648,6 +4708,7 @@
         window.batalEditSoal = function() {
             document.getElementById('form-soal').reset();
             document.getElementById('input-soal-id').value = '';
+            document.getElementById('input-soal-kelas-asli').value = '';
             document.getElementById('btn-batal-soal').classList.add('hidden');
             document.getElementById('btn-submit-soal').innerHTML = "Simpan Soal";
             window.resetGambarSoalUI();
@@ -4655,19 +4716,21 @@
         };
 
         window.editSoal = function(id) {
-            const data = quizDataFromDB.find(q => q.id === id); 
+            const data = quizDataFromDB.find(q => q.id === id);
             if(!data) return;
-            document.getElementById('input-soal-id').value = data.id; 
-            
+            document.getElementById('input-soal-id').value = data.id;
+
             let kat = data.kategori || 'Umum - Umum';
             let parts = kat.split(' - ');
             let bidangVal = parts[0];
             let kelasVal = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
-            
+            document.getElementById('input-soal-kelas-asli').value = kelasVal;
+
             const selBidang = document.getElementById('input-bidang-soal');
             if(selBidang) { selBidang.value = bidangVal; window.updateKelasCheckboxSoal(); }
 
-            // Mengedit soal yang sudah ada: centang HANYA kelas milik soal ini (1 kelas per soal).
+            // Kelas milik soal ini tercentang lebih dulu; admin boleh tambah centang kelas LAIN
+            // (di bidang yang sama) supaya soal ini otomatis disalin juga ke kelas tambahan itu.
             document.querySelectorAll('.kelas-soal-checkbox').forEach(cb => { cb.checked = (cb.value === kelasVal); });
 
             document.getElementById('input-tanya').value = data.pertanyaan;
@@ -5057,6 +5120,7 @@
                     });
                 }
                 window.renderIzinKelasKebakaran();
+                window.renderRekapNilaiAdmin();
             });
 
             onValue(ref(db, pathKategori), (snapshot) => {
@@ -5120,26 +5184,59 @@
                 
                 const sBidangUjian = document.getElementById('select-ujian-bidang');
                 if(sBidangUjian) { const val = sBidangUjian.value; sBidangUjian.innerHTML = bidangOptions; if(val) sBidangUjian.value = val; }
+
+                // Opsi Bidang untuk filter "Kelola Hasil Ujian" (admin) & "Live CBT" (halaman utama) --
+                // selalu diawali opsi "Semua Bidang" supaya defaultnya tetap menampilkan semua peserta.
+                const bidangFilterOptions = `<option value="">Semua Bidang</option>` + uniqueBidang.map(b => `<option value="${b}">${b}</option>`).join('');
+                const sFilterNilaiBidang = document.getElementById('filter-nilai-bidang');
+                if(sFilterNilaiBidang) { const val = sFilterNilaiBidang.value; sFilterNilaiBidang.innerHTML = bidangFilterOptions; if(val) sFilterNilaiBidang.value = val; }
+                const sFilterLiveBidang = document.getElementById('filter-live-bidang');
+                if(sFilterLiveBidang) { const val = sFilterLiveBidang.value; sFilterLiveBidang.innerHTML = bidangFilterOptions; if(val) sFilterLiveBidang.value = val; }
             });
 
             onValue(ref(db, pathPeserta), (snapshot) => {
-                const tbodyAdmin = document.getElementById('admin-table-peserta');
-                if(tbodyAdmin) tbodyAdmin.innerHTML = '';
                 let countDaftar = 0; let countLulus = 0;
                 dataPesertaAll = [];
 
-                if(!snapshot.exists() && tbodyAdmin) {
-                    tbodyAdmin.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-500 italic text-sm">Belum ada data peserta.</td></tr>';
-                } else if (snapshot.exists()) {
+                if (snapshot.exists()) {
                     snapshot.forEach(childSnap => {
                         countDaftar++;
                         const data = childSnap.val();
                         dataPesertaAll.push({ id: childSnap.key, ...data });
+                        if (data.skorUjian && data.skorUjian !== '-') countLulus++;
+                    });
+                }
+                window.animateNumber('stat-total-pendaftar', countDaftar);
+                window.animateNumber('stat-total-lulus', countLulus);
+                window.renderAkunPeserta();
+                window.renderIzinKelasKebakaran();
+                window.renderRekapNilaiAdmin();
+            });
+
+            // Panel admin "Kelola Hasil Ujian": tanpa filter Bidang, tampilkan seperti semula (1 baris
+            // per peserta berdasarkan nilai ujian TERAKHIR mereka, apapun bidang/kelasnya). Begitu Bidang
+            // dipilih (opsional tambah Kelas), tabel beralih memakai riwayat_ujian (dataRiwayatSemuaPeserta)
+            // supaya hanya peserta yang benar-benar menyelesaikan ujian di Bidang & Kelas itu yang muncul --
+            // tidak tercampur dengan peserta dari bidang/kelas lain.
+            window.renderRekapNilaiAdmin = function() {
+                const tbody = document.getElementById('admin-table-peserta');
+                if (!tbody) return;
+
+                const filterBidang = document.getElementById('filter-nilai-bidang')?.value || '';
+                const filterKelas = document.getElementById('filter-nilai-kelas')?.value || '';
+
+                if (dataPesertaAll.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-500 italic text-sm">Belum ada data peserta.</td></tr>';
+                    return;
+                }
+
+                let rowsHtml = '';
+
+                if (!filterBidang) {
+                    dataPesertaAll.forEach(data => {
                         let skorText = 'Belum Ujian';
                         let colorSkor = 'bg-slate-100 text-slate-600';
-
                         if (data.skorUjian && data.skorUjian !== '-') {
-                            countLulus++;
                             if (data.statusKelulusan === 'Tidak Lulus') {
                                 skorText = `Tidak Lulus (${data.skorUjian})`;
                                 colorSkor = 'bg-red-100 text-red-800 font-bold border border-red-200';
@@ -5148,16 +5245,31 @@
                                 colorSkor = 'bg-green-100 text-green-800 font-bold border border-green-200';
                             }
                         }
-                        if(tbodyAdmin) {
-                            tbodyAdmin.innerHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
-                        }
+                        rowsHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="italic text-slate-400 text-xs">Semua Bidang</span></td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
                     });
+                } else {
+                    dataPesertaAll.forEach(data => {
+                        const perKelas = dataRiwayatSemuaPeserta[data.id] || {};
+                        Object.keys(perKelas).sort().forEach(key => {
+                            const r = perKelas[key];
+                            if ((r.bidang || '') !== filterBidang) return;
+                            if (filterKelas && (r.kelas || key) !== filterKelas) return;
+
+                            const skorText = r.lulus ? `Lulus (${r.bestSkor})` : `Belum Lulus (${r.bestSkor})`;
+                            const colorSkor = r.lulus ? 'bg-green-100 text-green-800 font-bold border border-green-200' : 'bg-amber-100 text-amber-800 font-bold border border-amber-200';
+                            const bidangKelasText = `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">${escHtml(r.bidang || filterBidang)} - ${escHtml(r.kelas || key)}</span>`;
+                            rowsHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3">${bidangKelasText}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
+                        });
+                    });
+
+                    if (!rowsHtml) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-500 italic text-sm">Belum ada peserta yang menyelesaikan ujian untuk Bidang &amp; Kelas ini.</td></tr>';
+                        return;
+                    }
                 }
-                window.animateNumber('stat-total-pendaftar', countDaftar);
-                window.animateNumber('stat-total-lulus', countLulus);
-                window.renderAkunPeserta();
-                window.renderIzinKelasKebakaran();
-            });
+
+                tbody.innerHTML = rowsHtml;
+            };
 
             onValue(ref(db, pathBerita), (snapshot) => {
                 const listPublic = document.getElementById('public-berita-container'); 
@@ -5216,30 +5328,52 @@
             });
 
             onValue(ref(db, pathLiveCbt), (snapshot) => {
-                const liveTable = document.getElementById('live-cbt-table-body'); 
-                if(!liveTable) return;
-                
-                const startOfToday = new Date(); 
-                startOfToday.setHours(0, 0, 0, 0); 
-                const todayMs = startOfToday.getTime();
-                
-                let liveRecords = [];
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { 
-                        const rec = child.val(); 
-                        rec.id = child.key; 
-                        if (rec.lastUpdate && rec.lastUpdate >= todayMs) { liveRecords.push(rec); } 
-                    }); 
+                dataLiveCbtAll = [];
+                if(snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        const rec = child.val();
+                        rec.id = child.key;
+                        dataLiveCbtAll.push(rec);
+                    });
                 }
+                window.renderLiveCbtTable();
+            });
+
+            // Menu "Live CBT" di halaman utama: dipisah jadi fungsi tersendiri supaya bisa dipanggil ulang
+            // saat admin/peserta mengganti filter Bidang & Kelas, tanpa menunggu update data baru dari
+            // server. Field rec.kategori disimpan sebagai "Bidang - Kelas" sejak peserta mulai ujian.
+            window.renderLiveCbtTable = function() {
+                const liveTable = document.getElementById('live-cbt-table-body');
+                if(!liveTable) return;
+
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const todayMs = startOfToday.getTime();
+
+                const filterBidang = document.getElementById('filter-live-bidang')?.value || '';
+                const filterKelas = document.getElementById('filter-live-kelas')?.value || '';
+
+                let liveRecords = (dataLiveCbtAll || []).filter(rec => {
+                    if (!rec.lastUpdate || rec.lastUpdate < todayMs) return false;
+                    if (!filterBidang) return true;
+                    const parts = (rec.kategori || '').split(' - ');
+                    const bidangRec = parts[0] || '';
+                    const kelasRec = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0] || '';
+                    if (bidangRec !== filterBidang) return false;
+                    if (filterKelas && kelasRec !== filterKelas) return false;
+                    return true;
+                });
                 liveRecords.sort((a,b) => (b.skorLive || 0) - (a.skorLive || 0) || (b.lastUpdate || 0) - (a.lastUpdate || 0));
 
-                let totalExamToday = liveRecords.length; 
-                let activeCount = 0; 
-                let passedCount = 0; 
+                let totalExamToday = liveRecords.length;
+                let activeCount = 0;
+                let passedCount = 0;
                 let highestScore = 0;
 
                 if(liveRecords.length === 0) {
-                    liveTable.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-slate-400 text-sm">Belum ada aktivitas Ujian Live CBT saat ini. Siswa yang sedang atau baru selesai ujian akan muncul di layar ini secara otomatis.</td></tr>`;
+                    liveTable.innerHTML = (filterBidang)
+                        ? `<tr><td colspan="6" class="text-center py-10 text-slate-400 text-sm">Belum ada peserta dari Bidang &amp; Kelas ini yang sedang/baru saja ujian hari ini.</td></tr>`
+                        : `<tr><td colspan="6" class="text-center py-10 text-slate-400 text-sm">Belum ada aktivitas Ujian Live CBT saat ini. Siswa yang sedang atau baru selesai ujian akan muncul di layar ini secara otomatis.</td></tr>`;
                 } else {
                     let rowsHtml = '';
                     liveRecords.forEach((rec, idx) => {
@@ -5280,7 +5414,7 @@
                 const elTotal = document.getElementById('live-stat-total'); if(elTotal) elTotal.innerText = totalExamToday;
                 const elLulus = document.getElementById('live-stat-lulus'); if(elLulus) elLulus.innerText = passedCount;
                 const elHigh = document.getElementById('live-stat-highest'); if(elHigh) elHigh.innerText = highestScore;
-            });
+            };
 
             onValue(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), (snapshot) => {
                 dataReviewAll = []; 
