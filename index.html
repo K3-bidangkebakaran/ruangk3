@@ -513,7 +513,7 @@
                 <h2 class="text-3xl font-extrabold text-slate-900 mb-4">Uji Pemahaman K3 Anda</h2>
                 <p class="text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
                     Ikuti simulasi ujian sertifikasi K3 yang disusun sesuai standar kompetensi.
-                    Anda akan diberi waktu <strong>45 Menit</strong> untuk menyelesaikan soal-soal pilihan ganda secara acak.
+                    Waktu pengerjaan dan jumlah soal <strong>ditentukan oleh instruktur</strong> saat memverifikasi permintaan ujian Anda.
                     Jika koneksi terputus, memori jawaban Anda akan otomatis tersimpan.
                 </p>
 
@@ -526,7 +526,7 @@
                         <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg">⏱️</div>
                         <div>
                             <h4 class="font-bold text-slate-900 text-sm">Timer Pintar</h4>
-                            <p class="text-xs text-slate-500 mt-1">Waktu berjalan absolut (45 menit). Tidak bisa dicurangi dengan me-refresh browser.</p>
+                            <p class="text-xs text-slate-500 mt-1">Waktu berjalan absolut sesuai durasi dari instruktur. Tidak bisa dicurangi dengan me-refresh browser.</p>
                         </div>
                     </div>
                     <div class="flex items-start space-x-3">
@@ -806,7 +806,7 @@
             <div id="ujian-intro" class="flex-1 flex flex-col p-5 sm:p-8 overflow-y-auto min-h-0">
                 <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 text-safety-600 shadow-inner shrink-0">📝</div>
                 <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2 text-center shrink-0">Permintaan Permohonan Ujian CBT</h3>
-                <p class="text-slate-600 mb-6 text-sm text-center shrink-0">Waktu Pengerjaan: <strong>45 Menit</strong>. Lengkapi formulir di bawah untuk meminta verifikasi instruktur.</p>
+                <p class="text-slate-600 mb-6 text-sm text-center shrink-0">Waktu pengerjaan &amp; jumlah soal <strong>ditentukan oleh instruktur</strong> saat memverifikasi permintaan Anda. Lengkapi formulir di bawah untuk meminta verifikasi instruktur.</p>
                 
                 <div class="space-y-4 mb-6 max-w-lg mx-auto w-full shrink-0">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -999,8 +999,8 @@
                         <div class="p-6 border-b border-slate-200 bg-slate-50"><h3 class="text-lg font-bold text-slate-900">Permintaan Verifikasi Ujian</h3></div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Waktu Request</th><th class="px-6 py-4 font-semibold">Nama Peserta (Instansi)</th><th class="px-6 py-4 font-semibold">Kategori Kelas</th><th class="px-6 py-4 font-semibold text-right">Aksi</th></tr></thead>
-                                <tbody id="admin-table-verifikasi" class="divide-y divide-slate-100 bg-white"><tr><td colspan="4" class="text-center py-8 text-slate-500">Belum ada data.</td></tr></tbody>
+                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Waktu Request</th><th class="px-6 py-4 font-semibold">Nama Peserta (Instansi)</th><th class="px-6 py-4 font-semibold">Kategori Kelas</th><th class="px-6 py-4 font-semibold">Waktu Ujian (Menit)</th><th class="px-6 py-4 font-semibold">Jumlah Soal</th><th class="px-6 py-4 font-semibold text-right">Aksi</th></tr></thead>
+                                <tbody id="admin-table-verifikasi" class="divide-y divide-slate-100 bg-white"><tr><td colspan="6" class="text-center py-8 text-slate-500">Belum ada data.</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -1217,6 +1217,11 @@
                                     <input type="text" id="input-tim-nama" required placeholder="Nama Tim / Petugas" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     <input type="text" id="input-tim-hp" required placeholder="No. WA (0812xxxx)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     <input type="text" id="input-tim-pin" required placeholder="PIN Akses" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-700 mb-1.5">Bidang K3 (opsional)</p>
+                                        <div id="input-tim-bidang-checklist" class="grid grid-cols-2 gap-1.5 p-3 bg-slate-50 border border-slate-200 rounded-lg max-h-40 overflow-y-auto"></div>
+                                        <p class="text-[10px] text-slate-500 mt-1">Kalau dicentang, data Verifikasi Ujian akun ini otomatis disaring sesuai bidang tsb.</p>
+                                    </div>
                                     <div class="border-t border-slate-200 pt-3 mt-2 bg-slate-50 p-3 rounded-lg border">
                                         <p class="text-[11px] font-bold text-slate-800 uppercase tracking-wider mb-3">Hak Akses Menu:</p>
                                         <div class="space-y-2.5">
@@ -1243,7 +1248,11 @@
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Buat Akun Bidang Lain</h3>
                                 <form id="form-akun-bidang" class="space-y-4">
                                     <input type="text" id="input-bidang-nama" required placeholder="Nama Akun (contoh: Divisi Listrik)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
-                                    <input type="text" id="input-bidang-label" placeholder="Bidang K3 (opsional)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-700 mb-1.5">Bidang K3 yang ditangani <span class="text-red-500">*</span></p>
+                                        <div id="input-bidang-checklist" class="grid grid-cols-2 gap-1.5 p-3 bg-slate-50 border border-slate-200 rounded-lg max-h-40 overflow-y-auto"></div>
+                                        <p class="text-[10px] text-slate-500 mt-1">Data Verifikasi Ujian akun ini nanti otomatis disaring sesuai bidang yang dicentang.</p>
+                                    </div>
                                     <input type="text" id="input-bidang-hp" placeholder="No. WA (opsional)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     <input type="text" id="input-bidang-pin" required placeholder="PIN Akses" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -2209,16 +2218,30 @@
                 rawVerifikasiSnap.forEach(childSnap => {
                     const data = childSnap.val();
                     if(data.status === 'pending') {
-                        const isUtama = currentUser && (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender');
+                        /* Pemantau (viewer_kalender) tetap melihat SEMUA data (akses monitoring penuh).
+                           Selain itu, admin/instruktur hanya melihat: (a) permintaan yang secara spesifik
+                           ditujukan ke dirinya (idTimTarget cocok -- jaring pengaman supaya request tidak
+                           pernah "hilang" walau bidangnya belum punya admin khusus), atau (b) permintaan
+                           yang bidangnya cocok dengan bidang yang dipegang admin tsb. */
+                        const isViewer = currentUser && currentUser.role === 'viewer_kalender';
                         const isMyStudent = currentUser && data.idTimTarget === currentUser.idTim;
+                        const recordBidang = window.normKat((data.kategori || '').split(' - ')[0]);
+                        const userBidangList = window.getUserBidangList(currentUser);
+                        const isBidangMatch = userBidangList.some(b => window.normKat(b) === recordBidang);
 
-                        if(isUtama || isMyStudent) {
+                        if(isViewer || isMyStudent || isBidangMatch) {
                             pendingCount++;
                             html += `
                             <tr class="hover:bg-slate-50 border-b border-slate-100">
                                 <td class="px-6 py-4 text-xs text-slate-600">${window.formatDate(data.timestamp)}</td>
                                 <td class="px-6 py-4 text-sm font-bold text-slate-900">${data.namaPeserta} <br><span class="text-xs font-normal text-slate-500">${data.instansi}</span></td>
                                 <td class="px-6 py-4"><span class="px-2 py-1 bg-amber-100 text-amber-800 text-[10px] rounded font-bold uppercase">${data.kategori}</span></td>
+                                <td class="px-6 py-4">
+                                    <input type="number" min="5" step="5" value="45" id="input-durasi-${childSnap.key}" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Waktu ujian (menit)">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <input type="number" min="1" id="input-jumlah-${childSnap.key}" placeholder="Semua" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Jumlah soal (kosongkan = semua soal tersedia)">
+                                </td>
                                 <td class="px-6 py-4 text-right">
                                     <button onclick="window.approveUjian('${childSnap.key}')" class="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded shadow hover:bg-emerald-600 transition-colors">Izinkan Ujian</button>
                                 </td>
@@ -2229,7 +2252,7 @@
             }
 
             if(pendingCount === 0) {
-                html = '<tr><td colspan="4" class="text-center py-8 text-slate-500 text-sm">Belum ada permintaan ujian baru.</td></tr>';
+                html = '<tr><td colspan="6" class="text-center py-8 text-slate-500 text-sm">Belum ada permintaan ujian baru.</td></tr>';
             }
 
             tbody.innerHTML = html;
@@ -2335,6 +2358,17 @@
         /* Normalisasi teks kategori agar cocok walau beda spasi/huruf besar-kecil */
         window.normKat = function(s) {
             return String(s || '').toLowerCase().replace(/\s+/g, ' ').replace(/\s*-\s*/g, ' - ').trim();
+        };
+
+        /* Ambil daftar bidang K3 milik seorang admin/instruktur (dipakai untuk memfilter Verifikasi
+           Ujian sesuai bidang). Utamakan field bidangList (array, hasil ceklis bidang terbaru); kalau
+           tidak ada, jatuh ke field bidang lama (teks tunggal) supaya akun yang dibuat sebelum fitur
+           ceklis ini tetap berfungsi normal. */
+        window.getUserBidangList = function(user) {
+            if (!user) return [];
+            if (Array.isArray(user.bidangList) && user.bidangList.length) return user.bidangList;
+            if (user.bidang) return [user.bidang];
+            return [];
         };
 
         /* Ambil kode kelas (mis. "kelas d") dari teks kelas/kategori */
@@ -2744,9 +2778,8 @@
                 if(btnBerita) btnBerita.classList.remove('hidden');
                 if(btnModul) btnModul.classList.remove('hidden');
                 if(btnKeuangan) btnKeuangan.classList.remove('hidden');
-                document.querySelectorAll('.admin-nav-btn[data-target="admin-panel-verifikasi"]').forEach(b => b.classList.add('hidden'));
-                const panelVerif = document.getElementById('admin-panel-verifikasi');
-                if(panelVerif) panelVerif.classList.add('hidden');
+                /* Verifikasi Ujian kini tetap terlihat untuk admin_bidang -- window.renderVerifikasiUI
+                   sudah menyaring datanya supaya hanya menampilkan permintaan sesuai bidang akun ini. */
             } else if (isUtama || isEldi) {
                 if(btnNilai) btnNilai.classList.remove('hidden'); 
                 if(btnBerita) btnBerita.classList.remove('hidden'); 
@@ -2769,7 +2802,8 @@
             }
 
             document.getElementById('admin-name-display').innerText = currentUser.nama;
-            document.getElementById('admin-role-display').innerText = isUtama ? 'Admin Utama' : (isEldi ? 'Instruktur / Manajemen' : (isBidang ? (currentUser.bidang ? `Admin ${currentUser.bidang}` : 'Admin Bidang') : (isViewer ? 'Pemantau' : 'Tim Pengajar')));
+            const bidangLabelDisplay = window.getUserBidangList(currentUser).join(' / ');
+            document.getElementById('admin-role-display').innerText = isUtama ? 'Admin Utama' : (isEldi ? 'Instruktur / Manajemen' : (isBidang ? (bidangLabelDisplay ? `Admin ${bidangLabelDisplay}` : 'Admin Bidang') : (isViewer ? 'Pemantau' : 'Tim Pengajar')));
             document.getElementById('admin-avatar-initial').innerText = currentUser.nama.substring(0,2).toUpperCase();
             
             document.querySelectorAll('.admin-nav-btn').forEach(btn => {
@@ -3533,30 +3567,41 @@
             
             window.showToast("Permintaan terkirim. Menunggu instruktur...", "success");
             
-            onValue(ref(db, `${pathVerifikasi}/${reqRef.key}/status`), async (snap) => {
-                if(snap.val() === 'approved') {
+            onValue(ref(db, `${pathVerifikasi}/${reqRef.key}`), async (snap) => {
+                const recVal = snap.val();
+                if(recVal && recVal.status === 'approved') {
                     window.showToast("Instruktur menyetujui. Memuat soal dari Bank Soal...", "success");
-                    
-                    // Soal diambil LANGSUNG dari Bank Soal admin sesuai Bidang & Kelas, lalu diacak
-                    activeQuizData = await window.buildSoalUjian(bdg, kls, idTim);
+
+                    // Soal diambil LANGSUNG dari Bank Soal admin sesuai Bidang & Kelas, lalu diacak.
+                    // Jumlah soal (kalau instruktur menentukan batas saat verifikasi) dipotong di sini
+                    // via .slice() -- window.buildSoalUjian sendiri TIDAK diubah (tetap mengembalikan
+                    // seluruh soal bank yang cocok, teracak).
+                    let soalHasil = await window.buildSoalUjian(bdg, kls, idTim);
+                    const jumlahSoalDiizinkan = recVal.jumlahSoal;
+                    if(jumlahSoalDiizinkan && Number(jumlahSoalDiizinkan) > 0) {
+                        soalHasil = soalHasil.slice(0, Number(jumlahSoalDiizinkan));
+                    }
+                    activeQuizData = soalHasil;
+                    const durasiMenitDiizinkan = (recVal.durasiMenit && Number(recVal.durasiMenit) > 0) ? Number(recVal.durasiMenit) : 45;
                     currentExamMeta = {
                         bidang: bdg,
                         kelas: kls,
                         kategori: `${bdg} - ${kls}`,
                         idTim: idTim,
-                        namaInstruktur: window.getNamaTim(idTim)
+                        namaInstruktur: window.getNamaTim(idTim),
+                        durasiMenit: durasiMenitDiizinkan
                     };
 
                     if(activeQuizData.length === 0) {
                         window.showToast("Bank soal untuk kelas ini masih kosong. Hubungi admin.", "error");
                         return;
                     }
-                    
+
                     userAnswers = new Array(activeQuizData.length).fill(null);
                     userFlags = new Array(activeQuizData.length).fill(false);
                     currentQuizIndex = 0;
-                    // Durasi ujian CBT tetap 45 menit
-                    examEndTime = Date.now() + (45 * 60 * 1000);
+                    // Durasi ujian CBT sesuai penentuan instruktur saat verifikasi (default 45 menit)
+                    examEndTime = Date.now() + (durasiMenitDiizinkan * 60 * 1000);
 
                     
                     window.saveExamState();
@@ -3676,7 +3721,7 @@
             btnSubmit.innerText = "Memeriksa...";
             
             if (pin === 'admin123') { 
-                currentUser = { nama: 'Adrian', role: 'admin_utama', uid: 'admin_master_123' }; 
+                currentUser = { nama: 'Adrian', role: 'admin_utama', uid: 'admin_master_123', idTim: 'admin_utama', bidang: 'Kebakaran', bidangList: ['Kebakaran'] };
                 window.renderAvatarUI('Adrian', 'Admin Utama'); 
                 window.setupAdminUI('admin_utama'); 
                 window.openAdminView(); 
@@ -3696,7 +3741,7 @@
                 window.renderVerifikasiUI(); 
                 window.renderReviewUI();
             } else if (pin === 'eldi123') {
-                currentUser = { nama: 'Eldi Prayoga Firdaus', role: 'admin_eldi', uid: 'eldi_123', idTim: 'eldi_123' };
+                currentUser = { nama: 'Eldi Prayoga Firdaus', role: 'admin_eldi', uid: 'eldi_123', idTim: 'eldi_123', bidang: 'PAA', bidangList: ['PAA'] };
                 window.renderAvatarUI('Eldi Prayoga', 'Instruktur / Manajemen'); 
                 window.setupAdminUI('admin_eldi'); 
                 window.openAdminView(); 
@@ -3707,7 +3752,8 @@
                 window.renderReviewUI();
             } else if ((dataAkunBidangAll || []).some(a => a.pin === pin)) {
                 const akun = dataAkunBidangAll.find(a => a.pin === pin);
-                currentUser = { nama: akun.nama, role: 'admin_bidang', uid: akun.id, idTim: akun.id, bidang: akun.bidang || '' };
+                const akunBidangList = (Array.isArray(akun.bidangList) && akun.bidangList.length) ? akun.bidangList : (akun.bidang ? [akun.bidang] : []);
+                currentUser = { nama: akun.nama, role: 'admin_bidang', uid: akun.id, idTim: akun.id, bidang: akun.bidang || (akunBidangList[0] || ''), bidangList: akunBidangList };
                 window.renderAvatarUI(akun.nama, akun.bidang ? `Admin ${akun.bidang}` : 'Admin Bidang');
                 window.setupAdminUI('admin_bidang');
                 window.openAdminView();
@@ -3719,7 +3765,8 @@
             } else {
                 const timFound = dataTimAll.find(t => t.pin === pin);
                 if (timFound) { 
-                    currentUser = { nama: timFound.nama, role: 'admin_tim', uid: timFound.id, idTim: timFound.id, izin: timFound.izin }; 
+                    const timBidangList = (Array.isArray(timFound.bidangList) && timFound.bidangList.length) ? timFound.bidangList : (timFound.bidang ? [timFound.bidang] : []);
+                    currentUser = { nama: timFound.nama, role: 'admin_tim', uid: timFound.id, idTim: timFound.id, izin: timFound.izin, bidang: timFound.bidang || (timBidangList[0] || ''), bidangList: timBidangList };
                     window.renderAvatarUI(timFound.nama, 'Tim Pengajar'); 
                     window.setupAdminUI('admin_tim'); 
                     window.openAdminView(); 
@@ -4083,6 +4130,7 @@
         window.batalEditTim = function() {
             document.getElementById('form-tim').reset();
             document.getElementById('input-tim-nama').removeAttribute('data-edit-id');
+            window.setCheckedBidang('input-tim-bidang-checklist', []);
             const btn = document.querySelector('#form-tim button[type="submit"]');
             if(btn) btn.innerText = "Simpan Akun Tim";
             const batalBtn = document.getElementById('btn-batal-tim');
@@ -4095,10 +4143,11 @@
             
             document.getElementById('input-tim-nama').value = data.nama; 
             document.getElementById('input-tim-nama').setAttribute('data-edit-id', id); 
-            document.getElementById('input-tim-hp').value = data.hp; 
+            document.getElementById('input-tim-hp').value = data.hp;
             document.getElementById('input-tim-pin').value = data.pin;
-            
-            const izin = data.izin || {}; 
+            window.setCheckedBidang('input-tim-bidang-checklist', window.getUserBidangList(data));
+
+            const izin = data.izin || {};
             const elNilai = document.getElementById('izin-nilai'); if(elNilai) elNilai.checked = !!izin.nilai; 
             const elBerita = document.getElementById('izin-berita'); if(elBerita) elBerita.checked = !!izin.berita; 
             const elModul = document.getElementById('izin-modul'); if(elModul) elModul.checked = !!izin.modul; 
@@ -4148,11 +4197,14 @@
                     modul: elModul ? elModul.checked : false, 
                     keuangan: elKeuangan ? elKeuangan.checked : false 
                 };
-                const dataToSave = { 
-                    nama: document.getElementById('input-tim-nama').value, 
-                    hp: document.getElementById('input-tim-hp').value, 
-                    pin: document.getElementById('input-tim-pin').value, 
-                    izin: izin 
+                const bidangTerpilihTim = window.getCheckedBidang('input-tim-bidang-checklist');
+                const dataToSave = {
+                    nama: document.getElementById('input-tim-nama').value,
+                    hp: document.getElementById('input-tim-hp').value,
+                    pin: document.getElementById('input-tim-pin').value,
+                    izin: izin,
+                    bidang: bidangTerpilihTim[0] || null,
+                    bidangList: bidangTerpilihTim
                 };
                 if (editId) { 
                     await update(ref(db, `${pathTim}/${editId}`), dataToSave); 
@@ -4177,6 +4229,7 @@
             if(!form) return;
             form.reset();
             document.getElementById('input-bidang-nama').removeAttribute('data-edit-id');
+            window.setCheckedBidang('input-bidang-checklist', []);
             const btn = form.querySelector('button[type="submit"]');
             if(btn) btn.innerText = "Simpan Akun Bidang";
             document.getElementById('btn-batal-akun-bidang')?.classList.add('hidden');
@@ -4187,7 +4240,7 @@
             if(!data) return;
             document.getElementById('input-bidang-nama').value = data.nama || '';
             document.getElementById('input-bidang-nama').setAttribute('data-edit-id', id);
-            document.getElementById('input-bidang-label').value = data.bidang || '';
+            window.setCheckedBidang('input-bidang-checklist', window.getUserBidangList(data));
             document.getElementById('input-bidang-hp').value = data.hp || '';
             document.getElementById('input-bidang-pin').value = data.pin || '';
             const form = document.getElementById('form-akun-bidang');
@@ -4223,10 +4276,17 @@
             const ori = btn ? btn.innerText : '';
             if(btn) btn.innerText = "Menyimpan...";
             const editId = document.getElementById('input-bidang-nama').getAttribute('data-edit-id');
+            const bidangTerpilih = window.getCheckedBidang('input-bidang-checklist');
+            if(bidangTerpilih.length === 0) {
+                window.showToast("Pilih minimal 1 Bidang K3 untuk akun ini.", "error");
+                if(btn) btn.innerText = ori;
+                return;
+            }
             try {
                 const dataToSave = {
                     nama: document.getElementById('input-bidang-nama').value.trim(),
-                    bidang: document.getElementById('input-bidang-label').value.trim(),
+                    bidang: bidangTerpilih[0],
+                    bidangList: bidangTerpilih,
                     hp: document.getElementById('input-bidang-hp').value.trim(),
                     pin: document.getElementById('input-bidang-pin').value.trim()
                 };
@@ -4254,7 +4314,8 @@
                 const opt = document.createElement('option');
                 opt.value = a.id;
                 opt.setAttribute('data-bidang', '1');
-                opt.textContent = a.bidang ? `${a.nama} (${a.bidang})` : a.nama;
+                const bidangListOpt = window.getUserBidangList(a);
+                opt.textContent = bidangListOpt.length ? `${a.nama} (${bidangListOpt.join(', ')})` : a.nama;
                 selectUjianTim.appendChild(opt);
             });
         };
@@ -4269,7 +4330,7 @@
             list.innerHTML = dataAkunBidangAll.map(a => `
                 <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
                     <p class="text-sm font-bold text-slate-900">${a.nama || '-'}</p>
-                    <p class="text-[11px] text-slate-500 mt-0.5">${a.bidang ? 'Bidang: ' + a.bidang : 'Bidang belum diisi'}</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">${window.getUserBidangList(a).length ? 'Bidang: ' + window.getUserBidangList(a).join(', ') : 'Bidang belum diisi'}</p>
                     <p class="text-[11px] text-slate-500">PIN: <span class="font-mono font-bold text-slate-700">${a.pin || '-'}</span>${a.hp ? ' &middot; WA: ' + a.hp : ''}</p>
                     <div class="mt-2 flex flex-wrap gap-1">
                         <span class="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded text-[8px]">Bank Soal</span>
@@ -5180,10 +5241,17 @@
             window.renderDashboardPendapatanHome(); 
         });
 
-        window.approveUjian = async function(uid) { 
-            try { 
-                await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved' }); 
-            } catch(e){} 
+        window.approveUjian = async function(uid) {
+            try {
+                const elDurasi = document.getElementById(`input-durasi-${uid}`);
+                const elJumlah = document.getElementById(`input-jumlah-${uid}`);
+                let durasiMenit = elDurasi ? parseInt(elDurasi.value, 10) : NaN;
+                if(!durasiMenit || durasiMenit <= 0) durasiMenit = 45;
+                const jumlahRaw = elJumlah ? parseInt(elJumlah.value, 10) : NaN;
+                // jumlahSoal null -> tanpa batas (seluruh soal bank dipakai), sesuai perilaku lama.
+                const jumlahSoal = (jumlahRaw && jumlahRaw > 0) ? jumlahRaw : null;
+                await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved', durasiMenit, jumlahSoal });
+            } catch(e){}
         };
 
         window.fetchDataRealtime = function() {
@@ -5290,7 +5358,35 @@
                 if(sFilterNilaiBidang) { const val = sFilterNilaiBidang.value; sFilterNilaiBidang.innerHTML = bidangFilterOptions; if(val) sFilterNilaiBidang.value = val; }
                 const sFilterLiveBidang = document.getElementById('filter-live-bidang');
                 if(sFilterLiveBidang) { const val = sFilterLiveBidang.value; sFilterLiveBidang.innerHTML = bidangFilterOptions; if(val) sFilterLiveBidang.value = val; }
+
+                // Ceklis bidang K3 untuk form "Akun Bidang Lain" & "Kelola Akun Tim" -- dipakai supaya
+                // Verifikasi Ujian tiap admin bisa disaring sesuai bidang yang jadi tanggung jawabnya.
+                // Status centang sebelumnya dipertahankan tiap kali daftar bidang di-render ulang.
+                window.renderBidangChecklist = function(containerId, uniqueBidangList) {
+                    const el = document.getElementById(containerId);
+                    if(!el) return;
+                    const prevChecked = new Set(Array.from(el.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value));
+                    el.innerHTML = uniqueBidangList.map(b => `
+                        <label class="flex items-center space-x-1.5 text-xs text-slate-700 cursor-pointer">
+                            <input type="checkbox" value="${b}" class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5" ${prevChecked.has(b) ? 'checked' : ''}>
+                            <span>${b}</span>
+                        </label>`).join('');
+                };
+                window.renderBidangChecklist('input-bidang-checklist', uniqueBidang);
+                window.renderBidangChecklist('input-tim-bidang-checklist', uniqueBidang);
             });
+
+            window.getCheckedBidang = function(containerId) {
+                const el = document.getElementById(containerId);
+                if(!el) return [];
+                return Array.from(el.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            };
+            window.setCheckedBidang = function(containerId, list) {
+                const el = document.getElementById(containerId);
+                if(!el) return;
+                const set = new Set(list || []);
+                el.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = set.has(cb.value); });
+            };
 
             onValue(ref(db, pathPeserta), (snapshot) => {
                 let countDaftar = 0; let countLulus = 0;
@@ -5575,6 +5671,7 @@
                                 <h4 class="font-bold text-slate-900 text-sm mb-1 pr-12">${data.nama}</h4>
                                 <p class="text-xs text-slate-600 mb-1">📱 ${data.hp}</p>
                                 <p class="text-xs text-slate-600 font-mono mb-2">🔑 PIN: <strong class="text-safety-600">${data.pin}</strong></p>
+                                <p class="text-[11px] text-slate-500 mb-2">${window.getUserBidangList(data).length ? 'Bidang: ' + window.getUserBidangList(data).join(', ') : '<span class="italic">Bidang belum diisi</span>'}</p>
                                 <div class="border-t border-slate-200 pt-2 mt-1">
                                     <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Akses Khusus:</p>
                                     <div>${badges}</div>
