@@ -2472,23 +2472,16 @@
                 pool = bank.filter(q => katOf(q).startsWith(bidNorm) || window.normKat(q.bidang) === bidNorm);
             }
 
-            // Acak urutan soal (Fisher-Yates) — TANPA batas jumlah, seluruh soal bank tampil
+            // Acak urutan/NOMOR soal (Fisher-Yates) — TANPA batas jumlah, seluruh soal bank tampil.
             pool = window.shuffleArray(pool.slice());
 
-            // Acak posisi opsi jawaban tiap soal agar peserta sulit menyontek
-            return pool.map(q => {
-                const opsiAsli = Array.isArray(q.opsi) ? q.opsi : [];
-                const idxAcak = window.shuffleArray(opsiAsli.map((_, i) => i));
-                const opsiBaru = idxAcak.map(i => opsiAsli[i]);
-                const jawabanBaru = idxAcak.indexOf(Number(q.jawabanBenar));
-                return {
-                    ...q,
-                    opsi: opsiBaru,
-                    jawabanBenar: jawabanBaru < 0 ? 0 : jawabanBaru,
-                    kategori: kategori,
-                    idTimTarget: idTim
-                };
-            });
+            // Urutan opsi jawaban (A/B/C/D) TETAP SAMA persis seperti yang diinput admin di Bank
+            // Soal -- yang diacak hanya urutan/nomor soalnya, bukan posisi opsi di dalam tiap soal.
+            return pool.map(q => ({
+                ...q,
+                kategori: kategori,
+                idTimTarget: idTim
+            }));
         };
 
 
