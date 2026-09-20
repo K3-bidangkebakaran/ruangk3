@@ -261,42 +261,52 @@
 
         <!-- DASHBOARD SISWA LMS -->
         <div id="view-lms-dashboard" class="space-y-8">
-            <section class="relative overflow-hidden bg-animate-ruangk3 rounded-3xl p-8 sm:p-10 text-white shadow-2xl reveal">
+            <section class="relative overflow-hidden bg-animate-ruangk3 rounded-3xl p-8 sm:p-14 text-white shadow-2xl reveal text-center">
                 <div class="absolute inset-0 bg-grid-pattern-white opacity-10"></div>
-                <div class="relative z-10 max-w-2xl">
+                <div class="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
                     <span class="inline-block px-3.5 py-1 bg-white/10 backdrop-blur rounded-full text-xs font-bold text-safety-400 border border-white/20 mb-4">
                         🔥 RuangK3 • Learning & Certification Platform
                     </span>
-                    <h1 class="text-2xl sm:text-4xl font-extrabold mb-3 leading-tight" id="lms-welcome-title">Selamat Datang di Portal RuangK3</h1>
-                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                        Akses modul digital K3, selesaikan Simulasi CBT interaktif, dan ikuti sertifikasi resmi Kemnaker RI.
+                    <h1 class="text-3xl sm:text-5xl font-extrabold mb-4 leading-tight" id="lms-welcome-title">Portal RuangK3</h1>
+                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-8 max-w-xl">
+                        Satu platform digital untuk belajar, berlatih, dan bersertifikasi K3 -- akses modul resmi, kerjakan Simulasi CBT, dan raih sertifikasi Kemnaker RI kapan saja, di mana saja.
                     </p>
-
-                    <div id="lms-readiness-card" class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center space-x-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
-                            </div>
-                            <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
-                        </div>
-                        <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
-                        <div class="grid grid-cols-3 gap-2 mb-4">
-                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                                <div class="text-lg mb-1">📚</div>
-                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
-                            </div>
-                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                                <div class="text-lg mb-1">📝</div>
-                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
-                            </div>
-                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                                <div class="text-lg mb-1">🎓</div>
-                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
-                            </div>
-                        </div>
-                        <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+                        <button onclick="window.openModal('modal-login')" class="w-full sm:w-auto px-6 py-3.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-sm rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
+                        <button onclick="window.switchLmsTab('kelas')" class="w-full sm:w-auto px-6 py-3.5 bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white font-extrabold text-sm rounded-xl transition-all">Lihat Modul Pembelajaran</button>
                     </div>
+                </div>
+            </section>
+
+            <!-- Kartu "Perjalanan Sertifikasi Anda" -- DIPINDAHKAN ke sini (bukan dihapus),
+                 jadi seksi tersendiri di bawah hero yang sekarang center-aligned. Konten kartu
+                 ini sendiri (progres nyata vs ajakan masuk/daftar) tetap sepenuhnya ditangani
+                 oleh window.renderReadinessCard(), tidak ada perubahan logika di situ. -->
+            <section class="reveal">
+                <div id="lms-readiness-card" class="bg-navy-900 rounded-2xl p-5 sm:p-6 border border-white/10 shadow-xl max-w-2xl mx-auto">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
+                            <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
+                        </div>
+                        <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                            <div class="text-lg mb-1">📚</div>
+                            <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
+                        </div>
+                        <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                            <div class="text-lg mb-1">📝</div>
+                            <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
+                        </div>
+                        <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                            <div class="text-lg mb-1">🎓</div>
+                            <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
+                        </div>
+                    </div>
+                    <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
                 </div>
             </section>
 
@@ -669,18 +679,12 @@
 
         <!-- Modal Info Penting / Pengumuman Beranda (pop up peringatan, sumber data dari
              menu admin "Kelola Info Pop Up Beranda" -- dulunya tampil sebagai running text
-             berjalan). Muncul otomatis setiap peserta membuka/kembali ke halaman Beranda. -->
+             berjalan). Muncul otomatis setiap peserta membuka/kembali ke halaman Beranda.
+             Gaya visual kartu (ikon lingkaran merah, judul merah tebal, keterangan italic)
+             mengikuti referensi tampilan yang diminta Adrian. -->
         <div id="modal-info-penting" class="bg-white rounded-3xl shadow-2xl w-full max-w-lg hidden relative flex-col max-h-[85vh] overflow-hidden z-[1050]">
-            <button class="btn-close-modal absolute top-4 right-4 z-20 bg-black/10 hover:bg-red-500 hover:text-white text-slate-500 p-2 rounded-full transition-colors">✕</button>
-            <div class="bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 p-6 sm:p-8 pb-5 text-navy-950 shrink-0 relative overflow-hidden">
-                <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiMwMDAiLz48L3N2Zz4=')]"></div>
-                <div class="relative z-10">
-                    <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-md mb-3">⚠️</div>
-                    <h2 class="text-xl sm:text-2xl font-black leading-tight">Info Penting</h2>
-                    <p class="text-xs sm:text-sm font-semibold text-navy-900/70 mt-1">Pengumuman dari Admin RuangK3</p>
-                </div>
-            </div>
-            <div id="modal-info-penting-list" class="p-6 sm:p-8 overflow-y-auto flex-grow bg-white space-y-4"></div>
+            <button class="btn-close-modal absolute top-4 right-4 z-20 bg-black/5 hover:bg-red-500 hover:text-white text-slate-400 p-2 rounded-full transition-colors">✕</button>
+            <div id="modal-info-penting-list" class="p-6 sm:p-8 pt-8 overflow-y-auto flex-grow bg-white space-y-5"></div>
             <div class="p-4 sm:p-5 border-t border-slate-100 shrink-0 bg-slate-50">
                 <button class="btn-close-modal w-full py-3 bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm rounded-xl transition-colors">Saya Mengerti</button>
             </div>
@@ -1040,7 +1044,12 @@
                                 <h3 class="text-lg font-bold text-slate-900">Kelola Akun Peserta</h3>
                                 <p class="text-xs text-slate-500 mt-1 max-w-lg">Daftar seluruh akun peserta yang sudah mendaftar. Bekukan akun yang mengganggu website, mencoba meretas, atau berbuat curang &mdash; akun yang dibekukan tidak dapat login sampai diaktifkan kembali.</p>
                             </div>
-                            <input type="text" id="input-cari-peserta" placeholder="Cari nama / email / instansi..." class="w-full sm:w-64 px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <select id="filter-peserta-bidang" class="w-1/2 sm:w-44 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                    <option value="">Semua Bidang</option>
+                                </select>
+                                <input type="text" id="input-cari-peserta" placeholder="Cari nama / email / instansi..." class="w-1/2 sm:w-64 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none">
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
@@ -1059,7 +1068,15 @@
                                 <h3 class="text-lg font-bold text-slate-900">Izin Kelas Kebakaran</h3>
                                 <p class="text-xs text-slate-500 mt-1 max-w-lg">Berlaku untuk semua peserta. Modul Kebakaran <b>Kelas D</b> otomatis aktif sejak mendaftar; Kelas C, B, dan A butuh izin Admin Pusat sebelum peserta bisa membuka modulnya. Modul bidang lain tidak terpengaruh &mdash; bebas dilihat semua peserta.</p>
                             </div>
-                            <input type="text" id="input-cari-izin-kelas" placeholder="Cari nama / email / instansi..." class="w-full sm:w-64 px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <select id="filter-status-izin-kelas" class="w-1/2 sm:w-48 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                    <option value="">Semua Status</option>
+                                    <option value="menunggu">⏳ Menunggu Persetujuan</option>
+                                    <option value="aktif">✓ Sudah Aktif</option>
+                                    <option value="belum_diminta">Belum Diminta</option>
+                                </select>
+                                <input type="text" id="input-cari-izin-kelas" placeholder="Cari nama / email / instansi..." class="w-1/2 sm:w-64 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none">
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
@@ -1277,8 +1294,9 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-1">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
-                                <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Tambah Kategori Bidang</h3>
+                                <h3 id="judul-form-kategori" class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Tambah Kategori Bidang</h3>
                                 <form id="form-kategori" class="space-y-4">
+                                    <input type="hidden" id="input-kategori-id" value="">
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-700 mb-1">Bidang K3</label>
                                         <input type="text" id="input-kategori-bidang" required placeholder="Cth: Kebakaran, PAA, Listrik" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none" list="list-bidang">
@@ -1293,7 +1311,11 @@
                                         <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Kategori / Kelas</label>
                                         <input type="text" id="input-kategori-nama" required placeholder="Cth: Kelas D (Petugas Peran)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     </div>
-                                    <button type="submit" class="w-full py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm">Simpan Kategori</button>
+                                    <div class="flex items-center gap-2">
+                                        <button type="submit" id="btn-submit-kategori" class="flex-1 py-2.5 bg-safety-500 text-white rounded-lg font-bold shadow-sm text-sm">Simpan Kategori</button>
+                                        <button type="button" id="btn-batal-edit-kategori" onclick="window.batalEditKategori()" class="hidden py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold shadow-sm text-sm">Batal</button>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 italic leading-relaxed">Mengedit kategori akan otomatis memperbarui semua soal, modul, riwayat ujian, dan data terkait lain yang masih memakai nama kategori lama -- tidak perlu memperbaikinya satu per satu secara manual.</p>
                                 </form>
                             </div>
                         </div>
@@ -1481,6 +1503,28 @@
            window.readFileAsBase64 di bawah), dan video materi memakai link YouTube.
            Kalau nanti project di-upgrade ke Blaze, fitur upload file video langsung bisa
            diaktifkan kembali dengan menambahkan kembali import & fungsi Firebase Storage. */
+
+        // Perbaikan "login tersangkut saat sinyal device drop": permintaan Firebase (Auth
+        // maupun Database) sebelumnya TIDAK PERNAH punya batas waktu sama sekali -- kalau
+        // koneksi peserta lambat/terputus di tengah jalan, request itu menggantung TANPA
+        // batas (SDK Firebase terus mencoba lagi di belakang layar), sehingga tombol
+        // "Memeriksa..."/loading terlihat macet selamanya tanpa pesan error apa pun. Dibungkus
+        // dengan Promise.race supaya ada batas waktu wajar sebelum menampilkan pesan yang
+        // jelas ke peserta, alih-alih layar yang seolah membeku tanpa penjelasan.
+        const TIMEOUT_JARINGAN_MS = 15000;
+        const PESAN_TIMEOUT_JARINGAN_DEFAULT = 'Koneksi internet lambat atau terputus. Silakan periksa sinyal Anda dan coba lagi.';
+        window.withTimeout = function(promise, ms, pesanTimeout) {
+            ms = ms || TIMEOUT_JARINGAN_MS;
+            let timerId;
+            const timeoutPromise = new Promise((_, reject) => {
+                timerId = setTimeout(() => {
+                    const err = new Error(pesanTimeout || PESAN_TIMEOUT_JARINGAN_DEFAULT);
+                    err.isTimeoutJaringan = true;
+                    reject(err);
+                }, ms);
+            });
+            return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() => clearTimeout(timerId));
+        };
 
         window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -2219,8 +2263,10 @@
         };
 
         window.processLogout = async function() {
-            currentUser = null; 
-            try { await signInAnonymously(auth); } catch(e){}
+            currentUser = null;
+            // window.withTimeout supaya kalau signInAnonymously menggantung akibat sinyal
+            // buruk, halaman TETAP dimuat ulang (bukan macet tanpa batas sebelum reload).
+            try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();
         };
 
@@ -2860,11 +2906,14 @@
                 /* Verifikasi Ujian kini tetap terlihat untuk admin_bidang -- window.renderVerifikasiUI
                    sudah menyaring datanya supaya hanya menampilkan permintaan sesuai bidang akun ini. */
             } else if (isUtama || isEldi) {
-                if(btnNilai) btnNilai.classList.remove('hidden'); 
-                if(btnBerita) btnBerita.classList.remove('hidden'); 
-                if(btnKeuangan) btnKeuangan.classList.remove('hidden'); 
+                if(btnNilai) btnNilai.classList.remove('hidden');
+                if(btnBerita) btnBerita.classList.remove('hidden');
+                if(btnKeuangan) btnKeuangan.classList.remove('hidden');
                 if(btnModul) btnModul.classList.remove('hidden');
-                if(isUtama && btnReview) btnReview.classList.remove('hidden');
+                // Menu "Hasil Review Instruktur" juga tampil untuk Eldi (admin_eldi) -- data
+                // yang ditampilkan sudah otomatis disaring hanya untuk idTim miliknya sendiri
+                // lewat window.renderReviewUI (filter r.idTim === currentUser.idTim).
+                if((isUtama || isEldi) && btnReview) btnReview.classList.remove('hidden');
             } else if (role === 'admin_tim') {
                 const izin = currentUser.izin || {};
                 if(btnNilai) { if(izin.nilai) btnNilai.classList.remove('hidden'); else btnNilai.classList.add('hidden'); }
@@ -3567,29 +3616,43 @@
         }
 
         document.getElementById('form-login-peserta')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); 
-            const email = document.getElementById('login-email').value.trim(); 
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
             const p = document.getElementById('login-password').value;
-            const btn = document.getElementById('btn-do-login'); 
-            const ori = btn.innerText; 
+            const btn = document.getElementById('btn-do-login');
+            const ori = btn.innerText;
             btn.innerText = "Memeriksa...";
+            btn.disabled = true;
             try {
-                const cred = await signInWithEmailAndPassword(auth, email, p);
-                const snapAkun = await get(ref(db, `${pathPeserta}/${cred.user.uid}`));
+                // Dibungkus window.withTimeout supaya kalau sinyal device drop di tengah proses
+                // login, peserta tetap dapat pesan yang jelas & tombol kembali normal -- bukan
+                // "Memeriksa..." yang tersangkut tanpa batas waktu (lihat catatan di deklarasi
+                // window.withTimeout).
+                const cred = await window.withTimeout(
+                    signInWithEmailAndPassword(auth, email, p),
+                    TIMEOUT_JARINGAN_MS,
+                    'Koneksi lambat/terputus saat mencoba masuk. Periksa sinyal internet Anda lalu coba lagi.'
+                );
+                const snapAkun = await window.withTimeout(
+                    get(ref(db, `${pathPeserta}/${cred.user.uid}`)),
+                    TIMEOUT_JARINGAN_MS,
+                    'Berhasil masuk, tapi koneksi lambat/terputus saat memuat data akun. Silakan coba lagi.'
+                );
                 const dataAkun = snapAkun.val();
                 if (dataAkun && dataAkun.status === 'dibekukan') {
                     await signOut(auth).catch(() => {});
                     showAuthMsg("Akun Anda telah dibekukan oleh Admin Pusat. Hubungi pengelola RuangK3 untuk informasi lebih lanjut.");
-                    btn.innerText = ori;
                     return;
                 }
                 window.closeModal();
                 e.target.reset();
                 window.showToast('Login berhasil!', 'success');
             } catch (err) {
-                showAuthMsg("Gagal: Email atau Sandi salah.");
+                showAuthMsg(err && err.isTimeoutJaringan ? err.message : "Gagal: Email atau Sandi salah.");
+            } finally {
+                btn.innerText = ori;
+                btn.disabled = false;
             }
-            btn.innerText = ori;
         });
 
         document.getElementById('form-register-peserta')?.addEventListener('submit', async (e) => {
@@ -3601,29 +3664,41 @@
             const btn = document.getElementById('btn-do-register');
             const ori = btn.innerText;
             btn.innerText = "Mendaftarkan...";
+            btn.disabled = true;
             try {
-                const userCred = await createUserWithEmailAndPassword(auth, email, p);
+                const userCred = await window.withTimeout(
+                    createUserWithEmailAndPassword(auth, email, p),
+                    TIMEOUT_JARINGAN_MS,
+                    'Koneksi lambat/terputus saat mendaftar. Periksa sinyal internet Anda lalu coba lagi.'
+                );
                 // Aturan izin kelas Kebakaran berlaku untuk SEMUA peserta (tidak ada pemilihan
                 // bidang saat mendaftar): Kelas D otomatis aktif sejak mendaftar; Kelas C/B/A
                 // berikutnya wajib izin Admin Pusat (lihat kelasKebakaranTerkunci & panel
                 // "Izin Kelas Kebakaran"). Bidang selain Kebakaran tidak terkena aturan ini.
-                await set(ref(db, `${pathPeserta}/${userCred.user.uid}`), {
-                    email: email,
-                    nama: nama,
-                    instansi: instansi,
-                    izinKelasKebakaran: { [KELAS_D_KEBAKARAN]: true },
-                    role: 'peserta',
-                    status: 'aktif',
-                    timestamp: Date.now()
-                });
+                await window.withTimeout(
+                    set(ref(db, `${pathPeserta}/${userCred.user.uid}`), {
+                        email: email,
+                        nama: nama,
+                        instansi: instansi,
+                        izinKelasKebakaran: { [KELAS_D_KEBAKARAN]: true },
+                        role: 'peserta',
+                        status: 'aktif',
+                        timestamp: Date.now()
+                    }),
+                    TIMEOUT_JARINGAN_MS,
+                    'Akun berhasil dibuat, tapi koneksi lambat/terputus saat menyimpan data profil. Silakan coba masuk beberapa saat lagi.'
+                );
                 showAuthMsg("Berhasil daftar! Silakan Masuk.", false);
                 switchTab(true);
                 e.target.reset();
             } catch (err) {
-                if(err.code === 'auth/email-already-in-use') showAuthMsg("Gagal: Email sudah terdaftar.");
+                if(err && err.isTimeoutJaringan) showAuthMsg(err.message);
+                else if(err.code === 'auth/email-already-in-use') showAuthMsg("Gagal: Email sudah terdaftar.");
                 else showAuthMsg("Terjadi kesalahan.");
+            } finally {
+                btn.innerText = ori;
+                btn.disabled = false;
             }
-            btn.innerText = ori;
         });
 
         document.getElementById('btn-request-quiz')?.addEventListener('click', async () => {
@@ -3878,8 +3953,8 @@
         });
 
         document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
-            currentUser = null; 
-            try { await signInAnonymously(auth); } catch(e){}
+            currentUser = null;
+            try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();
         });
 
@@ -4071,31 +4146,208 @@
         };
 
         document.getElementById('form-kategori')?.addEventListener('submit', async (e) => {
-            e.preventDefault(); 
+            e.preventDefault();
             if(!currentUser) return;
-            const btn = e.target.querySelector('button'); 
-            const ori = btn.innerText; 
+            const idEditKategori = document.getElementById('input-kategori-id')?.value || '';
+            const btn = document.getElementById('btn-submit-kategori') || e.target.querySelector('button');
+            const ori = btn.innerText;
+
+            // Mode EDIT: kategori yang sudah ada sedang diperbarui (bukan menambah baru) --
+            // diarahkan ke window.simpanEditKategori yang juga menjalankan cascade update ke
+            // semua data terkait (soal, modul, riwayat, dst) supaya tidak kerja dua kali.
+            if(idEditKategori) {
+                await window.simpanEditKategori(
+                    idEditKategori,
+                    document.getElementById('input-kategori-bidang').value.trim(),
+                    document.getElementById('input-kategori-nama').value.trim()
+                );
+                return;
+            }
+
             btn.innerText = "Menyimpan...";
-            try { 
-                await push(ref(db, pathKategori), { 
-                    bidang: document.getElementById('input-kategori-bidang').value.trim(), 
-                    nama: document.getElementById('input-kategori-nama').value, 
-                    timestamp: Date.now() 
-                }); 
-                e.target.reset(); 
-                window.showToast("Kategori berhasil ditambahkan.", "success"); 
-            } catch(err) { 
-                window.showToast("Gagal menambahkan kategori.", "error"); 
+            try {
+                await push(ref(db, pathKategori), {
+                    bidang: document.getElementById('input-kategori-bidang').value.trim(),
+                    nama: document.getElementById('input-kategori-nama').value,
+                    timestamp: Date.now()
+                });
+                e.target.reset();
+                window.showToast("Kategori berhasil ditambahkan.", "success");
+            } catch(err) {
+                window.showToast("Gagal menambahkan kategori.", "error");
             }
             setTimeout(() => { btn.innerText = ori; }, 2000);
         });
 
         window.hapusKategori = async function(id) {
-            try { 
-                await remove(ref(db, `${pathKategori}/${id}`)); 
-                window.showToast("Kategori berhasil dihapus.", "success"); 
-            } catch(e) { 
-                window.showToast("Gagal menghapus kategori.", "error"); 
+            try {
+                await remove(ref(db, `${pathKategori}/${id}`));
+                window.showToast("Kategori berhasil dihapus.", "success");
+            } catch(e) {
+                window.showToast("Gagal menghapus kategori.", "error");
+            }
+        };
+
+        // Isi form "Tambah Kategori Bidang" dengan data kategori yang mau diedit, lalu ganti
+        // judul/tombol form ke mode Edit. Kategori BAWAAN (def_*) tidak bisa diedit sama sekali
+        // (nama-namanya jadi konstanta tetap yang menggerakkan sistem izin Kelas Kebakaran).
+        window.editKategoriMulai = function(id) {
+            if(String(id).startsWith('def_')) {
+                window.showToast("Kategori bawaan (BAWAAN) tidak dapat diedit.", "warning");
+                return;
+            }
+            const k = (dataKategoriAll || []).find(x => x.id === id);
+            if(!k) { window.showToast("Kategori tidak ditemukan.", "error"); return; }
+
+            document.getElementById('input-kategori-id').value = k.id;
+            document.getElementById('input-kategori-bidang').value = k.bidang || '';
+            document.getElementById('input-kategori-nama').value = k.nama || '';
+
+            const judul = document.getElementById('judul-form-kategori');
+            if(judul) judul.innerText = 'Edit Kategori Bidang';
+            const btnSubmit = document.getElementById('btn-submit-kategori');
+            if(btnSubmit) btnSubmit.innerText = 'Simpan Perubahan';
+            document.getElementById('btn-batal-edit-kategori')?.classList.remove('hidden');
+
+            document.getElementById('form-kategori')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        };
+
+        // Batalkan mode Edit -> form kembali ke mode "Tambah Kategori Bidang" yang kosong.
+        window.batalEditKategori = function() {
+            document.getElementById('form-kategori')?.reset();
+            document.getElementById('input-kategori-id').value = '';
+            const judul = document.getElementById('judul-form-kategori');
+            if(judul) judul.innerText = 'Tambah Kategori Bidang';
+            const btnSubmit = document.getElementById('btn-submit-kategori');
+            if(btnSubmit) btnSubmit.innerText = 'Simpan Kategori';
+            document.getElementById('btn-batal-edit-kategori')?.classList.add('hidden');
+        };
+
+        // Simpan perubahan kategori (bidang/nama) & CASCADE-UPDATE otomatis semua data yang
+        // masih memakai nama kategori lama, supaya admin tidak perlu memperbaikinya satu per
+        // satu secara manual di banyak tempat berbeda kalau ada kesalahan penamaan/perlu
+        // diperbaiki. Cakupan cascade: kategori itu sendiri, bank soal, modul materi,
+        // permintaan verifikasi ujian, live CBT, riwayat ujian SEMUA peserta (fetch fresh
+        // karena tidak ada cache mentah per-uid di client), dan -- KHUSUS kalau bidang lama
+        // "Kebakaran" -- kunci objek izinKelasKebakaran/permintaanKelasKebakaran tiap peserta
+        // (supaya peserta yang sudah py izin/pengajuan ke kelas itu tidak kehilangan datanya).
+        window.simpanEditKategori = async function(id, newBidangRaw, newNamaRaw) {
+            if(!currentUser) return;
+            if(String(id).startsWith('def_')) {
+                window.showToast("Kategori bawaan (BAWAAN) tidak dapat diedit.", "warning");
+                return;
+            }
+            const oldData = (dataKategoriAll || []).find(x => x.id === id);
+            if(!oldData) { window.showToast("Kategori tidak ditemukan.", "error"); return; }
+
+            const newBidang = (newBidangRaw || '').trim();
+            const newNama = (newNamaRaw || '').trim();
+            if(!newBidang || !newNama) { window.showToast("Bidang K3 dan Nama Kategori wajib diisi.", "warning"); return; }
+
+            const oldBidang = oldData.bidang || '';
+            const oldNama = oldData.nama || '';
+            const oldKey = `${oldBidang} - ${oldNama}`;
+            const newKey = `${newBidang} - ${newNama}`;
+
+            if(oldBidang === newBidang && oldNama === newNama) {
+                window.showToast("Tidak ada perubahan yang disimpan.", "warning");
+                return;
+            }
+
+            if(!confirm(`Ubah kategori "${oldKey}" menjadi "${newKey}"?\n\nSemua soal, modul, riwayat ujian, dan data terkait lain yang masih memakai kategori lama akan otomatis diperbarui ke nama baru.`)) {
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btn-submit-kategori');
+            const oriBtnText = btnSubmit ? btnSubmit.innerText : '';
+            if(btnSubmit) btnSubmit.innerText = 'Menyimpan...';
+
+            try {
+                const updates = {};
+                updates[`${pathKategori}/${id}/bidang`] = newBidang;
+                updates[`${pathKategori}/${id}/nama`] = newNama;
+
+                let jumlahSoal = 0, jumlahModul = 0, jumlahVerifikasi = 0, jumlahLiveCbt = 0, jumlahRiwayat = 0, jumlahIzinPeserta = 0;
+
+                (quizDataFromDB || []).forEach(soal => {
+                    if(soal.kategori === oldKey) { updates[`${pathSoal}/${soal.id}/kategori`] = newKey; jumlahSoal++; }
+                });
+
+                (dataModulAll || []).forEach(modul => {
+                    if(modul.kategori === oldKey) { updates[`${pathModul}/${modul.id}/kategori`] = newKey; jumlahModul++; }
+                });
+
+                if(rawVerifikasiSnap && rawVerifikasiSnap.exists()) {
+                    rawVerifikasiSnap.forEach(childSnap => {
+                        const v = childSnap.val();
+                        if(v && v.kategori === oldKey) { updates[`${pathVerifikasi}/${childSnap.key}/kategori`] = newKey; jumlahVerifikasi++; }
+                    });
+                }
+
+                (dataLiveCbtAll || []).forEach(rec => {
+                    if(rec.kategori === oldKey) { updates[`${pathLiveCbt}/${rec.id}/kategori`] = newKey; jumlahLiveCbt++; }
+                });
+
+                // riwayat_ujian tidak punya cache mentah per-attempt di client (hanya rekap
+                // teragregasi dataRiwayatSemuaPeserta) -- ambil snapshot fresh langsung dari DB.
+                const riwayatSnap = await get(ref(db, pathRiwayat));
+                if(riwayatSnap.exists()) {
+                    riwayatSnap.forEach(uidSnap => {
+                        uidSnap.forEach(attemptSnap => {
+                            const att = attemptSnap.val();
+                            if(!att) return;
+                            const cocokBidangKelas = att.bidang === oldBidang && att.kelas === oldNama;
+                            const cocokKategoriSaja = !att.bidang && att.kategori === oldKey;
+                            if(cocokBidangKelas || cocokKategoriSaja) {
+                                const base = `${pathRiwayat}/${uidSnap.key}/${attemptSnap.key}`;
+                                updates[`${base}/kategori`] = newKey;
+                                updates[`${base}/bidang`] = newBidang;
+                                updates[`${base}/kelas`] = newNama;
+                                jumlahRiwayat++;
+                            }
+                        });
+                    });
+                }
+
+                // Rename KUNCI objek izinKelasKebakaran/permintaanKelasKebakaran (bukan sekadar
+                // nilai) tiap peserta -- HANYA untuk kategori Kebakaran custom (bukan 4 kelas
+                // BAWAAN, yang memang tidak bisa masuk sini karena def_* diblokir di atas).
+                if(oldBidang === 'Kebakaran' && oldNama !== newNama) {
+                    (dataPesertaAll || []).forEach(p => {
+                        const izin = p.izinKelasKebakaran || {};
+                        const pending = p.permintaanKelasKebakaran || {};
+                        let terpakai = false;
+                        if(Object.prototype.hasOwnProperty.call(izin, oldNama)) {
+                            updates[`${pathPeserta}/${p.id}/izinKelasKebakaran/${newNama}`] = izin[oldNama];
+                            updates[`${pathPeserta}/${p.id}/izinKelasKebakaran/${oldNama}`] = null;
+                            terpakai = true;
+                        }
+                        if(Object.prototype.hasOwnProperty.call(pending, oldNama)) {
+                            updates[`${pathPeserta}/${p.id}/permintaanKelasKebakaran/${newNama}`] = pending[oldNama];
+                            updates[`${pathPeserta}/${p.id}/permintaanKelasKebakaran/${oldNama}`] = null;
+                            terpakai = true;
+                        }
+                        if(terpakai) jumlahIzinPeserta++;
+                    });
+                }
+
+                await update(ref(db), updates);
+
+                const ringkasan = [];
+                if(jumlahSoal) ringkasan.push(`${jumlahSoal} soal`);
+                if(jumlahModul) ringkasan.push(`${jumlahModul} modul`);
+                if(jumlahVerifikasi) ringkasan.push(`${jumlahVerifikasi} permintaan ujian`);
+                if(jumlahLiveCbt) ringkasan.push(`${jumlahLiveCbt} live CBT`);
+                if(jumlahRiwayat) ringkasan.push(`${jumlahRiwayat} riwayat ujian`);
+                if(jumlahIzinPeserta) ringkasan.push(`${jumlahIzinPeserta} data izin peserta`);
+                const detail = ringkasan.length ? ` (${ringkasan.join(', ')} diperbarui otomatis)` : '';
+                window.showToast(`Kategori berhasil diubah menjadi "${newKey}".${detail}`, "success");
+
+                window.batalEditKategori();
+            } catch(err) {
+                window.showToast("Gagal menyimpan perubahan kategori.", "error");
+            } finally {
+                if(btnSubmit) btnSubmit.innerText = oriBtnText || 'Simpan Perubahan';
             }
         };
 
@@ -4487,19 +4739,39 @@
         };
 
         /* ================= KELOLA AKUN PESERTA (khusus Admin Pusat) ================= */
+        // Akun peserta sendiri TIDAK menyimpan field bidang (pendaftaran tidak lagi meminta
+        // pemilihan bidang) -- jadi "bidang" seorang peserta diturunkan dari riwayat ujian CBT
+        // yang pernah ia ikuti (dataRiwayatSemuaPeserta, field .bidang per kelas).
+        window.getBidangListPesertaDariRiwayat = function(uid) {
+            const perKelas = dataRiwayatSemuaPeserta[uid];
+            if (!perKelas) return [];
+            const set = new Set();
+            Object.values(perKelas).forEach(r => { if (r.bidang) set.add(r.bidang); });
+            return Array.from(set);
+        };
+
         window.renderAkunPeserta = function() {
             const tbody = document.getElementById('admin-table-akun-peserta');
             if (!tbody) return;
 
             const q = (document.getElementById('input-cari-peserta')?.value || '').toLowerCase().trim();
-            const filtered = q ? dataPesertaAll.filter(p =>
+            const bidangFilter = document.getElementById('filter-peserta-bidang')?.value || '';
+
+            let filtered = q ? dataPesertaAll.filter(p =>
                 (p.nama || '').toLowerCase().includes(q) ||
                 (p.email || '').toLowerCase().includes(q) ||
                 (p.instansi || '').toLowerCase().includes(q)
             ) : dataPesertaAll;
 
+            if (bidangFilter) {
+                filtered = filtered.filter(p => window.getBidangListPesertaDariRiwayat(p.id).includes(bidangFilter));
+            }
+
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 italic text-sm">${dataPesertaAll.length === 0 ? 'Belum ada akun peserta yang terdaftar.' : 'Tidak ditemukan peserta yang cocok.'}</td></tr>`;
+                const pesanKosong = dataPesertaAll.length === 0
+                    ? 'Belum ada akun peserta yang terdaftar.'
+                    : (bidangFilter ? `Tidak ada peserta dengan riwayat ujian di bidang "${bidangFilter}" yang cocok.` : 'Tidak ditemukan peserta yang cocok.');
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 italic text-sm">${pesanKosong}</td></tr>`;
                 return;
             }
 
@@ -4522,6 +4794,7 @@
         };
 
         document.getElementById('input-cari-peserta')?.addEventListener('input', () => window.renderAkunPeserta());
+        document.getElementById('filter-peserta-bidang')?.addEventListener('change', () => window.renderAkunPeserta());
 
         window.toggleStatusPeserta = async function(id, freeze) {
             if (!currentUser || currentUser.role !== 'admin_utama') {
@@ -4550,7 +4823,10 @@
         /* Panel Admin Pusat: "Izin Kelas Kebakaran". Berlaku untuk SEMUA peserta yang terdaftar
            (tidak ada pemilihan bidang saat mendaftar). Kelas D selalu tampil otomatis aktif
            (tidak bisa diubah); Kelas C/B/A punya tombol Berikan Izin / Cabut Izin, dan badge
-           "Menunggu" kalau peserta sudah mengajukan permintaan lewat layar terkunci di menu Materi. */
+           "Menunggu" kalau peserta sudah mengajukan permintaan lewat layar terkunci di menu
+           Materi -- saat status "Menunggu" ini muncul juga tombol "Tolak Akses" untuk menolak
+           permintaan tsb secara eksplisit (tanpa memberi izin), berbeda dari "Cabut Izin" yang
+           mencabut izin yang SUDAH aktif. */
         /* Bangun keterangan singkat "sudah menyelesaikan ujian CBT kelas apa saja" untuk satu
            peserta, dipakai di panel admin "Izin Kelas Kebakaran". Mencakup SEMUA bidang/kelas
            yang pernah diikuti peserta (tidak dibatasi Kebakaran saja), supaya admin punya
@@ -4575,11 +4851,31 @@
             if (!tbody) return;
 
             const q = (document.getElementById('input-cari-izin-kelas')?.value || '').toLowerCase().trim();
-            const filtered = q ? dataPesertaAll.filter(p =>
+            const statusFilter = document.getElementById('filter-status-izin-kelas')?.value || '';
+            let filtered = q ? dataPesertaAll.filter(p =>
                 (p.nama || '').toLowerCase().includes(q) ||
                 (p.email || '').toLowerCase().includes(q) ||
                 (p.instansi || '').toLowerCase().includes(q)
             ) : dataPesertaAll;
+
+            // Filter status (di luar Kelas D yang selalu otomatis aktif untuk semua peserta):
+            // - "Menunggu"/"Aktif" -> peserta yang punya MINIMAL SATU kelas (C/B/A) dengan
+            //   status tsb (memudahkan admin menemukan siapa saja yang perlu ditindaklanjuti).
+            // - "Belum Diminta" -> peserta yang SAMA SEKALI belum pernah menyentuh sistem izin
+            //   ini (SEMUA kelas C/B/A masih belum diminta) -- pakai every(), bukan some(),
+            //   supaya peserta yang sudah py izin/permintaan aktif di kelas lain tidak ikut
+            //   kehitung "belum diminta" hanya karena satu kelasnya belum ia ajukan.
+            if (statusFilter) {
+                const kelasDinilai = KELAS_KEBAKARAN_URUTAN.filter(k => k !== KELAS_D_KEBAKARAN);
+                filtered = filtered.filter(p => {
+                    const izin = p.izinKelasKebakaran || {};
+                    const pending = p.permintaanKelasKebakaran || {};
+                    if (statusFilter === 'aktif') return kelasDinilai.some(kelas => !!izin[kelas]);
+                    if (statusFilter === 'menunggu') return kelasDinilai.some(kelas => !izin[kelas] && !!pending[kelas]);
+                    if (statusFilter === 'belum_diminta') return kelasDinilai.every(kelas => !izin[kelas] && !pending[kelas]);
+                    return true;
+                });
+            }
 
             let pendingCount = 0;
             dataPesertaAll.forEach(p => { pendingCount += Object.keys(p.permintaanKelasKebakaran || {}).length; });
@@ -4590,7 +4886,10 @@
             }
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 italic text-sm">${dataPesertaAll.length === 0 ? 'Belum ada akun peserta yang terdaftar.' : 'Tidak ditemukan peserta yang cocok.'}</td></tr>`;
+                const pesanKosong = dataPesertaAll.length === 0
+                    ? 'Belum ada akun peserta yang terdaftar.'
+                    : (statusFilter || q ? 'Tidak ditemukan peserta yang cocok dengan filter ini.' : 'Tidak ditemukan peserta yang cocok.');
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 italic text-sm">${pesanKosong}</td></tr>`;
                 return;
             }
 
@@ -4611,7 +4910,8 @@
                     }
                     return `<td class="px-6 py-3 space-y-1.5">
                         <span class="block px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider ${isPending ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200'} font-bold border w-fit">${isPending ? '⏳ Menunggu' : 'Belum Diminta'}</span>
-                        <button data-izin-id="${escHtml(p.id)}" data-izin-kelas="${escHtml(kelas)}" data-izin-grant="1" class="btn-izin-kelas text-[10px] font-bold text-emerald-600 hover:text-emerald-800 underline">Berikan Izin</button>
+                        <button data-izin-id="${escHtml(p.id)}" data-izin-kelas="${escHtml(kelas)}" data-izin-grant="1" class="btn-izin-kelas block text-[10px] font-bold text-emerald-600 hover:text-emerald-800 underline">Berikan Izin</button>
+                        ${isPending ? `<button data-tolak-id="${escHtml(p.id)}" data-tolak-kelas="${escHtml(kelas)}" class="btn-tolak-kelas block text-[10px] font-bold text-red-500 hover:text-red-700 underline">Tolak Akses</button>` : ''}
                     </td>`;
                 }).join('');
                 return `<tr class="hover:bg-slate-50 border-b border-slate-100">
@@ -4629,9 +4929,15 @@
                     window.setIzinKelasKebakaran(btn.getAttribute('data-izin-id'), btn.getAttribute('data-izin-kelas'), btn.getAttribute('data-izin-grant') === '1');
                 });
             });
+            tbody.querySelectorAll('.btn-tolak-kelas').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    window.tolakPermintaanKelasKebakaran(btn.getAttribute('data-tolak-id'), btn.getAttribute('data-tolak-kelas'));
+                });
+            });
         };
 
         document.getElementById('input-cari-izin-kelas')?.addEventListener('input', () => window.renderIzinKelasKebakaran());
+        document.getElementById('filter-status-izin-kelas')?.addEventListener('change', () => window.renderIzinKelasKebakaran());
 
         window.setIzinKelasKebakaran = async function(id, kelas, grant) {
             if (!currentUser || currentUser.role !== 'admin_utama') {
@@ -4655,6 +4961,30 @@
             } catch (e) {
                 console.error(e);
                 window.showToast("Gagal mengubah izin kelas.", "error");
+            }
+        };
+
+        // Menolak SATU permintaan izin kelas Kebakaran yang sedang "Menunggu" -- berbeda dari
+        // "Cabut Izin" (yang mencabut izin yang SUDAH aktif). Menolak hanya membersihkan status
+        // permintaannya (tanpa memberi izin), supaya admin punya jawaban tegas untuk permintaan
+        // yang tidak disetujui, dan peserta bisa mengajukan lagi nanti kalau memang perlu.
+        window.tolakPermintaanKelasKebakaran = async function(id, kelas) {
+            if (!currentUser || currentUser.role !== 'admin_utama') {
+                window.showToast("Hanya Admin Pusat yang dapat menolak permintaan izin kelas.", "error");
+                return;
+            }
+            const target = dataPesertaAll.find(p => p.id === id);
+            const nama = target?.nama || 'peserta ini';
+            if (!confirm(`Tolak permintaan izin akses "${kelas}" dari "${nama}"? Peserta tetap bisa mengajukan lagi nanti.`)) return;
+
+            try {
+                const updates = {};
+                updates[`${pathPeserta}/${id}/permintaanKelasKebakaran/${kelas}`] = null;
+                await update(ref(db), updates);
+                window.showToast(`Permintaan izin "${kelas}" dari "${nama}" ditolak.`, "success");
+            } catch (e) {
+                console.error(e);
+                window.showToast("Gagal menolak permintaan izin kelas.", "error");
             }
         };
 
@@ -4694,10 +5024,14 @@
             if(!dataRunningTextAll || dataRunningTextAll.length === 0) return;
             const list = document.getElementById('modal-info-penting-list');
             if(list) {
-                list.innerHTML = dataRunningTextAll.map(t => `
-                    <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                        <p class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">${window.escapeHtmlSoal ? window.escapeHtmlSoal(t.isi) : t.isi}</p>
-                        <p class="text-[10px] text-slate-400 mt-2 font-semibold">${window.formatDate(t.timestamp)}</p>
+                list.innerHTML = dataRunningTextAll.map((t, idx) => `
+                    <div class="flex items-start gap-4 ${idx > 0 ? 'pt-5 border-t border-slate-100' : ''}">
+                        <div class="w-11 h-11 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-xl font-black shrink-0">!</div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm font-extrabold text-red-600 uppercase tracking-wider mb-1.5">Informasi Penting</h3>
+                            <p class="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">${window.escapeHtmlSoal ? window.escapeHtmlSoal(t.isi) : t.isi}</p>
+                            <p class="text-xs text-slate-400 italic mt-2">Diperbarui oleh Admin RuangK3 &middot; ${window.formatDate(t.timestamp)}</p>
+                        </div>
                     </div>`).join('');
             }
             window.openModal('modal-info-penting');
@@ -5413,6 +5747,7 @@
                 }
                 window.renderIzinKelasKebakaran();
                 window.renderRekapNilaiAdmin();
+                window.renderAkunPeserta();
             });
 
             onValue(ref(db, pathKategori), (snapshot) => {
@@ -5457,10 +5792,17 @@
                     
                     kats.forEach(k => {
                         if(listAdminKategori) {
-                            const btnHapus = k.id.startsWith('def_') 
-                                ? '<span class="text-[9px] text-slate-400 font-bold bg-slate-200 px-2 py-1 rounded tracking-widest">BAWAAN</span>' 
-                                : `<button onclick="window.hapusKategori('${k.id}')" class="text-red-500 hover:text-red-700 bg-white p-1.5 rounded shadow-sm border border-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>`;
-                            listAdminKategori.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center ml-2 lg:ml-4 mb-2"><span class="font-bold text-slate-800 text-sm">${k.nama}</span>${btnHapus}</div>`;
+                            // Kategori BAWAAN (def_1..def_7, khususnya 4 Kelas Kebakaran) sengaja
+                            // TIDAK BOLEH diedit maupun dihapus -- nama-namanya dipakai sebagai
+                            // konstanta tetap (KELAS_D_KEBAKARAN/KELAS_KEBAKARAN_URUTAN) yang
+                            // menggerakkan seluruh sistem penguncian & izin akses Kelas Kebakaran.
+                            const aksiBtn = k.id.startsWith('def_')
+                                ? '<span class="text-[9px] text-slate-400 font-bold bg-slate-200 px-2 py-1 rounded tracking-widest">BAWAAN</span>'
+                                : `<div class="flex items-center gap-1.5">
+                                    <button onclick="window.editKategoriMulai('${k.id}')" title="Edit kategori" class="text-safety-600 hover:text-safety-700 bg-white p-1.5 rounded shadow-sm border border-safety-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                                    <button onclick="window.hapusKategori('${k.id}')" title="Hapus kategori" class="text-red-500 hover:text-red-700 bg-white p-1.5 rounded shadow-sm border border-red-100"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                   </div>`;
+                            listAdminKategori.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex justify-between items-center ml-2 lg:ml-4 mb-2"><span class="font-bold text-slate-800 text-sm">${k.nama}</span>${aksiBtn}</div>`;
                         }
                     });
                 }
@@ -5484,6 +5826,8 @@
                 if(sFilterNilaiBidang) { const val = sFilterNilaiBidang.value; sFilterNilaiBidang.innerHTML = bidangFilterOptions; if(val) sFilterNilaiBidang.value = val; }
                 const sFilterLiveBidang = document.getElementById('filter-live-bidang');
                 if(sFilterLiveBidang) { const val = sFilterLiveBidang.value; sFilterLiveBidang.innerHTML = bidangFilterOptions; if(val) sFilterLiveBidang.value = val; }
+                const sFilterPesertaBidang = document.getElementById('filter-peserta-bidang');
+                if(sFilterPesertaBidang) { const val = sFilterPesertaBidang.value; sFilterPesertaBidang.innerHTML = bidangFilterOptions; if(val) sFilterPesertaBidang.value = val; }
 
                 // Ceklis bidang K3 untuk form "Akun Bidang Lain" & "Kelola Akun Tim" -- dipakai supaya
                 // Verifikasi Ujian tiap admin bisa disaring sesuai bidang yang jadi tanggung jawabnya.
@@ -6058,7 +6402,24 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 if (!user.isAnonymous && currentUser === null) {
+                    // Sebelumnya request ini TIDAK PERNAH punya batas waktu -- kalau sinyal
+                    // device drop persis di tahap ini, peserta yang sudah berhasil login lewat
+                    // Firebase Auth akan terjebak di layar kosong/loading TANPA PENJELASAN
+                    // apa pun (persis keluhan "login terasa lambat/berat...seperti tersangkut"),
+                    // karena data profilnya tidak pernah datang dan tidak ada pesan apa pun yang
+                    // muncul. Sekarang dikasih peringatan setelah menunggu cukup lama -- TAPI
+                    // listener onValue({onlyOnce:true}) di bawah TETAP dibiarkan menunggu (tidak
+                    // dibatalkan), supaya begitu koneksi pulih & datanya akhirnya datang, proses
+                    // login tetap selesai normal (bukan malah dianggap gagal total).
+                    let dataProfilSudahDiterima = false;
+                    const peringatanTimeoutId = setTimeout(() => {
+                        if (!dataProfilSudahDiterima) {
+                            window.showToast('Koneksi internet lambat. Sedang mencoba memuat data akun Anda, mohon tunggu atau periksa sinyal Anda...', 'warning');
+                        }
+                    }, TIMEOUT_JARINGAN_MS);
                     onValue(ref(db, `${pathPeserta}/${user.uid}`), (snap) => {
+                        dataProfilSudahDiterima = true;
+                        clearTimeout(peringatanTimeoutId);
                         const data = snap.val();
                         if(data) {
                             if (data.status === 'dibekukan') {
