@@ -806,7 +806,7 @@
             <div id="ujian-intro" class="flex-1 flex flex-col p-5 sm:p-8 overflow-y-auto min-h-0">
                 <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 text-safety-600 shadow-inner shrink-0">📝</div>
                 <h3 class="text-xl md:text-2xl font-bold text-slate-900 mb-2 text-center shrink-0">Permintaan Permohonan Ujian CBT</h3>
-                <p class="text-slate-600 mb-6 text-sm text-center shrink-0">Waktu pengerjaan &amp; jumlah soal <strong>ditentukan oleh instruktur</strong> saat memverifikasi permintaan Anda. Lengkapi formulir di bawah untuk meminta verifikasi instruktur.</p>
+                <p class="text-slate-600 mb-6 text-sm text-center shrink-0">Waktu pengerjaan, jumlah soal, &amp; standar kelulusan <strong>ditentukan oleh instruktur</strong> saat memverifikasi permintaan Anda. Lengkapi formulir di bawah untuk meminta verifikasi instruktur.</p>
                 
                 <div class="space-y-4 mb-6 max-w-lg mx-auto w-full shrink-0">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -999,8 +999,8 @@
                         <div class="p-6 border-b border-slate-200 bg-slate-50"><h3 class="text-lg font-bold text-slate-900">Permintaan Verifikasi Ujian</h3></div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Waktu Request</th><th class="px-6 py-4 font-semibold">Nama Peserta (Instansi)</th><th class="px-6 py-4 font-semibold">Kategori Kelas</th><th class="px-6 py-4 font-semibold">Waktu Ujian (Menit)</th><th class="px-6 py-4 font-semibold">Jumlah Soal</th><th class="px-6 py-4 font-semibold text-right">Aksi</th></tr></thead>
-                                <tbody id="admin-table-verifikasi" class="divide-y divide-slate-100 bg-white"><tr><td colspan="6" class="text-center py-8 text-slate-500">Belum ada data.</td></tr></tbody>
+                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Waktu Request</th><th class="px-6 py-4 font-semibold">Nama Peserta (Instansi)</th><th class="px-6 py-4 font-semibold">Kategori Kelas</th><th class="px-6 py-4 font-semibold">Waktu Ujian (Menit)</th><th class="px-6 py-4 font-semibold">Jumlah Soal</th><th class="px-6 py-4 font-semibold">Standar Kelulusan (%)</th><th class="px-6 py-4 font-semibold text-right">Aksi</th></tr></thead>
+                                <tbody id="admin-table-verifikasi" class="divide-y divide-slate-100 bg-white"><tr><td colspan="7" class="text-center py-8 text-slate-500">Belum ada data.</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -1668,9 +1668,9 @@
            2) Tidak ada tombol/menu Download atau Print bawaan sama sekali, karena yang
               ditampilkan cuma gambar hasil render, bukan dokumen PDF asli yang dibaca plugin.
            3) Teks di dalam PDF tidak bisa diblok/dicopy-paste, karena hanya berupa gambar.
-           4) Watermark identitas peserta digambar LANGSUNG di atas piksel setiap halaman
-              (bukan lapisan HTML terpisah), sehingga selalu ikut ter-scroll bersama halaman
-              dan tetap ada di posisi manapun peserta men-scroll.
+           4) Watermark nama admin pengunggah + identitas peserta digambar LANGSUNG di atas
+              piksel setiap halaman (bukan lapisan HTML terpisah), sehingga selalu ikut
+              ter-scroll bersama halaman dan tetap ada di posisi manapun peserta men-scroll.
            Catatan jujur ke admin: cara ini tidak bisa mencegah screenshot/perekaman layar —
            tidak ada teknologi web manapun yang bisa melakukan itu sepenuhnya. */
         function base64PdfToUint8Array(dataUri) {
@@ -1738,15 +1738,23 @@
             }
             ctx.restore();
         }
-        /* Watermark identitas peserta di atas materi (video & dokumen) sebagai jejak anti-bocor.
-           Screenshot/rekam layar tidak bisa diblokir sepenuhnya oleh website manapun,
-           tapi watermark ini membuat identitas pengunggah terlihat jika materi disebarkan. */
-        function getModulWatermarkLabel() {
-            if (!currentUser || currentUser.role !== 'peserta') return '';
-            return `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
+        /* Watermark di atas materi (video & dokumen) berisi DUA informasi sekaligus saat
+           peserta membuka/mereview materi:
+           1) Nama Admin/Instruktur yang menginput modul tsb -- supaya terlihat jelas materi
+              ini diunggah oleh admin yang mana.
+           2) Nama & email peserta yang sedang login -- sebagai jejak anti-bocor (identitas
+              pengunggah terlihat jika materi disebarkan/screenshot oleh peserta tsb). */
+        function getModulWatermarkLabel(modulData) {
+            const namaAdmin = modulData && modulData.namaAdminUpload ? String(modulData.namaAdminUpload).trim() : '';
+            const adminPart = namaAdmin || 'RuangK3';
+            let pesertaPart = '';
+            if (currentUser && currentUser.role === 'peserta') {
+                pesertaPart = `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
+            }
+            return pesertaPart ? `${adminPart} • ${pesertaPart}` : adminPart;
         }
-        function getModulWatermarkHtml() {
-            const label = getModulWatermarkLabel();
+        function getModulWatermarkHtml(modulData) {
+            const label = getModulWatermarkLabel(modulData);
             if (!label) return '';
             const esc = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
             const line = (esc + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;').repeat(5);
@@ -1961,7 +1969,7 @@
                 return;
             }
 
-            const watermarkHtml = getModulWatermarkHtml();
+            const watermarkHtml = getModulWatermarkHtml(data);
 
             const videoWrap = document.getElementById('lihat-modul-video-wrap');
             if (videoWrap) {
@@ -1984,7 +1992,7 @@
                     // discroll normal, tanpa tombol Download/Print bawaan browser sama sekali.
                     docWrap.innerHTML = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div id="lihat-modul-doc-canvas-box"></div></div>`;
                     const canvasBox = document.getElementById('lihat-modul-doc-canvas-box');
-                    if (canvasBox) renderPdfIntoContainer(data.docUrl, canvasBox, getModulWatermarkLabel());
+                    if (canvasBox) renderPdfIntoContainer(data.docUrl, canvasBox, getModulWatermarkLabel(data));
                 } else if (data.docUrl) {
                     // Link eksternal (Google Drive / URL PDF lain di luar server kita) — tetap
                     // lewat iframe karena kita tidak bisa mengambil isi file mentahnya langsung
@@ -2152,7 +2160,7 @@
             const totalUjian = (dataRiwayatUjian || []).length;
             const skorArr = (dataRiwayatUjian || []).map(r => Number(r.skor) || 0);
             const nilaiTertinggi = skorArr.length ? Math.max(...skorArr) : 0;
-            const sudahLulus = (dataRiwayatUjian || []).some(r => (Number(r.skor) || 0) >= 70);
+            const sudahLulus = (dataRiwayatUjian || []).some(r => window.isRiwayatLulus(r));
 
             const step2Done = totalUjian > 0;
             const step3Done = sudahLulus;
@@ -2211,48 +2219,101 @@
             const badge = document.getElementById('badge-verif');
             if(!tbody) return;
 
-            let pendingCount = 0;
-            let html = '';
-
+            const visibleRecords = [];
             if(rawVerifikasiSnap && rawVerifikasiSnap.exists()) {
                 rawVerifikasiSnap.forEach(childSnap => {
                     const data = childSnap.val();
-                    if(data.status === 'pending') {
-                        /* Pemantau (viewer_kalender) tetap melihat SEMUA data (akses monitoring penuh).
-                           Selain itu, admin/instruktur hanya melihat: (a) permintaan yang secara spesifik
-                           ditujukan ke dirinya (idTimTarget cocok -- jaring pengaman supaya request tidak
-                           pernah "hilang" walau bidangnya belum punya admin khusus), atau (b) permintaan
-                           yang bidangnya cocok dengan bidang yang dipegang admin tsb. */
-                        const isViewer = currentUser && currentUser.role === 'viewer_kalender';
-                        const isMyStudent = currentUser && data.idTimTarget === currentUser.idTim;
-                        const recordBidang = window.normKat((data.kategori || '').split(' - ')[0]);
-                        const userBidangList = window.getUserBidangList(currentUser);
-                        const isBidangMatch = userBidangList.some(b => window.normKat(b) === recordBidang);
+                    if(data.status !== 'pending') return;
+                    /* Pemantau (viewer_kalender) tetap melihat SEMUA data (akses monitoring penuh).
+                       Selain itu, admin/instruktur hanya melihat: (a) permintaan yang secara spesifik
+                       ditujukan ke dirinya (idTimTarget cocok -- jaring pengaman supaya request tidak
+                       pernah "hilang" walau bidangnya belum punya admin khusus), atau (b) permintaan
+                       yang bidangnya cocok dengan bidang yang dipegang admin tsb. */
+                    const isViewer = currentUser && currentUser.role === 'viewer_kalender';
+                    const isMyStudent = currentUser && data.idTimTarget === currentUser.idTim;
+                    const recordBidang = window.normKat((data.kategori || '').split(' - ')[0]);
+                    const userBidangList = window.getUserBidangList(currentUser);
+                    const isBidangMatch = userBidangList.some(b => window.normKat(b) === recordBidang);
 
-                        if(isViewer || isMyStudent || isBidangMatch) {
-                            pendingCount++;
-                            html += `
-                            <tr class="hover:bg-slate-50 border-b border-slate-100">
-                                <td class="px-6 py-4 text-xs text-slate-600">${window.formatDate(data.timestamp)}</td>
-                                <td class="px-6 py-4 text-sm font-bold text-slate-900">${data.namaPeserta} <br><span class="text-xs font-normal text-slate-500">${data.instansi}</span></td>
-                                <td class="px-6 py-4"><span class="px-2 py-1 bg-amber-100 text-amber-800 text-[10px] rounded font-bold uppercase">${data.kategori}</span></td>
-                                <td class="px-6 py-4">
-                                    <input type="number" min="5" step="5" value="45" id="input-durasi-${childSnap.key}" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Waktu ujian (menit)">
-                                </td>
-                                <td class="px-6 py-4">
-                                    <input type="number" min="1" id="input-jumlah-${childSnap.key}" placeholder="Semua" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Jumlah soal (kosongkan = semua soal tersedia)">
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button onclick="window.approveUjian('${childSnap.key}')" class="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded shadow hover:bg-emerald-600 transition-colors">Izinkan Ujian</button>
-                                </td>
-                            </tr>`;
-                        }
+                    if(isViewer || isMyStudent || isBidangMatch) {
+                        visibleRecords.push({ key: childSnap.key, data });
                     }
                 });
             }
 
+            const pendingCount = visibleRecords.length;
+
+            // Kelompokkan berdasarkan TANGGAL request (window.formatDate sudah berupa tanggal saja,
+            // tanpa jam) + KATEGORI (bidang - kelas) yang PERSIS sama. Kalau satu grup berisi lebih
+            // dari 1 peserta, tampilkan satu baris kontrol massal di atasnya supaya admin bisa
+            // langsung set durasi & jumlah soal SEKALIGUS untuk seluruh peserta di grup itu --
+            // tanpa perlu mengisi & menyetujui satu-satu.
+            const groups = {};
+            const groupOrder = [];
+            visibleRecords.forEach(rec => {
+                const tanggalKey = window.formatDate(rec.data.timestamp);
+                const groupKey = `${tanggalKey}||${rec.data.kategori || ''}`;
+                if(!groups[groupKey]) {
+                    groups[groupKey] = { tanggal: tanggalKey, kategori: rec.data.kategori || '-', items: [] };
+                    groupOrder.push(groupKey);
+                }
+                groups[groupKey].items.push(rec);
+            });
+
+            window.verifikasiGroupMap = {};
+            let html = '';
+            groupOrder.forEach((groupKey, idx) => {
+                const grp = groups[groupKey];
+                const groupId = `g${idx}`;
+                window.verifikasiGroupMap[groupId] = { keys: grp.items.map(r => r.key) };
+
+                if(grp.items.length > 1) {
+                    html += `
+                    <tr class="bg-slate-100 border-b border-slate-200">
+                        <td colspan="7" class="px-6 py-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-700">${grp.tanggal}</span>
+                                    <span class="mx-1 text-slate-400">&middot;</span>
+                                    <span class="text-xs font-bold text-slate-700 uppercase">${grp.kategori}</span>
+                                    <span class="ml-2 text-[10px] text-slate-500">(${grp.items.length} peserta)</span>
+                                </div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <input type="number" min="5" step="5" value="45" id="input-durasi-grup-${groupId}" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Waktu ujian (menit) untuk semua peserta di grup ini">
+                                    <input type="number" min="1" id="input-jumlah-grup-${groupId}" placeholder="Semua" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Jumlah soal untuk semua peserta di grup ini (kosongkan = semua soal tersedia)">
+                                    <input type="number" min="0" max="100" value="70" id="input-standar-grup-${groupId}" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Standar kelulusan (%) untuk semua peserta di grup ini">
+                                    <button onclick="window.approveSemuaGrup('${groupId}')" class="px-3 py-1.5 bg-navy-900 text-white text-xs font-bold rounded shadow hover:bg-navy-800 transition-colors whitespace-nowrap">Terapkan &amp; Setujui Semua (${grp.items.length})</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+
+                grp.items.forEach(rec => {
+                    const { key, data } = rec;
+                    html += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="px-6 py-4 text-xs text-slate-600">${window.formatDate(data.timestamp)}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-slate-900">${data.namaPeserta} <br><span class="text-xs font-normal text-slate-500">${data.instansi}</span></td>
+                        <td class="px-6 py-4"><span class="px-2 py-1 bg-amber-100 text-amber-800 text-[10px] rounded font-bold uppercase">${data.kategori}</span></td>
+                        <td class="px-6 py-4">
+                            <input type="number" min="5" step="5" value="45" id="input-durasi-${key}" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Waktu ujian (menit)">
+                        </td>
+                        <td class="px-6 py-4">
+                            <input type="number" min="1" id="input-jumlah-${key}" placeholder="Semua" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Jumlah soal (kosongkan = semua soal tersedia)">
+                        </td>
+                        <td class="px-6 py-4">
+                            <input type="number" min="0" max="100" value="70" id="input-standar-${key}" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Standar kelulusan (%)">
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="window.approveUjian('${key}')" class="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold rounded shadow hover:bg-emerald-600 transition-colors">Izinkan Ujian</button>
+                        </td>
+                    </tr>`;
+                });
+            });
+
             if(pendingCount === 0) {
-                html = '<tr><td colspan="6" class="text-center py-8 text-slate-500 text-sm">Belum ada permintaan ujian baru.</td></tr>';
+                html = '<tr><td colspan="7" class="text-center py-8 text-slate-500 text-sm">Belum ada permintaan ujian baru.</td></tr>';
             }
 
             tbody.innerHTML = html;
@@ -2369,6 +2430,21 @@
             if (Array.isArray(user.bidangList) && user.bidangList.length) return user.bidangList;
             if (user.bidang) return [user.bidang];
             return [];
+        };
+
+        /* Tentukan status lulus/tidak dari satu record riwayat ujian. Utamakan field status/
+           statusKelulusan yang SUDAH TERSIMPAN saat ujian selesai -- ini mengikuti standar
+           kelulusan yang berlaku SAAT UJIAN ITU DIKERJAKAN (bisa beda-beda per ujian kalau
+           instruktur mengubahnya saat verifikasi), jadi jangan dihitung ulang dari skor mentah
+           pakai angka baku. Kalau record LAMA sama sekali tidak punya field status (data dari
+           sebelum fitur standar kelulusan kustom ini ada), baru jatuh ke perbandingan skor
+           terhadap standarKelulusan record itu sendiri (atau default 70% kalau itu juga kosong). */
+        window.isRiwayatLulus = function(r) {
+            if (!r) return false;
+            if (r.status === 'Lulus' || r.statusKelulusan === 'Lulus') return true;
+            if (r.status === 'Tidak Lulus' || r.statusKelulusan === 'Tidak Lulus') return false;
+            const standar = Number(r.standarKelulusan) || 70;
+            return (Number(r.skor) || 0) >= standar;
         };
 
         /* Ambil kode kelas (mis. "kelas d") dari teks kelas/kategori */
@@ -2529,7 +2605,7 @@
             }
 
             const nilaiArr = data.map(r => Number(r.skor) || 0);
-            const totalLulus = data.filter(r => (Number(r.skor)||0) >= 70).length;
+            const totalLulus = data.filter(r => window.isRiwayatLulus(r)).length;
             if(statsBox) {
                 statsBox.classList.remove('hidden');
                 document.getElementById('riwayat-stat-total').innerText = data.length;
@@ -2540,7 +2616,7 @@
 
             list.innerHTML = data.map((r, i) => {
                 const skor = Number(r.skor) || 0;
-                const lulus = skor >= 70;
+                const lulus = window.isRiwayatLulus(r);
                 const badge = lulus ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200';
                 const ring = lulus ? 'text-emerald-600' : 'text-red-500';
                 return `
@@ -2579,7 +2655,7 @@
             if(modalTitleKat) modalTitleKat.innerText = `Detail Ujian: ${data.kategori || 'Umum'}`;
 
             const skor = Number(data.skor) || 0;
-            const lulus = skor >= 70;
+            const lulus = window.isRiwayatLulus(data);
             const labels = ['A','B','C','D','E','F'];
             const detail = Array.isArray(data.detail) ? data.detail : [];
 
@@ -2681,7 +2757,7 @@
             const labels = ['A','B','C','D','E','F'];
             list.innerHTML = data.map((r, i) => {
                 const skor = Number(r.skor) || 0;
-                const lulus = skor >= 70;
+                const lulus = window.isRiwayatLulus(r);
                 const detail = Array.isArray(r.detail) ? r.detail : [];
 
                 const detailHtml = detail.length === 0
@@ -2997,7 +3073,11 @@
             
             const total = activeQuizData.length;
             const finalScore = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-            const isLulus = finalScore >= 70;
+            // Standar kelulusan mengikuti yang ditentukan instruktur saat verifikasi (default 70%
+            // kalau tidak ada/tidak valid, mis. sesi ujian dari sebelum fitur ini ada).
+            let standarKelulusan = currentExamMeta ? Number(currentExamMeta.standarKelulusan) : NaN;
+            if(isNaN(standarKelulusan) || standarKelulusan < 0 || standarKelulusan > 100) standarKelulusan = 70;
+            const isLulus = finalScore >= standarKelulusan;
             
             document.getElementById('quiz-score').innerText = finalScore;
             const statusEl = document.getElementById('quiz-status-lulus');
@@ -3137,6 +3217,7 @@
                         jumlahBenar: correctCount,
                         totalSoal: total,
                         status: isLulus ? 'Lulus' : 'Tidak Lulus',
+                        standarKelulusan: standarKelulusan,
                         detail: activeQuizData.map((q, idx) => ({
                             pertanyaan: q.pertanyaan || '-',
                             gambarUrl: q.gambarUrl || '',
@@ -3576,13 +3657,18 @@
                     }
                     activeQuizData = soalHasil;
                     const durasiMenitDiizinkan = (recVal.durasiMenit && Number(recVal.durasiMenit) > 0) ? Number(recVal.durasiMenit) : 45;
+                    // Standar kelulusan (%) juga ditentukan instruktur saat verifikasi -- default 70%
+                    // kalau tidak diisi (perilaku lama, permintaan dari sebelum fitur ini ada).
+                    let standarKelulusanDiizinkan = Number(recVal.standarKelulusan);
+                    if(isNaN(standarKelulusanDiizinkan) || standarKelulusanDiizinkan < 0 || standarKelulusanDiizinkan > 100) standarKelulusanDiizinkan = 70;
                     currentExamMeta = {
                         bidang: bdg,
                         kelas: kls,
                         kategori: `${bdg} - ${kls}`,
                         idTim: idTim,
                         namaInstruktur: window.getNamaTim(idTim),
-                        durasiMenit: durasiMenitDiizinkan
+                        durasiMenit: durasiMenitDiizinkan,
+                        standarKelulusan: standarKelulusanDiizinkan
                     };
 
                     if(activeQuizData.length === 0) {
@@ -4756,6 +4842,7 @@
                     videoUrl: videoUrl,
                     docUrl: docUrl,
                     isi: document.getElementById('input-isi-modul').value,
+                    namaAdminUpload: currentUser.nama || 'Admin',
                     timestamp: Date.now()
                 });
                 e.target.reset();
@@ -5234,17 +5321,53 @@
             window.renderDashboardPendapatanHome(); 
         });
 
-        window.approveUjian = async function(uid) {
+        // Baca nilai durasi/jumlah soal/standar kelulusan dari sekelompok input (per-baris ATAU
+        // per-grup), lalu simpan persetujuan untuk SATU permintaan ujian. Dipakai bersama oleh
+        // window.approveUjian (satu baris) dan window.approveSemuaGrup (banyak baris tanggal+
+        // kategori yang sama sekaligus).
+        function bacaDurasiJumlahDariInput(elDurasi, elJumlah, elStandar) {
+            let durasiMenit = elDurasi ? parseInt(elDurasi.value, 10) : NaN;
+            if(!durasiMenit || durasiMenit <= 0) durasiMenit = 45;
+            const jumlahRaw = elJumlah ? parseInt(elJumlah.value, 10) : NaN;
+            // jumlahSoal null -> tanpa batas (seluruh soal bank dipakai), sesuai perilaku lama.
+            const jumlahSoal = (jumlahRaw && jumlahRaw > 0) ? jumlahRaw : null;
+            let standarKelulusan = elStandar ? parseInt(elStandar.value, 10) : NaN;
+            if(isNaN(standarKelulusan) || standarKelulusan < 0) standarKelulusan = 70;
+            if(standarKelulusan > 100) standarKelulusan = 100;
+            return { durasiMenit, jumlahSoal, standarKelulusan };
+        }
+
+        async function setujuiSatuUjian(uid, durasiMenit, jumlahSoal, standarKelulusan) {
             try {
-                const elDurasi = document.getElementById(`input-durasi-${uid}`);
-                const elJumlah = document.getElementById(`input-jumlah-${uid}`);
-                let durasiMenit = elDurasi ? parseInt(elDurasi.value, 10) : NaN;
-                if(!durasiMenit || durasiMenit <= 0) durasiMenit = 45;
-                const jumlahRaw = elJumlah ? parseInt(elJumlah.value, 10) : NaN;
-                // jumlahSoal null -> tanpa batas (seluruh soal bank dipakai), sesuai perilaku lama.
-                const jumlahSoal = (jumlahRaw && jumlahRaw > 0) ? jumlahRaw : null;
-                await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved', durasiMenit, jumlahSoal });
+                await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved', durasiMenit, jumlahSoal, standarKelulusan });
             } catch(e){}
+        }
+
+        window.approveUjian = async function(uid) {
+            const { durasiMenit, jumlahSoal, standarKelulusan } = bacaDurasiJumlahDariInput(
+                document.getElementById(`input-durasi-${uid}`),
+                document.getElementById(`input-jumlah-${uid}`),
+                document.getElementById(`input-standar-${uid}`)
+            );
+            await setujuiSatuUjian(uid, durasiMenit, jumlahSoal, standarKelulusan);
+        };
+
+        // Terapkan durasi, jumlah soal, & standar kelulusan yang SAMA ke seluruh permintaan dalam
+        // satu grup (tanggal + kategori yang sama), lalu langsung setujui semuanya sekaligus --
+        // supaya admin tidak perlu mengisi & mengklik "Izinkan Ujian" satu per satu untuk kelas
+        // yang mendaftar bersamaan.
+        window.approveSemuaGrup = async function(groupId) {
+            const grp = window.verifikasiGroupMap && window.verifikasiGroupMap[groupId];
+            if(!grp || !grp.keys || grp.keys.length === 0) return;
+            const { durasiMenit, jumlahSoal, standarKelulusan } = bacaDurasiJumlahDariInput(
+                document.getElementById(`input-durasi-grup-${groupId}`),
+                document.getElementById(`input-jumlah-grup-${groupId}`),
+                document.getElementById(`input-standar-grup-${groupId}`)
+            );
+            for(const key of grp.keys) {
+                await setujuiSatuUjian(key, durasiMenit, jumlahSoal, standarKelulusan);
+            }
+            window.showToast(`${grp.keys.length} permintaan ujian (tanggal & kelas yang sama) berhasil disetujui sekaligus.`, "success");
         };
 
         window.fetchDataRealtime = function() {
@@ -5269,7 +5392,7 @@
                             const kelasAtt = att.kelas && att.kelas !== '-' ? att.kelas : (att.kategori || 'Umum');
                             const key = bidangAtt ? `${bidangAtt} - ${kelasAtt}` : kelasAtt;
                             const skor = Number(att.skor) || 0;
-                            const lulus = att.status === 'Lulus' || skor >= 70;
+                            const lulus = window.isRiwayatLulus(att);
                             if (!perKelas[key]) perKelas[key] = { lulus: false, bestSkor: 0, attempts: 0, bidang: bidangAtt, kelas: kelasAtt };
                             perKelas[key].attempts++;
                             if (skor > perKelas[key].bestSkor) perKelas[key].bestSkor = skor;
