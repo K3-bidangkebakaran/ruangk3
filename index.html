@@ -1727,10 +1727,16 @@
             ctx.fillStyle = '#0f172a';
             ctx.font = 'bold 13px Arial, sans-serif';
             ctx.textBaseline = 'middle';
+            // Label sekarang bisa panjang (gabungan nama admin + nama & email peserta), jadi
+            // jarak antar pengulangan HARUS mengikuti lebar teks yang sebenarnya (diukur lewat
+            // ctx.measureText) -- kalau dipatok angka tetap seperti sebelumnya, teks yang lebih
+            // panjang dari jaraknya akan saling tabrakan/tumpang tindih dan jadi tidak terbaca.
+            const textWidth = ctx.measureText(label).width;
+            const stepX = Math.max(textWidth + 90, 220);
+            const stepY = 60;
             ctx.translate(width / 2, height / 2);
             ctx.rotate(-22 * Math.PI / 180);
             ctx.translate(-width, -height);
-            const stepX = 190, stepY = 70;
             for (let y = -height * 0.5; y < height * 2; y += stepY) {
                 for (let x = -width * 0.5; x < width * 2; x += stepX) {
                     ctx.fillText(label, x, y);
@@ -1757,9 +1763,13 @@
             const label = getModulWatermarkLabel(modulData);
             if (!label) return '';
             const esc = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const line = (esc + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;').repeat(5);
-            const rows = Array(16).fill(`<span>${line}</span>`).join('<br>');
-            return `<div class="absolute inset-0 z-30 overflow-hidden pointer-events-none select-none" style="opacity:.6;"><div style="position:absolute; top:-40%; left:-40%; width:180%; height:180%; transform:rotate(-22deg); color:rgba(255,255,255,.55); text-shadow:0 1px 3px rgba(0,0,0,.9); font-size:11px; font-weight:700; line-height:2.6em; letter-spacing:1px; white-space:nowrap;">${rows}</div></div>`;
+            // Label sekarang bisa panjang (gabungan nama admin + nama & email peserta) --
+            // jarak antar pengulangan (nbsp) & jumlah baris dikurangi supaya tetap lega/terbaca
+            // dan tidak terasa padat/bertabrakan seperti sebelumnya saat labelnya panjang.
+            const gap = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+            const line = (esc + gap).repeat(3);
+            const rows = Array(12).fill(`<span>${line}</span>`).join('<br>');
+            return `<div class="absolute inset-0 z-30 overflow-hidden pointer-events-none select-none" style="opacity:.6;"><div style="position:absolute; top:-40%; left:-40%; width:180%; height:180%; transform:rotate(-22deg); color:rgba(255,255,255,.55); text-shadow:0 1px 3px rgba(0,0,0,.9); font-size:11px; font-weight:700; line-height:3.2em; letter-spacing:1px; white-space:nowrap;">${rows}</div></div>`;
         }
         function escHtml(str) {
             return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
