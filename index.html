@@ -1778,28 +1778,20 @@
             }
             ctx.restore();
         }
-        /* Watermark di atas materi (video & dokumen) berisi DUA informasi sekaligus saat
-           peserta membuka/mereview materi:
-           1) Nama Admin/Instruktur yang menginput modul tsb -- supaya terlihat jelas materi
-              ini diunggah oleh admin yang mana.
-           2) Nama & email peserta yang sedang login -- sebagai jejak anti-bocor (identitas
-              pengunggah terlihat jika materi disebarkan/screenshot oleh peserta tsb). */
+        /* Watermark di atas materi (video & dokumen) saat peserta membuka/mereview materi:
+           HANYA berisi nama Admin/Instruktur yang menginput modul tsb (field namaAdminUpload)
+           -- supaya terlihat jelas materi ini diunggah oleh admin yang mana. Sebelumnya juga
+           menyertakan nama & email peserta yang sedang login (jejak anti-bocor), tapi atas
+           permintaan terbaru identitas peserta TIDAK ditampilkan lagi di watermark ini. */
         function getModulWatermarkLabel(modulData) {
             const namaAdmin = modulData && modulData.namaAdminUpload ? String(modulData.namaAdminUpload).trim() : '';
-            const adminPart = namaAdmin || 'RuangK3';
-            let pesertaPart = '';
-            if (currentUser && currentUser.role === 'peserta') {
-                pesertaPart = `${currentUser.nama || ''}${currentUser.email ? ' • ' + currentUser.email : ''}`.trim();
-            }
-            return pesertaPart ? `${adminPart} • ${pesertaPart}` : adminPart;
+            return namaAdmin || 'RuangK3';
         }
         function getModulWatermarkHtml(modulData) {
             const label = getModulWatermarkLabel(modulData);
             if (!label) return '';
             const esc = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            // Label sekarang bisa panjang (gabungan nama admin + nama & email peserta) --
-            // jarak antar pengulangan (nbsp) & jumlah baris dikurangi supaya tetap lega/terbaca
-            // dan tidak terasa padat/bertabrakan seperti sebelumnya saat labelnya panjang.
+            // Jarak antar pengulangan (nbsp) & jumlah baris dibuat lega/terbaca, tidak padat.
             const gap = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
             const line = (esc + gap).repeat(3);
             const rows = Array(12).fill(`<span>${line}</span>`).join('<br>');
