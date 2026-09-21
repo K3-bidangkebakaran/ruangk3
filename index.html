@@ -3874,9 +3874,14 @@
             const oriText = btnSubmit.innerText; 
             btnSubmit.innerText = "Memeriksa...";
             
-            if (pin === 'admin123') { 
-                currentUser = { nama: 'Adrian', role: 'admin_utama', uid: 'admin_master_123', idTim: 'admin_utama', bidang: 'Kebakaran', bidangList: ['Kebakaran'] };
-                window.renderAvatarUI('Adrian', 'Admin Utama'); 
+            if (pin === 'admin123') {
+                // nama di sini ikut jadi "namaAdminUpload" saat admin_utama upload modul materi
+                // (lihat window.getModulWatermarkLabel & form-modul) -- dipakai nama LENGKAP
+                // "Adrian Anugerah Putra" persis seperti admin lain (mis. eldi123 pakai "Eldi
+                // Prayoga Firdaus") supaya watermark materi yang dilihat peserta konsisten
+                // menampilkan nama lengkap admin pengunggah, bukan cuma "Adrian".
+                currentUser = { nama: 'Adrian Anugerah Putra', role: 'admin_utama', uid: 'admin_master_123', idTim: 'admin_utama', bidang: 'Kebakaran', bidangList: ['Kebakaran'] };
+                window.renderAvatarUI('Adrian', 'Admin Utama');
                 window.setupAdminUI('admin_utama'); 
                 window.openAdminView(); 
                 e.target.reset(); 
