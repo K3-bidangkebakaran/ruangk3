@@ -261,52 +261,42 @@
 
         <!-- DASHBOARD SISWA LMS -->
         <div id="view-lms-dashboard" class="space-y-8">
-            <section class="relative overflow-hidden bg-animate-ruangk3 rounded-3xl p-8 sm:p-14 text-white shadow-2xl reveal text-center">
+            <section class="relative overflow-hidden bg-animate-ruangk3 rounded-3xl p-8 sm:p-10 text-white shadow-2xl reveal">
                 <div class="absolute inset-0 bg-grid-pattern-white opacity-10"></div>
-                <div class="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
+                <div class="relative z-10 max-w-2xl">
                     <span class="inline-block px-3.5 py-1 bg-white/10 backdrop-blur rounded-full text-xs font-bold text-safety-400 border border-white/20 mb-4">
                         🔥 RuangK3 • Learning & Certification Platform
                     </span>
-                    <h1 class="text-3xl sm:text-5xl font-extrabold mb-4 leading-tight" id="lms-welcome-title">Portal RuangK3</h1>
-                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-8 max-w-xl">
-                        Satu platform digital untuk belajar, berlatih, dan bersertifikasi K3 -- akses modul resmi, kerjakan Simulasi CBT, dan raih sertifikasi Kemnaker RI kapan saja, di mana saja.
+                    <h1 class="text-2xl sm:text-4xl font-extrabold mb-3 leading-tight" id="lms-welcome-title">Selamat Datang di Portal RuangK3</h1>
+                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+                        Akses modul digital K3, selesaikan Simulasi CBT interaktif, dan ikuti sertifikasi resmi Kemnaker RI.
                     </p>
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
-                        <button onclick="window.openModal('modal-login')" class="w-full sm:w-auto px-6 py-3.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-sm rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
-                        <button onclick="window.switchLmsTab('kelas')" class="w-full sm:w-auto px-6 py-3.5 bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 text-white font-extrabold text-sm rounded-xl transition-all">Lihat Modul Pembelajaran</button>
-                    </div>
-                </div>
-            </section>
 
-            <!-- Kartu "Perjalanan Sertifikasi Anda" -- DIPINDAHKAN ke sini (bukan dihapus),
-                 jadi seksi tersendiri di bawah hero yang sekarang center-aligned. Konten kartu
-                 ini sendiri (progres nyata vs ajakan masuk/daftar) tetap sepenuhnya ditangani
-                 oleh window.renderReadinessCard(), tidak ada perubahan logika di situ. -->
-            <section class="reveal">
-                <div id="lms-readiness-card" class="bg-navy-900 rounded-2xl p-5 sm:p-6 border border-white/10 shadow-xl max-w-2xl mx-auto">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
-                            <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
+                    <div id="lms-readiness-card" class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
+                                <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
+                            </div>
+                            <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
                         </div>
-                        <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
+                        <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
+                        <div class="grid grid-cols-3 gap-2 mb-4">
+                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                                <div class="text-lg mb-1">📚</div>
+                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
+                            </div>
+                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                                <div class="text-lg mb-1">📝</div>
+                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
+                            </div>
+                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
+                                <div class="text-lg mb-1">🎓</div>
+                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
+                            </div>
+                        </div>
+                        <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
                     </div>
-                    <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
-                    <div class="grid grid-cols-3 gap-2 mb-4">
-                        <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                            <div class="text-lg mb-1">📚</div>
-                            <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
-                        </div>
-                        <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                            <div class="text-lg mb-1">📝</div>
-                            <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
-                        </div>
-                        <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                            <div class="text-lg mb-1">🎓</div>
-                            <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
-                        </div>
-                    </div>
-                    <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
                 </div>
             </section>
 
