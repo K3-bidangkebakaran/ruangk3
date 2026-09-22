@@ -1420,7 +1420,20 @@
                             </div>
                         </div>
                         <div class="lg:col-span-2">
-                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:p-6"><h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Bank Soal Tersimpan</h3><div id="admin-list-soal" class="space-y-4 max-h-[600px] overflow-y-auto admin-scroll pr-2"><p class="text-sm text-slate-500 italic text-center py-4">Memuat bank soal...</p></div></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:p-6">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b pb-4">
+                                    <h3 class="text-lg font-bold text-slate-900">Daftar Bank Soal Tersimpan</h3>
+                                    <div class="flex gap-2">
+                                        <select id="filter-soal-bidang" class="w-1/2 sm:w-40 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                            <option value="">Semua Bidang</option>
+                                        </select>
+                                        <select id="filter-soal-kelas" class="w-1/2 sm:w-44 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                            <option value="">Semua Kelas</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div id="admin-list-soal" class="space-y-4 max-h-[600px] overflow-y-auto admin-scroll pr-2"><p class="text-sm text-slate-500 italic text-center py-4">Memuat bank soal...</p></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5141,6 +5154,11 @@
         document.getElementById('filter-nilai-kelas')?.addEventListener('change', () => { if (typeof window.renderRekapNilaiAdmin === 'function') window.renderRekapNilaiAdmin(); });
         document.getElementById('filter-live-bidang')?.addEventListener('change', () => { window.updateKelasFilterDropdown('filter-live-bidang', 'filter-live-kelas'); if (typeof window.renderLiveCbtTable === 'function') window.renderLiveCbtTable(); });
         document.getElementById('filter-live-kelas')?.addEventListener('change', () => { if (typeof window.renderLiveCbtTable === 'function') window.renderLiveCbtTable(); });
+        // Filter "Daftar Bank Soal Tersimpan" (Kelola Bank Soal) sesuai Bidang & Kelas -- daftar
+        // soal bisa sangat panjang begitu banyak bidang/kelas terisi, jadi admin perlu cara cepat
+        // menyaring hanya soal utk bidang/kelas tertentu yang sedang dia kerjakan.
+        document.getElementById('filter-soal-bidang')?.addEventListener('change', () => { window.updateKelasFilterDropdown('filter-soal-bidang', 'filter-soal-kelas'); if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI(); });
+        document.getElementById('filter-soal-kelas')?.addEventListener('change', () => { if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI(); });
 
         document.getElementById('input-bidang-modul')?.addEventListener('change', () => window.updateKelasDropdown('input-bidang-modul', 'input-kelas-modul'));
         document.getElementById('input-bidang-soal')?.addEventListener('change', () => window.updateKelasCheckboxSoal());
@@ -5863,6 +5881,8 @@
                 if(sFilterLiveBidang) { const val = sFilterLiveBidang.value; sFilterLiveBidang.innerHTML = bidangFilterOptions; if(val) sFilterLiveBidang.value = val; }
                 const sFilterPesertaBidang = document.getElementById('filter-peserta-bidang');
                 if(sFilterPesertaBidang) { const val = sFilterPesertaBidang.value; sFilterPesertaBidang.innerHTML = bidangFilterOptions; if(val) sFilterPesertaBidang.value = val; }
+                const sFilterSoalBidang = document.getElementById('filter-soal-bidang');
+                if(sFilterSoalBidang) { const val = sFilterSoalBidang.value; sFilterSoalBidang.innerHTML = bidangFilterOptions; if(val) sFilterSoalBidang.value = val; }
 
                 // Ceklis bidang K3 untuk form "Akun Bidang Lain" & "Kelola Akun Tim" -- dipakai supaya
                 // Verifikasi Ujian tiap admin bisa disaring sesuai bidang yang jadi tanggung jawabnya.
@@ -6334,7 +6354,7 @@
             });
 
             onValue(ref(db, pathSoal), (snapshot) => {
-                quizDataFromDB = []; 
+                quizDataFromDB = [];
                 const listAdmin = document.getElementById('admin-list-soal');
                 if(listAdmin) listAdmin.innerHTML = '';
 
@@ -6374,74 +6394,112 @@
                     if(listAdmin) listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Menginisialisasi bank soal awal... Memuat ulang...</p>';
                     return; 
                 } else {
-                    snapshot.forEach(childSnap => { 
-                        const data = childSnap.val(); 
-                        data.id = childSnap.key; 
-                        quizDataFromDB.push(data); 
+                    snapshot.forEach(childSnap => {
+                        const data = childSnap.val();
+                        data.id = childSnap.key;
+                        quizDataFromDB.push(data);
                     });
                 }
 
-                let categoryCounters = {};
+                window.renderBankSoalUI();
+            });
+        };
 
-                if(listAdmin) {
-                    // PENTING: teks pertanyaan/opsi/kategori WAJIB di-escape (escapeHtmlSoal)
-                    // sebelum masuk innerHTML. Sebelumnya teks dimasukkan MENTAH -- kalau ada
-                    // satu saja soal lama yang isinya memuat karakter "<" atau ">" (mis. "suhu
-                    // < 100°C", "A -> B"), browser salah mem-parsing HTML dari titik itu dan
-                    // menyeret soal-soal LAIN yang sebenarnya baik-baik saja ikut hilang dari
-                    // tampilan (padahal datanya tetap aman di database). Selain itu, render
-                    // sekarang dikumpulkan dulu ke array & digabung SEKALI di akhir (bukan
-                    // innerHTML += di dalam loop), dan setiap item dibungkus try/catch supaya
-                    // satu data soal yang rusak/formatnya aneh tidak menggagalkan seluruh daftar.
-                    const htmlParts = [];
-                    let gagalDirender = 0;
+        /* Render "Daftar Bank Soal Tersimpan" (panel admin Kelola Bank Soal), disaring sesuai
+           filter Bidang & Kelas yang sedang dipilih (dropdown #filter-soal-bidang/#filter-soal-
+           kelas) -- dipanggil ulang tiap kali data soal berubah (onValue pathSoal) MAUPUN tiap
+           kali admin mengganti pilihan filter (tanpa perlu menunggu data baru dari Firebase).
+           Daftar bank soal bisa sangat panjang begitu banyak bidang/kelas terisi, jadi admin
+           perlu cara cepat menyaring hanya soal utk bidang/kelas tertentu yang sedang dikerjakan. */
+        window.renderBankSoalUI = function() {
+            const listAdmin = document.getElementById('admin-list-soal');
+            if(!listAdmin) return;
 
-                    quizDataFromDB.forEach((data) => {
-                        try {
-                            const kat = data.kategori || 'Umum';
-                            if (!categoryCounters[kat]) categoryCounters[kat] = 1;
-                            const noSoalBidang = categoryCounters[kat]++;
+            const filterBidang = document.getElementById('filter-soal-bidang')?.value || '';
+            const filterKelas = document.getElementById('filter-soal-kelas')?.value || '';
 
-                            const labels = ['A', 'B', 'C', 'D'];
-                            let htmlOpsi = '';
+            // Pecah kategori "Bidang - Kelas" persis seperti window.editSoal, supaya cara
+            // membaca bidang/kelas dari satu soal konsisten di seluruh fitur bank soal.
+            const pecahKategori = (kat) => {
+                const parts = String(kat || 'Umum - Umum').split(' - ');
+                const bidangVal = parts[0];
+                const kelasVal = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
+                return { bidangVal, kelasVal };
+            };
 
-                            if(data.opsi && Array.isArray(data.opsi)) {
-                                data.opsi.forEach((opt, idx) => {
-                                    const isCorrect = idx === data.jawabanBenar;
-                                    htmlOpsi += `<div class="text-xs mt-1 ${isCorrect ? 'font-bold text-green-600' : 'text-slate-500'}">${labels[idx] || (idx+1)}. ${window.escapeHtmlSoal(opt)} ${isCorrect ? '✓' : ''}</div>`;
-                                });
-                            }
+            const dataTersaring = quizDataFromDB.filter((data) => {
+                const { bidangVal, kelasVal } = pecahKategori(data.kategori);
+                if (filterBidang && window.normKat(bidangVal) !== window.normKat(filterBidang)) return false;
+                // Kelas dicocokkan pakai window.kelasCocok (bukan persis sama karakter) supaya
+                // soal lama yang kategorinya ditulis dgn varian nama kelas berbeda dari daftar
+                // kelas standar saat ini tetap ikut tersaring dengan benar (lihat window.kelasCocok).
+                if (filterKelas && !window.kelasCocok(kelasVal, filterKelas)) return false;
+                return true;
+            });
 
-                            let badgeCol = 'bg-slate-100 text-slate-700';
-                            if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700';
-                            if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700';
-                            if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700';
-                            if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
+            let categoryCounters = {};
 
-                            htmlParts.push(`
-                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 shadow-sm relative group">
-                                <div class="absolute top-3 right-3 flex space-x-2">
-                                    <button onclick="window.editSoal('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm" title="Edit Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                                    <button onclick="window.hapusSoal('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm" title="Hapus Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
-                                </div>
-                                <div class="mb-2"><span class="text-[10px] ${badgeCol} px-2 py-0.5 rounded font-bold uppercase">${window.escapeHtmlSoal(data.kategori || 'Umum')}</span></div>
-                                <h4 class="font-bold text-slate-800 text-sm mb-2 leading-relaxed pr-16">No. ${noSoalBidang} - ${window.escapeHtmlSoal(data.pertanyaan)}</h4>
-                                ${data.gambarUrl ? `<img src="${data.gambarUrl}" oncontextmenu="return false;" draggable="false" class="max-h-28 rounded-lg border border-slate-200 object-contain mb-2 select-none">` : ''}
-                                <div class="pl-3 border-l-2 border-slate-200">${htmlOpsi}</div>
-                            </div>`);
-                        } catch (errItem) {
-                            gagalDirender++;
-                            console.error('Gagal render 1 soal di Bank Soal (dilewati, soal lain tetap tampil):', data && data.id, errItem);
-                        }
-                    });
+            // PENTING: teks pertanyaan/opsi/kategori WAJIB di-escape (escapeHtmlSoal) sebelum
+            // masuk innerHTML. Sebelumnya teks dimasukkan MENTAH -- kalau ada satu saja soal
+            // lama yang isinya memuat karakter "<" atau ">" (mis. "suhu < 100°C", "A -> B"),
+            // browser salah mem-parsing HTML dari titik itu dan menyeret soal-soal LAIN yang
+            // sebenarnya baik-baik saja ikut hilang dari tampilan (padahal datanya tetap aman
+            // di database). Selain itu, render sekarang dikumpulkan dulu ke array & digabung
+            // SEKALI di akhir (bukan innerHTML += di dalam loop), dan setiap item dibungkus
+            // try/catch supaya satu data soal yang rusak/formatnya aneh tidak menggagalkan
+            // seluruh daftar.
+            const htmlParts = [];
+            let gagalDirender = 0;
 
-                    if (htmlParts.length === 0 && quizDataFromDB.length === 0) {
-                        listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Belum ada soal tersimpan.</p>';
-                    } else {
-                        listAdmin.innerHTML = htmlParts.join('') + (gagalDirender > 0 ? `<p class="text-xs text-red-500 italic text-center py-2">${gagalDirender} soal gagal ditampilkan (format data bermasalah). Hubungi pengembang jika ini berulang.</p>` : '');
+            dataTersaring.forEach((data) => {
+                try {
+                    const kat = data.kategori || 'Umum';
+                    if (!categoryCounters[kat]) categoryCounters[kat] = 1;
+                    const noSoalBidang = categoryCounters[kat]++;
+
+                    const labels = ['A', 'B', 'C', 'D'];
+                    let htmlOpsi = '';
+
+                    if(data.opsi && Array.isArray(data.opsi)) {
+                        data.opsi.forEach((opt, idx) => {
+                            const isCorrect = idx === data.jawabanBenar;
+                            htmlOpsi += `<div class="text-xs mt-1 ${isCorrect ? 'font-bold text-green-600' : 'text-slate-500'}">${labels[idx] || (idx+1)}. ${window.escapeHtmlSoal(opt)} ${isCorrect ? '✓' : ''}</div>`;
+                        });
                     }
+
+                    let badgeCol = 'bg-slate-100 text-slate-700';
+                    if(data.kategori && data.kategori.includes('Kelas A')) badgeCol = 'bg-red-100 text-red-700';
+                    if(data.kategori && data.kategori.includes('Kelas B')) badgeCol = 'bg-amber-100 text-amber-700';
+                    if(data.kategori && data.kategori.includes('Kelas C')) badgeCol = 'bg-emerald-100 text-emerald-700';
+                    if(data.kategori && data.kategori.includes('Kelas D')) badgeCol = 'bg-sky-100 text-sky-700';
+
+                    htmlParts.push(`
+                    <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 shadow-sm relative group">
+                        <div class="absolute top-3 right-3 flex space-x-2">
+                            <button onclick="window.editSoal('${data.id}')" class="text-blue-600 hover:text-blue-800 p-1 bg-white border border-blue-200 rounded shadow-sm" title="Edit Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                            <button onclick="window.hapusSoal('${data.id}')" class="text-red-600 hover:text-red-800 p-1 bg-white border border-red-200 rounded shadow-sm" title="Hapus Soal"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+                        <div class="mb-2"><span class="text-[10px] ${badgeCol} px-2 py-0.5 rounded font-bold uppercase">${window.escapeHtmlSoal(data.kategori || 'Umum')}</span></div>
+                        <h4 class="font-bold text-slate-800 text-sm mb-2 leading-relaxed pr-16">No. ${noSoalBidang} - ${window.escapeHtmlSoal(data.pertanyaan)}</h4>
+                        ${data.gambarUrl ? `<img src="${data.gambarUrl}" oncontextmenu="return false;" draggable="false" class="max-h-28 rounded-lg border border-slate-200 object-contain mb-2 select-none">` : ''}
+                        <div class="pl-3 border-l-2 border-slate-200">${htmlOpsi}</div>
+                    </div>`);
+                } catch (errItem) {
+                    gagalDirender++;
+                    console.error('Gagal render 1 soal di Bank Soal (dilewati, soal lain tetap tampil):', data && data.id, errItem);
                 }
             });
+
+            if (htmlParts.length === 0 && quizDataFromDB.length === 0) {
+                listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Belum ada soal tersimpan.</p>';
+            } else if (htmlParts.length === 0) {
+                // Ada soal tersimpan, tapi tidak ada yang cocok dgn filter Bidang/Kelas yang
+                // sedang dipilih -- pesan ini beda sengaja dari "Belum ada soal tersimpan" di
+                // atas, supaya admin tidak salah kira semua soalnya hilang/terhapus.
+                listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Tidak ada soal untuk filter Bidang/Kelas ini.</p>';
+            } else {
+                listAdmin.innerHTML = htmlParts.join('') + (gagalDirender > 0 ? `<p class="text-xs text-red-500 italic text-center py-2">${gagalDirender} soal gagal ditampilkan (format data bermasalah). Hubungi pengembang jika ini berulang.</p>` : '');
+            }
         };
 
         onAuthStateChanged(auth, async (user) => {
