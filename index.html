@@ -2510,6 +2510,27 @@
             return variants.map(window.normKat).filter(Boolean);
         };
 
+        /* Bandingkan 2 nama kelas & anggap SAMA walau penulisannya beda gaya/tidak lengkap --
+           dipakai supaya fitur EDIT SOAL (window.editSoal & submit form-soal) tidak "buta"
+           terhadap soal lama yang kategorinya ditulis dengan varian nama kelas yang berbeda
+           dari daftar kelas standar saat ini (mis. cuma "Kelas D" tanpa keterangan dalam
+           kurung, padahal kelas standarnya sekarang "Kelas D (Petugas Peran Kebakaran)").
+           Sebelumnya window.editSoal & submit form-soal membandingkan nama kelas APA ADANYA
+           (persis sama karakter per karakter) -- begitu bedanya walau cuma sedikit, checkbox
+           kelas soal itu jadi TIDAK tercentang otomatis saat dibuka utk diedit, dan kalau admin
+           lanjut menyimpan, soal itu bisa salah tersimpan/tersalin ke kelas yang tidak
+           diinginkan. Sama seperti window.buildSoalUjian, pakai kombinasi: sama persis
+           (dinormalisasi), sama kode kelasnya ("kelas d"), atau salah satu variannya beririsan. */
+        window.kelasCocok = function(a, b) {
+            const na = window.normKat(a), nb = window.normKat(b);
+            if (!na || !nb) return false;
+            if (na === nb) return true;
+            const kodeA = window.kodeKelas(a), kodeB = window.kodeKelas(b);
+            if (kodeA && kodeA === kodeB) return true;
+            const va = window.kelasNameVariants(a), vb = window.kelasNameVariants(b);
+            return va.some(v => v && (v === nb || vb.includes(v))) || vb.some(v => v && v === na);
+        };
+
         /* Ambil SELURUH soal LANGSUNG dari Bank Soal admin (Firebase) sesuai Bidang + Kelas, diacak per peserta */
         window.buildSoalUjian = async function(bidang, kelas, idTim) {
             const kategori = `${bidang} - ${kelas}`;
@@ -5260,8 +5281,16 @@
                     // di tempat), TAPI kalau admin juga mencentang kelas LAIN (di bidang yang sama),
                     // soal yang sama otomatis disalin (push record baru) ke kelas tambahan itu --
                     // supaya tidak perlu input ulang manual utk tambah soal ini ke kelas lain.
+                    // Pakai window.kelasCocok (bukan .includes() persis sama karakter) supaya
+                    // kelas asli soal ini (bisa jadi ditulis dgn varian nama berbeda dari daftar
+                    // kelas standar saat ini) tetap dikenali cocok dgn checkbox yg sudah dicentang
+                    // otomatis oleh window.editSoal -- kalau tidak, record ini bisa salah dianggap
+                    // "kelas baru" & keliru tersalin/pindah kelas. Begitu ditemukan yg cocok, pakai
+                    // nilai checkbox (nama kelas standar SAAT INI) supaya kategori-nya sekalian
+                    // ternormalisasi -- bukan nilai lama yang mungkin sudah beda gaya penulisan.
                     const kelasAsli = document.getElementById('input-soal-kelas-asli')?.value || '';
-                    const kelasUntukRecordIni = kelasTerpilih.includes(kelasAsli) ? kelasAsli : kelasTerpilih[0];
+                    const kelasAsliCocok = kelasTerpilih.find(k => window.kelasCocok(k, kelasAsli));
+                    const kelasUntukRecordIni = kelasAsliCocok || kelasTerpilih[0];
                     const kelasTambahan = kelasTerpilih.filter(k => k !== kelasUntukRecordIni);
 
                     const dataToSave = { ...dataBase, kategori: `${bidang} - ${kelasUntukRecordIni}` };
@@ -5315,7 +5344,12 @@
 
             // Kelas milik soal ini tercentang lebih dulu; admin boleh tambah centang kelas LAIN
             // (di bidang yang sama) supaya soal ini otomatis disalin juga ke kelas tambahan itu.
-            document.querySelectorAll('.kelas-soal-checkbox').forEach(cb => { cb.checked = (cb.value === kelasVal); });
+            // Pakai window.kelasCocok (bukan cb.value === kelasVal apa adanya) supaya soal lama
+            // yang kategorinya ditulis dengan varian nama kelas berbeda dari daftar kelas
+            // standar saat ini (lihat komentar window.kelasCocok) TETAP tercentang otomatis
+            // dengan benar -- sebelumnya kalau beda sedikit saja, tidak ada checkbox yang
+            // tercentang, dan soal ini seolah "tidak tampil"/tidak dikenali kelasnya.
+            document.querySelectorAll('.kelas-soal-checkbox').forEach(cb => { cb.checked = window.kelasCocok(cb.value, kelasVal); });
 
             document.getElementById('input-tanya').value = data.pertanyaan;
             window.tampilkanPreviewGambarSoal(data.gambarUrl || null);
