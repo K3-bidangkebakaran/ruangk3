@@ -2544,6 +2544,74 @@
             return va.some(v => v && (v === nb || vb.includes(v))) || vb.some(v => v && v === na);
         };
 
+        /* Cocokkan kategori MENTAH sebuah soal ("Bidang - Kelas", atau kadang cuma "Kelas" saja
+           tanpa prefix bidang utk data lama) ke nama Bidang/Kelas STANDAR yang berlaku SAAT INI
+           di sistem (dataKategoriAll, dari Kelola Kategori K3). Dipakai oleh
+           window.normalisasiKategoriSoalOtomatis utk memperbaiki kategori soal lama yang
+           penulisannya beda-beda (mis. cuma "Kelas D" saja) supaya seragam dgn kelas standar
+           sekarang ("Kebakaran - Kelas D (Petugas Peran Kebakaran)"), sekaligus jadi dasar
+           pengelompokan/pengurutan tampilan Bank Soal per Bidang+Kelas.
+           - Kalau bagian Bidang dari kategori mentah SUDAH dikenali (cocok salah satu bidang
+             yang ada di sistem), cari kelas standar yang cocok HANYA di dalam bidang itu saja
+             (supaya tidak salah tertukar ke kelas mirip nama di bidang lain).
+           - Kalau bagian Bidang TIDAK dikenali sama sekali (kategori lama yang ditulis tanpa
+             prefix bidang, mis. cuma "Kelas D"), coba cocokkan ke SELURUH kelas standar di semua
+             bidang -- HANYA diganti kalau persis SATU kecocokan (tidak ambigu). Kalau nama kelas
+             yang sama ternyata dipakai lebih dari satu bidang (ambigu) atau tidak cocok sama
+             sekali, kembalikan null (JANGAN menebak / jangan diubah), supaya soal tidak pernah
+             salah pindah ke bidang yang tidak dimaksud. */
+        window.resolveKategoriStandar = function(kategoriMentah) {
+            const raw = String(kategoriMentah || '').trim();
+            if (!raw) return null;
+            const parts = raw.split(' - ');
+            const bidangMentah = parts[0];
+            const kelasMentah = parts.length > 1 ? parts.slice(1).join(' - ') : parts[0];
+
+            const bidangDikenal = (dataKategoriAll || []).some(k => window.normKat(k.bidang) === window.normKat(bidangMentah));
+            if (bidangDikenal) {
+                const kandidat = (dataKategoriAll || []).filter(k => window.normKat(k.bidang) === window.normKat(bidangMentah));
+                const cocok = kandidat.find(k => window.kelasCocok(k.nama, kelasMentah));
+                return cocok ? { bidang: cocok.bidang, nama: cocok.nama } : null;
+            }
+
+            const globalMatches = (dataKategoriAll || []).filter(k => window.kelasCocok(k.nama, raw));
+            if (globalMatches.length === 1) {
+                return { bidang: globalMatches[0].bidang, nama: globalMatches[0].nama };
+            }
+            return null;
+        };
+
+        /* Jalankan normalisasi otomatis: perbaiki kategori SEMUA soal di Bank Soal yang masih
+           memakai nama Bidang/Kelas lama/tidak standar supaya seragam dgn nama yang berlaku
+           SEKARANG di sistem (Kelola Kategori K3), lalu simpan perubahannya sekaligus (satu
+           panggilan update() -- pola yang sama dgn cascade rename di window.simpanEditKategori).
+           Dipanggil otomatis tiap kali data bank soal dimuat/berubah (onValue pathSoal), khusus
+           utk yang sedang login sbg admin (bukan peserta). Perubahan pada quizDataFromDB
+           dilakukan LANGSUNG (sinkron) sebelum baris await, supaya tampilan Bank Soal yang
+           dirender sesaat setelah ini langsung memakai nama yang sudah benar tanpa harus
+           menunggu round-trip ke Firebase dulu. */
+        window.normalisasiKategoriSoalOtomatis = async function() {
+            if (!(dataKategoriAll && dataKategoriAll.length)) return;
+            const updates = {};
+            let jumlahDiubah = 0;
+            (quizDataFromDB || []).forEach(soal => {
+                const resolved = window.resolveKategoriStandar(soal.kategori);
+                if (!resolved) return;
+                const kunciBaru = `${resolved.bidang} - ${resolved.nama}`;
+                if (kunciBaru === soal.kategori) return;
+                updates[`${pathSoal}/${soal.id}/kategori`] = kunciBaru;
+                soal.kategori = kunciBaru;
+                jumlahDiubah++;
+            });
+            if (jumlahDiubah === 0) return;
+            try {
+                await update(ref(db), updates);
+                window.showToast(`${jumlahDiubah} soal otomatis diperbarui ke nama Bidang/Kelas standar saat ini.`, "success");
+            } catch (err) {
+                console.error('Gagal normalisasi kategori soal otomatis:', err);
+            }
+        };
+
         /* Ambil SELURUH soal LANGSUNG dari Bank Soal admin (Firebase) sesuai Bidang + Kelas, diacak per peserta */
         window.buildSoalUjian = async function(bidang, kelas, idTim) {
             const kategori = `${bidang} - ${kelas}`;
@@ -3912,9 +3980,10 @@
                 window.openAdminView(); 
                 e.target.reset(); 
                 window.closeModal(); 
-                window.renderDashboardPendapatanHome(); 
-                window.renderVerifikasiUI(); 
+                window.renderDashboardPendapatanHome();
+                window.renderVerifikasiUI();
                 window.renderReviewUI();
+                if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI();
             } else if (pin === 'adrian23') {
                 currentUser = { nama: 'Adrian (Viewer)', role: 'viewer_kalender', uid: 'viewer_kalender_123' };
                 window.renderAvatarUI('Adrian', 'Pemantau Kalender'); 
@@ -3922,9 +3991,10 @@
                 window.openAdminView(); 
                 e.target.reset(); 
                 window.closeModal();
-                window.renderDashboardPendapatanHome(); 
-                window.renderVerifikasiUI(); 
+                window.renderDashboardPendapatanHome();
+                window.renderVerifikasiUI();
                 window.renderReviewUI();
+                if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI();
             } else if (pin === 'eldi123') {
                 currentUser = { nama: 'Eldi Prayoga Firdaus', role: 'admin_eldi', uid: 'eldi_123', idTim: 'eldi_123', bidang: 'PAA', bidangList: ['PAA'] };
                 window.renderAvatarUI('Eldi Prayoga', 'Instruktur / Manajemen'); 
@@ -3932,9 +4002,10 @@
                 window.openAdminView(); 
                 e.target.reset(); 
                 window.closeModal();
-                window.renderDashboardPendapatanHome(); 
-                window.renderVerifikasiUI(); 
+                window.renderDashboardPendapatanHome();
+                window.renderVerifikasiUI();
                 window.renderReviewUI();
+                if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI();
             } else if ((dataAkunBidangAll || []).some(a => a.pin === pin)) {
                 const akun = dataAkunBidangAll.find(a => a.pin === pin);
                 const akunBidangList = (Array.isArray(akun.bidangList) && akun.bidangList.length) ? akun.bidangList : (akun.bidang ? [akun.bidang] : []);
@@ -3947,6 +4018,7 @@
                 window.renderDashboardPendapatanHome();
                 window.renderVerifikasiUI();
                 window.renderReviewUI();
+                if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI();
             } else {
                 const timFound = dataTimAll.find(t => t.pin === pin);
                 if (timFound) { 
@@ -3957,10 +4029,11 @@
                     window.openAdminView(); 
                     e.target.reset(); 
                     window.closeModal(); 
-                    window.renderDashboardPendapatanHome(); 
-                    window.renderVerifikasiUI(); 
+                    window.renderDashboardPendapatanHome();
+                    window.renderVerifikasiUI();
                     window.renderReviewUI();
-                } else { 
+                    if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI();
+                } else {
                     btnSubmit.innerText = "PIN Salah!"; 
                     btnSubmit.classList.replace('bg-navy-900', 'bg-red-500'); 
                     setTimeout(() => { 
@@ -6415,6 +6488,20 @@
             const listAdmin = document.getElementById('admin-list-soal');
             if(!listAdmin) return;
 
+            // Khusus admin (bukan peserta): perbaiki otomatis kategori soal lama yang nama
+            // Bidang/Kelas-nya beda dari standar SAAT INI (mis. cuma "Kelas D" tanpa keterangan
+            // dalam kurung), supaya seragam & tersimpan balik ke Firebase. Dipanggil di sini
+            // (bukan hanya di dalam onValue(pathSoal)) supaya normalisasi tetap jalan walau data
+            // soal sudah sempat dimuat SEBELUM admin login (onValue terdaftar sejak awal, tidak
+            // menunggu login) -- window.renderBankSoalUI juga dipanggil ulang tiap kali admin
+            // login (lihat form-login-admin) & tiap ganti filter, jadi ini titik tunggal yang
+            // pasti tereksekusi setiap admin membuka/melihat panel Bank Soal. Perubahan pada
+            // quizDataFromDB terjadi sinkron sebelum baris await di dalam fungsi tsb, jadi render
+            // di bawah ini langsung memakai nama kategori yang sudah benar.
+            if (currentUser && currentUser.role !== 'peserta' && typeof window.normalisasiKategoriSoalOtomatis === 'function') {
+                window.normalisasiKategoriSoalOtomatis();
+            }
+
             const filterBidang = document.getElementById('filter-soal-bidang')?.value || '';
             const filterKelas = document.getElementById('filter-soal-kelas')?.value || '';
 
@@ -6435,6 +6522,39 @@
                 // kelas standar saat ini tetap ikut tersaring dengan benar (lihat window.kelasCocok).
                 if (filterKelas && !window.kelasCocok(kelasVal, filterKelas)) return false;
                 return true;
+            });
+
+            // Urutkan hasil supaya nomor soal berurutan/tidak tercampur per Bidang+Kelas --
+            // sesuai urutan Bidang & Kelas yang TERDAFTAR di sistem (Kelola Kategori K3,
+            // dataKategoriAll), BUKAN ikut urutan acak tersimpan di Firebase. Tanpa ini, soal
+            // dari kelas berbeda yang tersimpan berselang-seling (mis. Kelas D, Kelas C, Kelas D)
+            // akan tampil nomornya tercampur juga ("No. 1" Kelas D, "No. 1" Kelas C, "No. 2"
+            // Kelas D, ...) -- membingungkan admin.
+            const urutanBidang = [];
+            const urutanKelasPerBidang = {};
+            (dataKategoriAll || []).forEach(k => {
+                const b = k.bidang || 'Lainnya';
+                if (!urutanBidang.includes(b)) urutanBidang.push(b);
+                if (!urutanKelasPerBidang[b]) urutanKelasPerBidang[b] = [];
+                urutanKelasPerBidang[b].push(k.nama);
+            });
+            const indexBidang = (bidangVal) => {
+                const idx = urutanBidang.findIndex(b => window.normKat(b) === window.normKat(bidangVal));
+                return idx === -1 ? 9999 : idx;
+            };
+            const indexKelas = (bidangVal, kelasVal) => {
+                const bidangCocok = urutanBidang.find(b => window.normKat(b) === window.normKat(bidangVal));
+                const daftarKelas = bidangCocok ? (urutanKelasPerBidang[bidangCocok] || []) : [];
+                const idx = daftarKelas.findIndex(k => window.kelasCocok(k, kelasVal));
+                return idx === -1 ? 9999 : idx;
+            };
+            dataTersaring.sort((a, b) => {
+                const pa = pecahKategori(a.kategori), pb = pecahKategori(b.kategori);
+                const ibA = indexBidang(pa.bidangVal), ibB = indexBidang(pb.bidangVal);
+                if (ibA !== ibB) return ibA - ibB;
+                const ikA = indexKelas(pa.bidangVal, pa.kelasVal), ikB = indexKelas(pb.bidangVal, pb.kelasVal);
+                if (ikA !== ikB) return ikA - ikB;
+                return 0;
             });
 
             let categoryCounters = {};
