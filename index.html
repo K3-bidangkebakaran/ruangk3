@@ -1132,7 +1132,21 @@
                             </table>
                         </div>
                     </div>
-                    
+
+                    <!-- Draft Pengeluaran dari WhatsApp: diisi otomatis oleh webhook Fonnte saat admin_utama
+                         kirim foto bukti transfer/bayar ke nomor WA yang terdaftar. Sengaja berstatus "draft"
+                         dulu (bukan langsung masuk pathPengeluaran resmi) karena nominal hasil baca OCR foto
+                         tidak selalu 100% akurat -- admin_utama wajib cek & konfirmasi dulu di sini. -->
+                    <div id="card-draft-pengeluaran-wa" class="admin-utama-only hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                        <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                            <h3 class="text-md font-bold text-slate-800">Draft Pengeluaran dari WhatsApp</h3>
+                            <span id="badge-draft-pengeluaran-wa" class="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full hidden">0 baru</span>
+                        </div>
+                        <div id="list-draft-pengeluaran-wa" class="p-5 space-y-4">
+                            <p class="text-xs text-slate-500 italic">Belum ada bukti transfer yang masuk dari WhatsApp.</p>
+                        </div>
+                    </div>
+
                     <div class="admin-utama-only hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-1">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
@@ -1606,6 +1620,10 @@
         const pathTim = `artifacts/${cleanAppId}/public/data/tim`;
         const pathKegiatan = `artifacts/${cleanAppId}/public/data/kegiatan`;
         const pathPengeluaran = `artifacts/${cleanAppId}/public/data/pengeluaran`;
+        // Draft pengeluaran yang masuk otomatis dari foto bukti transfer WhatsApp (lewat webhook
+        // Fonnte -> ditulis ke sini dengan status "pending") -- admin_utama meninjau & konfirmasi
+        // dulu di panel Keuangan sebelum benar-benar masuk ke pathPengeluaran resmi di atas.
+        const pathPengeluaranDraftWa = `artifacts/${cleanAppId}/public/data/pengeluaran_draft_wa`;
         const pathBerita = `artifacts/${cleanAppId}/public/data/berita`;
         const pathSoal = `artifacts/${cleanAppId}/public/data/soal`;
         const pathVisitor = `artifacts/${cleanAppId}/public/data/visitor`;
@@ -1625,6 +1643,7 @@
         
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
+        let dataPengeluaranDraftWaAll = [];
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
         let dataPesertaAll = [];
@@ -4828,9 +4847,84 @@
             try { await remove(ref(db, `${pathKegiatan}/${id}`)); window.showToast("Kegiatan berhasil dihapus.", "success"); } 
             catch(e){ window.showToast("Gagal menghapus kegiatan.", "error"); } 
         };
-        window.hapusPengeluaran = async function(id) { 
-            try { await remove(ref(db, `${pathPengeluaran}/${id}`)); window.showToast("Pengeluaran berhasil dihapus.", "success"); } 
-            catch(e){ window.showToast("Gagal menghapus pengeluaran.", "error"); } 
+        window.hapusPengeluaran = async function(id) {
+            try { await remove(ref(db, `${pathPengeluaran}/${id}`)); window.showToast("Pengeluaran berhasil dihapus.", "success"); }
+            catch(e){ window.showToast("Gagal menghapus pengeluaran.", "error"); }
+        };
+
+        /* ================= DRAFT PENGELUARAN DARI WHATSAPP =================
+           Render daftar draft (hasil webhook Fonnte + OCR nominal dari foto bukti transfer) di
+           panel Keuangan admin_utama. Tiap draft bisa "Simpan ke Pengeluaran" (nominal/tanggal/
+           deskripsi boleh dikoreksi dulu sebelum disimpan -- OCR foto tidak selalu akurat) atau
+           "Tolak" (dihapus tanpa masuk catatan pengeluaran resmi, mis. kalau bukan bukti transfer
+           atau salah kirim). Data mentah (gambar & hasil baca) TIDAK pernah otomatis masuk
+           pathPengeluaran resmi tanpa konfirmasi manual ini. */
+        window.renderPengeluaranDraftWaUI = function() {
+            const list = document.getElementById('list-draft-pengeluaran-wa');
+            const badge = document.getElementById('badge-draft-pengeluaran-wa');
+            if (!list) return;
+            const drafts = [...dataPengeluaranDraftWaAll].sort((a, b) => (b.waktuMasuk || 0) - (a.waktuMasuk || 0));
+            if (badge) {
+                if (drafts.length > 0) { badge.textContent = `${drafts.length} baru`; badge.classList.remove('hidden'); }
+                else { badge.classList.add('hidden'); }
+            }
+            if (drafts.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-500 italic">Belum ada bukti transfer yang masuk dari WhatsApp.</p>';
+                return;
+            }
+            const todayStr = new Date().toISOString().split('T')[0];
+            list.innerHTML = drafts.map(d => {
+                const tglVal = d.guessTanggal || todayStr;
+                const nominalVal = d.guessNominal || '';
+                const deskVal = escHtml(d.caption || d.ocrRingkas || '');
+                const waktuStr = d.waktuMasuk ? new Date(d.waktuMasuk).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
+                const gambar = d.gambarBase64 || '';
+                return `
+                <div class="flex flex-col sm:flex-row gap-4 border border-slate-200 rounded-lg p-4" data-draft-id="${d.id}">
+                    ${gambar ? `<a href="${gambar}" target="_blank" class="shrink-0"><img src="${gambar}" class="w-full sm:w-32 h-32 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity"></a>` : `<div class="w-full sm:w-32 h-32 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300 text-[10px] shrink-0">Tanpa gambar</div>`}
+                    <div class="flex-grow space-y-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input type="date" id="draft-tgl-${d.id}" value="${tglVal}" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                            <input type="number" id="draft-nominal-${d.id}" value="${nominalVal}" placeholder="Nominal (Rp)" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                        </div>
+                        <input type="text" id="draft-desk-${d.id}" value="${deskVal}" placeholder="Deskripsi..." class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                        <p class="text-[10px] text-slate-400">Dari WA: ${escHtml(d.pengirimWa || '-')} &bull; ${waktuStr}</p>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="window.simpanDraftPengeluaranWa('${d.id}')" class="flex-1 py-1.5 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 text-xs">Simpan ke Pengeluaran</button>
+                            <button onclick="window.tolakDraftPengeluaranWa('${d.id}')" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 text-xs">Tolak</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        window.simpanDraftPengeluaranWa = async function(id) {
+            const tglEl = document.getElementById(`draft-tgl-${id}`);
+            const nominalEl = document.getElementById(`draft-nominal-${id}`);
+            const deskEl = document.getElementById(`draft-desk-${id}`);
+            const tanggal = tglEl ? tglEl.value : '';
+            const jumlah = parseInt(nominalEl ? nominalEl.value : '', 10);
+            const deskripsi = deskEl ? deskEl.value.trim() : '';
+            if (!tanggal || !jumlah || jumlah <= 0 || !deskripsi) {
+                window.showToast("Lengkapi dulu tanggal, deskripsi, dan nominal sebelum disimpan.", "error");
+                return;
+            }
+            try {
+                await push(ref(db, pathPengeluaran), { tanggal, deskripsi, jumlah, timestamp: Date.now(), sumberWa: true });
+                await remove(ref(db, `${pathPengeluaranDraftWa}/${id}`));
+                window.showToast("Pengeluaran dari WhatsApp tersimpan.", "success");
+            } catch (e) {
+                window.showToast("Gagal menyimpan pengeluaran.", "error");
+            }
+        };
+
+        window.tolakDraftPengeluaranWa = async function(id) {
+            try {
+                await remove(ref(db, `${pathPengeluaranDraftWa}/${id}`));
+                window.showToast("Draft dari WhatsApp ditolak/dihapus.", "success");
+            } catch (e) {
+                window.showToast("Gagal menghapus draft.", "error");
+            }
         };
         
         window.toggleStatusBayarTgl = async function(id, dateStr, isChecked) { 
@@ -6467,12 +6561,20 @@
                 window.renderDashboardPendapatanHome();
             });
 
-            onValue(ref(db, pathPengeluaran), (snapshot) => { 
-                dataPengeluaranAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); }); 
-                } 
-                window.renderDashboardPendapatanHome(); 
+            onValue(ref(db, pathPengeluaran), (snapshot) => {
+                dataPengeluaranAll = [];
+                if(snapshot.exists()) {
+                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); });
+                }
+                window.renderDashboardPendapatanHome();
+            });
+
+            onValue(ref(db, pathPengeluaranDraftWa), (snapshot) => {
+                dataPengeluaranDraftWaAll = [];
+                if(snapshot.exists()) {
+                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranDraftWaAll.push(dt); });
+                }
+                window.renderPengeluaranDraftWaUI();
             });
 
             onValue(ref(db, pathSoal), (snapshot) => {
