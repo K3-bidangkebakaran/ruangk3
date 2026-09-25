@@ -1133,17 +1133,17 @@
                         </div>
                     </div>
 
-                    <!-- Draft Pengeluaran dari WhatsApp: diisi otomatis oleh webhook Fonnte saat admin_utama
-                         kirim foto bukti transfer/bayar ke nomor WA yang terdaftar. Sengaja berstatus "draft"
+                    <!-- Draft Pengeluaran dari Telegram: diisi otomatis oleh webhook Telegram Bot saat admin_utama
+                         kirim foto bukti transfer/bayar ke bot Telegram yang terdaftar. Sengaja berstatus "draft"
                          dulu (bukan langsung masuk pathPengeluaran resmi) karena nominal hasil baca OCR foto
                          tidak selalu 100% akurat -- admin_utama wajib cek & konfirmasi dulu di sini. -->
                     <div id="card-draft-pengeluaran-wa" class="admin-utama-only hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
                         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                            <h3 class="text-md font-bold text-slate-800">Draft Pengeluaran dari WhatsApp</h3>
+                            <h3 class="text-md font-bold text-slate-800">Draft Pengeluaran dari Telegram</h3>
                             <span id="badge-draft-pengeluaran-wa" class="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full hidden">0 baru</span>
                         </div>
                         <div id="list-draft-pengeluaran-wa" class="p-5 space-y-4">
-                            <p class="text-xs text-slate-500 italic">Belum ada bukti transfer yang masuk dari WhatsApp.</p>
+                            <p class="text-xs text-slate-500 italic">Belum ada bukti transfer yang masuk dari Telegram.</p>
                         </div>
                     </div>
 
@@ -1620,8 +1620,8 @@
         const pathTim = `artifacts/${cleanAppId}/public/data/tim`;
         const pathKegiatan = `artifacts/${cleanAppId}/public/data/kegiatan`;
         const pathPengeluaran = `artifacts/${cleanAppId}/public/data/pengeluaran`;
-        // Draft pengeluaran yang masuk otomatis dari foto bukti transfer WhatsApp (lewat webhook
-        // Fonnte -> ditulis ke sini dengan status "pending") -- admin_utama meninjau & konfirmasi
+        // Draft pengeluaran yang masuk otomatis dari foto bukti transfer Telegram (lewat webhook
+        // Telegram Bot -> ditulis ke sini dengan status "pending") -- admin_utama meninjau & konfirmasi
         // dulu di panel Keuangan sebelum benar-benar masuk ke pathPengeluaran resmi di atas.
         const pathPengeluaranDraftWa = `artifacts/${cleanAppId}/public/data/pengeluaran_draft_wa`;
         const pathBerita = `artifacts/${cleanAppId}/public/data/berita`;
@@ -4869,7 +4869,7 @@
                 else { badge.classList.add('hidden'); }
             }
             if (drafts.length === 0) {
-                list.innerHTML = '<p class="text-xs text-slate-500 italic">Belum ada bukti transfer yang masuk dari WhatsApp.</p>';
+                list.innerHTML = '<p class="text-xs text-slate-500 italic">Belum ada bukti transfer yang masuk dari Telegram.</p>';
                 return;
             }
             const todayStr = new Date().toISOString().split('T')[0];
@@ -4888,7 +4888,7 @@
                             <input type="number" id="draft-nominal-${d.id}" value="${nominalVal}" placeholder="Nominal (Rp)" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
                         </div>
                         <input type="text" id="draft-desk-${d.id}" value="${deskVal}" placeholder="Deskripsi..." class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
-                        <p class="text-[10px] text-slate-400">Dari WA: ${escHtml(d.pengirimWa || '-')} &bull; ${waktuStr}</p>
+                        <p class="text-[10px] text-slate-400">Dari Telegram: ${escHtml(d.namaPengirimWa || d.pengirimWa || '-')} &bull; ${waktuStr}</p>
                         <div class="flex gap-2 pt-1">
                             <button onclick="window.simpanDraftPengeluaranWa('${d.id}')" class="flex-1 py-1.5 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 text-xs">Simpan ke Pengeluaran</button>
                             <button onclick="window.tolakDraftPengeluaranWa('${d.id}')" class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200 text-xs">Tolak</button>
@@ -4912,7 +4912,7 @@
             try {
                 await push(ref(db, pathPengeluaran), { tanggal, deskripsi, jumlah, timestamp: Date.now(), sumberWa: true });
                 await remove(ref(db, `${pathPengeluaranDraftWa}/${id}`));
-                window.showToast("Pengeluaran dari WhatsApp tersimpan.", "success");
+                window.showToast("Pengeluaran dari Telegram tersimpan.", "success");
             } catch (e) {
                 window.showToast("Gagal menyimpan pengeluaran.", "error");
             }
@@ -4921,7 +4921,7 @@
         window.tolakDraftPengeluaranWa = async function(id) {
             try {
                 await remove(ref(db, `${pathPengeluaranDraftWa}/${id}`));
-                window.showToast("Draft dari WhatsApp ditolak/dihapus.", "success");
+                window.showToast("Draft dari Telegram ditolak/dihapus.", "success");
             } catch (e) {
                 window.showToast("Gagal menghapus draft.", "error");
             }
