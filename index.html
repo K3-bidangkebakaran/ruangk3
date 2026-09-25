@@ -7,32 +7,46 @@
     <title>RuangK3 - Pusat Edukasi & Informasi K3</title>
 
     <!-- Tailwind CSS & Fonts -->
+    <!-- Tailwind Play CDN SENGAJA TIDAK diberi `defer` (beda dari skrip-skrip lain di bawah):
+         dokumentasi resminya mensyaratkan tailwind.config diset SEGERA setelah skrip ini
+         dimuat, dalam urutan blocking yang sama seperti sekarang -- menundanya berisiko
+         class warna custom (navy/safety/brand) telat terpasang & sempat tampil tanpa gaya
+         (flash tanpa styling) saat halaman pertama dibuka. Skrip lain di bawah (Flatpickr,
+         EmailJS, html2pdf, Chart.js, PDF.js) TIDAK segenting itu -- semuanya baru dipakai
+         belakangan lewat aksi pengguna (buka kalender, kirim email, ekspor sertifikat,
+         lihat modul PDF), jadi aman diberi `defer` supaya tidak memblokir tampilan awal.
+         CATATAN: `defer` tidak berlaku pada <script> INLINE (tanpa src) -- karena itu 2 skrip
+         inline yang bergantung pada skrip ber-`defer` di atasnya (pdfjsLib.GlobalWorkerOptions,
+         emailjs.init) dibungkus `window.addEventListener('DOMContentLoaded', ...)` supaya baru
+         jalan SETELAH skrip defer terkait selesai (bukan diberi atribut `defer` yang percuma). -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 
     <!-- Flatpickr (Kalender Multi-Tanggal) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js" defer></script>
 
     <!-- Script EmailJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script type="text/javascript"> (function() { emailjs.init({ publicKey: 'vo0I3qZvyNFWClUEO' }); })(); </script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
+    <script type="text/javascript"> window.addEventListener('DOMContentLoaded', function() { emailjs.init({ publicKey: 'vo0I3qZvyNFWClUEO' }); }); </script>
 
     <!-- html2pdf -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 
     <!-- Chart.js (Untuk Grafik Rating) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 
     <!-- PDF.js (Pratinjau PDF Modul Materi sebagai gambar/canvas, BUKAN plugin PDF bawaan
          browser -> tidak ada tombol/menu Download atau Print bawaan, dan bisa discroll
          secara normal seperti halaman biasa) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
     <script>
-        if (window['pdfjsLib']) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
+        window.addEventListener('DOMContentLoaded', function() {
+            if (window['pdfjsLib']) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+        });
     </script>
 
     <script>
@@ -1814,6 +1828,10 @@
             return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
         }
         let isAppInitialized = false;
+        // Penjaga supaya window.fetchDataRealtimeAdmin (listener Firebase khusus admin) hanya
+        // benar-benar mendaftarkan listener-nya SEKALI, walau admin logout lalu login lagi
+        // berkali-kali dalam satu sesi yang sama.
+        let isAdminDataInitialized = false;
 
         window.sendWA_Fonnte = async function(hp, message) {
             // Placeholder for WhatsApp API integration
@@ -3979,7 +3997,8 @@
                 window.setupAdminUI('admin_utama'); 
                 window.openAdminView(); 
                 e.target.reset(); 
-                window.closeModal(); 
+                window.closeModal();
+                if (typeof window.fetchDataRealtimeAdmin === 'function') window.fetchDataRealtimeAdmin();
                 window.renderDashboardPendapatanHome();
                 window.renderVerifikasiUI();
                 window.renderReviewUI();
@@ -3991,6 +4010,7 @@
                 window.openAdminView(); 
                 e.target.reset(); 
                 window.closeModal();
+                if (typeof window.fetchDataRealtimeAdmin === 'function') window.fetchDataRealtimeAdmin();
                 window.renderDashboardPendapatanHome();
                 window.renderVerifikasiUI();
                 window.renderReviewUI();
@@ -4002,6 +4022,7 @@
                 window.openAdminView(); 
                 e.target.reset(); 
                 window.closeModal();
+                if (typeof window.fetchDataRealtimeAdmin === 'function') window.fetchDataRealtimeAdmin();
                 window.renderDashboardPendapatanHome();
                 window.renderVerifikasiUI();
                 window.renderReviewUI();
@@ -4015,6 +4036,7 @@
                 window.openAdminView();
                 e.target.reset();
                 window.closeModal();
+                if (typeof window.fetchDataRealtimeAdmin === 'function') window.fetchDataRealtimeAdmin();
                 window.renderDashboardPendapatanHome();
                 window.renderVerifikasiUI();
                 window.renderReviewUI();
@@ -4028,7 +4050,8 @@
                     window.setupAdminUI('admin_tim'); 
                     window.openAdminView(); 
                     e.target.reset(); 
-                    window.closeModal(); 
+                    window.closeModal();
+                    if (typeof window.fetchDataRealtimeAdmin === 'function') window.fetchDataRealtimeAdmin();
                     window.renderDashboardPendapatanHome();
                     window.renderVerifikasiUI();
                     window.renderReviewUI();
@@ -5841,40 +5864,7 @@
         };
 
         window.fetchDataRealtime = function() {
-            onValue(ref(db, pathVerifikasi), (snapshot) => {
-                rawVerifikasiSnap = snapshot;
-                window.renderVerifikasiUI();
-            });
 
-            // Riwayat ujian CBT SELURUH peserta (dipakai panel admin "Izin Kelas Kebakaran"
-            // untuk menampilkan keterangan kelas apa saja yang sudah diselesaikan tiap peserta).
-            // "Lulus" bersifat sticky: begitu pernah lulus di suatu kelas, status tetap tercatat
-            // Lulus walau ada percobaan lain yang gagal; skor terbaik yang ditampilkan.
-            onValue(ref(db, pathRiwayat), (snapshot) => {
-                dataRiwayatSemuaPeserta = {};
-                if (snapshot.exists()) {
-                    snapshot.forEach(uidSnap => {
-                        const perKelas = {};
-                        uidSnap.forEach(attemptSnap => {
-                            const att = attemptSnap.val();
-                            if (!att) return;
-                            const bidangAtt = att.bidang && att.bidang !== '-' ? att.bidang : '';
-                            const kelasAtt = att.kelas && att.kelas !== '-' ? att.kelas : (att.kategori || 'Umum');
-                            const key = bidangAtt ? `${bidangAtt} - ${kelasAtt}` : kelasAtt;
-                            const skor = Number(att.skor) || 0;
-                            const lulus = window.isRiwayatLulus(att);
-                            if (!perKelas[key]) perKelas[key] = { lulus: false, bestSkor: 0, attempts: 0, bidang: bidangAtt, kelas: kelasAtt };
-                            perKelas[key].attempts++;
-                            if (skor > perKelas[key].bestSkor) perKelas[key].bestSkor = skor;
-                            if (lulus) perKelas[key].lulus = true;
-                        });
-                        dataRiwayatSemuaPeserta[uidSnap.key] = perKelas;
-                    });
-                }
-                window.renderIzinKelasKebakaran();
-                window.renderRekapNilaiAdmin();
-                window.renderAkunPeserta();
-            });
 
             onValue(ref(db, pathKategori), (snapshot) => {
                 dataKategoriAll = []; 
@@ -5986,24 +5976,6 @@
                 el.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = set.has(cb.value); });
             };
 
-            onValue(ref(db, pathPeserta), (snapshot) => {
-                let countDaftar = 0; let countLulus = 0;
-                dataPesertaAll = [];
-
-                if (snapshot.exists()) {
-                    snapshot.forEach(childSnap => {
-                        countDaftar++;
-                        const data = childSnap.val();
-                        dataPesertaAll.push({ id: childSnap.key, ...data });
-                        if (data.skorUjian && data.skorUjian !== '-') countLulus++;
-                    });
-                }
-                window.animateNumber('stat-total-pendaftar', countDaftar);
-                window.animateNumber('stat-total-lulus', countLulus);
-                window.renderAkunPeserta();
-                window.renderIzinKelasKebakaran();
-                window.renderRekapNilaiAdmin();
-            });
 
             // Panel admin "Kelola Hasil Ujian": tanpa filter Bidang, tampilkan seperti semula (1 baris
             // per peserta berdasarkan nilai ujian TERAKHIR mereka, apapun bidang/kelasnya). Begitu Bidang
@@ -6215,17 +6187,6 @@
                 const elHigh = document.getElementById('live-stat-highest'); if(elHigh) elHigh.innerText = highestScore;
             };
 
-            onValue(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), (snapshot) => {
-                dataReviewAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { 
-                        const data = child.val(); 
-                        data.id = child.key; 
-                        dataReviewAll.push(data); 
-                    }); 
-                } 
-                window.renderReviewUI(); 
-            });
 
             onValue(ref(db, pathAkunBidang), (snapshot) => {
                 dataAkunBidangAll = [];
@@ -6366,21 +6327,7 @@
                 }
             });
 
-            onValue(ref(db, pathKegiatan), (snapshot) => { 
-                dataKegiatanAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); 
-                } 
-                window.renderDashboardPendapatanHome();
-            });
 
-            onValue(ref(db, pathPengeluaran), (snapshot) => { 
-                dataPengeluaranAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); }); 
-                } 
-                window.renderDashboardPendapatanHome(); 
-            });
 
             onValue(ref(db, pathModul), (snapshot) => {
                 const listAdmin = document.getElementById('admin-list-modul');
@@ -6424,6 +6371,108 @@
                 window.animateNumber('stat-total-modul-count', countModul);
                 window.renderModulBrowse();
                 window.renderSilabusHome();
+            });
+
+            // Sengaja TETAP di grup publik (bukan window.fetchDataRealtimeAdmin) walau daftar
+            // pesertanya sendiri cuma dipakai panel admin -- soalnya jumlah "Peserta Terdaftar"
+            // & "Peserta Sudah Ujian" di kartu statistik BERANDA (publik, dilihat semua
+            // pengunjung, lihat #stat-total-pendaftar/#stat-total-lulus) juga dihitung dari sini.
+            onValue(ref(db, pathPeserta), (snapshot) => {
+                let countDaftar = 0; let countLulus = 0;
+                dataPesertaAll = [];
+
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnap => {
+                        countDaftar++;
+                        const data = childSnap.val();
+                        dataPesertaAll.push({ id: childSnap.key, ...data });
+                        if (data.skorUjian && data.skorUjian !== '-') countLulus++;
+                    });
+                }
+                window.animateNumber('stat-total-pendaftar', countDaftar);
+                window.animateNumber('stat-total-lulus', countLulus);
+                window.renderAkunPeserta();
+                window.renderIzinKelasKebakaran();
+                window.renderRekapNilaiAdmin();
+            });
+
+        };
+
+        /* Listener Firebase KHUSUS ADMIN (bukan peserta/tamu) -- sengaja DIPISAH dari
+           window.fetchDataRealtime supaya koleksi data yang besar & terus bertambah (seluruh
+           Bank Soal beserta gambar soal, seluruh riwayat ujian semua peserta, antrean
+           verifikasi, ulasan instruktur, dan dashboard pendapatan/pengeluaran) TIDAK ikut
+           ditarik dari Firebase untuk setiap pengunjung/peserta yang cuma mau lihat beranda --
+           data ini hanya benar-benar dibutuhkan oleh panel Admin. (Daftar peserta/pathPeserta
+           TETAP di grup publik karena juga dipakai kartu statistik beranda -- lihat komentar di
+           window.fetchDataRealtime.) Dipanggil dari form-login-admin setiap kali admin berhasil
+           login (lihat isAdminDataInitialized di bawah supaya listener tidak didaftarkan
+           berkali-kali kalau admin logout lalu login lagi di sesi yang sama). */
+        window.fetchDataRealtimeAdmin = function() {
+            if (isAdminDataInitialized) return;
+            isAdminDataInitialized = true;
+
+            onValue(ref(db, pathVerifikasi), (snapshot) => {
+                rawVerifikasiSnap = snapshot;
+                window.renderVerifikasiUI();
+            });
+
+            // Riwayat ujian CBT SELURUH peserta (dipakai panel admin "Izin Kelas Kebakaran"
+            // untuk menampilkan keterangan kelas apa saja yang sudah diselesaikan tiap peserta).
+            // "Lulus" bersifat sticky: begitu pernah lulus di suatu kelas, status tetap tercatat
+            // Lulus walau ada percobaan lain yang gagal; skor terbaik yang ditampilkan.
+            onValue(ref(db, pathRiwayat), (snapshot) => {
+                dataRiwayatSemuaPeserta = {};
+                if (snapshot.exists()) {
+                    snapshot.forEach(uidSnap => {
+                        const perKelas = {};
+                        uidSnap.forEach(attemptSnap => {
+                            const att = attemptSnap.val();
+                            if (!att) return;
+                            const bidangAtt = att.bidang && att.bidang !== '-' ? att.bidang : '';
+                            const kelasAtt = att.kelas && att.kelas !== '-' ? att.kelas : (att.kategori || 'Umum');
+                            const key = bidangAtt ? `${bidangAtt} - ${kelasAtt}` : kelasAtt;
+                            const skor = Number(att.skor) || 0;
+                            const lulus = window.isRiwayatLulus(att);
+                            if (!perKelas[key]) perKelas[key] = { lulus: false, bestSkor: 0, attempts: 0, bidang: bidangAtt, kelas: kelasAtt };
+                            perKelas[key].attempts++;
+                            if (skor > perKelas[key].bestSkor) perKelas[key].bestSkor = skor;
+                            if (lulus) perKelas[key].lulus = true;
+                        });
+                        dataRiwayatSemuaPeserta[uidSnap.key] = perKelas;
+                    });
+                }
+                window.renderIzinKelasKebakaran();
+                window.renderRekapNilaiAdmin();
+                window.renderAkunPeserta();
+            });
+
+            onValue(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), (snapshot) => {
+                dataReviewAll = []; 
+                if(snapshot.exists()) { 
+                    snapshot.forEach(child => { 
+                        const data = child.val(); 
+                        data.id = child.key; 
+                        dataReviewAll.push(data); 
+                    }); 
+                } 
+                window.renderReviewUI(); 
+            });
+
+            onValue(ref(db, pathKegiatan), (snapshot) => { 
+                dataKegiatanAll = []; 
+                if(snapshot.exists()) { 
+                    snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); 
+                } 
+                window.renderDashboardPendapatanHome();
+            });
+
+            onValue(ref(db, pathPengeluaran), (snapshot) => { 
+                dataPengeluaranAll = []; 
+                if(snapshot.exists()) { 
+                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); }); 
+                } 
+                window.renderDashboardPendapatanHome(); 
             });
 
             onValue(ref(db, pathSoal), (snapshot) => {
@@ -6476,6 +6525,7 @@
 
                 window.renderBankSoalUI();
             });
+
         };
 
         /* Render "Daftar Bank Soal Tersimpan" (panel admin Kelola Bank Soal), disaring sesuai
