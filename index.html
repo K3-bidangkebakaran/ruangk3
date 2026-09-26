@@ -155,6 +155,116 @@
         .berita-card-img { aspect-ratio: 4 / 3; }
         .berita-card-title { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         .berita-card-excerpt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* ================= POPUP "TABUNGANMU" (Laporan Tabungan, khusus admin_utama) =================
+           Muncul SEKALI tiap admin_utama membuka panel admin (lihat window.tryTampilkanPopupTabungan),
+           pakai angka live dari Firebase -- desainnya sudah disetujui lewat contoh/pratinjau
+           terpisah sebelum dibangun di sini. */
+        .tb-popup-overlay{
+            position:fixed; inset:0; background:rgba(15,23,28,.55); backdrop-filter:blur(2px);
+            display:flex; align-items:center; justify-content:center; padding:20px;
+            z-index:200; opacity:0; pointer-events:none; transition:opacity .25s ease;
+        }
+        .tb-popup-overlay.show{ opacity:1; pointer-events:auto; }
+        .tb-popup-card{
+            background:#fff; border-radius:20px; max-width:360px; width:100%;
+            padding:0 22px 22px; text-align:center; position:relative;
+            box-shadow:0 24px 60px -12px rgba(15,23,28,.45);
+            transform:translateY(14px) scale(.94); opacity:0;
+            transition:transform .38s cubic-bezier(.34,1.56,.64,1), opacity .3s ease;
+        }
+        .tb-popup-overlay.show .tb-popup-card{ transform:translateY(0) scale(1); opacity:1; }
+        .tb-popup-close{
+            position:absolute; top:10px; right:10px; width:28px; height:28px; border-radius:50%;
+            border:none; background:#F1F5F9; color:#64748B; font-size:15px; line-height:1;
+            cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:3;
+        }
+        .tb-popup-close:hover{ background:#E2E8F0; color:#1E293B; }
+        .tb-popup-scene{ width:100%; height:158px; margin-top:6px; }
+        .tb-popup-card h3{ font-size:18px; font-weight:800; color:#0F171C; margin:2px 0 0; }
+        .tb-popup-card p{ font-size:13px; color:#64748B; line-height:1.6; margin:8px 0 0; }
+        .tb-popup-card p b{ color:#1E8449; }
+        .tb-popup-pct-pill{
+            display:inline-flex; align-items:center; gap:6px; margin-top:12px;
+            background:#e8f8f0; color:#1E8449; font-weight:800; font-size:12.5px;
+            padding:6px 13px; border-radius:999px;
+        }
+        .tb-popup-cta{
+            margin-top:16px; width:100%; border:none; border-radius:11px; padding:12px;
+            background:#1E8449; color:#fff; font-family:inherit; font-size:13.5px; font-weight:800;
+            cursor:pointer; transition:background .15s ease;
+        }
+        .tb-popup-cta:hover{ background:#27AE60; }
+
+        .tb-rocket-glow{ animation:tbGlowPulse 2.4s ease-in-out infinite; transform-origin:110px 79px; }
+        .tb-rocket-fly{ animation:tbRocketPath 3.4s cubic-bezier(.34,.04,.32,1) infinite; }
+        .tb-rocket-flame{ animation:tbFlameFlicker .28s ease-in-out infinite alternate; transform-origin:50% 0%; }
+        .tb-rocket-ring{ animation:tbRingPulse 2s ease-out infinite; transform-origin:center; }
+        .tb-rocket-ring-2{ animation-delay:1s; }
+        .tb-flag-wave{ animation:tbFlagWave 1.1s ease-in-out infinite; transform-origin:2px -9px; }
+        .tb-rocket-spark{ animation:tbSparkFloat 2.6s ease-in infinite; }
+        .tb-rocket-spark:nth-of-type(1){ animation-delay:.3s; }
+        .tb-rocket-spark:nth-of-type(2){ animation-delay:1s; }
+        .tb-rocket-spark:nth-of-type(3){ animation-delay:1.6s; }
+        .tb-rocket-spark:nth-of-type(4){ animation-delay:2.1s; }
+        .tb-rocket-trail{ animation:tbRocketPath 3.4s cubic-bezier(.34,.04,.32,1) infinite; }
+        .tb-t1{ animation-delay:-.16s; }
+        .tb-t2{ animation-delay:-.32s; }
+        .tb-t3{ animation-delay:-.48s; }
+        .tb-t4{ animation-delay:-.64s; }
+
+        @keyframes tbGlowPulse{
+            0%,100%{ opacity:.55; transform:scale(.92); }
+            50%{ opacity:1; transform:scale(1.08); }
+        }
+        @keyframes tbRocketPath{
+            0%   { offset-distance:0%;   transform:rotate(0deg) scale(.55); opacity:0; }
+            8%   { opacity:1; transform:rotate(0deg) scale(.85); }
+            45%  { transform:rotate(0deg) scale(1); }
+            88%  { opacity:1; transform:rotate(0deg) scale(1.05); }
+            100% { offset-distance:100%; transform:rotate(0deg) scale(.6); opacity:0; }
+        }
+        @keyframes tbFlameFlicker{
+            0%{ transform:scaleY(1) scaleX(1); opacity:.9; }
+            100%{ transform:scaleY(1.4) scaleX(.82); opacity:1; }
+        }
+        @keyframes tbRingPulse{
+            0%{ transform:scale(.6); opacity:.95; }
+            100%{ transform:scale(2.1); opacity:0; }
+        }
+        @keyframes tbFlagWave{
+            0%,100%{ transform:skewY(0deg); }
+            50%{ transform:skewY(-8deg); }
+        }
+        @keyframes tbSparkFloat{
+            0%{ transform:translateY(8px) scale(.3); opacity:0; }
+            35%{ opacity:1; }
+            100%{ transform:translateY(-42px) scale(1); opacity:0; }
+        }
+        .tb-rocket-fly, .tb-rocket-trail{
+            offset-path: path('M32 134 Q98 18 178 28');
+            offset-rotate: 0deg;
+        }
+
+        .tb-confetti-layer{ position:absolute; inset:0 0 auto 0; height:150px; overflow:hidden; pointer-events:none; border-radius:20px 20px 0 0; }
+        .tb-confetti{
+            position:absolute; top:-12px; left:var(--l); width:7px; height:11px; background:var(--c);
+            opacity:0; border-radius:1.5px;
+        }
+        .tb-popup-overlay.show .tb-confetti{
+            animation: tbConfettiFall 1.5s cubic-bezier(.25,.65,.4,1) forwards;
+            animation-delay: var(--delay);
+        }
+        @keyframes tbConfettiFall{
+            0%{ transform:translateY(0) rotate(0deg); opacity:1; }
+            80%{ opacity:1; }
+            100%{ transform:translateY(150px) rotate(var(--rot)); opacity:0; }
+        }
+
+        @media (prefers-reduced-motion: reduce){
+            .tb-rocket-fly, .tb-rocket-flame, .tb-rocket-ring, .tb-rocket-spark, .tb-rocket-trail,
+            .tb-rocket-glow, .tb-flag-wave, .tb-confetti{ animation:none !important; }
+        }
     </style>
 </head>
 
@@ -940,6 +1050,61 @@
     <!-- PANEL ADMIN -->
     <div id="view-admin" class="fixed inset-0 z-[100] bg-slate-100 hidden flex-col md:flex-row overflow-hidden">
         <div id="admin-sidebar-overlay" class="md:hidden fixed inset-0 bg-slate-900/60 z-10 hidden backdrop-blur-sm"></div>
+
+        <!-- Popup "Tabunganmu" -- lihat window.tryTampilkanPopupTabungan() -->
+        <div class="tb-popup-overlay" id="popup-tabungan" aria-hidden="true">
+            <div class="tb-popup-card" role="dialog" aria-modal="true" aria-labelledby="popup-tabungan-title">
+                <button type="button" class="tb-popup-close" id="btn-tutup-popup-tabungan" aria-label="Tutup">&#10005;</button>
+                <svg class="tb-popup-scene" viewBox="0 0 220 158" fill="none">
+                    <defs>
+                        <radialGradient id="tbGlowGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#2ECC71" stop-opacity=".35"/>
+                            <stop offset="100%" stop-color="#2ECC71" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="110" cy="79" r="70" fill="#e8f8f0"/>
+                    <circle class="tb-rocket-glow" cx="110" cy="79" r="62" fill="url(#tbGlowGrad)"/>
+                    <path d="M32 134 Q98 18 178 28" stroke="#CBD9D0" stroke-width="2" stroke-dasharray="5 6" fill="none"/>
+                    <g transform="translate(178,28)">
+                        <circle class="tb-rocket-ring" r="12" fill="none" stroke="#27AE60" stroke-width="2"/>
+                        <circle class="tb-rocket-ring tb-rocket-ring-2" r="12" fill="none" stroke="#2ECC71" stroke-width="2"/>
+                        <rect x="-1" y="-15" width="3" height="29" rx="1.5" fill="#2C3E50"/>
+                        <polygon class="tb-flag-wave" points="2,-15 21,-9 2,-3" fill="#27AE60"/>
+                    </g>
+                    <circle class="tb-rocket-trail tb-t1" r="3"   fill="#27AE60"/>
+                    <circle class="tb-rocket-trail tb-t2" r="2.4" fill="#F59E0B"/>
+                    <circle class="tb-rocket-trail tb-t3" r="2"   fill="#2ECC71"/>
+                    <circle class="tb-rocket-trail tb-t4" r="1.5" fill="#1E8449"/>
+                    <circle class="tb-rocket-spark" cx="60" cy="105" r="2.2" fill="#2ECC71"/>
+                    <circle class="tb-rocket-spark" cx="140" cy="100" r="2" fill="#F59E0B"/>
+                    <circle class="tb-rocket-spark" cx="48" cy="60" r="1.8" fill="#27AE60"/>
+                    <circle class="tb-rocket-spark" cx="150" cy="55" r="2.2" fill="#F59E0B"/>
+                    <g class="tb-rocket-fly">
+                        <polygon class="tb-rocket-flame" points="-5,26 5,26 0,42" fill="#F59E0B"/>
+                        <polygon class="tb-rocket-flame" points="-3,26 3,26 0,36" fill="#FDE68A" opacity="0.9"/>
+                        <polygon points="-11,20 -18,32 -8,26" fill="#2C3E50"/>
+                        <polygon points="11,20 18,32 8,26" fill="#2C3E50"/>
+                        <rect x="-10" y="-14" width="20" height="36" rx="10" fill="#fff" stroke="#2C3E50" stroke-width="2"/>
+                        <polygon points="-9,-13 9,-13 0,-28" fill="#27AE60"/>
+                        <circle cx="0" cy="1" r="5.5" fill="#e8f8f0" stroke="#1E8449" stroke-width="2"/>
+                    </g>
+                </svg>
+                <div class="tb-confetti-layer" aria-hidden="true">
+                    <span class="tb-confetti" style="--l:8%;  --c:#27AE60; --delay:.02s; --rot:140deg;"></span>
+                    <span class="tb-confetti" style="--l:20%; --c:#F59E0B; --delay:.09s; --rot:-160deg;"></span>
+                    <span class="tb-confetti" style="--l:33%; --c:#2ECC71; --delay:.03s; --rot:220deg;"></span>
+                    <span class="tb-confetti" style="--l:47%; --c:#2C3E50; --delay:.14s; --rot:-120deg;"></span>
+                    <span class="tb-confetti" style="--l:58%; --c:#1E8449; --delay:.05s; --rot:160deg;"></span>
+                    <span class="tb-confetti" style="--l:70%; --c:#F59E0B; --delay:.18s; --rot:-200deg;"></span>
+                    <span class="tb-confetti" style="--l:82%; --c:#2ECC71; --delay:.08s; --rot:180deg;"></span>
+                    <span class="tb-confetti" style="--l:92%; --c:#1E8449; --delay:.22s; --rot:-140deg;"></span>
+                </div>
+                <h3 id="popup-tabungan-title">Sedikit lagi, gas terus! &#128293;</h3>
+                <p>Tabunganmu tinggal <b id="popup-tabungan-sisa">Rp 0</b> lagi menuju target <b id="popup-tabungan-target">Rp 0</b>.</p>
+                <span class="tb-popup-pct-pill">&#128200; <span id="popup-tabungan-pct">0.0%</span> tercapai</span>
+                <button type="button" class="tb-popup-cta" id="btn-lanjut-popup-tabungan">Lanjut ke Dashboard</button>
+            </div>
+        </div>
         <aside id="admin-sidebar" class="fixed md:relative w-64 h-full bg-navy-950 text-white flex flex-col shadow-2xl z-20 flex-shrink-0 -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-6 border-b border-slate-800 flex items-center justify-between"><h2 class="text-xl font-bold text-white flex items-center">Panel Admin</h2><button id="btn-close-admin-sidebar" class="md:hidden text-slate-400 p-1 bg-slate-800 rounded-md">✕</button></div>
             <nav id="admin-sidebar-nav" class="flex-grow p-4 space-y-1.5 overflow-y-auto admin-scroll">
@@ -952,6 +1117,7 @@
                 <button id="nav-btn-keuangan" class="admin-nav-btn w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pendapatan"><span>Ringkasan Keuangan</span></button>
 
                 <div class="admin-utama-only eldi-access text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Menu Khusus</div>
+                <button id="nav-btn-tabungan" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-tabungan"><span>Laporan Tabungan</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-running-text"><span>Kelola Info Pop Up Beranda</span></button>
                 <button class="admin-nav-btn admin-utama-only eldi-access w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium bidang-access" data-target="admin-panel-kegiatan"><span>Input Kegiatan Baru</span></button>
                 <button class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-tim"><span>Kelola Akun Tim</span></button>
@@ -1155,6 +1321,10 @@
                                     <input type="date" id="input-pengeluaran-tanggal" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     <input type="text" id="input-pengeluaran-desk" required placeholder="Deskripsi..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                                     <input type="number" id="input-pengeluaran-jumlah" required placeholder="Nominal (Rp)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-brand-50 border border-brand-100 rounded-lg px-2.5 py-2 cursor-pointer">
+                                        <input type="checkbox" id="input-pengeluaran-tabungan" class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5">
+                                        <span>Setoran Tabungan (masuk juga ke Laporan Tabungan)</span>
+                                    </label>
                                     <button type="submit" class="w-full py-2.5 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 text-sm shadow-sm">Simpan Pengeluaran</button>
                                 </form>
                             </div>
@@ -1169,6 +1339,99 @@
                                     </table>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Laporan Tabungan (khusus admin_utama) -- semua angka dihitung dari data
+                     pathPengeluaran yang bertanda tabungan:true, lihat window.renderLaporanTabunganUI.
+                     Target bisa diubah manual & tersimpan di Firebase (pathPengaturanTabungan). -->
+                <div id="admin-panel-tabungan" class="admin-panel hidden admin-utama-only">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-safety-600 overflow-hidden">
+                            <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Tabungan Terkumpul</p>
+                            <p class="text-lg font-bold tracking-tight text-safety-600 truncate" id="tabungan-stat-terkumpul">Rp 0</p>
+                            <p class="text-[10px] text-slate-400 mt-1" id="tabungan-stat-jumlah-transaksi">dari 0 transaksi masuk</p>
+                        </div>
+                        <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-navy-800 overflow-hidden">
+                            <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Target Tabungan</p>
+                            <p class="text-lg font-bold tracking-tight text-navy-800 truncate" id="tabungan-stat-target">Rp 0</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Bisa diubah manual di bawah</p>
+                        </div>
+                        <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-blue-600 overflow-hidden">
+                            <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Sisa Menuju Target</p>
+                            <p class="text-lg font-bold tracking-tight text-blue-700 truncate" id="tabungan-stat-sisa">Rp 0</p>
+                            <p class="text-[10px] text-slate-400 mt-1" id="tabungan-stat-estimasi">-</p>
+                        </div>
+                        <div class="bg-white p-4 lg:p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-amber-500 overflow-hidden">
+                            <p class="text-[9px] lg:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 truncate">Rata-rata / Bulan</p>
+                            <p class="text-lg font-bold tracking-tight text-amber-600 truncate" id="tabungan-stat-rata">Rp 0</p>
+                            <p class="text-[10px] text-slate-400 mt-1" id="tabungan-stat-rata-sub">-</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <h3 class="text-md font-bold text-slate-800">Capaian Target</h3>
+                            <span class="text-[11px] text-slate-400">Dihitung otomatis dari semua transaksi bertanda Setoran Tabungan</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                            <div class="shrink-0">
+                                <p class="text-3xl font-extrabold text-safety-600 tabular-nums" id="tabungan-pct">0<span class="text-base">%</span></p>
+                                <p class="text-[11px] text-slate-500 mt-1">dari target <span id="tabungan-pct-target" class="font-semibold">Rp 0</span></p>
+                            </div>
+                            <div class="flex-grow w-full">
+                                <div class="bg-slate-100 rounded-full h-4 overflow-hidden border border-slate-200">
+                                    <div id="tabungan-bar" class="h-full rounded-full bg-gradient-to-r from-safety-600 to-safety-400" style="width:0%"></div>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-500 mt-1.5">
+                                    <span>Rp 0</span>
+                                    <span><b id="tabungan-bar-terkumpul" class="text-slate-700">Rp 0</b> terkumpul</span>
+                                    <span id="tabungan-bar-target">Rp 0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-dashed border-slate-200">
+                            <button type="button" id="btn-ubah-target-tabungan" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50">&#9999;&#65039; Ubah target tabungan</button>
+                            <div id="form-edit-target-tabungan" class="hidden items-center gap-2 flex-wrap mt-2">
+                                <span class="text-sm font-bold text-slate-500">Rp</span>
+                                <input type="number" id="input-target-tabungan" min="0" step="50000" class="px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none w-48">
+                                <button type="button" id="btn-simpan-target-tabungan" class="px-3 py-2 bg-safety-600 text-white rounded-lg text-xs font-bold hover:bg-safety-500">Simpan</button>
+                                <button type="button" id="btn-batal-target-tabungan" class="px-3 py-2 border border-slate-300 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-50">Batal</button>
+                            </div>
+                            <p id="note-target-tabungan" class="hidden text-[11px] text-safety-600 font-semibold mt-2">Target berhasil diperbarui.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+                        <h3 class="text-md font-bold text-slate-800 mb-3">Tabungan Masuk per Bulan</h3>
+                        <div class="relative" style="height:220px"><canvas id="chart-tabungan-bulanan"></canvas></div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+                        <h3 class="text-md font-bold text-slate-800 mb-3">Rekening yang Dipantau Bot</h3>
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-safety-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10h20"/><circle cx="7" cy="14.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-extrabold text-slate-900">Superbank</p>
+                                <p class="text-sm font-bold text-slate-700 tabular-nums">000028473411</p>
+                                <p class="text-[11px] text-slate-400">a.n. RuangK3 - Bidang Kebakaran</p>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-lg px-3 py-2.5 mt-4 leading-relaxed">
+                            Kalau nomor rekening tujuan yang kebaca OCR dari foto bukti transfer di bot Telegram cocok dengan <code class="bg-white border border-slate-200 rounded px-1">000028473411</code>, transaksinya tetap masuk ke Draft Pengeluaran seperti biasa (lalu ke Laporan Pengeluaran resmi setelah dikonfirmasi) &mdash; tapi otomatis ditandai sebagai setoran tabungan, jadi dananya ikut dihitung juga di sini tanpa dicatat dua kali.
+                        </p>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                            <h3 class="text-md font-bold text-slate-800">Rincian Transaksi Masuk</h3>
+                            <span class="text-[11px] text-slate-400" id="tabungan-list-sub">Terbaru dulu</span>
+                        </div>
+                        <div id="list-tabungan-transaksi" class="p-5 space-y-3 max-h-[500px] overflow-y-auto admin-scroll">
+                            <p class="text-xs text-slate-500 italic">Belum ada setoran tabungan yang tercatat.</p>
                         </div>
                     </div>
                 </div>
@@ -1624,6 +1887,10 @@
         // Telegram Bot -> ditulis ke sini dengan status "pending") -- admin_utama meninjau & konfirmasi
         // dulu di panel Keuangan sebelum benar-benar masuk ke pathPengeluaran resmi di atas.
         const pathPengeluaranDraftWa = `artifacts/${cleanAppId}/public/data/pengeluaran_draft_wa`;
+        // Pengaturan fitur "Laporan Tabungan" (menu khusus admin_utama) -- cuma nyimpan TARGET
+        // yang bisa diubah manual; capaian & sisa selalu dihitung ulang dari SEMUA data
+        // pathPengeluaran yang bertanda tabungan:true (bukan angka statis / path terpisah).
+        const pathPengaturanTabungan = `artifacts/${cleanAppId}/public/data/pengaturan_tabungan`;
         const pathBerita = `artifacts/${cleanAppId}/public/data/berita`;
         const pathSoal = `artifacts/${cleanAppId}/public/data/soal`;
         const pathVisitor = `artifacts/${cleanAppId}/public/data/visitor`;
@@ -1644,6 +1911,13 @@
         let currentCalDate = new Date(); 
         let dataTimAll = []; let dataKegiatanAll = []; let dataPengeluaranAll = []; let dataKategoriAll = [];
         let dataPengeluaranDraftWaAll = [];
+        // Fitur Laporan Tabungan: target default 50 juta kalau belum pernah diatur admin_utama di
+        // Firebase; tabunganChartInstance supaya chart lama di-destroy tiap render ulang (pola sama
+        // dgn reviewChartInstance); popupTabunganSudahTampil supaya pop up "Tabunganmu" cuma muncul
+        // SEKALI tiap admin_utama buka panel admin (bukan tiap kali data Firebase ter-update).
+        let dataPengaturanTabungan = { target: 50000000 };
+        let tabunganChartInstance = null;
+        let popupTabunganSudahTampil = false;
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
         let dataPesertaAll = [];
@@ -4835,6 +5109,7 @@
                     tanggal: document.getElementById('input-pengeluaran-tanggal').value, 
                     deskripsi: document.getElementById('input-pengeluaran-desk').value, 
                     jumlah: parseInt(document.getElementById('input-pengeluaran-jumlah').value), 
+                    tabungan: document.getElementById('input-pengeluaran-tabungan')?.checked || false,
                     timestamp: Date.now() 
                 }); 
                 e.target.reset(); 
@@ -4892,6 +5167,10 @@
                             <input type="number" id="draft-nominal-${d.id}" value="${nominalVal}" placeholder="Nominal (Rp)" class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
                         </div>
                         <input type="text" id="draft-desk-${d.id}" value="${deskVal}" placeholder="Deskripsi..." class="w-full px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-brand-50 border border-brand-100 rounded-lg px-2.5 py-1.5 w-fit cursor-pointer">
+                            <input type="checkbox" id="draft-tabungan-${d.id}" ${d.guessTabungan ? 'checked' : ''} class="rounded border-slate-300 text-safety-500 h-3.5 w-3.5">
+                            <span>Setoran Tabungan${d.guessTabungan ? ' <span class="text-safety-600">(terdeteksi otomatis)</span>' : ''}</span>
+                        </label>
                         <p class="text-[10px] text-slate-400">Dari Telegram: ${escHtml(d.namaPengirimWa || d.pengirimWa || '-')} &bull; ${waktuStr}</p>
                         <div class="flex gap-2 pt-1">
                             <button onclick="window.simpanDraftPengeluaranWa('${d.id}')" class="flex-1 py-1.5 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 text-xs">Simpan ke Pengeluaran</button>
@@ -4906,17 +5185,19 @@
             const tglEl = document.getElementById(`draft-tgl-${id}`);
             const nominalEl = document.getElementById(`draft-nominal-${id}`);
             const deskEl = document.getElementById(`draft-desk-${id}`);
+            const tabunganEl = document.getElementById(`draft-tabungan-${id}`);
             const tanggal = tglEl ? tglEl.value : '';
             const jumlah = parseInt(nominalEl ? nominalEl.value : '', 10);
             const deskripsi = deskEl ? deskEl.value.trim() : '';
+            const tabungan = tabunganEl ? tabunganEl.checked : false;
             if (!tanggal || !jumlah || jumlah <= 0 || !deskripsi) {
                 window.showToast("Lengkapi dulu tanggal, deskripsi, dan nominal sebelum disimpan.", "error");
                 return;
             }
             try {
-                await push(ref(db, pathPengeluaran), { tanggal, deskripsi, jumlah, timestamp: Date.now(), sumberWa: true });
+                await push(ref(db, pathPengeluaran), { tanggal, deskripsi, jumlah, timestamp: Date.now(), sumberWa: true, tabungan });
                 await remove(ref(db, `${pathPengeluaranDraftWa}/${id}`));
-                window.showToast("Pengeluaran dari Telegram tersimpan.", "success");
+                window.showToast(tabungan ? "Pengeluaran dari Telegram tersimpan (tercatat juga di Laporan Tabungan)." : "Pengeluaran dari Telegram tersimpan.", "success");
             } catch (e) {
                 window.showToast("Gagal menyimpan pengeluaran.", "error");
             }
@@ -4930,6 +5211,248 @@
                 window.showToast("Gagal menghapus draft.", "error");
             }
         };
+
+        /* ================= LAPORAN TABUNGAN (menu khusus admin_utama) =================
+           Semua angka di panel ini (terkumpul, capaian %, sisa, rata-rata, grafik bulanan, daftar
+           transaksi) dihitung ulang dari SEMUA data pathPengeluaran yang bertanda tabungan:true --
+           BUKAN path/penyimpanan terpisah. Satu transaksi tetap satu sumber data di Pengeluaran,
+           cuma ditandai supaya ikut dihitung di sini juga. Target-nya sendiri yang bisa diubah
+           manual, tersimpan di Firebase pathPengaturanTabungan supaya semua admin_utama yang login
+           lihat angka yang sama. */
+        window.renderLaporanTabunganUI = function() {
+            const panel = document.getElementById('admin-panel-tabungan');
+            if (!panel) return;
+
+            const setoranAll = (dataPengeluaranAll || []).filter(p => p.tabungan === true);
+            const terkumpul = setoranAll.reduce((sum, p) => sum + (Number(p.jumlah) || 0), 0);
+            const target = Number(dataPengaturanTabungan.target) || 0;
+            const sisa = Math.max(target - terkumpul, 0);
+            const pct = target > 0 ? (terkumpul / target) * 100 : 0;
+            const barWidth = Math.max(0, Math.min(pct, 100));
+
+            const elTerkumpul = document.getElementById('tabungan-stat-terkumpul');
+            const elJumlahTx = document.getElementById('tabungan-stat-jumlah-transaksi');
+            const elTarget = document.getElementById('tabungan-stat-target');
+            const elSisa = document.getElementById('tabungan-stat-sisa');
+            const elEstimasi = document.getElementById('tabungan-stat-estimasi');
+            const elRata = document.getElementById('tabungan-stat-rata');
+            const elRataSub = document.getElementById('tabungan-stat-rata-sub');
+            const elPct = document.getElementById('tabungan-pct');
+            const elPctTarget = document.getElementById('tabungan-pct-target');
+            const elBar = document.getElementById('tabungan-bar');
+            const elBarTerkumpul = document.getElementById('tabungan-bar-terkumpul');
+            const elBarTarget = document.getElementById('tabungan-bar-target');
+
+            if (elTerkumpul) elTerkumpul.textContent = window.formatRupiah(terkumpul);
+            if (elJumlahTx) elJumlahTx.textContent = `dari ${setoranAll.length} transaksi masuk`;
+            if (elTarget) elTarget.textContent = window.formatRupiah(target);
+            if (elSisa) elSisa.textContent = window.formatRupiah(sisa);
+            if (elPct) elPct.innerHTML = `${pct.toFixed(1)}<span class="text-base">%</span>`;
+            if (elPctTarget) elPctTarget.textContent = window.formatRupiah(target);
+            if (elBar) elBar.style.width = `${barWidth}%`;
+            if (elBarTerkumpul) elBarTerkumpul.textContent = window.formatRupiah(terkumpul);
+            if (elBarTarget) elBarTarget.textContent = window.formatRupiah(target);
+
+            // Rata-rata/bulan & agregasi grafik: dikelompokkan dari field `tanggal` (format
+            // YYYY-MM-DD), 6 bulan ke belakang termasuk bulan berjalan.
+            const BULAN_ID_TB = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+            const nowTb = new Date();
+            const bulanKeysTb = [];
+            for (let i = 5; i >= 0; i--) {
+                const dTb = new Date(nowTb.getFullYear(), nowTb.getMonth() - i, 1);
+                bulanKeysTb.push(`${dTb.getFullYear()}-${String(dTb.getMonth() + 1).padStart(2, '0')}`);
+            }
+            const totalPerBulanTb = {};
+            bulanKeysTb.forEach(k => { totalPerBulanTb[k] = 0; });
+            setoranAll.forEach(p => {
+                if (!p.tanggal) return;
+                const key = p.tanggal.slice(0, 7);
+                if (totalPerBulanTb.hasOwnProperty(key)) totalPerBulanTb[key] += (Number(p.jumlah) || 0);
+            });
+            const nilaiBulananTb = bulanKeysTb.map(k => totalPerBulanTb[k]);
+            const labelBulananTb = bulanKeysTb.map(k => {
+                const [, m] = k.split('-');
+                return BULAN_ID_TB[parseInt(m, 10) - 1];
+            });
+            const bulanDenganSetoranTb = nilaiBulananTb.filter(v => v > 0);
+            const rataPerBulanTb = bulanDenganSetoranTb.length > 0
+                ? (nilaiBulananTb.reduce((a, b) => a + b, 0) / bulanDenganSetoranTb.length)
+                : 0;
+
+            if (elRata) elRata.textContent = window.formatRupiah(rataPerBulanTb);
+            if (elRataSub) elRataSub.textContent = `${labelBulananTb[0]}–${labelBulananTb[labelBulananTb.length - 1]}`;
+
+            if (elEstimasi) {
+                if (sisa <= 0 && target > 0) {
+                    elEstimasi.textContent = '🎉 target sudah tercapai';
+                } else if (rataPerBulanTb > 0) {
+                    const bulanLagiTb = Math.ceil(sisa / rataPerBulanTb);
+                    const dEstimasiTb = new Date(nowTb.getFullYear(), nowTb.getMonth() + bulanLagiTb, 1);
+                    elEstimasi.textContent = `estimasi tercapai ${BULAN_ID_TB[dEstimasiTb.getMonth()]} ${dEstimasiTb.getFullYear()}`;
+                } else {
+                    elEstimasi.textContent = 'belum ada data cukup untuk estimasi';
+                }
+            }
+
+            const ctxChartTb = document.getElementById('chart-tabungan-bulanan');
+            if (ctxChartTb && window.Chart) {
+                if (tabunganChartInstance) tabunganChartInstance.destroy();
+                try {
+                    tabunganChartInstance = new Chart(ctxChartTb.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labelBulananTb,
+                            datasets: [{
+                                data: nilaiBulananTb,
+                                backgroundColor: '#27AE60',
+                                borderRadius: 6,
+                                maxBarThickness: 40
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => window.formatRupiah(ctx.parsed.y)
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { grid: { display: false } },
+                                y: {
+                                    grid: { color: '#E2E8F0' },
+                                    ticks: {
+                                        callback: (v) => `${(v / 1000000).toLocaleString('id-ID')}jt`
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } catch (e) {}
+            }
+
+            const listElTb = document.getElementById('list-tabungan-transaksi');
+            const subElTb = document.getElementById('tabungan-list-sub');
+            if (listElTb) {
+                const sortedTb = [...setoranAll].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                const teratasTb = sortedTb.slice(0, 20);
+                if (subElTb) subElTb.textContent = `${teratasTb.length} dari ${sortedTb.length} transaksi · terbaru dulu`;
+                if (teratasTb.length === 0) {
+                    listElTb.innerHTML = '<p class="text-xs text-slate-500 italic">Belum ada setoran tabungan yang tercatat.</p>';
+                } else {
+                    listElTb.innerHTML = teratasTb.map(p => `
+                        <div class="flex items-center gap-3 border border-slate-200 rounded-lg px-3.5 py-2.5">
+                            <div class="w-9 h-9 rounded-lg bg-brand-50 flex items-center justify-center text-safety-600 text-sm shrink-0">💰</div>
+                            <div class="flex-grow min-w-0">
+                                <p class="text-xs font-bold text-slate-800 truncate">${escHtml(p.deskripsi || '-')}</p>
+                                <p class="text-[10.5px] text-slate-400 mt-0.5">${window.formatDate(p.tanggal)}${p.sumberWa ? ' · via bot Telegram' : ''}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-xs font-extrabold text-slate-900">${window.formatRupiah(p.jumlah)}</p>
+                            </div>
+                        </div>`).join('');
+                }
+            }
+
+            window.tryTampilkanPopupTabungan(terkumpul, target, sisa, pct);
+        };
+
+        /** Muncul SEKALI tiap admin_utama membuka panel admin (bukan tiap kali data Firebase
+         *  ter-update) -- flag popupTabunganSudahTampil dicek supaya tidak muncul berulang saat
+         *  transaksi baru masuk selagi panel masih terbuka. Dipanggil dari akhir
+         *  window.renderLaporanTabunganUI() begitu ada data pertama yang bisa dihitung. */
+        window.tryTampilkanPopupTabungan = function(terkumpul, target, sisa, pct) {
+            if (popupTabunganSudahTampil) return;
+            if (!currentUser || currentUser.role !== 'admin_utama') return;
+            const viewAdminEl = document.getElementById('view-admin');
+            if (!viewAdminEl || viewAdminEl.classList.contains('hidden')) return;
+            const popup = document.getElementById('popup-tabungan');
+            if (!popup) return;
+
+            popupTabunganSudahTampil = true;
+
+            document.getElementById('popup-tabungan-sisa').textContent = window.formatRupiah(sisa);
+            document.getElementById('popup-tabungan-target').textContent = window.formatRupiah(target);
+
+            const elPctPopup = document.getElementById('popup-tabungan-pct');
+            const reduceMotionTb = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const pctAmanTb = isFinite(pct) ? pct : 0;
+
+            function hitungNaikPersenTb() {
+                if (reduceMotionTb) { elPctPopup.textContent = pctAmanTb.toFixed(1) + '%'; return; }
+                let mulaiTb = null;
+                const durasiTb = 900;
+                function frameTb(t) {
+                    if (mulaiTb === null) mulaiTb = t;
+                    const progresTb = Math.min((t - mulaiTb) / durasiTb, 1);
+                    const easeTb = 1 - Math.pow(1 - progresTb, 3);
+                    elPctPopup.textContent = (pctAmanTb * easeTb).toFixed(1) + '%';
+                    if (progresTb < 1) requestAnimationFrame(frameTb);
+                }
+                requestAnimationFrame(frameTb);
+            }
+
+            function tutupPopupTb() {
+                popup.classList.remove('show');
+                popup.setAttribute('aria-hidden', 'true');
+            }
+            document.getElementById('btn-tutup-popup-tabungan').addEventListener('click', tutupPopupTb);
+            document.getElementById('btn-lanjut-popup-tabungan').addEventListener('click', tutupPopupTb);
+            popup.addEventListener('click', (e) => { if (e.target === popup) tutupPopupTb(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') tutupPopupTb(); });
+
+            setTimeout(() => {
+                if (sisa <= 0 && target > 0) {
+                    document.getElementById('popup-tabungan-title').textContent = 'Target tercapai! 🎉';
+                    const pEl = popup.querySelector('p');
+                    if (pEl) pEl.innerHTML = `Tabunganmu sudah mencapai target <b>${window.formatRupiah(target)}</b>. Mantap!`;
+                }
+                popup.classList.add('show');
+                popup.setAttribute('aria-hidden', 'false');
+                hitungNaikPersenTb();
+            }, 500);
+        };
+
+        document.getElementById('btn-ubah-target-tabungan')?.addEventListener('click', () => {
+            const input = document.getElementById('input-target-tabungan');
+            const form = document.getElementById('form-edit-target-tabungan');
+            const btn = document.getElementById('btn-ubah-target-tabungan');
+            const note = document.getElementById('note-target-tabungan');
+            if (!input || !form || !btn) return;
+            input.value = Number(dataPengaturanTabungan.target) || 0;
+            btn.classList.add('hidden');
+            form.classList.remove('hidden');
+            form.classList.add('flex');
+            if (note) note.classList.add('hidden');
+            input.focus();
+        });
+        document.getElementById('btn-batal-target-tabungan')?.addEventListener('click', () => {
+            document.getElementById('form-edit-target-tabungan')?.classList.add('hidden');
+            document.getElementById('form-edit-target-tabungan')?.classList.remove('flex');
+            document.getElementById('btn-ubah-target-tabungan')?.classList.remove('hidden');
+        });
+        document.getElementById('btn-simpan-target-tabungan')?.addEventListener('click', async () => {
+            const input = document.getElementById('input-target-tabungan');
+            const note = document.getElementById('note-target-tabungan');
+            const v = parseInt(input ? input.value : '', 10);
+            if (isNaN(v) || v < 0) {
+                window.showToast("Isi target dengan angka yang benar.", "error");
+                return;
+            }
+            try {
+                await set(ref(db, `${pathPengaturanTabungan}/target`), v);
+                if (note) { note.classList.remove('hidden'); note.textContent = 'Target berhasil diperbarui.'; }
+                window.showToast("Target tabungan diperbarui.", "success");
+            } catch (e) {
+                window.showToast("Gagal menyimpan target.", "error");
+            }
+            document.getElementById('form-edit-target-tabungan')?.classList.add('hidden');
+            document.getElementById('form-edit-target-tabungan')?.classList.remove('flex');
+            document.getElementById('btn-ubah-target-tabungan')?.classList.remove('hidden');
+        });
         
         window.toggleStatusBayarTgl = async function(id, dateStr, isChecked) { 
             try { 
@@ -6571,6 +7094,14 @@
                     snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); });
                 }
                 window.renderDashboardPendapatanHome();
+                window.renderLaporanTabunganUI();
+            });
+
+            // Target tabungan (Laporan Tabungan, admin_utama) -- disimpan terpisah dari data
+            // transaksi supaya bisa diubah manual tanpa mengubah/duplikasi data Pengeluaran.
+            onValue(ref(db, `${pathPengaturanTabungan}/target`), (snapshot) => {
+                dataPengaturanTabungan.target = snapshot.exists() ? Number(snapshot.val()) : 50000000;
+                window.renderLaporanTabunganUI();
             });
 
             onValue(ref(db, pathPengeluaranDraftWa), (snapshot) => {
