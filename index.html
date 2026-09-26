@@ -4876,7 +4876,11 @@
             list.innerHTML = drafts.map(d => {
                 const tglVal = d.guessTanggal || todayStr;
                 const nominalVal = d.guessNominal || '';
-                const deskVal = escHtml(d.caption || d.ocrRingkas || '');
+                // Prioritaskan caption manual dari admin (kalau ditulis pas kirim foto), lalu
+                // tebakan NAMA PENERIMA transaksi hasil OCR (ini yang biasanya lebih pas jadi
+                // deskripsi Pengeluaran, bukan cuplikan mentah seluruh teks struk), baru fallback
+                // ke cuplikan OCR mentah kalau nama penerima juga tidak kebaca.
+                const deskVal = escHtml(d.caption || d.guessNamaPenerima || d.ocrRingkas || '');
                 const waktuStr = d.waktuMasuk ? new Date(d.waktuMasuk).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '-';
                 const gambar = d.gambarBase64 || '';
                 return `
