@@ -98,6 +98,9 @@
         .tab-lms-active { color: #2ecc71; border-bottom: 3px solid #2ecc71; font-weight: 800; }
 
         .no-select { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
+        .materi-capture-guard { filter: blur(28px) brightness(0.7); transition: filter 0.12s ease-out; }
+        .materi-capture-overlay { position: absolute; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; text-align: center; background: rgba(15,23,42,0.55); color: #fff; font-weight: 800; font-size: 12px; padding: 1.5rem; border-radius: 1.5rem; }
+        .materi-capture-overlay.active { display: flex; }
         @media print {
             .no-print { display: none !important; }
             body { display: none !important; }
@@ -800,10 +803,11 @@
                 <span id="lihat-modul-kategori" class="inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase mb-2 bg-slate-100 text-slate-700"></span>
                 <h2 id="lihat-modul-judul" class="text-xl sm:text-2xl font-black text-slate-900 leading-tight pr-8"></h2>
             </div>
-            <div class="p-6 sm:p-8 pt-4 overflow-y-auto flex-grow bg-white no-select" oncontextmenu="return false;">
+            <div id="lihat-modul-content-area" class="p-6 sm:p-8 pt-4 overflow-y-auto flex-grow bg-white no-select relative" oncontextmenu="return false;">
                 <div id="lihat-modul-video-wrap"></div>
                 <div id="lihat-modul-doc-wrap"></div>
                 <div id="lihat-modul-isi" class="text-slate-700 text-sm sm:text-base leading-relaxed whitespace-pre-wrap"></div>
+                <div id="lihat-modul-capture-overlay" class="materi-capture-overlay">🔒 Konten disembunyikan sementara demi keamanan materi.</div>
             </div>
         </div>
 
@@ -2072,19 +2076,27 @@
                 containerEl.appendChild(scrollBox);
 
                 const targetWidth = Math.max(scrollBox.clientWidth - 24, 280);
+                const outputScale = Math.min(window.devicePixelRatio || 1, 3);
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const baseViewport = page.getViewport({ scale: 1 });
                     const scale = targetWidth / baseViewport.width;
                     const viewport = page.getViewport({ scale });
                     const canvas = document.createElement('canvas');
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
+                    // Backing-store canvas dirender di resolusi asli layar (devicePixelRatio)
+                    // supaya tetap tajam waktu di-zoom/pinch, tapi ukuran TAMPIL (CSS) tetap
+                    // sama seperti sebelumnya lewat canvas.style.width/height.
+                    canvas.width = Math.floor(viewport.width * outputScale);
+                    canvas.height = Math.floor(viewport.height * outputScale);
+                    canvas.style.width = Math.floor(viewport.width) + 'px';
+                    canvas.style.height = Math.floor(viewport.height) + 'px';
                     canvas.className = 'max-w-full rounded shadow-md pointer-events-none select-none';
                     canvas.setAttribute('draggable', 'false');
                     canvas.setAttribute('oncontextmenu', 'return false;');
                     const ctx = canvas.getContext('2d');
-                    await page.render({ canvasContext: ctx, viewport }).promise;
+                    const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+                    await page.render({ canvasContext: ctx, viewport, transform }).promise;
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
                     if (watermarkLabel) drawWatermarkOnCanvas(ctx, canvas.width, canvas.height, watermarkLabel);
                     pagesWrap.appendChild(canvas);
                 }
@@ -3873,6 +3885,26 @@
         };
 
         document.querySelectorAll('.btn-close-modal').forEach(btn => btn.addEventListener('click', window.closeModal));
+
+        /* Perlindungan tambahan saat peserta membuka materi (modal-lihat-modul): begitu tab
+           berpindah fokus (alt-tab, buka app lain, sebagian besar tool screen-recording) atau
+           halaman disembunyikan (visibilitychange), konten materi langsung diblur & ditutup
+           overlay. Catatan jujur: ini BUKAN mencegah screenshot murni di dalam tab yang sama
+           yang masih fokus (mis. tombol Print Screen) -- tidak ada teknologi web yang bisa
+           mencegah itu sepenuhnya -- tapi cukup efektif menghalangi perekaman layar & tool
+           screenshot otomatis yang butuh berpindah window/tab terlebih dahulu. */
+        function terapkanGuardMateri(aktif) {
+            const modul = document.getElementById('modal-lihat-modul');
+            if (!modul || modul.classList.contains('hidden')) return;
+            const area = document.getElementById('lihat-modul-content-area');
+            const capOverlay = document.getElementById('lihat-modul-capture-overlay');
+            if (!area) return;
+            area.classList.toggle('materi-capture-guard', aktif);
+            if (capOverlay) capOverlay.classList.toggle('active', aktif);
+        }
+        document.addEventListener('visibilitychange', () => terapkanGuardMateri(document.hidden));
+        window.addEventListener('blur', () => terapkanGuardMateri(true));
+        window.addEventListener('focus', () => terapkanGuardMateri(false));
 
         /* ============ TUTORIAL PENGGUNAAN WEBSITE (video panduan singkat di Beranda) ============
            Daftar video tutorial bersifat statis (dikelola lewat kode, bukan lewat panel admin).
