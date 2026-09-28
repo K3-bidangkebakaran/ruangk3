@@ -6,6 +6,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RuangK3 - Pusat Edukasi & Informasi K3</title>
 
+    <!-- Preconnect ke semua host eksternal yang dipakai halaman ini (Tailwind CDN, Google
+         Fonts, Firebase Auth/Database via gstatic.com, Realtime Database itu sendiri,
+         jsDelivr, cdnjs) -- supaya koneksi DNS+TLS ke masing-masing host itu sudah mulai
+         dibuka SEJAK AWAL, bukan baru mulai saat baris <script>/<link> yang memakainya
+         tercapai. Ini murni percepatan jaringan (tidak mengubah apa pun yang dimuat) --
+         paling terasa di koneksi lambat/tidak stabil ("lola"), karena setiap handshake
+         yang biasanya berurutan (login peserta/admin bergantung pada Firebase Auth &
+         Realtime Database ini) sekarang bisa tumpang tindih alih-alih baris antre. -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
     <!-- Tailwind CSS & Fonts -->
     <!-- Tailwind Play CDN SENGAJA TIDAK diberi `defer` (beda dari skrip-skrip lain di bawah):
          dokumentasi resminya mensyaratkan tailwind.config diset SEGERA setelah skrip ini
@@ -1922,6 +1938,11 @@
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
         let dataPesertaAll = [];
         let dataAkunBidangAll = [];
+        // Dipakai form-login-admin supaya tidak salah bilang "PIN Salah" kalau sebenarnya
+        // data akun bidang/tim ini belum sempat termuat dari Firebase (lihat catatan di
+        // dekat form-login-admin & window.fetchDataRealtime).
+        let akunBidangDataLoaded = false;
+        let timDataLoaded = false;
         // Ringkasan riwayat ujian CBT SELURUH peserta (bukan cuma peserta yang sedang login),
         // dipakai di panel admin "Izin Kelas Kebakaran" untuk menampilkan keterangan kelas apa
         // saja yang sudah pernah diselesaikan tiap peserta. Struktur:
@@ -4278,7 +4299,27 @@
             const btnSubmit = document.getElementById('btn-submit-admin'); 
             const oriText = btnSubmit.innerText; 
             btnSubmit.innerText = "Memeriksa...";
-            
+
+            // PIN admin_bidang/admin_tim dicek dari dataAkunBidangAll/dataTimAll, yang baru
+            // terisi setelah listener onValue di window.fetchDataRealtime selesai sekali
+            // (lihat akunBidangDataLoaded/timDataLoaded). Di jaringan lambat, admin bisa saja
+            // memasukkan PIN yang BENAR sebelum data itu sempat sampai -- sebelumnya ini
+            // langsung dianggap "PIN Salah" walau sebenarnya cuma "belum sempat dicek".
+            // PIN bawaan (admin123/adrian23/eldi123) tidak butuh data ini sama sekali, jadi
+            // tetap instan seperti biasa -- hanya ditunggu kalau PIN-nya bukan salah satu itu.
+            if (pin !== 'admin123' && pin !== 'adrian23' && pin !== 'eldi123' && (!akunBidangDataLoaded || !timDataLoaded)) {
+                btnSubmit.innerText = "Memuat data akun...";
+                await window.withTimeout(
+                    new Promise((resolve) => {
+                        const cekSiap = setInterval(() => {
+                            if (akunBidangDataLoaded && timDataLoaded) { clearInterval(cekSiap); resolve(); }
+                        }, 200);
+                    }),
+                    TIMEOUT_JARINGAN_MS
+                ).catch(() => {});
+                btnSubmit.innerText = "Memeriksa...";
+            }
+
             if (pin === 'admin123') {
                 // nama di sini ikut jadi "namaAdminUpload" saat admin_utama upload modul materi
                 // (lihat window.getModulWatermarkLabel & form-modul) -- dipakai nama LENGKAP
@@ -4350,7 +4391,8 @@
                     window.renderReviewUI();
                     if (typeof window.renderBankSoalUI === 'function') window.renderBankSoalUI();
                 } else {
-                    btnSubmit.innerText = "PIN Salah!"; 
+                    const dataBelumSiapSaatCek = !akunBidangDataLoaded || !timDataLoaded;
+                    btnSubmit.innerText = dataBelumSiapSaatCek ? "Koneksi Lambat, Coba Lagi" : "PIN Salah!";
                     btnSubmit.classList.replace('bg-navy-900', 'bg-red-500'); 
                     setTimeout(() => { 
                         btnSubmit.innerText = oriText; 
@@ -6818,12 +6860,14 @@
                         dataAkunBidangAll.push(data);
                     });
                 }
+                akunBidangDataLoaded = true;
                 window.renderAkunBidangUI();
                 window.syncOpsiAkunBidang();
             });
 
             onValue(ref(db, pathTim), (snapshot) => {
                 dataTimAll = []; 
+                timDataLoaded = true;
                 const selectKeg = document.getElementById('input-kegiatan-tim'); 
                 const listAdmin = document.getElementById('admin-list-tim'); 
                 const selectUjianTim = document.getElementById('select-ujian-tim');
@@ -7378,7 +7422,24 @@
                     window.fetchDataRealtime();
                 }
             } else { 
-                try { await signInAnonymously(auth); } catch(e){} 
+                // Percobaan sign-in anonim PALING AWAL ini sebelumnya TIDAK PERNAH punya batas
+                // waktu maupun percobaan ulang -- kalau request-nya menggantung akibat sinyal
+                // buruk, SELURUH aplikasi (termasuk data publik yang dipakai untuk verifikasi
+                // PIN admin_bidang/admin_tim di form-login-admin) ikut tidak pernah termuat,
+                // tanpa pesan apa pun ke pengunjung. Sekarang dicoba beberapa kali dengan jeda
+                // yang makin lama, dan baru diberi tahu kalau semua percobaan itu tetap gagal.
+                let berhasilSignInAwal = false;
+                for (let percobaan = 1; percobaan <= 3 && !berhasilSignInAwal; percobaan++) {
+                    try {
+                        await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS);
+                        berhasilSignInAwal = true;
+                    } catch (e) {
+                        if (percobaan < 3) await new Promise(r => setTimeout(r, 2000 * percobaan));
+                    }
+                }
+                if (!berhasilSignInAwal) {
+                    window.showToast('Koneksi internet bermasalah. Muat ulang halaman setelah sinyal membaik.', 'error');
+                }
             }
         });
 
