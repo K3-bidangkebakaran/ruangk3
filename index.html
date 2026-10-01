@@ -877,6 +877,45 @@
             </form>
         </div>
 
+        <!-- Modal Profil Peserta (menu tambahan saat peserta login: ubah kata sandi,
+             ubah email, dan logout) -->
+        <div id="modal-profil-peserta" class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 hidden relative transform transition-all">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                <h3 class="text-2xl font-extrabold text-slate-900">Profil Saya</h3>
+                <button class="btn-close-modal text-slate-400 hover:text-slate-800 bg-slate-100 p-2 rounded-full transition-colors">✕</button>
+            </div>
+            <div class="flex items-center space-x-3 mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div id="profil-peserta-avatar" class="w-11 h-11 bg-safety-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">P</div>
+                <div class="min-w-0">
+                    <p id="profil-peserta-nama" class="font-bold text-slate-900 text-sm truncate">-</p>
+                    <p id="profil-peserta-email" class="text-xs text-slate-500 truncate">-</p>
+                </div>
+            </div>
+            <div id="profil-peserta-message" class="hidden mb-4 p-3 rounded-lg text-sm text-center font-bold"></div>
+
+            <div class="flex mb-5 bg-slate-100 p-1.5 rounded-xl">
+                <button type="button" id="tab-btn-profil-sandi" class="flex-1 py-2.5 font-bold text-xs sm:text-sm rounded-lg bg-white shadow-sm text-safety-600 transition-all">Ubah Kata Sandi</button>
+                <button type="button" id="tab-btn-profil-email" class="flex-1 py-2.5 font-bold text-xs sm:text-sm rounded-lg text-slate-500 hover:text-slate-800 transition-all">Ubah Email</button>
+            </div>
+
+            <form id="form-ubah-sandi-peserta" class="space-y-4">
+                <div><input type="password" id="sandi-lama" required autocomplete="current-password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Kata Sandi Saat Ini"></div>
+                <div><input type="password" id="sandi-baru" required minlength="6" autocomplete="new-password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Kata Sandi Baru (Min. 6)"></div>
+                <div><input type="password" id="sandi-baru-konfirmasi" required minlength="6" autocomplete="new-password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Konfirmasi Kata Sandi Baru"></div>
+                <button type="submit" id="btn-ubah-sandi" class="w-full py-3.5 bg-safety-500 hover:bg-safety-600 text-white rounded-xl font-bold shadow-lg transition-colors">Simpan Kata Sandi Baru</button>
+            </form>
+
+            <form id="form-ubah-email-peserta" class="space-y-4 hidden">
+                <div><input type="email" id="email-baru" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Email Baru"></div>
+                <div><input type="password" id="sandi-konfirmasi-email" required autocomplete="current-password" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Kata Sandi Saat Ini (konfirmasi)"></div>
+                <button type="submit" id="btn-ubah-email" class="w-full py-3.5 bg-safety-500 hover:bg-safety-600 text-white rounded-xl font-bold shadow-lg transition-colors">Simpan Email Baru</button>
+            </form>
+
+            <div class="pt-5 mt-5 border-t border-slate-100">
+                <button type="button" onclick="window.processLogout()" class="w-full text-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold px-4 py-3 rounded-xl transition-colors">Keluar Akun</button>
+            </div>
+        </div>
+
         <!-- Modal Admin Login -->
         <div id="modal-login-admin" class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 hidden relative">
             <h3 class="text-2xl font-extrabold text-slate-900 mb-2">Portal Instruktur / Tim</h3>
@@ -1809,7 +1848,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, push, onValue, set, update, remove, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
         /* Catatan: Firebase Storage (upload file besar seperti PDF/video langsung) memerlukan
            paket Blaze (berbayar) di Firebase. Karena project ini masih di paket Spark (gratis),
@@ -2167,6 +2206,8 @@
         window.openAdminIfAllowed = function() {
             if (currentUser && currentUser.role !== 'peserta') {
                 window.openAdminView();
+            } else if (currentUser && currentUser.role === 'peserta') {
+                window.openProfilPeserta();
             }
         };
 
@@ -2608,6 +2649,51 @@
             try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();
         };
+
+        /* Menu "Profil Saya" untuk peserta yang sedang login: ubah kata sandi, ubah email,
+           dan logout -- dibuka lewat klik nama/avatar peserta (lihat window.openAdminIfAllowed). */
+        window.openProfilPeserta = function() {
+            if (!currentUser || currentUser.role !== 'peserta') return;
+            const avatarEl = document.getElementById('profil-peserta-avatar');
+            const namaEl = document.getElementById('profil-peserta-nama');
+            const emailEl = document.getElementById('profil-peserta-email');
+            if (avatarEl) avatarEl.innerText = (currentUser.nama || 'P').substring(0, 2).toUpperCase();
+            if (namaEl) namaEl.innerText = currentUser.nama || 'Peserta';
+            if (emailEl) emailEl.innerText = currentUser.email || '-';
+            document.getElementById('form-ubah-sandi-peserta')?.reset();
+            document.getElementById('form-ubah-email-peserta')?.reset();
+            window.switchProfilPesertaTab('sandi');
+            window.openModal('modal-profil-peserta');
+        };
+
+        window.switchProfilPesertaTab = function(tab) {
+            const btnSandi = document.getElementById('tab-btn-profil-sandi');
+            const btnEmail = document.getElementById('tab-btn-profil-email');
+            const formSandi = document.getElementById('form-ubah-sandi-peserta');
+            const formEmail = document.getElementById('form-ubah-email-peserta');
+            const msgEl = document.getElementById('profil-peserta-message');
+            if (msgEl) msgEl.classList.add('hidden');
+            const aktif = ['bg-white', 'shadow-sm', 'text-safety-600'];
+            if (tab === 'email') {
+                btnEmail?.classList.add(...aktif); btnEmail?.classList.remove('text-slate-500');
+                btnSandi?.classList.remove(...aktif); btnSandi?.classList.add('text-slate-500');
+                formEmail?.classList.remove('hidden'); formSandi?.classList.add('hidden');
+            } else {
+                btnSandi?.classList.add(...aktif); btnSandi?.classList.remove('text-slate-500');
+                btnEmail?.classList.remove(...aktif); btnEmail?.classList.add('text-slate-500');
+                formSandi?.classList.remove('hidden'); formEmail?.classList.add('hidden');
+            }
+        };
+        document.getElementById('tab-btn-profil-sandi')?.addEventListener('click', () => window.switchProfilPesertaTab('sandi'));
+        document.getElementById('tab-btn-profil-email')?.addEventListener('click', () => window.switchProfilPesertaTab('email'));
+
+        function showProfilPesertaMsg(msg, isError = true) {
+            const el = document.getElementById('profil-peserta-message');
+            if (!el) return;
+            el.innerHTML = msg;
+            el.classList.remove('hidden', 'bg-red-50', 'text-red-600', 'bg-green-50', 'text-green-600');
+            el.classList.add(isError ? 'bg-red-50' : 'bg-green-50', isError ? 'text-red-600' : 'text-green-600');
+        }
 
         window.renderVerifikasiUI = function() {
             const tbody = document.getElementById('admin-table-verifikasi');
@@ -4143,6 +4229,92 @@
                 if(err && err.isTimeoutJaringan) showAuthMsg(err.message);
                 else if(err.code === 'auth/email-already-in-use') showAuthMsg("Gagal: Email sudah terdaftar.");
                 else showAuthMsg("Terjadi kesalahan.");
+            } finally {
+                btn.innerText = ori;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('form-ubah-sandi-peserta')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || currentUser.role !== 'peserta' || !auth.currentUser) return;
+            const sandiLama = document.getElementById('sandi-lama').value;
+            const sandiBaru = document.getElementById('sandi-baru').value;
+            const sandiKonfirmasi = document.getElementById('sandi-baru-konfirmasi').value;
+            if (sandiBaru !== sandiKonfirmasi) {
+                showProfilPesertaMsg('Konfirmasi kata sandi baru tidak cocok.');
+                return;
+            }
+            const btn = document.getElementById('btn-ubah-sandi');
+            const ori = btn.innerText;
+            btn.innerText = 'Menyimpan...';
+            btn.disabled = true;
+            try {
+                const cred = EmailAuthProvider.credential(currentUser.email, sandiLama);
+                await window.withTimeout(
+                    reauthenticateWithCredential(auth.currentUser, cred),
+                    TIMEOUT_JARINGAN_MS,
+                    'Koneksi lambat/terputus saat memverifikasi kata sandi. Coba lagi.'
+                );
+                await window.withTimeout(
+                    updatePassword(auth.currentUser, sandiBaru),
+                    TIMEOUT_JARINGAN_MS,
+                    'Koneksi lambat/terputus saat menyimpan kata sandi baru. Coba lagi.'
+                );
+                showProfilPesertaMsg('Kata sandi berhasil diubah.', false);
+                window.showToast('Kata sandi berhasil diubah.', 'success');
+                e.target.reset();
+            } catch (err) {
+                if (err && err.isTimeoutJaringan) showProfilPesertaMsg(err.message);
+                else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') showProfilPesertaMsg('Kata sandi saat ini salah.');
+                else if (err.code === 'auth/too-many-requests') showProfilPesertaMsg('Terlalu banyak percobaan. Coba lagi beberapa saat lagi.');
+                else if (err.code === 'auth/weak-password') showProfilPesertaMsg('Kata sandi baru terlalu lemah (minimal 6 karakter).');
+                else showProfilPesertaMsg('Gagal mengubah kata sandi. Silakan coba lagi.');
+            } finally {
+                btn.innerText = ori;
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('form-ubah-email-peserta')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || currentUser.role !== 'peserta' || !auth.currentUser) return;
+            const emailBaru = document.getElementById('email-baru').value.trim();
+            const sandiKonfirmasi = document.getElementById('sandi-konfirmasi-email').value;
+            const btn = document.getElementById('btn-ubah-email');
+            const ori = btn.innerText;
+            btn.innerText = 'Menyimpan...';
+            btn.disabled = true;
+            try {
+                const cred = EmailAuthProvider.credential(currentUser.email, sandiKonfirmasi);
+                await window.withTimeout(
+                    reauthenticateWithCredential(auth.currentUser, cred),
+                    TIMEOUT_JARINGAN_MS,
+                    'Koneksi lambat/terputus saat memverifikasi kata sandi. Coba lagi.'
+                );
+                await window.withTimeout(
+                    updateEmail(auth.currentUser, emailBaru),
+                    TIMEOUT_JARINGAN_MS,
+                    'Koneksi lambat/terputus saat menyimpan email baru. Coba lagi.'
+                );
+                await window.withTimeout(
+                    update(ref(db, `${pathPeserta}/${currentUser.uid}`), { email: emailBaru }),
+                    TIMEOUT_JARINGAN_MS,
+                    'Email akun berhasil diubah, tapi koneksi lambat/terputus saat menyimpan data profil. Silakan muat ulang halaman.'
+                );
+                currentUser.email = emailBaru;
+                const emailEl = document.getElementById('profil-peserta-email');
+                if (emailEl) emailEl.innerText = emailBaru;
+                showProfilPesertaMsg('Email berhasil diubah.', false);
+                window.showToast('Email berhasil diubah.', 'success');
+                e.target.reset();
+            } catch (err) {
+                if (err && err.isTimeoutJaringan) showProfilPesertaMsg(err.message);
+                else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') showProfilPesertaMsg('Kata sandi salah.');
+                else if (err.code === 'auth/email-already-in-use') showProfilPesertaMsg('Email tersebut sudah digunakan akun lain.');
+                else if (err.code === 'auth/invalid-email') showProfilPesertaMsg('Format email tidak valid.');
+                else if (err.code === 'auth/too-many-requests') showProfilPesertaMsg('Terlalu banyak percobaan. Coba lagi beberapa saat lagi.');
+                else showProfilPesertaMsg('Gagal mengubah email. Silakan coba lagi.');
             } finally {
                 btn.innerText = ori;
                 btn.disabled = false;
