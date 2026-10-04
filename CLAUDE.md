@@ -31,4 +31,5 @@ Berat/lazy: `modul_dokumen`, `berita_foto`, `riksa_laporan_data`, `riksa_foto`.
 Ringkas/aman dimuat: `statistik_publik`, `riksa_laporan` (ringkasan), `riksa_petugas`, `riksa_log`, `penyelenggara_pjk3`.
 
 ## Log perubahan lintas sesi (tambah paling atas)
+- 2026-10-04 sesi Riksa Uji: nama aplikasi "Riksa Uji", ikon diganti logo perisai RuangK3 (`riksa/icons/`), `VERSION` sw jadi `riksa-v2`. Persiapan APK lewat PWABuilder (package `com.ruangk3.riksa`).
 - 2026-10-04 sesi Riksa Uji: tambah `riksa/`, menu admin "Laporan Riksa Uji" & "Petugas Riksa Uji" (lazy), `PER_ANAK` cadangan ditambah `riksa_foto`, `riksa_laporan_data`. Belum commit saat catatan ini ditulis.

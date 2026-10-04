@@ -1,6 +1,6 @@
 // Service worker aplikasi Riksa Uji (ruangk3.com/riksa/).
 // Naikkan VERSION setiap kali file aplikasi diubah supaya HP petugas mengambil versi baru.
-const VERSION = 'riksa-v1';
+const VERSION = 'riksa-v2';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './js/app.js', './js/firebase.js', './js/report.js', './js/hydrant-report.js',

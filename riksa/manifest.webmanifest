@@ -1,5 +1,5 @@
 {
-  "name": "Riksa Uji Kebakaran – ruangk3.com",
+  "name": "Riksa Uji",
   "short_name": "Riksa Uji",
   "description": "Aplikasi lapangan petugas riksa uji APAR dan instalasi hidran ruangk3.com.",
   "id": "/riksa/",
@@ -7,12 +7,25 @@
   "scope": "/riksa/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F5F2F0",
+  "background_color": "#0F171C",
   "theme_color": "#B3261E",
   "lang": "id",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
