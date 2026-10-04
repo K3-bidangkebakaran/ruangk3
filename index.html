@@ -257,7 +257,7 @@
          (cdn.tailwindcss.com) yang memblokir tampilan & mengompilasi CSS di browser tiap kali halaman
          dibuka (berat di HP sinyal lemah). Kalau menambah class Tailwind baru di index.html, build
          ulang tailwind.css (lihat tailwind.config.js & README) lalu naikkan angka ?v= pada tag link ini. -->
-    <link rel="stylesheet" href="tailwind.css?v=20261006">
+    <link rel="stylesheet" href="tailwind.css?v=20261007">
 </head>
 
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen" oncontextmenu="return false;">
@@ -2760,6 +2760,7 @@
                     </div>
                 </div>
                 <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>`;
+                if (typeof window.perbaruiTombolCekLisensi === 'function') window.perbaruiTombolCekLisensi();
                 return;
             }
 
@@ -2812,6 +2813,7 @@
                 ? `<div class="flex items-center justify-center text-center space-x-2 bg-emerald-400/10 border border-emerald-400/30 rounded-xl py-2.5 px-2"><span class="text-emerald-300 text-xs font-extrabold">🎉 Selamat, Anda telah lulus! Nilai tertinggi: ${nilaiTertinggi}</span></div>`
                 : `<button onclick="window.switchLmsTab('${totalUjian > 0 ? 'cbt' : 'kelas'}')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">${totalUjian > 0 ? 'Coba Lagi Simulasi CBT &rarr;' : 'Mulai Belajar Modul K3 &rarr;'}</button>`
             }`;
+            if (typeof window.perbaruiTombolCekLisensi === 'function') window.perbaruiTombolCekLisensi();
         };
 
         window.processLogout = async function() {
@@ -2838,7 +2840,26 @@
         const CL_SUB_NAMA = 'Tulis lengkap tanpa singkatan, sama seperti di KTP.';
         const CL_SUB_TGL = 'Format tgl/bln/tahun. Garis miring terisi otomatis.';
 
+        // Fitur Cek Lisensi khusus peserta yang terdaftar di PJK3 LPMI.
+        window.bolehCekLisensi = function() {
+            return !!(currentUser && currentUser.role === 'peserta' &&
+                String(currentUser.penyelenggara || '').trim().toLowerCase() === PENYELENGGARA_DEFAULT.toLowerCase());
+        };
+        // Tombol tetap terlihat, tapi tampak nonaktif untuk selain peserta LPMI.
+        window.perbaruiTombolCekLisensi = function() {
+            const b = document.getElementById('btn-cek-lisensi');
+            if (!b) return;
+            const boleh = window.bolehCekLisensi();
+            b.setAttribute('aria-disabled', boleh ? 'false' : 'true');
+            ['opacity-60', 'grayscale', 'cursor-not-allowed'].forEach(c => b.classList.toggle(c, !boleh));
+        };
+        window.perbaruiTombolCekLisensi();
+
         window.openCekLisensi = function() {
+            if (!window.bolehCekLisensi()) {
+                window.showToast('Mohon maaf, Fitur ini hanya untuk peserta yang terdaftar di PJK3 LPMI', 'error');
+                return;
+            }
             clTampil('form');
             clJudul('Cek Lisensi K3', CL_SUB_FORM);
             ['nama', 'tgl'].forEach(k => {
@@ -8090,6 +8111,7 @@
                                 email: data.email || user.email,
                                 role: 'peserta',
                                 uid: user.uid,
+                                penyelenggara: (typeof data.penyelenggara === 'string' && data.penyelenggara.trim()) ? data.penyelenggara.trim() : PENYELENGGARA_DEFAULT,
                                 izinKelasKebakaran: data.izinKelasKebakaran || {},
                                 permintaanKelasKebakaran: data.permintaanKelasKebakaran || {}
                             };
