@@ -2844,26 +2844,18 @@
         const CL_SUB_NAMA = 'Tulis lengkap tanpa singkatan, sama seperti di KTP.';
         const CL_SUB_TGL = 'Format tgl/bln/tahun. Garis miring terisi otomatis.';
 
-        // Fitur Cek Lisensi khusus peserta yang terdaftar di PJK3 LPMI.
-        window.bolehCekLisensi = function() {
+        // Cek Lisensi: tombol bisa diklik siapa saja, tapi data HANYA diberikan untuk peserta yang
+        // terdaftar di PJK3 LPMI dan hanya untuk namanya sendiri. Selain itu muncul pemberitahuan
+        // "Data tidak ditemukan". Aturan yang sama juga dicek di server (/api/cek-lisensi).
+        const clNorm = (n) => String(n || '').toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        window.bolehCekLisensi = function(namaDicari) {
             return !!(currentUser && currentUser.role === 'peserta' &&
-                String(currentUser.penyelenggara || '').trim().toLowerCase() === PENYELENGGARA_DEFAULT.toLowerCase());
+                String(currentUser.penyelenggara || '').trim().toLowerCase() === PENYELENGGARA_DEFAULT.toLowerCase() &&
+                clNorm(namaDicari).length > 0 && clNorm(currentUser.nama) === clNorm(namaDicari));
         };
-        // Tombol tetap terlihat, tapi tampak nonaktif untuk selain peserta LPMI.
-        window.perbaruiTombolCekLisensi = function() {
-            const b = document.getElementById('btn-cek-lisensi');
-            if (!b) return;
-            const boleh = window.bolehCekLisensi();
-            b.setAttribute('aria-disabled', boleh ? 'false' : 'true');
-            ['opacity-60', 'grayscale', 'cursor-not-allowed'].forEach(c => b.classList.toggle(c, !boleh));
-        };
-        window.perbaruiTombolCekLisensi();
+        window.perbaruiTombolCekLisensi = function() {}; // tombol selalu aktif (dipertahankan agar pemanggil lama aman)
 
         window.openCekLisensi = function(kosong) {
-            if (!window.bolehCekLisensi()) {
-                window.showToast('Mohon maaf, Fitur ini hanya untuk peserta yang terdaftar di PJK3 LPMI', 'error');
-                return;
-            }
             clTampil('form');
             clJudul('Cek Lisensi K3', CL_SUB_FORM);
             ['nama', 'tgl'].forEach(k => {
@@ -2927,19 +2919,27 @@
             setTimeout(() => setStep(1), 700);
 
             let data = null, gagal = false;
-            const ac = new AbortController();
-            const timer = setTimeout(() => ac.abort(), 28000);
-            try {
-                const r = await fetch(API_CEK_LISENSI, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nama: nama, tgl: tgl }),
-                    signal: ac.signal
-                });
-                data = await r.json().catch(() => null);
-                if (!data || (data.status !== 'found' && data.status !== 'none')) gagal = true;
-            } catch (err) { gagal = true; }
-            clearTimeout(timer);
+            if (!window.bolehCekLisensi(nama)) {
+                // Bukan peserta LPMI / bukan nama akunnya sendiri: tidak ada permintaan ke server.
+                await new Promise(res => setTimeout(res, 1200));
+                data = { status: 'tidak-berhak', hasil: [] };
+            } else {
+                const ac = new AbortController();
+                const timer = setTimeout(() => ac.abort(), 28000);
+                try {
+                    const headers = { 'Content-Type': 'application/json' };
+                    try { if (auth.currentUser) headers['Authorization'] = 'Bearer ' + await auth.currentUser.getIdToken(); } catch (e) {}
+                    const r = await fetch(API_CEK_LISENSI, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({ nama: nama, tgl: tgl }),
+                        signal: ac.signal
+                    });
+                    data = await r.json().catch(() => null);
+                    if (!data || (data.status !== 'found' && data.status !== 'none' && data.status !== 'tidak-berhak')) gagal = true;
+                } catch (err) { gagal = true; }
+                clearTimeout(timer);
+            }
             setStep(2);
             await new Promise(res => setTimeout(res, 500));
             window.tampilHasilCekLisensi(nama, tgl, gagal ? null : data);
@@ -2961,6 +2961,9 @@
                         <dl class="space-y-1.5">${kv('Instansi', h.instansi)}${kv('Jenis personil', h.jenisPersonil)}${h.jenisAlat ? kv('Jenis alat', h.jenisAlat) : ''}${kv('Kelas', h.kelas)}${kv('No. registrasi', h.noRegistrasi)}${kv('Masa berlaku', h.masaBerlaku)}</dl>
                     </div>`).join('');
                 html = `<div class="flex items-center gap-3 bg-emerald-50 text-emerald-800 rounded-xl p-3.5 font-bold">${ikon('<circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/>')}<div>Lisensi ditemukan<span class="block text-xs font-medium">${data.hasil.length} lisensi atas nama ini</span></div></div>${kepala}${kartu}<div class="space-y-2.5">${btn('cl-lagi', 'Cek Orang Lain', false)}${btn('cl-selesai', 'Selesai', true)}</div>`;
+            } else if (data && data.status === 'tidak-berhak') {
+                clJudul('Hasil Pengecekan', 'Sumber: TemanK3, Kementerian Ketenagakerjaan RI');
+                html = `<div class="flex items-center gap-3 bg-amber-50 text-amber-800 rounded-xl p-3.5 font-bold">${ikon('<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5M8.5 11h5"/>')}<div>Data tidak ditemukan<span class="block text-xs font-medium leading-relaxed mt-0.5">Data tidak ditemukan, hanya peserta yang mengikuti training K3 melalui PJK3 LPMI</span></div></div><div class="space-y-2.5">${btn('cl-ubah', 'Perbaiki Data', true)}${btn('cl-selesai', 'Tutup', false)}</div>`;
             } else if (data && data.status === 'none') {
                 clJudul('Hasil Pengecekan', 'Sumber: TemanK3, Kementerian Ketenagakerjaan RI');
                 html = `<div class="flex items-center gap-3 bg-amber-50 text-amber-800 rounded-xl p-3.5 font-bold">${ikon('<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5M8.5 11h5"/>')}<div>Lisensi tidak ditemukan<span class="block text-xs font-medium">Belum ada data dengan nama dan tanggal lahir ini</span></div></div>${kepala}<p class="text-xs text-slate-500 leading-relaxed">Periksa ejaan nama sesuai KTP. Sertifikat yang baru terbit bisa butuh beberapa hari untuk muncul di TemanK3.</p><div class="space-y-2.5">${btn('cl-ubah', 'Perbaiki Data', true)}${btn('cl-selesai', 'Tutup', false)}</div>`;
