@@ -1855,7 +1855,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut, updatePassword, updateEmail, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, set, update, remove, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, update, remove, get, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
         /* Catatan: Firebase Storage (upload file besar seperti PDF/video langsung) memerlukan
            paket Blaze (berbayar) di Firebase. Karena project ini masih di paket Spark (gratis),
            upload PDF materi disimpan sebagai base64 langsung di Realtime Database (lihat
@@ -1944,6 +1944,9 @@
         const auth = getAuth(app);
 
         const pathPeserta = `artifacts/${cleanAppId}/public/data/peserta`;
+        // Penghitung PUBLIK kecil ({totalPendaftar, totalLulus}) untuk kartu statistik beranda,
+        // supaya pengunjung TIDAK perlu mengunduh seluruh daftar peserta (nama, email, skor).
+        const pathStatistikPublik = `artifacts/${cleanAppId}/public/data/statistik_publik`;
         const pathModul = `artifacts/${cleanAppId}/public/data/modul`;
         const pathTim = `artifacts/${cleanAppId}/public/data/tim`;
         const pathKegiatan = `artifacts/${cleanAppId}/public/data/kegiatan`;
@@ -3960,7 +3963,16 @@
         // meninggalkan data yang tersimpan sebagian di server).
         window.simpanHasilUjianKeServer = async function(uid, hasilPayload) {
             try {
+                // Cek apakah ini hasil ujian PERTAMA peserta (untuk penghitung publik "sudah ujian").
+                let pertamaKali = false;
+                try {
+                    const prev = await get(ref(db, `${pathPeserta}/${uid}/skorUjian`));
+                    pertamaKali = !(prev.exists() && prev.val() !== '-' && prev.val() !== '' && prev.val() !== null);
+                } catch (e) { pertamaKali = false; }
                 await update(ref(db, `${pathPeserta}/${uid}`), hasilPayload.pesertaUpdate);
+                if (pertamaKali) {
+                    runTransaction(ref(db, `${pathStatistikPublik}/totalLulus`), (n) => (Number(n) || 0) + 1).catch(() => {});
+                }
                 await update(ref(db, `${pathLiveCbt}/${uid}`), hasilPayload.liveCbtUpdate);
                 await push(ref(db, `${pathRiwayat}/${uid}`), hasilPayload.riwayat);
                 return true;
@@ -4349,6 +4361,8 @@
                     TIMEOUT_JARINGAN_MS,
                     'Akun berhasil dibuat, tapi koneksi lambat/terputus saat menyimpan data profil. Silakan coba masuk beberapa saat lagi.'
                 );
+                // Best-effort: naikkan penghitung publik (jika gagal, admin akan menyinkronkan ulang).
+                runTransaction(ref(db, `${pathStatistikPublik}/totalPendaftar`), (n) => (Number(n) || 0) + 1).catch(() => {});
                 showAuthMsg("Berhasil daftar! Silakan Masuk.", false);
                 switchTab(true);
                 e.target.reset();
@@ -7453,29 +7467,13 @@
                 window.renderSilabusHome();
             });
 
-            // Sengaja TETAP di grup publik (bukan window.fetchDataRealtimeAdmin) walau daftar
-            // pesertanya sendiri cuma dipakai panel admin -- soalnya jumlah "Peserta Terdaftar"
-            // & "Peserta Sudah Ujian" di kartu statistik BERANDA (publik, dilihat semua
-            // pengunjung, lihat #stat-total-pendaftar/#stat-total-lulus) juga dihitung dari sini.
-            onValue(ref(db, pathPeserta), (snapshot) => {
-                let countDaftar = 0; let countLulus = 0;
-                dataPesertaAll = [];
-
-                if (snapshot.exists()) {
-                    snapshot.forEach(childSnap => {
-                        countDaftar++;
-                        const data = childSnap.val();
-                        dataPesertaAll.push({ id: childSnap.key, ...data });
-                        if (data.skorUjian && data.skorUjian !== '-') countLulus++;
-                    });
-                }
-                window.animateNumber('stat-total-pendaftar', countDaftar);
-                window.animateNumber('stat-total-lulus', countLulus);
-                window.renderAkunPeserta();
-                window.renderIzinKelasKebakaran();
-                window.renderRekapNilaiAdmin();
+            // Statistik beranda: cukup baca penghitung kecil (bukan seluruh daftar peserta, yang
+            // berisi nama/email/skor dan berat diunduh di sinyal lemah).
+            onValue(ref(db, pathStatistikPublik), (snapshot) => {
+                const st = snapshot.exists() ? (snapshot.val() || {}) : {};
+                window.animateNumber('stat-total-pendaftar', Number(st.totalPendaftar) || 0);
+                window.animateNumber('stat-total-lulus', Number(st.totalLulus) || 0);
             });
-
         };
 
         /* Listener Firebase KHUSUS ADMIN (bukan peserta/tamu) -- sengaja DIPISAH dari
@@ -7484,13 +7482,35 @@
            verifikasi, ulasan instruktur, dan dashboard pendapatan/pengeluaran) TIDAK ikut
            ditarik dari Firebase untuk setiap pengunjung/peserta yang cuma mau lihat beranda --
            data ini hanya benar-benar dibutuhkan oleh panel Admin. (Daftar peserta/pathPeserta
-           TETAP di grup publik karena juga dipakai kartu statistik beranda -- lihat komentar di
-           window.fetchDataRealtime.) Dipanggil dari form-login-admin setiap kali admin berhasil
+           sekarang juga di sini; kartu statistik beranda memakai penghitung publik
+           statistik_publik.) Dipanggil dari form-login-admin setiap kali admin berhasil
            login (lihat isAdminDataInitialized di bawah supaya listener tidak didaftarkan
            berkali-kali kalau admin logout lalu login lagi di sesi yang sama). */
         window.fetchDataRealtimeAdmin = function() {
             if (isAdminDataInitialized) return;
             isAdminDataInitialized = true;
+
+            // Daftar peserta lengkap -- HANYA admin. Sekaligus menyinkronkan penghitung publik
+            // (statistik_publik) bila selisih (mis. peserta dihapus / transaksi sebelumnya gagal).
+            onValue(ref(db, pathPeserta), (snapshot) => {
+                let countDaftar = 0; let countLulus = 0;
+                dataPesertaAll = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnap => {
+                        countDaftar++;
+                        const data = childSnap.val();
+                        dataPesertaAll.push({ id: childSnap.key, ...data });
+                        if (data.skorUjian && data.skorUjian !== '-') countLulus++;
+                    });
+                }
+                if (window._lastStatSync !== `${countDaftar}|${countLulus}`) {
+                    window._lastStatSync = `${countDaftar}|${countLulus}`;
+                    set(ref(db, pathStatistikPublik), { totalPendaftar: countDaftar, totalLulus: countLulus }).catch(() => {});
+                }
+                window.renderAkunPeserta();
+                window.renderIzinKelasKebakaran();
+                window.renderRekapNilaiAdmin();
+            });
 
             onValue(ref(db, pathVerifikasi), (snapshot) => {
                 rawVerifikasiSnap = snapshot;
