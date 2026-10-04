@@ -14,7 +14,7 @@ Tujuan: beberapa sesi mengerjakan fitur berbeda, tapi hasilnya harus menyatu dan
 1. Data berat (PDF, foto, base64 > 20 KB) JANGAN di node daftar utama. Pisahkan ke node anak per item dan muat hanya saat dibuka (pola `modul_dokumen`, `berita_foto`, `riksa_foto`).
 2. Listener `onValue` ke node besar hanya dipasang saat menu dibuka, bukan saat halaman dimuat. Pengunjung publik tidak boleh mengunduh daftar peserta (pakai `statistik_publik`).
 3. Semua `get`/`set`/`fetch` pakai `window.withTimeout(...)` dan tampilkan pesan gagal yang ramah.
-4. Skrip/CSS pihak ketiga: `defer`/muat saat dibutuhkan; jangan blocking di `<head>`.
+4. Skrip/CSS pihak ketiga: jangan blocking di `<head>`. Pustaka besar (html2pdf, Chart.js, PDF.js) dimuat sesuai kebutuhan lewat `await window.muatPustaka('html2pdf'|'chart'|'pdfjs')` (lihat `<head>` index.html); pustaka baru yang >50 KB ditambahkan ke daftar itu, bukan ke tag `<script>` awal.
 5. Ubah kelas Tailwind -> bangun ulang `tailwind.css` lalu naikkan `?v=` di `index.html`.
 6. Ubah berkas di `riksa/` -> naikkan `VERSION` di `riksa/sw.js`.
 7. Node baru yang besar -> tambahkan ke `PER_ANAK` di skrip cadangan, lalu minta Adrian menempel ulang skrip itu di Apps Script (salinan di Google tidak ikut berubah otomatis).

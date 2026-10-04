@@ -37,21 +37,41 @@
     <script type="text/javascript"> window.addEventListener('DOMContentLoaded', function() { emailjs.init({ publicKey: 'vo0I3qZvyNFWClUEO' }); }); </script>
 
     <!-- html2pdf -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 
     <!-- Chart.js (Untuk Grafik Rating) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 
     <!-- PDF.js (Pratinjau PDF Modul Materi sebagai gambar/canvas, BUKAN plugin PDF bawaan
          browser -> tidak ada tombol/menu Download atau Print bawaan, dan bisa discroll
          secara normal seperti halaman biasa) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+    <!-- Pustaka besar (html2pdf, Chart.js, PDF.js ±330 KB) TIDAK diunduh di awal supaya tidak
+         bersaing dengan data penting di sinyal lemah. Dimuat sekali saat fitur yang memakainya dibuka:
+         await window.muatPustaka('html2pdf' | 'chart' | 'pdfjs'). Gagal/timeout -> bisa dicoba lagi. -->
     <script>
-        window.addEventListener('DOMContentLoaded', function() {
-            if (window['pdfjsLib']) {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            }
-        });
+        window.muatPustaka = (function () {
+            var DEF = {
+                html2pdf: { url: 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js', ok: function () { return typeof window.html2pdf === 'function'; } },
+                chart:    { url: 'https://cdn.jsdelivr.net/npm/chart.js', ok: function () { return !!window.Chart; } },
+                pdfjs:    { url: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', ok: function () { return !!window.pdfjsLib; },
+                            sesudah: function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } }
+            };
+            var janji = {};
+            return function (nama) {
+                var d = DEF[nama];
+                if (!d) return Promise.reject(new Error('Pustaka tidak dikenal: ' + nama));
+                if (d.ok()) { if (d.sesudah) d.sesudah(); return Promise.resolve(); }
+                if (janji[nama]) return janji[nama];
+                janji[nama] = new Promise(function (resolve, reject) {
+                    var s = document.createElement('script');
+                    var t = setTimeout(function () { s.onload = s.onerror = null; s.remove(); reject(new Error('Pustaka ' + nama + ' terlalu lama dimuat. Periksa sinyal lalu coba lagi.')); }, 45000);
+                    s.src = d.url;
+                    s.onload = function () { clearTimeout(t); if (d.sesudah) { try { d.sesudah(); } catch (e) {} } resolve(); };
+                    s.onerror = function () { clearTimeout(t); s.remove(); reject(new Error('Gagal memuat pustaka ' + nama + '. Periksa sinyal lalu coba lagi.')); };
+                    document.head.appendChild(s);
+                });
+                janji[nama].catch(function () { delete janji[nama]; });
+                return janji[nama];
+            };
+        })();
     </script>
 
     <style>
@@ -2327,7 +2347,7 @@
         async function renderPdfIntoContainer(dataUri, containerEl, watermarkLabel) {
             containerEl.innerHTML = `<div class="w-full h-[480px] flex items-center justify-center bg-slate-900 rounded-xl border border-slate-200 text-slate-400 text-xs">Memuat pratinjau dokumen...</div>`;
             try {
-                if (!window.pdfjsLib) throw new Error('pdfjs-belum-siap');
+                await window.muatPustaka('pdfjs');
                 const loadingTask = pdfjsLib.getDocument({ data: base64PdfToUint8Array(dataUri) });
                 const pdf = await loadingTask.promise;
 
@@ -3244,6 +3264,7 @@
 
             container.innerHTML = html;
 
+            window.muatPustaka('chart').then(function () {
             if(reviewChartInstance) reviewChartInstance.destroy();
             try {
                 reviewChartInstance = new Chart(ctx, {
@@ -3270,6 +3291,7 @@
                     }
                 });
             } catch(e) {}
+            }).catch(function () {});
         };
 
         /* ================= UTILITAS ACAK SOAL ================= */
@@ -4334,7 +4356,7 @@
             btn.innerText = "MENYIAPKAN PDF...";
             btn.disabled = true;
 
-            html2pdf().set(opt).from(tempWrapper).save().then(() => {
+            window.muatPustaka('html2pdf').then(() => html2pdf().set(opt).from(tempWrapper).save()).then(() => {
                 document.body.removeChild(tempWrapper);
                 btn.innerText = oriText;
                 btn.disabled = false;
@@ -5957,7 +5979,8 @@
             }
 
             const ctxChartTb = document.getElementById('chart-tabungan-bulanan');
-            if (ctxChartTb && window.Chart) {
+            if (ctxChartTb) {
+              window.muatPustaka('chart').then(function () {
                 if (tabunganChartInstance) tabunganChartInstance.destroy();
                 try {
                     tabunganChartInstance = new Chart(ctxChartTb.getContext('2d'), {
@@ -5994,6 +6017,7 @@
                         }
                     });
                 } catch (e) {}
+              }).catch(function () {});
             }
 
             const listElTb = document.getElementById('list-tabungan-transaksi');
