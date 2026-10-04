@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Riksa Uji Kebakaran · ruangk3.com</title>
+<meta name="description" content="Aplikasi lapangan petugas riksa uji APAR dan instalasi hidran ruangk3.com. Bisa dipakai offline.">
+<meta name="theme-color" content="#B3261E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: alat kerja lapangan — app bar + tab langkah, daftar unit berpita status, editor unit layar penuh di ponsel */
+:root {
+  --bg: #F5F2F0;
+  --surface: #FFFFFF;
+  --sunken: #EFEAE7;
+  --ink: #221C1A;
+  --muted: #6E6461;
+  --line: #E2DAD6;
+  --accent: #B3261E;
+  --accent-hover: #951D17;
+  --on-accent: #FFFFFF;
+  --ok: #2E7031;    --ok-bg: #E2F0E2;
+  --warn: #7A5600;  --warn-bg: #FFF1C7;
+  --bad: #B3261E;   --bad-bg: #FADFDB;
+  --focus: #1F5FBF;
+  --shadow: 0 1px 2px rgba(60, 30, 20, .06), 0 6px 20px rgba(60, 30, 20, .06);
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #171312; --surface: #211C1A; --sunken: #2A2321; --ink: #F2ECE9; --muted: #A99E9A; --line: #3A312E;
+  --accent: #E5574B; --accent-hover: #F06C61; --on-accent: #1A0F0D;
+  --ok: #8FD08F; --ok-bg: #1E3320; --warn: #F2C75C; --warn-bg: #3A2E10; --bad: #FF8F84; --bad-bg: #42201C;
+  --focus: #8DB7FF; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #171312; --surface: #211C1A; --sunken: #2A2321; --ink: #F2ECE9; --muted: #A99E9A; --line: #3A312E;
+  --accent: #E5574B; --accent-hover: #F06C61; --on-accent: #1A0F0D;
+  --ok: #8FD08F; --ok-bg: #1E3320; --warn: #F2C75C; --warn-bg: #3A2E10; --bad: #FF8F84; --bad-bg: #42201C;
+  --focus: #8DB7FF; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* app bar */
+.appbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+.appbar-in { max-width: 1080px; margin: 0 auto; padding: 10px 16px 0; }
+.brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand-mark { width: 34px; height: 34px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; flex: none; }
+.brand-mark svg { width: 20px; height: 20px; fill: var(--on-accent); }
+.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.45rem; letter-spacing: .01em; margin: 0; line-height: 1; text-transform: uppercase; }
+.brand .sub { font-size: .8rem; color: var(--muted); }
+.brand-text { min-width: 0; flex: 1; }
+.savestate { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.tabs { display: flex; gap: 4px; margin-top: 10px; overflow-x: auto; scrollbar-width: none; }
+.tab { border: 0; background: none; padding: 10px 12px; border-bottom: 3px solid transparent; font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); cursor: pointer; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.tab .n { font-family: var(--font-mono); font-size: .72rem; background: var(--sunken); border-radius: 99px; padding: 1px 7px; color: var(--ink); text-transform: none; letter-spacing: 0; }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+main { max-width: 1080px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 80px; }
+.banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: var(--warn-bg); color: var(--ink); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: var(--r); padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
+.banner p { margin: 0; flex: 1; min-width: 200px; }
+
+/* sections & fields */
+.section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; margin-bottom: 16px; }
+.section > h2 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 1.1rem; margin: 0 0 4px; text-wrap: balance; }
+.section > .hint { color: var(--muted); font-size: .85rem; margin: 0 0 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 14px; }
+.grid .wide { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > span { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+input[type=text], input[type=date], input[type=number], select, textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-height: 42px;
+}
+textarea { min-height: 72px; resize: vertical; }
+input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--muted) 75%, transparent); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); padding: 9px 14px; min-height: 42px; font-weight: 600; cursor: pointer; }
+.btn:hover { background: var(--sunken); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.danger { color: var(--bad); }
+.btn.sm { min-height: 34px; padding: 5px 10px; font-size: .88rem; }
+.btn[disabled] { opacity: .5; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; }
+
+/* status */
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; border-radius: 99px; padding: 2px 9px; white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.s-L { color: var(--ok); background: var(--ok-bg); }
+.s-LC { color: var(--warn); background: var(--warn-bg); }
+.s-TL { color: var(--bad); background: var(--bad-bg); }
+
+/* summary */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; cursor: pointer; text-align: left; }
+.stat b { display: block; font-family: var(--font-display); font-size: 1.9rem; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.stat[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: -2px; }
+.stat.L b { color: var(--ok); } .stat.LC b { color: var(--warn); } .stat.TL b { color: var(--bad); }
+@media (max-width: 520px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* unit list */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar input { flex: 1; min-width: 180px; }
+.units { display: flex; flex-direction: column; gap: 8px; }
+.unit { display: grid; grid-template-columns: 5px 1fr auto; align-items: stretch; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; cursor: pointer; text-align: left; padding: 0; width: 100%; }
+.unit:hover { border-color: color-mix(in srgb, var(--ink) 25%, var(--line)); }
+.unit .stripe.L { background: var(--ok); } .unit .stripe.LC { background: var(--warn); } .unit .stripe.TL { background: var(--bad); }
+.unit .body { padding: 10px 12px; min-width: 0; }
+.unit .top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.unit .code { font-family: var(--font-mono); font-size: .9rem; }
+.unit .loc { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.unit .meta { color: var(--muted); font-size: .84rem; display: flex; gap: 12px; flex-wrap: wrap; margin-top: 2px; }
+.unit .side { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px; padding: 10px 12px; }
+.unit .fails { font-size: .78rem; color: var(--bad); font-weight: 600; }
+.empty { text-align: center; color: var(--muted); padding: 36px 16px; border: 1px dashed var(--line); border-radius: var(--r); }
+
+/* editor sheet */
+.sheet-wrap { position: fixed; inset: 0; z-index: 50; background: rgba(20, 10, 8, .45); display: flex; justify-content: flex-end; }
+.sheet { background: var(--bg); width: min(680px, 100%); height: 100%; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+.sheet-head { background: var(--surface); border-bottom: 1px solid var(--line); padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px; display: flex; align-items: center; gap: 10px; }
+.sheet-head h3 { margin: 0; font-family: var(--font-mono); font-size: 1.05rem; font-weight: 500; }
+.sheet-body { flex: 1; overflow-y: auto; padding: 16px; }
+.sheet-foot { background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* checklist */
+.checks { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+.ck { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-top: 1px solid var(--line); }
+.ck:first-child { border-top: 0; }
+.ck.isx { background: var(--bad-bg); }
+.ck .no { font-family: var(--font-mono); color: var(--muted); font-size: .8rem; text-align: right; }
+.ck .lbl { min-width: 0; font-size: .92rem; }
+.ck .lbl small { display: block; color: var(--muted); font-size: .75rem; font-family: var(--font-mono); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); width: 40px; height: 36px; font-size: 1rem; cursor: pointer; border-left: 1px solid var(--line); color: var(--muted); }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"][data-v="v"] { background: var(--ok); color: var(--surface); }
+.seg button[aria-pressed="true"][data-v="x"] { background: var(--bad); color: var(--surface); }
+.seg button[aria-pressed="true"][data-v="na"] { background: var(--muted); color: var(--surface); }
+
+/* photos */
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+.photo { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.photo img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--sunken); }
+.photo input { border: 0; border-top: 1px solid var(--line); border-radius: 0; min-height: 36px; font-size: .85rem; background: var(--surface); }
+.photo .x { border: 0; background: none; color: var(--bad); font-size: .8rem; padding: 6px; cursor: pointer; font-weight: 600; }
+.filebtn { position: relative; overflow: hidden; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.check-inline { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+.check-inline input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.alat-row { display: grid; grid-template-columns: 1.3fr 1.2fr 1fr auto; gap: 8px; margin-bottom: 8px; }
+@media (max-width: 620px) { .alat-row { grid-template-columns: 1fr 1fr; } .alat-row .btn { grid-column: span 2; } }
+
+.list { margin: 0; padding-left: 20px; }
+.list li { margin-bottom: 6px; }
+.readiness { list-style: none; padding-left: 0; }
+.readiness li.miss { color: var(--warn); }
+.readiness li.ok { color: var(--muted); }
+.big-dl { font-size: 1.1rem; min-height: 52px; padding: 12px 22px; }
+.msg { font-size: .9rem; margin-top: 10px; min-height: 1.3em; }
+.msg.err { color: var(--bad); }
+.confirm { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; background: var(--bad-bg); border-radius: 8px; padding: 4px 6px 4px 10px; font-size: .88rem; }
+.logo-prev { max-height: 56px; border-radius: 6px; background: #fff; padding: 4px; border: 1px solid var(--line); }
+@media (prefers-reduced-motion: no-preference) { .sheet { animation: slidein .18s ease-out; } @keyframes slidein { from { transform: translateX(24px); opacity: .6; } } }
+
+/* modul & baris pemeriksaan hidran */
+.modsw { display: inline-flex; background: var(--sunken); border-radius: 10px; padding: 3px; gap: 2px; }
+.modsw button { border: 0; background: transparent; padding: 7px 14px; border-radius: 8px; font-family: var(--font-display); font-weight: 700; font-size: 1rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); cursor: pointer; }
+.modsw button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.crows { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+.crow { padding: 10px 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.crow:first-child { border-top: 0; }
+.crow.isC { background: color-mix(in srgb, var(--warn-bg) 60%, var(--surface)); }
+.crow.isT { background: color-mix(in srgb, var(--bad-bg) 70%, var(--surface)); }
+.crow-top { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; }
+.crow-top .no { font-family: var(--font-mono); color: var(--muted); font-size: .8rem; text-align: right; }
+.crow-top .lbl { min-width: 0; font-size: .92rem; }
+.crow .grid { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; padding-left: 36px; }
+@media (max-width: 520px) { .crow .grid { padding-left: 0; } }
+.seg.mct button { width: auto; padding: 0 10px; font-size: .82rem; font-weight: 600; }
+.seg.mct button[aria-pressed="true"][data-v="M"] { background: var(--ok); color: var(--surface); }
+.seg.mct button[aria-pressed="true"][data-v="C"] { background: var(--warn); color: var(--surface); }
+.seg.mct button[aria-pressed="true"][data-v="T"] { background: var(--bad); color: var(--surface); }
+.s-M { color: var(--ok); background: var(--ok-bg); }
+.s-C { color: var(--warn); background: var(--warn-bg); }
+.s-T { color: var(--bad); background: var(--bad-bg); }
+.unit .stripe.M { background: var(--ok); } .unit .stripe.C { background: var(--warn); } .unit .stripe.T { background: var(--bad); }
+.stat.M b { color: var(--ok); } .stat.C b { color: var(--warn); } .stat.T b { color: var(--bad); }
+.u3 { display: grid; grid-template-columns: 110px 1fr 1fr 1fr 1fr auto; gap: 8px; align-items: end; padding: 10px 12px; border-top: 1px solid var(--line); }
+.u3:first-child { border-top: 0; }
+.u3 .tt { font-weight: 600; padding-bottom: 10px; }
+@media (max-width: 700px) { .u3 { grid-template-columns: 1fr 1fr; } .u3 .tt { grid-column: 1 / -1; padding-bottom: 0; } }
+.calc { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .95rem; }
+.calc b { font-family: var(--font-display); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.kind { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+
+.brand .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 560px) {
+  .brand h1 { font-size: 1.25rem; }
+  .modsw { order: 3; width: 100%; }
+  .modsw button { flex: 1; }
+  .crow-top { grid-template-columns: 26px 1fr; }
+  .crow-top .seg { grid-column: 2; justify-self: start; }
+}
+
+/* layar masuk & daftar berkas */
+.login-wrap { min-height: 100%; display: grid; place-items: center; padding-inline: 16px; padding-block: 32px; }
+.login-card { width: min(440px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 18px; }
+.login-form { display: flex; flex-direction: column; gap: 12px; }
+.login-foot { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.login-foot .hint { margin: 0; }
+.berkas-list { display: flex; flex-direction: column; gap: 10px; }
+.berkas { display: grid; grid-template-columns: 1fr auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.berkas:hover { border-color: color-mix(in srgb, var(--ink) 25%, var(--line)); }
+.berkas-open { border: 0; background: none; text-align: left; padding: 12px 14px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.berkas-title { font-family: var(--font-display); font-weight: 700; font-size: 1.2rem; letter-spacing: .01em; }
+.berkas-sub { color: var(--muted); font-size: .84rem; }
+.berkas-act { display: flex; align-items: flex-start; padding: 10px; }
+.bmod { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .9rem; }
+.sync-rows { display: flex; flex-direction: column; gap: 8px; }
+.s-none { color: var(--muted); background: var(--sunken); }
+.screen { min-height: 100%; }
+input[type=password] { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-height: 42px; }
+</style>
+<style>html,body{height:100%;margin:0}img{max-width:100%}</style>
+</head>
+<body>
+<div id="screen-login" class="screen" hidden>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 2h5v2h3a1 1 0 0 1 0 2h-3v1.1A5 5 0 0 1 17 12v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8a5 5 0 0 1 3-4.6V6H7.5a1.5 1.5 0 0 0-1.5 1.5V9H4V7.5A3.5 3.5 0 0 1 7.5 4H9V2z"/></svg></div>
+        <div class="brand-text"><h1>Riksa Uji Kebakaran</h1><div class="sub">Petugas riksa uji · ruangk3.com</div></div></div>
+      <form id="login-form" class="login-form" novalidate>
+        <label class="field"><span>Email</span><input type="email" id="login-user" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nama@email.com"></label>
+        <label class="field"><span>Password</span><input type="password" id="login-pass" autocomplete="current-password"></label>
+        <button class="btn primary big-dl" id="login-go" type="submit">Masuk</button>
+        <div class="msg" id="login-msg" role="status"></div>
+        <p class="hint" id="login-preview" hidden>Di pratinjau Claude, koneksi ke ruangk3.com diblokir. Gunakan mode demo di sini; masuk dengan akun berfungsi di ruangk3.com/riksa/.</p>
+        <button class="btn ghost" id="login-forgot" type="button">Lupa password?</button>
+        <button class="btn ghost" id="login-cancel" type="button" hidden>Batal, kembali ke berkas</button>
+      </form>
+      <div class="login-foot">
+        <p class="hint">Akun petugas dibuat Admin Pusat di panel admin ruangk3.com (menu <b>Petugas Riksa Uji</b>). Cukup masuk sekali saat ada sinyal; setelah itu aplikasi bisa dipakai offline.</p>
+        <button class="btn" id="login-demo" type="button">Coba mode demo (tanpa server)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-list" class="screen" hidden>
+  <header class="appbar">
+    <div class="appbar-in" style="padding-bottom:10px">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 2h5v2h3a1 1 0 0 1 0 2h-3v1.1A5 5 0 0 1 17 12v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8a5 5 0 0 1 3-4.6V6H7.5a1.5 1.5 0 0 0-1.5 1.5V9H4V7.5A3.5 3.5 0 0 1 7.5 4H9V2z"/></svg></div>
+        <div class="brand-text"><h1>Daftar Laporan</h1><div class="sub" id="list-count"></div></div>
+        <button class="btn sm" id="acct-btn" aria-label="Akun"><span id="acct-btn-name"></span> ▾</button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="section" id="acct-panel" hidden>
+      <h2 id="acct-name"></h2>
+      <p class="hint" id="acct-meta"></p>
+      <form id="pw-form" class="grid" novalidate>
+        <label class="field"><span>Password lama</span><input type="password" id="pw-old" autocomplete="current-password"></label>
+        <label class="field"><span>Password baru</span><input type="password" id="pw-new" autocomplete="new-password"></label>
+        <label class="field"><span>Ulangi password baru</span><input type="password" id="pw-new2" autocomplete="new-password"></label>
+        <div class="field" style="justify-content:flex-end"><button class="btn" type="submit">Ganti password</button></div>
+        <div class="msg wide" id="pw-msg" role="status"></div>
+      </form>
+      <div class="row" style="margin-top:12px"><button class="btn danger" id="acct-logout">Keluar</button><span class="savestate">Berkas di perangkat ini tidak terhapus saat keluar.</span></div>
+    </div>
+    <div class="toolbar">
+      <input type="text" id="list-search" placeholder="Cari perusahaan atau nomor laporan…" aria-label="Cari berkas">
+      <button class="btn primary" id="berkas-new">+ Berkas baru</button>
+    </div>
+    <p class="hint" style="margin:-4px 0 12px">Satu berkas = satu perusahaan, berisi laporan APAR dan/atau hidran.</p>
+    <div class="berkas-list" id="berkas-list"></div>
+    <div class="row" style="margin-top:16px">
+      <label class="btn sm filebtn">Pulihkan berkas dari cadangan (.json)<input type="file" id="bk-load" accept="application/json,.json"></label>
+    </div>
+    <div class="msg" id="list-msg" role="status"></div>
+  </main>
+</div>
+
+<div id="screen-edit" class="screen" hidden>
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="brand">
+      <button class="btn sm ghost" id="back-list" aria-label="Kembali ke daftar laporan">← Daftar</button>
+      <div class="brand-text">
+        <h1>Riksa Uji Kebakaran</h1>
+        <div class="sub" id="hdr-sub"></div>
+      </div>
+      <div class="modsw" role="group" aria-label="Jenis riksa uji">
+        <button data-mod="apar" aria-pressed="true">APAR</button>
+        <button data-mod="hyd" aria-pressed="false">Hidran</button>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-m="apar" data-tab="a-data">1 · Data Laporan</button>
+      <button class="tab" role="tab" data-m="apar" data-tab="a-units">2 · Unit APAR <span class="n" id="cnt-apar">0</span></button>
+      <button class="tab" role="tab" data-m="apar" data-tab="a-concl">3 · Kesimpulan</button>
+      <button class="tab" role="tab" data-m="apar" data-tab="a-dl">4 · Unduh Word</button>
+      <button class="tab" role="tab" data-m="hyd" data-tab="h-data">1 · Data Laporan</button>
+      <button class="tab" role="tab" data-m="hyd" data-tab="h-pump">2 · Pompa & Uji</button>
+      <button class="tab" role="tab" data-m="hyd" data-tab="h-points">3 · Titik Hidran <span class="n" id="cnt-hyd">0</span></button>
+      <button class="tab" role="tab" data-m="hyd" data-tab="h-concl">4 · Kesimpulan</button>
+      <button class="tab" role="tab" data-m="hyd" data-tab="h-dl">5 · Unduh Word</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="banner" id="sample-banner" hidden>
+    <p><b>Data contoh.</b> <span id="banner-text"></span></p>
+    <span id="newrep-slot"></span>
+  </div>
+  <div class="row" style="justify-content:flex-end;margin:-6px 0 10px"><span class="savestate" id="savestate">Memuat…</span></div>
+
+  <!-- ===================== APAR ===================== -->
+  <section id="tab-a-data" class="tabpanel" hidden>
+    <div class="section">
+      <h2>Laporan APAR</h2>
+      <p class="hint">Muncul di sampul, header halaman dan bagian pengesahan.</p>
+      <div class="grid">
+        <label class="field"><span>Nomor laporan</span><input type="text" id="a-nomor" data-path="apar.meta.nomor" placeholder="017/LHP-APAR/IX/2026"></label>
+        <label class="field"><span>Periode</span><input type="text" id="a-periode" data-path="apar.meta.periode" placeholder="Pemeriksaan Berkala Semester II Tahun 2026"></label>
+        <label class="field"><span>Tanggal mulai riksa</span><input type="date" id="a-tglMulai" data-path="apar.meta.tglMulai"></label>
+        <label class="field"><span>Tanggal selesai riksa</span><input type="date" id="a-tglSelesai" data-path="apar.meta.tglSelesai"></label>
+        <label class="field"><span>Tanggal laporan</span><input type="date" id="a-tglLaporan" data-path="apar.meta.tglLaporan"></label>
+        <label class="field"><span>Kota penerbitan</span><input type="text" id="a-kota" data-path="apar.meta.kota" placeholder="Makassar"></label>
+        <label class="field wide"><span>Jenis pemeriksaan</span>
+          <select id="a-jenis" data-path="apar.meta.jenis">
+            <option>Berkala 12 bulan (PER.04/MEN/1980 Pasal 11 ayat (1) huruf b), termasuk pemeriksaan 6 bulan (Pasal 12)</option>
+            <option>Berkala 6 bulan (PER.04/MEN/1980 Pasal 11 ayat (1) huruf a dan Pasal 12)</option>
+            <option>Pemeriksaan pertama / pemasangan baru (PER.04/MEN/1980 Pasal 4–9)</option>
+          </select>
+        </label>
+        <label class="field wide"><span>Riksa uji sebelumnya</span><input type="text" id="a-sebelumnya" data-path="apar.meta.sebelumnya"></label>
+      </div>
+    </div>
+    <div class="shared-slot"></div>
+    <div class="section">
+      <h2>Peralatan uji APAR</h2>
+      <p class="hint">Tabel 3.2. Kosongkan nomor sertifikat bila tidak ada.</p>
+      <div class="alat-list" data-mod="apar"></div>
+      <button class="btn sm alat-add" data-mod="apar">+ Tambah peralatan</button>
+    </div>
+    <div class="section">
+      <h2>Keterangan tabel 4.1</h2>
+      <label class="field"><span>Catatan di bawah tabel data APAR</span><textarea id="a-ket" data-path="apar.keteranganTabel"></textarea></label>
+    </div>
+  </section>
+
+  <section id="tab-a-units" class="tabpanel" hidden>
+    <div class="stats" id="a-stats"></div>
+    <div class="toolbar">
+      <input type="text" id="a-search" placeholder="Cari kode atau lokasi…" aria-label="Cari unit APAR">
+      <button class="btn primary" id="a-add">+ Tambah APAR</button>
+    </div>
+    <div class="units" id="a-list"></div>
+  </section>
+
+  <section id="tab-a-concl" class="tabpanel" hidden>
+    <div class="section">
+      <h2>Kesimpulan (otomatis)</h2>
+      <p class="hint">Disusun dari status setiap unit.</p>
+      <ol class="list" id="a-concl-list" type="a"></ol>
+    </div>
+    <div class="section">
+      <h2>Rekomendasi</h2>
+      <p class="hint">Satu rekomendasi per baris. Teks awal dibuat otomatis dari temuan.</p>
+      <textarea id="a-rekom" class="rekom" data-mod="apar" rows="8"></textarea>
+      <div class="row" style="margin-top:8px"><span class="savestate" id="a-rekom-mode"></span><span class="spacer"></span><button class="btn sm rekom-reset" data-mod="apar">Pakai rekomendasi otomatis</button></div>
+    </div>
+    <div class="section">
+      <h2>Denah penempatan APAR</h2>
+      <p class="hint">Lampiran B.</p>
+      <div class="row">
+        <label class="btn sm filebtn">Ambil / pilih gambar<input type="file" class="img-in" data-target="apar.denah" accept="image/*"></label>
+        <button class="btn sm ghost danger img-del" data-target="apar.denah" hidden>Hapus gambar</button>
+      </div>
+      <img class="img-prev" data-target="apar.denah" alt="Denah penempatan APAR" hidden style="margin-top:10px;border-radius:8px;border:1px solid var(--line);max-height:320px">
+    </div>
+  </section>
+
+  <section id="tab-a-dl" class="tabpanel" hidden>
+    <div class="section">
+      <h2>Unduh laporan APAR</h2>
+      <p class="hint">Sampul, Bab I–VII, checklist landscape (12 unit per tabel) dan lampiran foto.</p>
+      <div class="stats" id="a-stats-dl"></div>
+      <h3 style="font-size:.95rem;margin:14px 0 6px">Kelengkapan data</h3>
+      <ul class="list readiness" id="a-ready"></ul>
+      <div class="row" style="margin-top:16px"><button class="btn primary big-dl dl-docx" data-mod="apar">Unduh Laporan APAR (.docx)</button></div>
+      <div class="msg" id="a-dl-msg" role="status"></div>
+    </div>
+    <div class="backup-slot"></div>
+  </section>
+
+  <!-- ===================== HIDRAN ===================== -->
+  <section id="tab-h-data" class="tabpanel" hidden>
+    <div class="section">
+      <h2>Laporan hidran</h2>
+      <div class="grid">
+        <label class="field"><span>Nomor laporan</span><input type="text" id="h-nomor" data-path="hyd.meta.nomor" placeholder="018/LHP-HYD/IX/2026"></label>
+        <label class="field"><span>Periode</span><input type="text" id="h-periode" data-path="hyd.meta.periode" placeholder="Riksa Uji Berkala Tahun 2026"></label>
+        <label class="field"><span>Tanggal mulai riksa</span><input type="date" id="h-tglMulai" data-path="hyd.meta.tglMulai"></label>
+        <label class="field"><span>Tanggal selesai riksa</span><input type="date" id="h-tglSelesai" data-path="hyd.meta.tglSelesai"></label>
+        <label class="field"><span>Tanggal laporan</span><input type="date" id="h-tglLaporan" data-path="hyd.meta.tglLaporan"></label>
+        <label class="field"><span>Kota penerbitan</span><input type="text" id="h-kota" data-path="hyd.meta.kota"></label>
+        <label class="field wide"><span>Jenis pemeriksaan</span><input type="text" id="h-jenis" data-path="hyd.meta.jenis" placeholder="Riksa uji berkala / riksa uji pertama"></label>
+        <label class="field wide"><span>Riksa uji sebelumnya</span><input type="text" id="h-sebelumnya" data-path="hyd.meta.sebelumnya"></label>
+        <label class="field wide"><span>Petugas pendamping (khusus hidran)</span><input type="text" id="h-petugas" data-path="hyd.meta.petugas" placeholder="Kosongkan untuk memakai petugas di data perusahaan"></label>
+      </div>
+    </div>
+    <div class="shared-slot"></div>
+    <div class="section">
+      <h2>Data teknis instalasi</h2>
+      <div class="grid">
+        <label class="field"><span>Kontraktor pemasang / tahun</span><input type="text" id="h-kontraktor" data-path="hyd.teknis.kontraktor"></label>
+        <label class="field"><span>Pengesahan instalasi</span><input type="text" id="h-pengesahan" data-path="hyd.teknis.pengesahan"></label>
+        <label class="field"><span>Klasifikasi bahaya kebakaran</span><input type="text" id="h-klas" data-path="hyd.teknis.klasifikasi" placeholder="Bahaya kebakaran sedang (KEP.186/MEN/1999)"></label>
+        <label class="field wide"><span>Sumber air</span><input type="text" id="h-sumber" data-path="hyd.teknis.sumberAir"></label>
+        <label class="field wide"><span>Jaringan pipa</span><input type="text" id="h-pipa" data-path="hyd.teknis.pipa"></label>
+        <label class="field wide"><span>Spesifikasi hidran gedung</span><input type="text" id="h-specG" data-path="hyd.teknis.specGedung"></label>
+        <label class="field wide"><span>Spesifikasi hidran halaman</span><input type="text" id="h-specH" data-path="hyd.teknis.specHalaman"></label>
+        <label class="field"><span>Jumlah sambungan Damkar</span><input type="number" id="h-nS" min="0" data-path="hyd.teknis.jumlahSiamese"></label>
+        <label class="field"><span>Spesifikasi sambungan Damkar</span><input type="text" id="h-specS" data-path="hyd.teknis.specSiamese"></label>
+        <label class="field"><span>Volume efektif reservoir (m³)</span><input type="text" inputmode="decimal" id="h-m3" data-path="hyd.teknis.reservoirM3"></label>
+        <label class="field"><span>Laju aliran rancangan (L/menit)</span><input type="text" inputmode="decimal" id="h-q" data-path="hyd.teknis.debitLpm"></label>
+        <label class="field"><span>Laju aliran (label)</span><input type="text" id="h-qlbl" data-path="hyd.teknis.debitLabel" placeholder="500 US GPM"></label>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Data pompa (nameplate)</h2>
+      <div id="h-pompa"></div>
+      <button class="btn sm" id="h-pompa-add">+ Tambah pompa</button>
+    </div>
+    <div class="section">
+      <h2>Peralatan uji hidran</h2>
+      <div class="alat-list" data-mod="hyd"></div>
+      <button class="btn sm alat-add" data-mod="hyd">+ Tambah peralatan</button>
+    </div>
+  </section>
+
+  <section id="tab-h-pump" class="tabpanel" hidden>
+    <div class="section"><h2>4.1 Pemeriksaan dokumen</h2><div class="crows" data-sec="dokumen"></div></div>
+    <div class="section"><h2>4.2 Rumah pompa, pompa dan persediaan air</h2><div class="crows" data-sec="rumah"></div></div>
+    <div class="section"><h2>4.3 Uji fungsi pompa (7 langkah)</h2>
+      <p class="hint">Jalankan pompa melalui katup uji. Catat tekanan pada setiap langkah sesuai INS.11/M/BW/1997 butir IV.8.</p>
+      <div class="crows" data-sec="ujiPompa"></div>
+      <label class="field" style="margin-top:12px"><span>Catatan uji pompa (debit flow meter, start manual, dll.)</span><textarea id="h-upnote" data-path="hyd.ujiPompaNote" rows="3"></textarea></label>
+    </div>
+    <div class="section"><h2>4.4 Instalasi listrik pompa</h2><div class="crows" data-sec="listrik"></div></div>
+    <div class="section"><h2>4.5 Uji operasi hidran 3 titik</h2>
+      <p class="hint">Buka bertahap: terdekat → terjauh → tengah, titik sebelumnya tetap terbuka. Kriteria: maks. 7 kg/cm²; titik terjauh min. 4,5 kg/cm². Hasil dinilai otomatis.</p>
+      <div class="crows" id="h-uji3"></div>
+      <p class="hint" id="h-uji3-eval" style="margin:8px 0 0"></p>
+    </div>
+    <div class="section"><h2>Sambungan Damkar</h2><div class="crows" data-sec="siamese"></div></div>
+    <div class="section"><h2>4.7 Persediaan air</h2><div class="calc" id="h-water"></div><p class="hint" style="margin-top:6px">Ubah volume reservoir dan laju aliran di tab Data Laporan.</p></div>
+    <div class="section"><h2>Foto dokumentasi umum</h2>
+      <p class="hint">Panel pompa, manometer saat uji, pitot gauge, dan lainnya. Masuk ke Lampiran A sebelum foto titik hidran.</p>
+      <div class="row">
+        <label class="btn primary filebtn">Ambil foto<input type="file" class="gen-ph" accept="image/*" capture="environment"></label>
+        <label class="btn filebtn">Pilih dari galeri<input type="file" class="gen-ph" accept="image/*" multiple></label>
+      </div>
+      <div class="photos" id="h-gen-photos"></div>
+    </div>
+  </section>
+
+  <section id="tab-h-points" class="tabpanel" hidden>
+    <div class="stats" id="h-stats"></div>
+    <div class="toolbar">
+      <input type="text" id="h-search" placeholder="Cari kode atau lokasi…" aria-label="Cari titik hidran">
+      <button class="btn primary" data-addpt="gedung">+ Hidran gedung</button>
+      <button class="btn" data-addpt="halaman">+ Hidran halaman</button>
+    </div>
+    <div class="units" id="h-list"></div>
+  </section>
+
+  <section id="tab-h-concl" class="tabpanel" hidden>
+    <div class="section">
+      <h2>Kesimpulan (otomatis)</h2>
+      <p class="hint">Disusun dari uji pompa, uji 3 titik, instalasi listrik, persediaan air dan temuan.</p>
+      <ol class="list" id="h-concl-list" type="a"></ol>
+    </div>
+    <div class="section">
+      <h2>Temuan (butir 4.8)</h2>
+      <p class="hint">Diambil dari butir berpenilaian Catatan/Tidak dan titik hidran yang bermasalah.</p>
+      <ol class="list" id="h-find-list"></ol>
+    </div>
+    <div class="section">
+      <h2>Rekomendasi</h2>
+      <textarea id="h-rekom" class="rekom" data-mod="hyd" rows="8"></textarea>
+      <div class="row" style="margin-top:8px"><span class="savestate" id="h-rekom-mode"></span><span class="spacer"></span><button class="btn sm rekom-reset" data-mod="hyd">Pakai rekomendasi otomatis</button></div>
+    </div>
+    <div class="section">
+      <h2>Gambar instalasi</h2>
+      <p class="hint">Lampiran B: denah / skema jaringan hidran.</p>
+      <div class="row">
+        <label class="btn sm filebtn">Ambil / pilih gambar<input type="file" class="img-in" data-target="hyd.gambar" accept="image/*"></label>
+        <button class="btn sm ghost danger img-del" data-target="hyd.gambar" hidden>Hapus gambar</button>
+      </div>
+      <img class="img-prev" data-target="hyd.gambar" alt="Gambar instalasi hidran" hidden style="margin-top:10px;border-radius:8px;border:1px solid var(--line);max-height:320px">
+    </div>
+  </section>
+
+  <section id="tab-h-dl" class="tabpanel" hidden>
+    <div class="section">
+      <h2>Unduh laporan hidran</h2>
+      <p class="hint">Format sama dengan laporan contoh: Bab I–VII mengikuti INS.11/M/BW/1997 butir IV.8 dan lampiran foto.</p>
+      <div class="stats" id="h-stats-dl"></div>
+      <h3 style="font-size:.95rem;margin:14px 0 6px">Kelengkapan data</h3>
+      <ul class="list readiness" id="h-ready"></ul>
+      <div class="row" style="margin-top:16px"><button class="btn primary big-dl dl-docx" data-mod="hyd">Unduh Laporan Hidran (.docx)</button></div>
+      <div class="msg" id="h-dl-msg" role="status"></div>
+    </div>
+    <div class="backup-slot"></div>
+  </section>
+
+  <!-- ===== bagian bersama (dipindah ke slot aktif) ===== -->
+  <div id="shared-sec">
+    <div class="section">
+      <h2>PJK3 pelaksana</h2>
+      <p class="hint">Dipakai bersama untuk laporan APAR dan hidran, dan tetap tersimpan saat memulai laporan baru.</p>
+      <div class="grid">
+        <div class="field wide"><span>Logo kop (opsional)</span>
+          <div class="row"><img class="img-prev logo-prev" data-target="shared.pjk3.logo" alt="Logo PJK3" hidden>
+            <label class="btn sm filebtn">Pilih logo<input type="file" class="img-in" data-target="shared.pjk3.logo" data-logo="1" accept="image/png,image/jpeg"></label>
+            <button class="btn sm ghost danger img-del" data-target="shared.pjk3.logo" hidden>Hapus logo</button></div>
+        </div>
+        <label class="field"><span>Nama PJK3</span><input type="text" id="p-nama" data-path="shared.pjk3.nama" placeholder="PT ..."></label>
+        <label class="field"><span>No. SK penunjukan PJK3</span><input type="text" id="p-sk" data-path="shared.pjk3.sk"></label>
+        <label class="field wide"><span>Alamat</span><input type="text" id="p-alamat" data-path="shared.pjk3.alamat"></label>
+        <label class="field"><span>Telepon</span><input type="text" id="p-telp" data-path="shared.pjk3.telp"></label>
+        <label class="field"><span>Email</span><input type="text" id="p-email" data-path="shared.pjk3.email"></label>
+        <label class="field"><span>Ahli K3 Spesialis PK</span><input type="text" id="p-ahli" data-path="shared.pjk3.ahli"></label>
+        <label class="field"><span>No. lisensi / SKP Ahli K3</span><input type="text" id="p-lisensi" data-path="shared.pjk3.lisensi"></label>
+        <label class="field"><span>Teknisi pendamping</span><input type="text" id="p-teknisi" data-path="shared.pjk3.teknisi"></label>
+        <label class="field"><span>Direktur (penyetuju)</span><input type="text" id="p-direktur" data-path="shared.pjk3.direktur"></label>
+      </div>
+    </div>
+    <div class="section">
+      <div class="row" style="margin-bottom:4px"><h2 style="margin:0">Perusahaan pemilik</h2><span class="spacer"></span><span id="klien-clear-slot"></span></div>
+      <p class="hint">Dipakai bersama untuk laporan APAR dan hidran.</p>
+      <div class="grid">
+        <label class="field"><span>Nama perusahaan</span><input type="text" id="k-nama" data-path="shared.klien.nama"></label>
+        <label class="field"><span>Bidang usaha</span><input type="text" id="k-bidang" data-path="shared.klien.bidang"></label>
+        <label class="field wide"><span>Alamat lengkap</span><input type="text" id="k-alamat" data-path="shared.klien.alamat"></label>
+        <label class="field wide"><span>Lokasi singkat (di sampul)</span><input type="text" id="k-alamatSingkat" data-path="shared.klien.alamatSingkat"></label>
+        <label class="field wide"><span>Area yang dicakup (APAR)</span><input type="text" id="k-cakupan" data-path="shared.klien.cakupanArea"></label>
+        <label class="field"><span>Pengurus / penanggung jawab</span><input type="text" id="k-pengurus" data-path="shared.klien.pengurus"></label>
+        <label class="field"><span>Jabatan pengurus</span><input type="text" id="k-jabatan" data-path="shared.klien.jabatanPengurus"></label>
+        <label class="field"><span>Petugas pendamping</span><input type="text" id="k-petugas" data-path="shared.klien.petugas"></label>
+        <label class="field"><span>Jumlah tenaga kerja</span><input type="number" id="k-tk" data-path="shared.klien.jumlahTK" min="0"></label>
+        <label class="field wide"><span>Klasifikasi potensi bahaya (APAR)</span><input type="text" id="k-klas" data-path="shared.klien.klasifikasi"></label>
+      </div>
+    </div>
+  </div>
+
+  <div id="sync-sec" class="section">
+    <h2>Kirim ke ruangk3.com</h2>
+    <p class="hint" id="sync-who"></p>
+    <div class="sync-rows" id="sync-rows"></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="sync-go">Kirim ke ruangk3.com</button></div>
+    <div class="msg" id="sync-msg" role="status"></div>
+  </div>
+  <div id="backup-sec" class="section">
+    <h2>Cadangan berkas</h2>
+    <p class="hint">Berkas tersimpan otomatis di perangkat ini. Simpan cadangan (.json, termasuk foto) untuk arsip atau dipindahkan ke perangkat lain; pulihkan dari halaman Daftar Laporan.</p>
+    <div class="row"><button class="btn" id="bk-save">Simpan cadangan (.json)</button></div>
+    <div class="msg" id="bk-msg" role="status"></div>
+  </div>
+</main>
+</div>
+
+<div class="sheet-wrap" id="sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ed-title">
+    <div class="sheet-head">
+      <h3 id="ed-title">Unit</h3>
+      <span class="pill" id="ed-status"></span>
+      <span class="spacer"></span>
+      <button class="btn sm ghost" id="ed-close" aria-label="Tutup editor">Tutup ✕</button>
+    </div>
+    <div class="sheet-body" id="ed-body"></div>
+    <div class="sheet-foot">
+      <button class="btn sm" id="ed-prev">← Sebelumnya</button>
+      <button class="btn sm" id="ed-next">Berikutnya →</button>
+      <span class="spacer"></span>
+      <span id="ed-del-slot"></span>
+    </div>
+  </div>
+</div>
+
+<script src="js/report.js"></script>
+<script src="js/hydrant-report.js"></script>
+<script type="module" src="js/firebase.js"></script>
+<script src="js/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
