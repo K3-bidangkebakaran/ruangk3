@@ -47,6 +47,16 @@ Folder induk **Ruangk3.com** dicari lewat namanya di Drive akun pemilik script (
 - **Perangkat lain:** menu **📁 Kegiatan → ☁️ Di Google Drive → Muat daftar → Unduh & Buka** mengambil kegiatan, termasuk foto & tanda tangan, yang dibuat di perangkat lain.
 - **Menghapus kegiatan** (📁 Kegiatan → Hapus, atau tombol Hapus di menu admin ruangk3.com) ikut menghapus kegiatan di Google Drive: folder kegiatannya (daftar hadir Word, foto, tanda tangan) dipindah ke **Sampah Drive**, lalu barisnya dibuang dari spreadsheet Database Induk. Isi Sampah Drive masih bisa dipulihkan sekitar 30 hari. Jika perangkat sedang offline saat menghapus, perintah hapus disimpan dan dijalankan otomatis begitu online. Tombol Hapus juga ada pada daftar *Di Google Drive* untuk kegiatan yang hanya ada di Drive. Fitur ini butuh `Code.gs` versi terbaru (aksi `deleteEvent`).
 
+## Koneksi permanen & perangkat lain
+
+- URL Web App dan Kode Akses disimpan di dua tempat pada browser (IndexedDB dan localStorage, kunci `rk3_dh_cfg`, dipakai bersama oleh aplikasi dan menu admin ruangk3.com). Jika salah satunya dibersihkan browser, otomatis dipulihkan dari yang lain. Aplikasi juga meminta browser agar data situs tidak dihapus. Pengaturan **tidak** dihapus saat keluar dari panel admin; hanya tombol **Putuskan** yang menghapusnya.
+- Menghubungkan perangkat lain tanpa mengetik ulang: di tombol ☁️ klik **Salin Tautan Pengaturan**, kirim ke diri sendiri (WhatsApp/email pribadi), lalu buka di perangkat tujuan. Tautan berisi Kode Akses, jadi rahasiakan.
+- Tombol ☁️ menampilkan **⚠️ Perbarui Apps Script** bila `Code.gs` di Apps Script lebih lama dari aplikasi.
+
+## Hapus permanen (opsional)
+
+Secara bawaan kegiatan yang dihapus dipindah ke **Sampah Drive**. Agar langsung terhapus permanen: di editor Apps Script klik **+** di samping **Layanan**, pilih **Drive API**, klik **Tambahkan**, lalu Deploy versi baru. Tanpa layanan ini kegiatan tetap hilang dari daftar dan folder kegiatan, hanya tersisa di Sampah Drive.
+
 ## Jika mengubah Code.gs
 
 Setelah mengedit script (termasuk saat menempel `Code.gs` versi baru): jalankan fungsi `setup` sekali, lalu **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. URL tetap sama, jadi aplikasi tidak perlu diubah.

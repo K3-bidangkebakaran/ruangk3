@@ -5129,7 +5129,7 @@
 
         document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
             currentUser = null;
-            try { localStorage.removeItem('rk3_admin_at'); localStorage.removeItem('rk3_dh_cfg'); localStorage.removeItem('rk3_dh_cache'); localStorage.removeItem('rk3_dh_view'); } catch (e) {}
+            try { localStorage.removeItem('rk3_admin_at'); localStorage.removeItem('rk3_dh_cache'); /* rk3_dh_cfg sengaja dipertahankan: koneksi Drive permanen, hanya tombol Putuskan yang menghapus */ localStorage.removeItem('rk3_dh_view'); } catch (e) {}
             try { const fr = document.getElementById('dh-frame'); if (fr && fr.getAttribute('src')) fr.src = 'about:blank'; } catch (e) {}
             try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();

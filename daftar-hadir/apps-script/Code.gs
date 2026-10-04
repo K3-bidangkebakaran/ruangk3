@@ -20,6 +20,7 @@
  */
 
 const ROOT_NAME = 'Daftar Hadir & Dokumentasi - LPMI';
+const API_VER = 3; // dibaca aplikasi lewat aksi 'ping' untuk memastikan Code.gs sudah versi terbaru
 const PARENT_NAME = 'Ruangk3.com'; // folder induk di Google Drive (dicari lewat nama, ID tidak disimpan di repo)
 const SHEET_NAME = 'Database Induk - Daftar Hadir LPMI';
 const MAX_DAYS = 7;
@@ -71,7 +72,7 @@ function doPost(e) {
   try {
     if (req.action !== 'getFile' && req.action !== 'ping') lock.waitLock(30000);
     switch (req.action) {
-      case 'ping': return out_({ ok: true, rootUrl: getRoot_().getUrl(), sheetUrl: getSheet_().getUrl() });
+      case 'ping': return out_({ ok: true, ver: API_VER, rootUrl: getRoot_().getUrl(), sheetUrl: getSheet_().getUrl() });
       case 'uploadFile': return out_(uploadFile_(req));
       case 'saveEvent': return out_(saveEvent_(req));
       case 'listEvents': return out_(listEvents_());
@@ -322,7 +323,7 @@ function listEvents_() {
 
 /**
  * Hapus kegiatan: folder kegiatan (data.json, berkas Word, foto, tanda tangan) dipindah ke Sampah Drive
- * (masih bisa dipulihkan ±30 hari), dan barisnya dibuang dari spreadsheet Database Induk.
+ * (atau dihapus permanen bila layanan Drive API aktif, lihat hapusFolder_), dan barisnya dibuang dari spreadsheet Database Induk.
  * Aman dipanggil berulang: kegiatan yang sudah tidak ada dianggap berhasil.
  */
 function deleteEvent_(req) {
@@ -330,9 +331,18 @@ function deleteEvent_(req) {
   if (!id) throw new Error('ID kegiatan kosong');
   const ss = getSheet_();
   const ks = ss.getSheetByName('Kegiatan');
-  let folderDihapus = false;
-  const folder = findEventFolder_(id);
-  if (folder) { folder.setTrashed(true); folderDihapus = true; }
+  const ditemukan = [];
+  const f1 = findEventFolder_(id);
+  if (f1) ditemukan.push(f1);
+  else { // baris sheet hilang / ID folder kosong: cari folder yatim lewat data.json di dalam folder induk
+    const it = getRoot_().getFolders(); let n = 0;
+    while (it.hasNext() && n++ < 300) {
+      const f = it.next();
+      try { const t = readText_(f, 'data.json'); if (t && String(JSON.parse(t).id) === id) ditemukan.push(f); } catch (e) { }
+    }
+  }
+  let permanen = 0, sampah = 0;
+  ditemukan.forEach(function (f) { if (hapusFolder_(f)) permanen++; else sampah++; });
   const row = findEventRow_(ks, id);
   if (row > 0) ks.deleteRow(row);
   const ps = ss.getSheetByName('Peserta');
@@ -347,7 +357,17 @@ function deleteEvent_(req) {
       if (keep.length) ps.getRange(2, 1, keep.length, PES_HEAD.length).setValues(keep);
     }
   }
-  return { ok: true, folder: folderDihapus, baris: row > 0, peserta: barisPeserta };
+  return { ok: true, folder: ditemukan.length, permanen: permanen, sampah: sampah, baris: row > 0, peserta: barisPeserta };
+}
+
+/** Hapus folder. Jika layanan lanjutan "Drive API" diaktifkan di Apps Script, folder dihapus PERMANEN;
+ *  jika tidak, dipindah ke Sampah Drive (bisa dipulihkan ±30 hari). Mengembalikan true bila permanen. */
+function hapusFolder_(folder) {
+  try {
+    if (typeof Drive !== 'undefined' && Drive.Files && Drive.Files.remove) { Drive.Files.remove(folder.getId()); return true; }
+  } catch (e) { }
+  folder.setTrashed(true);
+  return false;
 }
 
 function getEvent_(req) {
