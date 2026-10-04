@@ -30,6 +30,13 @@ Tujuan: beberapa sesi mengerjakan fitur berbeda, tapi hasilnya harus menyatu dan
 Berat/lazy: `modul_dokumen`, `berita_foto`, `riksa_laporan_data`, `riksa_foto`.
 Ringkas/aman dimuat: `statistik_publik`, `riksa_laporan` (ringkasan), `riksa_petugas`, `riksa_log`, `penyelenggara_pjk3`.
 
+## Serah terima terbuka (diperbarui 2026-10-04 oleh sesi cse_016qqY9aarWh6D2w7dg4gwjX)
+Hapus bagian ini setelah APK selesai dan assetlinks.json terpasang.
+- SELESAI: commit `fe83437` (nama aplikasi "Riksa Uji", ikon logo perisai RuangK3, `riksa/sw.js` VERSION `riksa-v2`) sudah di-push ke GitHub dari shell device Mac (git di shell device memang bisa push; jalankan `git --no-optional-locks status` supaya tidak meninggalkan `.git/index.lock`). Tidak perlu lagi unggah lewat Safari.
+- Folder `../Upload ke GitHub/` dan `../Kirim ruangk3 ke GitHub.command` kini tidak terpakai. Hapus hanya setelah Adrian setuju.
+- BELUM: buat APK di pwabuilder.com dari `https://ruangk3.com/riksa/` (Package ID `com.ruangk3.riksa`, nama "Riksa Uji", signing key baru). Langkah ini dikerjakan Adrian sendiri (akun & kunci tanda tangan). Simpan keystore + signing-key-info.txt di tempat aman (jangan di repo). Lalu taruh `assetlinks.json` di `.well-known/assetlinks.json` + file kosong `.nojekyll` di root repo, dan push.
+- Catatan teknis: browser bawaan Claude belum login GitHub; Safari sudah login, tetapi computer use untuk Safari hanya bisa membaca.
+
 ## Log perubahan lintas sesi (tambah paling atas)
 - 2026-10-04 sesi Riksa Uji: nama aplikasi "Riksa Uji", ikon diganti logo perisai RuangK3 (`riksa/icons/`), `VERSION` sw jadi `riksa-v2`. Persiapan APK lewat PWABuilder (package `com.ruangk3.riksa`).
-- 2026-10-04 sesi Riksa Uji: tambah `riksa/`, menu admin "Laporan Riksa Uji" & "Petugas Riksa Uji" (lazy), `PER_ANAK` cadangan ditambah `riksa_foto`, `riksa_laporan_data`. Belum commit saat catatan ini ditulis.
+- 2026-10-04 sesi Riksa Uji: tambah `riksa/`, menu admin "Laporan Riksa Uji" & "Petugas Riksa Uji" (lazy), `PER_ANAK` cadangan ditambah `riksa_foto`, `riksa_laporan_data`. Sudah di-commit & di-push (`4eca888`).
