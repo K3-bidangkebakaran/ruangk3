@@ -1714,7 +1714,13 @@
                             </div>
                         </div>
                         <div class="lg:col-span-2">
-                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5"><h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Modul Tersedia</h3><div id="admin-list-modul" class="space-y-3"><p class="text-sm text-slate-500 italic text-center py-4">Memuat data...</p></div></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5"><h3 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Daftar Modul Tersedia</h3>
+                                <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                    <p class="text-xs font-extrabold text-amber-800 mb-1">⚡ Optimalkan Kecepatan Situs</p>
+                                    <p id="info-optimasi-data" class="text-xs text-amber-900 leading-relaxed mb-3">Memeriksa data...</p>
+                                    <button id="btn-optimasi-data" type="button" onclick="window.jalankanOptimasiData()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50">Optimalkan Sekarang</button>
+                                </div>
+                                <div id="admin-list-modul" class="space-y-3"><p class="text-sm text-slate-500 italic text-center py-4">Memuat data...</p></div></div>
                         </div>
                     </div>
                 </div>
@@ -1951,6 +1957,11 @@
         // pathPengeluaran yang bertanda tabungan:true (bukan angka statis / path terpisah).
         const pathPengaturanTabungan = `artifacts/${cleanAppId}/public/data/pengaturan_tabungan`;
         const pathBerita = `artifacts/${cleanAppId}/public/data/berita`;
+        // Data BERAT dipisah dari daftar utama supaya halaman ringan di jaringan lambat:
+        // PDF materi (base64, bisa 1-3 MB per file) -> modul_dokumen/{idModul};
+        // foto berita (base64) -> berita_foto/{idBerita}. Diunduh hanya saat dibutuhkan.
+        const pathModulDokumen = `artifacts/${cleanAppId}/public/data/modul_dokumen`;
+        const pathBeritaFoto = `artifacts/${cleanAppId}/public/data/berita_foto`;
         const pathSoal = `artifacts/${cleanAppId}/public/data/soal`;
         const pathVisitor = `artifacts/${cleanAppId}/public/data/visitor`;
         const pathVerifikasi = `artifacts/${cleanAppId}/public/data/verifikasi_ujian`;
@@ -2019,6 +2030,106 @@
         // Helper lintas-fungsi untuk Ruang Belajar (Materi): parsing kategori & tampilan embed.
         // Dipisah ke scope luar (bukan di dalam onValue) supaya bisa dipakai ulang baik saat
         // merender daftar materi maupun saat membuka modal detail satu materi (bukaDetailModul).
+        /* ===== MUAT DATA BERAT SECARA TERPISAH (LAZY) =====
+           Dulu seluruh PDF materi (±30 MB) & foto berita (±2 MB) ikut terunduh di SETIAP
+           kunjungan lewat listener daftar, sehingga di sinyal lemah halaman & data akun
+           peserta (satu jalur koneksi yang sama) tertahan lama. Sekarang daftar hanya
+           memuat info ringan; PDF/foto diambil satu per satu saat dibutuhkan, lalu disimpan
+           di memori supaya tidak diunduh dua kali. Data lama yang masih tersimpan langsung
+           di dalam daftar (belum dioptimalkan) tetap terbaca seperti biasa. */
+        const FOTO_TRANSPARAN = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        const FOTO_BERITA_CADANGAN = 'https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&w=1200&q=80';
+        const cacheDokumenModul = {};
+        const pendingDokumenModul = {};
+        const cacheFotoBerita = {};
+        const pendingFotoBerita = {};
+        window._tokenHidrasiFoto = 0;
+
+        window.koneksiLambat = function() {
+            const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (!c) return false;
+            return !!c.saveData || ['slow-2g', '2g'].includes(c.effectiveType);
+        };
+
+        window.ambilDokumenModul = function(id, dataInline) {
+            if (dataInline && dataInline.docUrl) return Promise.resolve(dataInline.docUrl);
+            if (cacheDokumenModul[id]) return Promise.resolve(cacheDokumenModul[id]);
+            if (pendingDokumenModul[id]) return pendingDokumenModul[id];
+            pendingDokumenModul[id] = get(ref(db, `${pathModulDokumen}/${id}`)).then(snap => {
+                const v = snap.val() || '';
+                if (v) cacheDokumenModul[id] = v;
+                delete pendingDokumenModul[id];
+                return v;
+            }).catch(err => { delete pendingDokumenModul[id]; throw err; });
+            return pendingDokumenModul[id];
+        };
+
+        window.ambilFotoBerita = function(b) {
+            if (!b) return Promise.resolve([]);
+            if (b.fotoBase64) return Promise.resolve(Array.isArray(b.fotoBase64) ? b.fotoBase64 : [b.fotoBase64]);
+            if (!b.adaFoto) return Promise.resolve([]);
+            if (cacheFotoBerita[b.id]) return Promise.resolve(cacheFotoBerita[b.id]);
+            if (pendingFotoBerita[b.id]) return pendingFotoBerita[b.id];
+            pendingFotoBerita[b.id] = get(ref(db, `${pathBeritaFoto}/${b.id}`)).then(snap => {
+                const v = snap.val();
+                const arr = v ? (Array.isArray(v) ? v : Object.values(v)) : [];
+                cacheFotoBerita[b.id] = arr;
+                delete pendingFotoBerita[b.id];
+                return arr;
+            }).catch(err => { delete pendingFotoBerita[b.id]; throw err; });
+            return pendingFotoBerita[b.id];
+        };
+
+        window.htmlSliderFotoBerita = function(images) {
+            const imgElements = images.map(img => `<img src="${img}" class="w-full h-full object-cover shrink-0 snap-center" alt="Berita">`).join('');
+            return `<div class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full news-img-slider">${imgElements}</div>${images.length > 1 ? `<div class="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">${images.length} Foto</div>` : ''}`;
+        };
+
+        window.terapkanFotoBerita = function(id, images) {
+            document.querySelectorAll(`[data-fb-card="${id}"]`).forEach(el => {
+                el.className = 'relative w-full berita-card-img overflow-hidden rounded-xl bg-slate-100 mb-3';
+                el.innerHTML = images.length ? window.htmlSliderFotoBerita(images) : '<div class="w-full h-full flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>';
+            });
+            document.querySelectorAll(`[data-fb-hero="${id}"]`).forEach(el => { el.src = images.length ? images[0] : FOTO_BERITA_CADANGAN; });
+            document.querySelectorAll(`[data-fb-admin="${id}"]`).forEach(el => {
+                if (!images.length) { el.className = 'w-16 h-16 rounded bg-slate-100 shrink-0 flex items-center justify-center text-[8px] text-center px-1 font-bold text-slate-400'; el.innerText = 'No Img'; return; }
+                el.className = 'relative shrink-0';
+                el.innerHTML = `<img src="${images[0]}" class="w-16 h-16 rounded object-cover shadow-sm">${images.length > 1 ? `<div class="absolute -top-2 -right-2 bg-black text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">+${images.length - 1}</div>` : ''}`;
+            });
+        };
+
+        window.tampilkanTombolMuatFoto = function(id, gagal) {
+            document.querySelectorAll(`[data-fb-card="${id}"]`).forEach(el => {
+                el.classList.remove('animate-pulse');
+                el.innerHTML = `<button type="button" onclick="event.stopPropagation(); window.muatFotoBeritaManual('${id}')" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-[10px] font-bold text-slate-600 shadow-sm">${gagal ? 'Gagal memuat, ketuk untuk coba lagi' : 'Ketuk untuk muat foto'}</button>`;
+            });
+        };
+
+        window.muatFotoBeritaManual = async function(id) {
+            const b = (window.dataBeritaAll || []).find(x => x.id === id);
+            if (!b) return;
+            document.querySelectorAll(`[data-fb-card="${id}"]`).forEach(el => { el.classList.add('animate-pulse'); el.innerHTML = 'Memuat foto...'; });
+            try { window.terapkanFotoBerita(id, await window.ambilFotoBerita(b)); }
+            catch (e) { window.tampilkanTombolMuatFoto(id, true); }
+        };
+
+        // Foto berita dimuat berurutan SETELAH teks berita tampil. Di koneksi hemat data / 2G,
+        // tidak diunduh otomatis -- peserta cukup ketuk "muat foto" untuk berita yang ingin dilihat.
+        window.hidrasiFotoBerita = async function(beritas) {
+            const token = ++window._tokenHidrasiFoto;
+            const hemat = window.koneksiLambat();
+            for (const b of beritas) {
+                if (!b.adaFoto || b.fotoBase64 || cacheFotoBerita[b.id]) continue;
+                if (token !== window._tokenHidrasiFoto) return;
+                if (hemat) { window.tampilkanTombolMuatFoto(b.id); continue; }
+                try {
+                    const imgs = await window.ambilFotoBerita(b);
+                    if (token !== window._tokenHidrasiFoto) return;
+                    window.terapkanFotoBerita(b.id, imgs);
+                } catch (e) { window.tampilkanTombolMuatFoto(b.id, true); }
+            }
+        };
+
         function parseKategoriModul(kategoriStr) {
             if (!kategoriStr) return { bidang: 'Umum', kelas: 'Umum' };
             const idx = kategoriStr.indexOf(' - ');
@@ -2299,7 +2410,7 @@
                 const warna = getWarnaBidang(state.bidang);
                 root.className = 'grid grid-cols-1 md:grid-cols-2 gap-5';
                 root.innerHTML = items.length ? items.map(item => {
-                    const hasVideo = !!item.videoUrl, hasDoc = !!item.docUrl;
+                    const hasVideo = !!item.videoUrl, hasDoc = !!(item.docUrl || item.adaDokumen);
                     const excerpt = (item.isi || '').replace(/<[^>]*>/g, '');
                     return `<div data-openmodul="${escHtml(item.id)}" class="modul-materi-card cursor-pointer group bg-white border border-slate-200/80 rounded-2xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
                         <div class="flex items-center gap-2 mb-3">
@@ -2404,6 +2515,7 @@
             }
 
             const watermarkHtml = getModulWatermarkHtml(data);
+            window._modulTerbukaId = id;
 
             const videoWrap = document.getElementById('lihat-modul-video-wrap');
             if (videoWrap) {
@@ -2421,17 +2533,32 @@
 
             const docWrap = document.getElementById('lihat-modul-doc-wrap');
             if (docWrap) {
-                if (data.docUrl && data.docUrl.startsWith('data:application/pdf')) {
+                const urlDok = data.docUrl || cacheDokumenModul[id] || '';
+                if (!urlDok && data.adaDokumen) {
+                    // Dokumen belum ada di perangkat: unduh dulu (satu file saja), tampilkan status jelas.
+                    docWrap.innerHTML = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div id="lihat-modul-doc-canvas-box"><div class="w-full h-[320px] flex flex-col items-center justify-center gap-2 bg-slate-900 rounded-xl text-slate-300 text-xs animate-pulse"><span>Mengunduh dokumen materi...</span><span class="text-[10px] text-slate-500 px-6 text-center">Di jaringan lambat bisa memakan waktu, mohon tunggu sebentar.</span></div></div></div>`;
+                    window.ambilDokumenModul(id).then(u => {
+                        if (window._modulTerbukaId !== id) return;
+                        const box = document.getElementById('lihat-modul-doc-canvas-box');
+                        if (!box) return;
+                        if (u && u.startsWith('data:application/pdf')) renderPdfIntoContainer(u, box, getModulWatermarkLabel(data));
+                        else if (u) box.innerHTML = `<div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><iframe src="${getEmbedDocUrl(u)}" class="w-full h-full border-0" frameborder="0" oncontextmenu="return false;"></iframe></div>`;
+                        else box.innerHTML = '<div class="w-full py-10 text-center text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200">Dokumen tidak ditemukan.</div>';
+                    }).catch(() => {
+                        const box = document.getElementById('lihat-modul-doc-canvas-box');
+                        if (box) box.innerHTML = `<div class="w-full py-10 flex flex-col items-center gap-3 text-xs text-slate-500 bg-slate-50 rounded-xl border border-slate-200"><span>Dokumen gagal diunduh (sinyal lemah?).</span><button type="button" onclick="window.bukaDetailModul('${id}')" class="px-4 py-2 bg-safety-500 text-white font-bold rounded-lg">Coba lagi</button></div>`;
+                    });
+                } else if (urlDok && urlDok.startsWith('data:application/pdf')) {
                     // PDF hasil upload admin (base64): render sebagai gambar/canvas yang bisa
                     // discroll normal, tanpa tombol Download/Print bawaan browser sama sekali.
                     docWrap.innerHTML = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div id="lihat-modul-doc-canvas-box"></div></div>`;
                     const canvasBox = document.getElementById('lihat-modul-doc-canvas-box');
-                    if (canvasBox) renderPdfIntoContainer(data.docUrl, canvasBox, getModulWatermarkLabel(data));
-                } else if (data.docUrl) {
+                    if (canvasBox) renderPdfIntoContainer(urlDok, canvasBox, getModulWatermarkLabel(data));
+                } else if (urlDok) {
                     // Link eksternal (Google Drive / URL PDF lain di luar server kita) — tetap
                     // lewat iframe karena kita tidak bisa mengambil isi file mentahnya langsung
                     // dari domain lain untuk dirender sebagai gambar.
-                    const docEmbed = getEmbedDocUrl(data.docUrl);
+                    const docEmbed = getEmbedDocUrl(urlDok);
                     docWrap.innerHTML = `<div class="mb-4 space-y-1"><div class="flex items-center space-x-2 text-xs font-bold text-slate-700"><span>📄 Pratinjau Dokumen Modul (Read-Only)</span></div><div class="relative w-full h-[480px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 shadow-inner no-select"><iframe src="${docEmbed}" class="w-full h-full border-0" frameborder="0" oncontextmenu="return false;"></iframe>${watermarkHtml}</div></div>`;
                 } else {
                     docWrap.innerHTML = '';
@@ -5015,11 +5142,14 @@
             btn.innerText = "Menerbitkan..."; 
             btn.disabled = true;
             try { 
-                await push(ref(db, pathBerita), { 
+                const beritaBaruRef = push(ref(db, pathBerita));
+                const adaFotoBaru = window.compressedBase64Array.length > 0;
+                if (adaFotoBaru) await set(ref(db, `${pathBeritaFoto}/${beritaBaruRef.key}`), window.compressedBase64Array);
+                await set(beritaBaruRef, { 
                     judul: document.getElementById('input-berita-judul').value, 
                     kategori: document.getElementById('input-berita-kategori').value, 
                     isi: document.getElementById('input-berita-isi').value, 
-                    fotoBase64: window.compressedBase64Array.length > 0 ? window.compressedBase64Array : null, 
+                    adaFoto: adaFotoBaru, 
                     penulis: currentUser.nama, 
                     timestamp: Date.now() 
                 }); 
@@ -5043,6 +5173,8 @@
             if(!confirm("Yakin ingin menghapus berita ini secara permanen?")) return;
             try {
                 await remove(ref(db, `${pathBerita}/${id}`));
+                try { await remove(ref(db, `${pathBeritaFoto}/${id}`)); } catch (e) {}
+                delete cacheFotoBerita[id];
                 window.showToast("Berita berhasil dihapus.", "success");
             } catch(e) {
                 window.showToast("Gagal menghapus berita.", "error");
@@ -6169,11 +6301,20 @@
                 }
 
                 btn.innerText = "Menyimpan...";
-                await push(ref(db, pathModul), {
+                const modulBaruRef = push(ref(db, pathModul));
+                let adaDokumen = false;
+                if (docUrl && docUrl.startsWith('data:')) {
+                    // PDF base64 disimpan di path terpisah; daftar modul cukup membawa penanda.
+                    await set(ref(db, `${pathModulDokumen}/${modulBaruRef.key}`), docUrl);
+                    docUrl = '';
+                    adaDokumen = true;
+                }
+                await set(modulBaruRef, {
                     kategori: valKategori,
                     judul: document.getElementById('input-judul-modul').value,
                     videoUrl: videoUrl,
                     docUrl: docUrl,
+                    adaDokumen: adaDokumen,
                     isi: document.getElementById('input-isi-modul').value,
                     namaAdminUpload: currentUser.nama || 'Admin',
                     timestamp: Date.now()
@@ -6194,11 +6335,67 @@
         // Hapus satu modul materi dari "Kelola Modul Materi" (menu admin). Dikonfirmasi dulu
         // (mirip window.hapusBerita) karena modul bisa berisi dokumen/video yang sedang
         // dipelajari peserta -- menghapusnya permanen, bukan aksi yang boleh tidak sengaja.
+        window.perbaruiInfoOptimasi = function() {
+            const el = document.getElementById('info-optimasi-data');
+            if (!el) return;
+            const nModul = (dataModulAll || []).filter(m => m.docUrl && m.docUrl.startsWith('data:')).length;
+            const nBerita = (window.dataBeritaAll || []).filter(b => b.fotoBase64).length;
+            const btn = document.getElementById('btn-optimasi-data');
+            if (nModul + nBerita === 0) {
+                el.innerText = 'Semua dokumen materi & foto berita sudah dioptimalkan. Situs ringan di jaringan lambat.';
+                if (btn) btn.classList.add('hidden');
+            } else {
+                el.innerText = `${nModul} dokumen PDF materi dan ${nBerita} foto berita masih menempel di daftar utama, sehingga ikut terunduh di setiap kunjungan peserta (membuat situs lambat di sinyal lemah). Klik tombol untuk memindahkannya; data aman (disalin, diverifikasi, baru dipindah).`;
+                if (btn) btn.classList.remove('hidden');
+            }
+        };
+
+        window.jalankanOptimasiData = async function() {
+            if (!currentUser || (currentUser.role !== 'admin_utama' && currentUser.role !== 'admin_eldi')) return;
+            const modulTarget = (dataModulAll || []).filter(m => m.docUrl && m.docUrl.startsWith('data:'));
+            const beritaTarget = (window.dataBeritaAll || []).filter(b => b.fotoBase64);
+            const total = modulTarget.length + beritaTarget.length;
+            if (total === 0) { window.showToast('Tidak ada data yang perlu dioptimalkan.', 'success'); return; }
+            if (!confirm(`Pindahkan ${modulTarget.length} dokumen PDF materi dan ${beritaTarget.length} foto berita ke penyimpanan terpisah? Setiap item disalin lalu diverifikasi sebelum dipindah. Proses bisa beberapa menit; jangan tutup halaman.`)) return;
+            const btn = document.getElementById('btn-optimasi-data');
+            const info = document.getElementById('info-optimasi-data');
+            if (btn) btn.disabled = true;
+            let selesai = 0, gagal = 0;
+            const tampil = () => { if (info) info.innerText = `Memproses ${selesai + gagal}/${total}... (berhasil ${selesai}, gagal ${gagal})`; };
+            tampil();
+            for (const m of modulTarget) {
+                try {
+                    await set(ref(db, `${pathModulDokumen}/${m.id}`), m.docUrl);
+                    const cek = await get(ref(db, `${pathModulDokumen}/${m.id}`));
+                    if (cek.val() !== m.docUrl) throw new Error('verifikasi-gagal');
+                    await update(ref(db, `${pathModul}/${m.id}`), { adaDokumen: true, docUrl: null });
+                    selesai++;
+                } catch (e) { gagal++; console.error('Optimasi modul gagal:', m.id, e); }
+                tampil();
+            }
+            for (const b of beritaTarget) {
+                try {
+                    const arr = Array.isArray(b.fotoBase64) ? b.fotoBase64 : [b.fotoBase64];
+                    await set(ref(db, `${pathBeritaFoto}/${b.id}`), arr);
+                    const cek = await get(ref(db, `${pathBeritaFoto}/${b.id}`));
+                    if (JSON.stringify(cek.val()) !== JSON.stringify(arr)) throw new Error('verifikasi-gagal');
+                    await update(ref(db, `${pathBerita}/${b.id}`), { adaFoto: true, fotoBase64: null });
+                    selesai++;
+                } catch (e) { gagal++; console.error('Optimasi berita gagal:', b.id, e); }
+                tampil();
+            }
+            if (btn) btn.disabled = false;
+            window.showToast(gagal === 0 ? `Optimasi selesai: ${selesai} item dipindahkan.` : `Selesai dengan ${gagal} item gagal (data aslinya tetap utuh). Coba jalankan lagi.`, gagal === 0 ? 'success' : 'warning');
+            window.perbaruiInfoOptimasi();
+        };
+
         window.hapusModul = async function(id) {
             if(!currentUser) return;
             if(!confirm("Yakin ingin menghapus modul materi ini secara permanen? Peserta tidak akan bisa lagi mengakses materi ini.")) return;
             try {
                 await remove(ref(db, `${pathModul}/${id}`));
+                try { await remove(ref(db, `${pathModulDokumen}/${id}`)); } catch (e) {}
+                delete cacheDokumenModul[id];
                 window.showToast("Modul berhasil dihapus.", "success");
             } catch(e) {
                 window.showToast("Gagal menghapus modul.", "error");
@@ -6358,15 +6555,19 @@
 
         window.bacaBerita = function(id) {
             if (!window.dataBeritaAll) return;
+            window._beritaTerbukaId = id;
             const b = window.dataBeritaAll.find(x => x.id === id);
             if (!b) return;
 
             let images = [];
             if (b.fotoBase64) {
                 images = Array.isArray(b.fotoBase64) ? b.fotoBase64 : [b.fotoBase64];
+            } else if (b.adaFoto) {
+                images = cacheFotoBerita[b.id] || [];
             }
 
-            const heroImg = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&w=1200&q=80';
+            const fotoBacaTertunda = !!b.adaFoto && !b.fotoBase64 && images.length === 0;
+            const heroImg = images.length > 0 ? images[0] : (fotoBacaTertunda ? FOTO_TRANSPARAN : FOTO_BERITA_CADANGAN);
 
             document.getElementById('baca-berita-img').src = heroImg;
             document.getElementById('baca-berita-kategori').innerText = b.kategori;
@@ -6388,6 +6589,9 @@
             }
 
             window.openModal('modal-baca-berita');
+            if (fotoBacaTertunda) {
+                window.ambilFotoBerita(b).then(() => { if (window._beritaTerbukaId === id) window.bacaBerita(id); }).catch(() => {});
+            }
         };
 
         window.renderDashboardPendapatanHome = function() {
@@ -6919,6 +7123,7 @@
                 beritas.sort((a,b) => b.timestamp - a.timestamp);
                 
                 window.dataBeritaAll = beritas;
+                if (typeof window.perbaruiInfoOptimasi === 'function') window.perbaruiInfoOptimasi();
 
                 if(beritas.length === 0 && listPublic) {
                     listPublic.innerHTML = '<div class="w-full text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed text-slate-500">Belum ada berita atau pengumuman saat ini.</div>';
@@ -6934,18 +7139,22 @@
                         
                         let images = []; 
                         if(b.fotoBase64) { images = Array.isArray(b.fotoBase64) ? b.fotoBase64 : [b.fotoBase64]; }
+                        else if(b.adaFoto) { images = cacheFotoBerita[b.id] || []; }
+                        const fotoTertunda = !!b.adaFoto && !b.fotoBase64 && images.length === 0;
 
                         let imgHtmlSmall = '';
                         if(images.length > 0) {
                             const imgElements = images.map(img => `<img src="${img}" class="w-full h-full object-cover shrink-0 snap-center" alt="Berita">`).join('');
                             imgHtmlSmall = `<div class="relative w-full berita-card-img overflow-hidden rounded-xl bg-slate-100 mb-3"><div class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full news-img-slider">${imgElements}</div>${images.length > 1 ? `<div class="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">${images.length} Foto</div>` : ''}</div>`;
                         } else { 
-                            imgHtmlSmall = `<div class="w-full berita-card-img bg-slate-100 rounded-xl mb-3 flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>`; 
+                            imgHtmlSmall = fotoTertunda
+                                ? `<div data-fb-card="${b.id}" class="relative w-full berita-card-img overflow-hidden rounded-xl bg-slate-100 mb-3 flex items-center justify-center text-slate-400 font-bold text-[10px] animate-pulse">Memuat foto...</div>`
+                                : `<div class="w-full berita-card-img bg-slate-100 rounded-xl mb-3 flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>`; 
                         }
 
                         gridCardsHtml += `<div onclick="window.bacaBerita('${b.id}')" class="flex flex-col group cursor-pointer hover:-translate-y-0.5 transition-transform h-full">${imgHtmlSmall}<div class="flex items-center justify-between mb-1.5"><span class="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${badgeColor}">${b.kategori}</span><span class="text-[9px] text-slate-400 font-semibold">${window.formatDate(b.timestamp)}</span></div><h3 class="berita-card-title font-extrabold text-slate-900 text-xs sm:text-sm leading-snug group-hover:text-safety-500 transition-colors mb-1.5">${b.judul}</h3><p class="berita-card-excerpt text-[11px] text-slate-500 leading-relaxed">${b.isi || ''}</p></div>`;
 
-                        let heroImg = images.length > 0 ? images[0] : 'https://images.unsplash.com/photo-1582560469781-1965b9af903d?auto=format&fit=crop&w=1200&q=80';
+                        let heroImg = images.length > 0 ? images[0] : (fotoTertunda ? FOTO_TRANSPARAN : FOTO_BERITA_CADANGAN);
                         // Banner headline dipakai utk foto berita apa saja -- baik landscape maupun potrait.
                         // Sebelumnya pakai object-cover langsung di kotak berukuran tetap (h-72/h-96), jadi
                         // foto potrait (mis. foto orang berdiri) bagian atas/bawahnya kepotong. Sekarang pakai
@@ -6953,15 +7162,16 @@
                         // BUKAN konten utama) supaya kotak tetap penuh warna tanpa area kosong, lalu lapisan
                         // depan pakai object-contain supaya foto ASLI selalu utuh terlihat, tidak terpotong
                         // sama sekali, apa pun rasio potrait/landscape-nya.
-                        headlineSlidesHtml += `<div onclick="window.bacaBerita('${b.id}')" class="w-full shrink-0 snap-center relative h-72 sm:h-96 rounded-2xl overflow-hidden shadow-lg group cursor-pointer border border-slate-200 bg-navy-950"><img src="${heroImg}" class="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-50" alt="" aria-hidden="true"><img src="${heroImg}" class="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" alt="Headline Utama"><div class="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/60 to-transparent flex flex-col justify-end p-6 sm:p-8 text-white"><div class="flex items-center space-x-2 mb-2"><span class="px-2.5 py-1 bg-red-600 text-white rounded text-[10px] font-extrabold uppercase tracking-widest shadow">HEADLINE UTAMA (${index + 1}/${beritas.length})</span><span class="px-2 py-0.5 bg-white/20 backdrop-blur rounded text-[10px] font-bold uppercase text-slate-200">${b.kategori}</span><span class="text-xs text-slate-300 font-medium ml-auto">${window.formatDate(b.timestamp)}</span></div><h3 class="text-lg sm:text-2xl md:text-3xl font-extrabold leading-snug group-hover:text-safety-400 transition-colors mb-2">${b.judul}</h3><p class="text-xs sm:text-sm text-slate-300 line-clamp-3 font-normal leading-relaxed">${b.isi}</p></div></div>`;
+                        headlineSlidesHtml += `<div onclick="window.bacaBerita('${b.id}')" class="w-full shrink-0 snap-center relative h-72 sm:h-96 rounded-2xl overflow-hidden shadow-lg group cursor-pointer border border-slate-200 bg-navy-950"><img ${fotoTertunda ? `data-fb-hero="${b.id}" ` : ''}src="${heroImg}" class="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-50" alt="" aria-hidden="true"><img ${fotoTertunda ? `data-fb-hero="${b.id}" ` : ''}src="${heroImg}" class="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" alt="Headline Utama"><div class="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/60 to-transparent flex flex-col justify-end p-6 sm:p-8 text-white"><div class="flex items-center space-x-2 mb-2"><span class="px-2.5 py-1 bg-red-600 text-white rounded text-[10px] font-extrabold uppercase tracking-widest shadow">HEADLINE UTAMA (${index + 1}/${beritas.length})</span><span class="px-2 py-0.5 bg-white/20 backdrop-blur rounded text-[10px] font-bold uppercase text-slate-200">${b.kategori}</span><span class="text-xs text-slate-300 font-medium ml-auto">${window.formatDate(b.timestamp)}</span></div><h3 class="text-lg sm:text-2xl md:text-3xl font-extrabold leading-snug group-hover:text-safety-400 transition-colors mb-2">${b.judul}</h3><p class="text-xs sm:text-sm text-slate-300 line-clamp-3 font-normal leading-relaxed">${b.isi}</p></div></div>`;
 
                         if(listAdmin) { 
-                            const adminThumb = images.length > 0 ? `<div class="relative shrink-0"><img src="${images[0]}" class="w-16 h-16 rounded object-cover shadow-sm">${images.length>1?`<div class="absolute -top-2 -right-2 bg-black text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">+${images.length-1}</div>`:''}</div>` : `<div class="w-16 h-16 rounded bg-slate-100 shrink-0 flex items-center justify-center text-[8px] text-center px-1 font-bold text-slate-400">No Img</div>`;
+                            const adminThumb = images.length > 0 ? `<div class="relative shrink-0"><img src="${images[0]}" class="w-16 h-16 rounded object-cover shadow-sm">${images.length>1?`<div class="absolute -top-2 -right-2 bg-black text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">+${images.length-1}</div>`:''}</div>` : (fotoTertunda ? `<div data-fb-admin="${b.id}" class="w-16 h-16 rounded bg-slate-100 shrink-0 flex items-center justify-center text-[8px] text-center px-1 font-bold text-slate-400 animate-pulse">Memuat</div>` : `<div class="w-16 h-16 rounded bg-slate-100 shrink-0 flex items-center justify-center text-[8px] text-center px-1 font-bold text-slate-400">No Img</div>`);
                             listAdmin.innerHTML += `<div class="p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-start space-x-4"><button onclick="window.hapusBerita('${b.id}')" title="Hapus berita ini" class="shrink-0 order-last ml-auto p-2 bg-white text-red-500 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors border border-red-200 shadow-sm self-start"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>${adminThumb}<div class="flex-1 min-w-0"><div class="flex items-center space-x-2 mb-1"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${badgeColor}">${b.kategori}</span><span class="text-[10px] text-slate-500">${window.formatDate(b.timestamp)}</span></div><h4 class="font-bold text-slate-900 text-sm">${b.judul}</h4><p class="text-xs text-slate-600 line-clamp-1 mt-1">${b.isi}</p></div></div>`; 
                         }
                     });
 
                     listPublic.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">${gridCardsHtml}</div><div class="relative w-full mt-6"><div id="headline-carousel" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar space-x-4 w-full">${headlineSlidesHtml}</div></div>`;
+                    window.hidrasiFotoBerita(beritas);
                 }
             });
 
@@ -7220,8 +7430,8 @@
                         if(listAdmin) {
                             // Jangan tampilkan string base64 PDF mentah (bisa jutaan karakter) ke DOM,
                             // cukup label ramah supaya panel admin tetap ringan & terbaca.
-                            const docLabel = data.docUrl
-                                ? (data.docUrl.startsWith('data:') ? '📄 Dokumen: File PDF terupload' : `📄 Dokumen: ${data.docUrl}`)
+                            const docLabel = (data.docUrl || data.adaDokumen)
+                                ? ((data.adaDokumen || data.docUrl.startsWith('data:')) ? '📄 Dokumen: File PDF terupload' : `📄 Dokumen: ${data.docUrl}`)
                                 : '';
                             listAdmin.innerHTML += `
                             <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-2">
@@ -7238,6 +7448,7 @@
                     });
                 }
                 window.animateNumber('stat-total-modul-count', countModul);
+                if (typeof window.perbaruiInfoOptimasi === 'function') window.perbaruiInfoOptimasi();
                 window.renderModulBrowse();
                 window.renderSilabusHome();
             });
