@@ -14,7 +14,6 @@
          paling terasa di koneksi lambat/tidak stabil ("lola"), karena setiap handshake
          yang biasanya berurutan (login peserta/admin bergantung pada Firebase Auth &
          Realtime Database ini) sekarang bisa tumpang tindih alih-alih baris antre. -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -22,20 +21,6 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
-    <!-- Tailwind CSS & Fonts -->
-    <!-- Tailwind Play CDN SENGAJA TIDAK diberi `defer` (beda dari skrip-skrip lain di bawah):
-         dokumentasi resminya mensyaratkan tailwind.config diset SEGERA setelah skrip ini
-         dimuat, dalam urutan blocking yang sama seperti sekarang -- menundanya berisiko
-         class warna custom (navy/safety/brand) telat terpasang & sempat tampil tanpa gaya
-         (flash tanpa styling) saat halaman pertama dibuka. Skrip lain di bawah (Flatpickr,
-         EmailJS, html2pdf, Chart.js, PDF.js) TIDAK segenting itu -- semuanya baru dipakai
-         belakangan lewat aksi pengguna (buka kalender, kirim email, ekspor sertifikat,
-         lihat modul PDF), jadi aman diberi `defer` supaya tidak memblokir tampilan awal.
-         CATATAN: `defer` tidak berlaku pada <script> INLINE (tanpa src) -- karena itu 2 skrip
-         inline yang bergantung pada skrip ber-`defer` di atasnya (pdfjsLib.GlobalWorkerOptions,
-         emailjs.init) dibungkus `window.addEventListener('DOMContentLoaded', ...)` supaya baru
-         jalan SETELAH skrip defer terkait selesai (bukan diberi atribut `defer` yang percuma). -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 
     <!-- Flatpickr (Kalender Multi-Tanggal) -->
@@ -63,24 +48,6 @@
                 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
             }
         });
-    </script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-                        brand: ['Poppins', 'sans-serif']
-                    },
-                    colors: {
-                        navy: { 800: '#2C3E50', 900: '#1A252C', 950: '#0F171C' },
-                        safety: { 400: '#2ECC71', 500: '#27AE60', 600: '#1E8449' },
-                        brand: { 50: '#e8f8f0', 100: '#d1f2e1', 500: '#2ecc71', 600: '#27ae60', 700: '#1e8449', 900: '#145a32' }
-                    }
-                }
-            }
-        };
     </script>
 
     <style>
@@ -285,6 +252,12 @@
             .tb-rocket-glow, .tb-flag-wave, .tb-confetti{ animation:none !important; }
         }
     </style>
+    <!-- Tailwind CSS: sekarang file CSS statis hasil build (tailwind.css, Tailwind v3.4.17, config
+         warna navy/safety/brand & font sama persis seperti sebelumnya) -- BUKAN lagi Play CDN
+         (cdn.tailwindcss.com) yang memblokir tampilan & mengompilasi CSS di browser tiap kali halaman
+         dibuka (berat di HP sinyal lemah). Kalau menambah class Tailwind baru di index.html, build
+         ulang tailwind.css (lihat tailwind.config.js & README) lalu naikkan angka ?v= pada tag link ini. -->
+    <link rel="stylesheet" href="tailwind.css?v=20261004">
 </head>
 
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen" oncontextmenu="return false;">
