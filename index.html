@@ -1238,6 +1238,10 @@
                 <div class="admin-utama-only text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Riksa Uji Kebakaran</div>
                 <button id="nav-btn-riksa" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium relative" data-target="admin-panel-riksa"><span>Laporan Riksa Uji</span><span id="badge-riksa" class="absolute right-3 top-3 bg-red-500 text-white text-[10px] font-bold px-1.5 rounded-full hidden">0</span></button>
                 <button id="nav-btn-riksa-petugas" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-riksa-petugas"><span>Petugas Riksa Uji</span></button>
+                <div class="admin-utama-only text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Daftar Hadir</div>
+                <a href="/daftar-hadir/" target="_blank" rel="noopener"
+                   class="admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium">
+                    <span>Daftar Hadir &amp; Dokumentasi ↗</span></a>
             </nav>
             <div class="p-4 border-t border-slate-800 space-y-2 bg-navy-950">
                 <button id="btn-admin-to-web" class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors text-sm font-medium"><span>Lihat Website</span></button>
@@ -3801,6 +3805,8 @@
             const isBidang = role === 'admin_bidang';
             // Admin Pusat baru login: cek apakah ada data berat yang perlu dioptimalkan otomatis.
             if (isUtama && typeof window.perbaruiInfoOptimasi === 'function') setTimeout(() => window.perbaruiInfoOptimasi(), 3000);
+            // Penanda sesi Admin Pusat untuk halaman /daftar-hadir/ (pengaman tampilan saja; pengaman data = Kode Akses Apps Script)
+            if (isUtama) { try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} }
             
             document.querySelectorAll('.admin-utama-only').forEach(el => {
                 if (isUtama) { el.classList.remove('hidden'); } 
@@ -5043,6 +5049,7 @@
 
         document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
             currentUser = null;
+            try { localStorage.removeItem('rk3_admin_at'); } catch (e) {}
             try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();
         });

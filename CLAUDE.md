@@ -5,6 +5,7 @@ Tujuan: beberapa sesi mengerjakan fitur berbeda, tapi hasilnya harus menyatu dan
 
 ## Peta proyek
 - `index.html` (satu berkas, GitHub Pages) = situs utama + panel admin. `tailwind.css` = hasil build (lihat README).
+- `daftar-hadir/` = aplikasi Daftar Hadir & Dokumentasi (satu berkas, IndexedDB + Google Drive via Apps Script `daftar-hadir/apps-script/Code.gs`, TANPA Firebase). Menu di panel admin (khusus Admin Pusat); halaman mengalihkan ke `/` bila penanda `rk3_admin_at` (localStorage, 12 jam) tidak ada. Pengaman data sebenarnya = Kode Akses Apps Script.
 - `riksa/` = aplikasi PWA petugas riksa uji (offline-first), memakai Firebase yang sama, nama app `riksa-uji`.
 - `../ruangk3-wa-webhook/` (Vercel): `api/cek-lisensi.js` (perantara TemanK3 + cek hak LPMI), webhook WA.
 - `../backup-drive/backup-ruangk3-ke-drive.gs` = skrip cadangan harian ke Google Drive (dipasang manual di Apps Script).
@@ -38,5 +39,7 @@ Hapus bagian ini setelah APK selesai dan assetlinks.json terpasang.
 - Catatan teknis: browser bawaan Claude belum login GitHub; Safari sudah login, tetapi computer use untuk Safari hanya bisa membaca.
 
 ## Log perubahan lintas sesi (tambah paling atas)
+- 2026-10-05 sesi cse_016qqY9aarWh6D2w7dg4gwjX: pasang `daftar-hadir/` + menu admin "Daftar Hadir & Dokumentasi"; penanda sesi `rk3_admin_at` diset di `setupAdminUI` hanya untuk Admin Pusat dan dihapus saat logout. Adrian masih harus memasang `Code.gs` (lihat `daftar-hadir/apps-script/PANDUAN-GOOGLE-DRIVE.md`) dan mengisi URL + Kode Akses di tombol ☁️ tiap perangkat.
+- 2026-10-04 perf: html2pdf, Chart.js, PDF.js dimuat sesuai kebutuhan lewat `window.muatPustaka`.
 - 2026-10-04 sesi Riksa Uji: nama aplikasi "Riksa Uji", ikon diganti logo perisai RuangK3 (`riksa/icons/`), `VERSION` sw jadi `riksa-v2`. Persiapan APK lewat PWABuilder (package `com.ruangk3.riksa`).
 - 2026-10-04 sesi Riksa Uji: tambah `riksa/`, menu admin "Laporan Riksa Uji" & "Petugas Riksa Uji" (lazy), `PER_ANAK` cadangan ditambah `riksa_foto`, `riksa_laporan_data`. Sudah di-commit & di-push (`4eca888`).
