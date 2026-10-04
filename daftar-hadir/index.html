@@ -33,6 +33,12 @@ button{cursor:pointer}
 .btn.ghost{border-color:transparent;background:transparent}
 .btn.ghost:hover{background:#f3f4f6}
 .btn.danger{color:var(--danger)}
+.btn.dangerfill{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.dangerfill:hover{filter:brightness(.92)}
+.cf-sheet{width:min(440px,100%)}
+.cf-ico{width:44px;height:44px;border-radius:50%;background:#fee2e2;color:#b91c1c;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.cf-body{font-size:13.5px;line-height:1.55;color:#374151}
+.cf-top{display:flex;gap:12px;align-items:flex-start}
 
 /* ---------- layout ---------- */
 .tabs{display:flex;position:sticky;top:var(--tb,52px);z-index:15;background:#fff;border-bottom:1px solid var(--line);padding:0 16px;gap:4px}
@@ -475,6 +481,15 @@ table.doku td.foto{text-align:center}
   </div>
 </div>
 
+<div class="modal" id="cfModal" hidden role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" style="z-index:110">
+  <div class="sheet cf-sheet">
+    <div class="sheet-body">
+      <div class="cf-top"><div class="cf-ico" id="cfIco" aria-hidden="true">🗑</div><div><b id="cfTitle" style="font-size:16px"></b><div class="cf-body" id="cfBody" style="margin-top:6px"></div></div></div>
+    </div>
+    <div class="sheet-tools" style="justify-content:flex-end"><button class="btn" id="cfNo">Batal</button><button class="btn dangerfill" id="cfOk">Hapus</button></div>
+  </div>
+</div>
+
 <div class="modal" id="evModal" hidden role="dialog" aria-modal="true" aria-label="Kegiatan tersimpan">
   <div class="sheet">
     <div class="sheet-head"><b>📁 Kegiatan Tersimpan</b><button class="x-btn" id="evClose" aria-label="Tutup">✕</button></div>
@@ -614,6 +629,9 @@ async function doSave() {
   saveT = null;
   try {
     const snap = JSON.parse(JSON.stringify(S));
+    if (!snap.peserta.length && !(snap.acara.kegiatan || "").trim() && !snap.acara.ttd && !EV.some(e => e.id === snap.id)) { // kegiatan baru yang masih kosong tidak disimpan
+      $("#saveSt").textContent = "Tersimpan otomatis"; $("#curName").textContent = "· (kegiatan tanpa nama)"; return;
+    }
     await idbPut("event:" + snap.id, snap);
     const m = meta(snap), i = EV.findIndex(e => e.id === snap.id);
     if (i >= 0) EV[i] = m; else EV.push(m);
@@ -1330,6 +1348,18 @@ function renderTtd() {
 }
 
 /* ---------- daftar kegiatan tersimpan ---------- */
+function askConfirm({ title, body, ok = "Hapus", icon = "🗑", danger = true }) {
+  return new Promise(res => {
+    const m = $("#cfModal"), okB = $("#cfOk"), noB = $("#cfNo");
+    $("#cfTitle").textContent = title; $("#cfBody").innerHTML = body; $("#cfIco").textContent = icon;
+    okB.textContent = ok; okB.className = "btn " + (danger ? "dangerfill" : "primary");
+    m.hidden = false; noB.focus();
+    const done = v => { m.hidden = true; okB.onclick = noB.onclick = m.onclick = null; document.removeEventListener("keydown", kd); res(v); };
+    const kd = e => { if (e.key === "Escape") done(false); };
+    document.addEventListener("keydown", kd);
+    okB.onclick = () => done(true); noB.onclick = () => done(false); m.onclick = e => { if (e.target === m) done(false); };
+  });
+}
 const Ev = {
   open() { $("#evModal").hidden = false; $("#evSearch").value = ""; flush().then(() => this.render()); },
   close() { $("#evModal").hidden = true; },
@@ -1377,16 +1407,30 @@ const Ev = {
     if (!from) $("#f-kegiatan").focus();
   },
   async remove(id) {
-    const e = EV.find(x => x.id === id); if (!e) return;
-    if (!confirm(`Hapus kegiatan "${e.kegiatan || "tanpa nama"}"?\nSemua peserta, foto & tanda tangannya ikut terhapus.`)) return;
-    if (id === S.id) clearTimeout(saveT), saveT = null;
+    const e = EV.find(x => x.id === id); if (!e) return false;
+    const drive = Cloud.ready() || !!(e.cloud || (id === S.id && S.sync && S.sync.at));
+    const ok = await askConfirm({
+      title: "Hapus kegiatan ini?", ok: "Ya, hapus",
+      body: `<b>${esc(e.kegiatan || "(tanpa nama)")}</b><br>${e.n || 0} peserta beserta foto, tanda tangan, dan berkas Word-nya dihapus dari perangkat ini.` +
+        (drive ? `<br><br>Folder kegiatan di <b>Google Drive</b> juga ikut dihapus otomatis (dipindah ke Sampah Drive, masih bisa dipulihkan ±30 hari).` : "") +
+        `<br><br>Tindakan ini tidak bisa dibatalkan di aplikasi.`
+    });
+    if (!ok) return false;
+    if (id === S.id) { clearTimeout(saveT); saveT = null; }
+    Cloud.gone.add(id);
+    if (drive) await Cloud.queueDelete(id); // perintah hapus disimpan dulu, jadi tidak hilang walau offline / aplikasi ditutup
     await idbDel("event:" + id);
     EV = EV.filter(x => x.id !== id); await idbPut(IDX, EV).catch(() => { });
     if (id === S.id) {
       const nxt = [...EV].sort((x, y) => y.updated - x.updated)[0];
       if (nxt) await this.load(nxt.id); else { S = blank(); await doSave(); idbPut(CUR, S.id).catch(() => { }); applyState(); }
     }
-    this.render(); toast("Kegiatan dihapus.");
+    this.render();
+    if (!drive) { toast("Kegiatan dihapus."); return true; }
+    toast("Kegiatan dihapus di perangkat ini. Menghapus folder di Google Drive…");
+    const done = await Cloud.flushDeletes();
+    toast(done ? "Kegiatan dihapus, termasuk folder di Google Drive." : "Kegiatan dihapus. Folder di Drive akan dihapus otomatis begitu koneksi tersedia.");
+    return true;
   }
 };
 $("#btnEvents").onclick = () => Ev.open();
@@ -1677,7 +1721,7 @@ $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("P
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CLOUD_KEY = "cloud-config";
+const CLOUD_KEY = "cloud-config", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
 const hhmm = d => `${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}`;
@@ -1882,7 +1926,7 @@ const Word = (() => {
 
 const Cloud = {
   cfg: { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" },
-  busy: false, again: false, t: null,
+  busy: false, again: false, t: null, gone: new Set(), delBusy: false, delT: null,
   ready() { return !!(this.cfg.url && this.cfg.token); },
   async loadCfg() { const c = await idbGet(CLOUD_KEY); if (c) this.cfg = { ...this.cfg, ...c }; this.status(); },
   async saveCfg() { await idbPut(CLOUD_KEY, this.cfg).catch(() => { }); },
@@ -1907,6 +1951,24 @@ const Cloud = {
       if (e instanceof TypeError) throw new Error("Tidak bisa terhubung ke Google Apps Script (cek internet / URL).");
       throw e;
     } finally { clearTimeout(t); }
+  },
+  /* ---- penghapusan di Drive (antrean tahan offline) ---- */
+  async queueDelete(id) { const q = (await idbGet(DEL_KEY)) || []; if (!q.includes(id)) q.push(id); await idbPut(DEL_KEY, q).catch(() => { }); },
+  async flushDeletes() {
+    if (!this.ready()) return false;
+    if (this.busy || this.delBusy || !navigator.onLine) return false; // sync yang sedang jalan memanggil ulang setelah selesai
+    this.delBusy = true;
+    try {
+      let q = (await idbGet(DEL_KEY)) || [];
+      for (const id of [...q]) {
+        await this.api("deleteEvent", { id });
+        q = q.filter(x => x !== id); await idbPut(DEL_KEY, q).catch(() => { }); this.gone.delete(id);
+      }
+      clearTimeout(this.delT); return true;
+    } catch (e) {
+      clearTimeout(this.delT); this.delT = setTimeout(() => this.flushDeletes(), 60000);
+      return false;
+    } finally { this.delBusy = false; }
   },
   dirty(ev) { const s = ev.sync || {}; return (s.v || 0) > (s.sv || 0); },
   schedule(delay) {
@@ -1943,6 +2005,7 @@ const Cloud = {
     if (this.busy) { this.again = true; return; }
     if (!navigator.onLine) { this.status("☁️ Offline – menunggu", "err"); return; }
     const ev = S; ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 };
+    if (this.gone.has(ev.id)) return;
     if (!manual && !this.dirty(ev)) { this.status(); return; }
     if (!(ev.acara.kegiatan || "").trim() && !ev.peserta.some(p => (p.nama || "").trim())) { // kegiatan kosong tidak dikirim
       this.status(); if (manual) toast("Isi nama kegiatan / peserta dulu sebelum sinkron."); return;
@@ -1959,10 +2022,12 @@ const Cloud = {
       const evInfo = { id: ev.id, acara: { kegiatan: ev.acara.kegiatan, tanggal: ev.acara.tanggal } };
       let i = 0;
       for (const f of todo) {
+        if (this.gone.has(ev.id)) throw new Error("GONE");
         this.status(`☁️ Upload ${++i}/${todo.length}…`, "busy");
         await this.api("uploadFile", { eventId: ev.id, event: evInfo, key: f.key, path: f.path, name: f.name, dataUrl: f.data });
         ev.sync.h[f.key] = f.hash;
       }
+      if (this.gone.has(ev.id)) throw new Error("GONE");
       const keys = new Set(fl.map(f => f.key));
       if (!docOk) Object.keys(ev.sync.h).filter(k => k.startsWith("doc:")).forEach(k => keys.add(k)); // gagal menyusun Word: jangan hapus berkas Word lama di Drive
       // hanya file yang dulu diunggah perangkat ini lalu dihapus yang dibuang di Drive
@@ -1970,15 +2035,17 @@ const Cloud = {
       const r = await this.api("saveEvent", { event: this.payload(ev), keys: [...keys], removed });
       removed.forEach(k => delete ev.sync.h[k]);
       ev.sync.at = Date.now(); ev.sync.sv = v0; ev.sync.folderUrl = r.folderUrl || ev.sync.folderUrl;
-      if (ev === S) save(); else await idbPut("event:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
+      if (ev === S) save(); else if (!this.gone.has(ev.id)) await idbPut("event:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
       this.status();
       if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah).`);
     } catch (e) {
+      if (e && e.message === "GONE") { this.status(); return; } // kegiatan dihapus saat sinkron berjalan: berhenti, jangan buat ulang di Drive
       this.status("☁️ Gagal sinkron – coba lagi", "err");
       if (manual) toast("Sinkron gagal: " + e.message);
       clearTimeout(this.t); this.t = setTimeout(() => this.sync(false), 60000);
     } finally {
       this.busy = false;
+      this.flushDeletes();
       if (this.again) { this.again = false; this.schedule(1500); }
     }
   },
@@ -2031,9 +2098,22 @@ const Cloud = {
           <div class="t">${esc(e.kegiatan || "(tanpa nama)")}</div>
           <div class="d">${esc(hariTanggal({}, hariList({ tanggal: e.tanggal, tanggal2: e.tanggal2, hari: e.hari }).filter(Boolean)) || "-")}${e.tempat ? " · " + esc(e.tempat) : ""}</div>
           <div class="m">${esc(e.n)} peserta · foto ${esc(e.foto)} · TTD ${esc(e.ttdPeserta)}${e.folderUrl ? ` · <a href="${esc(e.folderUrl)}" target="_blank" rel="noopener">buka folder</a>` : ""}</div></div>
-          <div class="acts">${local ? `<span class="hint">Ada di perangkat ini</span>` : `<button class="btn sm primary" data-act="pull">Unduh &amp; Buka</button>`}</div></div>`;
+          <div class="acts">${local ? `<span class="hint">Ada di perangkat ini</span>` : `<button class="btn sm primary" data-act="pull">Unduh &amp; Buka</button>`}<button class="btn sm danger" data-act="cdel">Hapus</button></div></div>`;
       }).join("") : `<div class="hint">Belum ada kegiatan di Google Drive.</div>`;
     } catch (e) { el.innerHTML = `<div class="hint" style="color:var(--danger)">Gagal memuat: ${esc(e.message)}</div>`; }
+  },
+  async removeRemote(id) {
+    if (EV.some(x => x.id === id)) { await Ev.remove(id); return this.listRemote(); } // ada juga di perangkat ini: hapus dua-duanya
+    const row = $("#evCloudList").querySelector(`[data-id="${CSS.escape(id)}"]`), nama = row ? row.querySelector(".t").textContent : "kegiatan ini";
+    const ok = await askConfirm({ title: "Hapus kegiatan dari Google Drive?", ok: "Ya, hapus",
+      body: `<b>${esc(nama)}</b><br>Folder kegiatan beserta daftar hadir, foto, tanda tangan, dan berkas Word-nya dipindah ke Sampah Drive (bisa dipulihkan ±30 hari) dan dihapus dari spreadsheet Database Induk.` });
+    if (!ok) return;
+    try {
+      row.querySelector(".acts").innerHTML = `<span class="hint">Menghapus…</span>`;
+      await this.api("deleteEvent", { id });
+      toast("Kegiatan dihapus dari Google Drive.");
+    } catch (e) { toast("Gagal menghapus: " + e.message); }
+    this.listRemote();
   },
   async pull(id) {
     const el = $("#evCloudList");
@@ -2075,8 +2155,12 @@ $("#cDisconnect").onclick = async () => {
   Cloud.cfg = { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" }; await Cloud.saveCfg(); Cloud.status(); Cloud.openSettings();
 };
 $("#evCloudLoad").onclick = () => Cloud.listRemote();
-$("#evCloudList").addEventListener("click", e => { const b = e.target.closest("[data-act=pull]"); if (b) Cloud.pull(b.closest(".ev-item").dataset.id); });
-window.addEventListener("online", () => Cloud.schedule(1000));
+$("#evCloudList").addEventListener("click", e => {
+  const b = e.target.closest("[data-act=pull],[data-act=cdel]"); if (!b) return;
+  const id = b.closest(".ev-item").dataset.id;
+  if (b.dataset.act === "pull") Cloud.pull(id); else Cloud.removeRemote(id);
+});
+window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDeletes(); });
 
 /* ---------- init ---------- */
 (async () => {
@@ -2091,7 +2175,9 @@ window.addEventListener("online", () => Cloud.schedule(1000));
   if (d) S = normalize(d); else { S = blank(); await doSave(); }
   idbPut(CUR, S.id).catch(() => { });
   await Cloud.loadCfg();
+  ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
   applyState();
+  Cloud.flushDeletes();
   $("#saveSt").textContent = d ? "Data terakhir dimuat" : "Tersimpan otomatis";
 })();
 })();

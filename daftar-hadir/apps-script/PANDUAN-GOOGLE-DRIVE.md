@@ -45,7 +45,7 @@ Folder induk **Ruangk3.com** dicari lewat namanya di Drive akun pemilik script (
 - **Hemat kuota:** hanya file yang berubah yang diunggah ulang. Foto atau tanda tangan yang diganti akan menggantikan file lama, dan file lama masuk *Sampah* Drive.
 - **Data lokal tetap ada:** aplikasi tetap bisa dipakai offline, lalu data dikirim begitu online lagi.
 - **Perangkat lain:** menu **📁 Kegiatan → ☁️ Di Google Drive → Muat daftar → Unduh & Buka** mengambil kegiatan, termasuk foto & tanda tangan, yang dibuat di perangkat lain.
-- **Menghapus kegiatan di aplikasi tidak menghapus data di Drive**, karena Drive adalah arsip induk. Hapus foldernya langsung di Drive bila memang perlu.
+- **Menghapus kegiatan** (📁 Kegiatan → Hapus, atau tombol Hapus di menu admin ruangk3.com) ikut menghapus kegiatan di Google Drive: folder kegiatannya (daftar hadir Word, foto, tanda tangan) dipindah ke **Sampah Drive**, lalu barisnya dibuang dari spreadsheet Database Induk. Isi Sampah Drive masih bisa dipulihkan sekitar 30 hari. Jika perangkat sedang offline saat menghapus, perintah hapus disimpan dan dijalankan otomatis begitu online. Tombol Hapus juga ada pada daftar *Di Google Drive* untuk kegiatan yang hanya ada di Drive. Fitur ini butuh `Code.gs` versi terbaru (aksi `deleteEvent`).
 
 ## Jika mengubah Code.gs
 

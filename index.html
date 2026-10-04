@@ -281,7 +281,7 @@
          (cdn.tailwindcss.com) yang memblokir tampilan & mengompilasi CSS di browser tiap kali halaman
          dibuka (berat di HP sinyal lemah). Kalau menambah class Tailwind baru di index.html, build
          ulang tailwind.css (lihat tailwind.config.js & README) lalu naikkan angka ?v= pada tag link ini. -->
-    <link rel="stylesheet" href="tailwind.css?v=20261009">
+    <link rel="stylesheet" href="tailwind.css?v=20261010">
 </head>
 
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen" oncontextmenu="return false;">
@@ -1888,19 +1888,35 @@
 
                 <!-- Daftar Hadir & Dokumentasi: kegiatan tersimpan di Google Drive (aplikasi ruangk3.com/daftar-hadir/) -->
                 <div id="admin-panel-daftarhadir" class="admin-panel hidden admin-utama-only">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 overflow-hidden">
+                        <div class="p-5 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                             <div>
                                 <h3 class="text-lg font-bold text-slate-900">Daftar Hadir &amp; Dokumentasi</h3>
-                                <p class="text-xs text-slate-500 mt-1">Kegiatan dibuat di aplikasi Daftar Hadir. Peserta diunggah lewat Excel atau diinput manual, lalu daftar hadir, tanda tangan, dan foto tersimpan di Google Drive.</p>
+                                <p class="text-xs text-slate-500 mt-1 max-w-2xl">Input peserta, foto, dan tanda tangan langsung di halaman ini. Arsipnya (daftar hadir Word, foto, tanda tangan) tersimpan otomatis di Google Drive dan terpantau di tab Rekap.</p>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <a href="/daftar-hadir/" target="_blank" rel="noopener" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Buka aplikasi ↗</a>
-                                <button type="button" id="btn-dh-salin-link" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Salin link aplikasi</button>
-                                <button type="button" id="btn-dh-segarkan" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Segarkan</button>
-                                <button type="button" id="btn-dh-pengaturan" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Pengaturan Drive</button>
+                            <div class="inline-flex p-1 bg-slate-100 rounded-lg self-start shrink-0" role="tablist" aria-label="Tampilan Daftar Hadir">
+                                <button type="button" id="dh-tab-rekap" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-bold bg-white text-slate-900 shadow-sm">Rekap Kegiatan</button>
+                                <button type="button" id="dh-tab-app" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Input Kegiatan</button>
                             </div>
                         </div>
+                        <ol class="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200 border-t border-slate-200">
+                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span><span class="text-xs"><b class="block text-slate-800">Buat kegiatan</b><span class="text-slate-500">Nama, tanggal, dan tempat</span></span></li>
+                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span><span class="text-xs"><b class="block text-slate-800">Isi peserta</b><span class="text-slate-500">Upload Excel atau input manual</span></span></li>
+                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</span><span class="text-xs"><b class="block text-slate-800">Foto &amp; tanda tangan</b><span class="text-slate-500">Diambil langsung di lokasi</span></span></li>
+                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</span><span class="text-xs"><b class="block text-slate-800">Tersimpan di Drive</b><span class="text-slate-500">Word, foto, dan TTD per kegiatan</span></span></li>
+                        </ol>
+                    </div>
+
+                    <!-- Tab 1: rekap kegiatan dari Google Drive -->
+                    <div id="dh-view-rekap">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <h4 class="text-sm font-bold text-slate-800">Ringkasan arsip di Google Drive</h4>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button type="button" id="btn-dh-segarkan" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Segarkan</button>
+                                    <button type="button" id="btn-dh-pengaturan" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Pengaturan Drive</button>
+                                </div>
+                            </div>
                         <div id="dh-cfg-box" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-lg p-4">
                             <p class="text-xs text-slate-600 mb-3">Hubungkan sekali dengan Google Apps Script yang sama dengan aplikasi. URL dan Kode Akses hanya disimpan di perangkat ini dan dihapus saat keluar dari panel admin.</p>
                             <form id="form-dh-cfg" class="space-y-3">
@@ -1919,7 +1935,7 @@
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">TTD penyelenggara</p><p id="dh-stat-org" class="text-2xl font-bold text-slate-900 mt-1">0</p></div>
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Diperbarui 7 hari terakhir</p><p id="dh-stat-baru" class="text-2xl font-bold text-slate-900 mt-1">0</p></div>
                         </div>
-                    </div>
+                        </div>
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                         <div class="flex flex-col md:flex-row gap-3 mb-4">
                             <input type="text" id="dh-filter-cari" placeholder="Cari nama kegiatan atau tempat…" class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
@@ -1932,6 +1948,22 @@
                                 </thead>
                                 <tbody id="dh-tbody" class="divide-y divide-slate-100"><tr><td colspan="9" class="px-3 py-6 text-center text-xs text-slate-500 italic">Buka menu ini untuk memuat kegiatan dari Google Drive.</td></tr></tbody>
                             </table>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Tab 2: aplikasi Daftar Hadir berjalan di halaman ini (tanpa tab baru) -->
+                    <div id="dh-view-app" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+                            <p class="text-xs text-slate-600">Data tersimpan otomatis di perangkat ini, lalu dikirim ke Google Drive saat tersambung internet.</p>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button type="button" id="btn-dh-app-muat" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Muat ulang</button>
+                                <button type="button" id="btn-dh-app-penuh" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Layar penuh</button>
+                            </div>
+                        </div>
+                        <div class="relative bg-slate-100">
+                            <p id="dh-app-loading" class="absolute inset-0 flex items-center justify-center text-sm text-slate-500">Memuat aplikasi Daftar Hadir…</p>
+                            <iframe id="dh-frame" title="Aplikasi Daftar Hadir dan Dokumentasi" class="relative block w-full border-0 bg-white" style="height:calc(100vh - 17rem);min-height:640px" allow="camera; geolocation; clipboard-write; fullscreen"></iframe>
                         </div>
                     </div>
                 </div>
@@ -5097,7 +5129,8 @@
 
         document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
             currentUser = null;
-            try { localStorage.removeItem('rk3_admin_at'); localStorage.removeItem('rk3_dh_cfg'); localStorage.removeItem('rk3_dh_cache'); } catch (e) {}
+            try { localStorage.removeItem('rk3_admin_at'); localStorage.removeItem('rk3_dh_cfg'); localStorage.removeItem('rk3_dh_cache'); localStorage.removeItem('rk3_dh_view'); } catch (e) {}
+            try { const fr = document.getElementById('dh-frame'); if (fr && fr.getAttribute('src')) fr.src = 'about:blank'; } catch (e) {}
             try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();
         });
@@ -8369,6 +8402,7 @@
                     <td class="px-3 py-2 text-right space-x-1">
                         <button type="button" onclick="window.dhDetail(${i}, this)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold">Detail</button>
                         ${drive ? `<a href="${dhEsc(drive)}" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-safety-500 text-white rounded-md text-xs font-bold inline-block">Buka Drive ↗</a>` : ''}
+                        <button type="button" onclick="window.dhHapus(${i}, this)" class="px-2.5 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold">Hapus</button>
                     </td>
                 </tr>
                 <tr id="dh-detail-${i}" class="hidden"><td colspan="9" class="px-3 py-3 bg-slate-50"></td></tr>`;
@@ -8400,6 +8434,8 @@
 
         window.dhBukaPanel = async function() {
             if (!dhIsAdmin()) return;
+            let tab = 'rekap'; try { tab = localStorage.getItem('rk3_dh_view') === 'app' ? 'app' : 'rekap'; } catch (e) {}
+            window.dhTampilView(tab);
             if (!dhCfg()) { const c = await dhCfgDariAplikasi(); if (c) dhSimpanCfg(c); }
             if (!dhEvents.length) {
                 try { const c = JSON.parse(localStorage.getItem(DH_CACHE_KEY) || 'null'); if (c && Array.isArray(c.events)) { dhEvents = c.events; dhDiCache = c.at || 0; } } catch (e) {}
@@ -8433,6 +8469,64 @@
                 sel.innerHTML = '<p class="text-xs text-red-500">Gagal memuat detail: ' + dhEsc(err.message || err) + '</p>';
             }
         };
+
+        window.dhHapus = async function(i, btn) {
+            const e = dhEvents[i]; if (!e || !dhIsAdmin()) return;
+            if (!confirm('Hapus kegiatan "' + (e.kegiatan || '(tanpa nama)') + '" dari Google Drive?\n\nFolder kegiatan (daftar hadir Word, foto, tanda tangan) dipindah ke Sampah Drive dan barisnya dibuang dari Database Induk. Masih bisa dipulihkan dari Sampah Drive sekitar 30 hari.\n\nCatatan: jika kegiatan ini masih ada di aplikasi Daftar Hadir pada suatu perangkat, hapus juga di sana agar tidak terkirim ulang.')) return;
+            const ori = btn ? btn.innerText : ''; if (btn) { btn.disabled = true; btn.innerText = 'Menghapus…'; }
+            try {
+                await dhApi('deleteEvent', { id: e.id });
+                dhEvents.splice(i, 1);
+                try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e2) {}
+                window.dhRender();
+                window.showToast('Kegiatan dihapus dari Google Drive.', 'success');
+            } catch (err) {
+                const m = String((err && err.message) || err);
+                window.showToast(/tidak dikenal/i.test(m) ? 'Apps Script belum diperbarui. Tempel Code.gs terbaru lalu Deploy versi baru.' : 'Gagal menghapus: ' + m, 'error');
+                if (btn) { btn.disabled = false; btn.innerText = ori; }
+            }
+        };
+
+        // Tab Rekap / Input: aplikasi Daftar Hadir dimuat di dalam halaman ini (iframe satu origin), bukan tab baru.
+        let dhAppDipakai = false;
+        window.dhTampilView = function(v) {
+            const app = v === 'app';
+            document.getElementById('dh-view-rekap')?.classList.toggle('hidden', app);
+            document.getElementById('dh-view-app')?.classList.toggle('hidden', !app);
+            const aktif = ['bg-white', 'text-slate-900', 'shadow-sm'], mati = ['text-slate-500', 'hover:text-slate-800'];
+            [['dh-tab-rekap', !app], ['dh-tab-app', app]].forEach(([id, on]) => {
+                const b = document.getElementById(id); if (!b) return;
+                aktif.forEach(c => b.classList.toggle(c, on)); mati.forEach(c => b.classList.toggle(c, !on));
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            try { localStorage.setItem('rk3_dh_view', app ? 'app' : 'rekap'); } catch (e) {}
+            if (app) {
+                if (!dhIsAdmin()) return;
+                try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} // sesi admin masih berlaku; aplikasi memeriksa penanda ini
+                const f = document.getElementById('dh-frame');
+                if (f && !f.getAttribute('src')) f.src = '/daftar-hadir/';
+                dhAppDipakai = true;
+            } else if (dhAppDipakai) {
+                dhAppDipakai = false;
+                setTimeout(() => window.dhMuat && window.dhMuat(), 2500); // beri waktu sinkron ke Drive selesai, lalu segarkan rekap
+            }
+        };
+        document.getElementById('dh-tab-rekap')?.addEventListener('click', () => window.dhTampilView('rekap'));
+        document.getElementById('dh-tab-app')?.addEventListener('click', () => window.dhTampilView('app'));
+        document.getElementById('dh-frame')?.addEventListener('load', () => {
+            const f = document.getElementById('dh-frame');
+            if (f && f.getAttribute('src')) document.getElementById('dh-app-loading')?.classList.add('hidden');
+        });
+        document.getElementById('btn-dh-app-muat')?.addEventListener('click', () => {
+            const f = document.getElementById('dh-frame'); if (!f) return;
+            document.getElementById('dh-app-loading')?.classList.remove('hidden');
+            try { f.contentWindow.location.reload(); } catch (e) { f.src = '/daftar-hadir/'; }
+        });
+        document.getElementById('btn-dh-app-penuh')?.addEventListener('click', () => {
+            const f = document.getElementById('dh-frame');
+            if (f && f.requestFullscreen) f.requestFullscreen().catch(() => window.showToast('Layar penuh tidak didukung di perangkat ini.', 'info'));
+            else window.showToast('Layar penuh tidak didukung di perangkat ini.', 'info');
+        });
 
         document.getElementById('admin-sidebar-nav')?.addEventListener('click', (e) => {
             if (e.target.closest('[data-target="admin-panel-daftarhadir"]')) window.dhBukaPanel();

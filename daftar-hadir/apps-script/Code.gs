@@ -77,6 +77,7 @@ function doPost(e) {
       case 'listEvents': return out_(listEvents_());
       case 'getEvent': return out_(getEvent_(req));
       case 'getFile': return out_(getFile_(req));
+      case 'deleteEvent': return out_(deleteEvent_(req));
       default: return out_({ ok: false, error: 'Aksi tidak dikenal: ' + req.action });
     }
   } catch (err) {
@@ -317,6 +318,36 @@ function listEvents_() {
       };
     })
   };
+}
+
+/**
+ * Hapus kegiatan: folder kegiatan (data.json, berkas Word, foto, tanda tangan) dipindah ke Sampah Drive
+ * (masih bisa dipulihkan ±30 hari), dan barisnya dibuang dari spreadsheet Database Induk.
+ * Aman dipanggil berulang: kegiatan yang sudah tidak ada dianggap berhasil.
+ */
+function deleteEvent_(req) {
+  const id = String(req.id || '');
+  if (!id) throw new Error('ID kegiatan kosong');
+  const ss = getSheet_();
+  const ks = ss.getSheetByName('Kegiatan');
+  let folderDihapus = false;
+  const folder = findEventFolder_(id);
+  if (folder) { folder.setTrashed(true); folderDihapus = true; }
+  const row = findEventRow_(ks, id);
+  if (row > 0) ks.deleteRow(row);
+  const ps = ss.getSheetByName('Peserta');
+  const last = ps.getLastRow();
+  let barisPeserta = 0;
+  if (last > 1) {
+    const rows = ps.getRange(2, 1, last - 1, PES_HEAD.length).getValues();
+    const keep = rows.filter(function (r) { return String(r[0]) !== id; });
+    barisPeserta = rows.length - keep.length;
+    if (barisPeserta) {
+      ps.getRange(2, 1, rows.length, PES_HEAD.length).clearContent();
+      if (keep.length) ps.getRange(2, 1, keep.length, PES_HEAD.length).setValues(keep);
+    }
+  }
+  return { ok: true, folder: folderDihapus, baris: row > 0, peserta: barisPeserta };
 }
 
 function getEvent_(req) {
