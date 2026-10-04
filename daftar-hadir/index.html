@@ -1682,6 +1682,204 @@ function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
 const hhmm = d => `${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}`;
 
+/* ---------- Word (.docx) tanpa pustaka: Daftar Hadir + tanda tangan, Dokumentasi + foto ---------- */
+const Word = (() => {
+  const enc = new TextEncoder();
+  const MM = 36000, TW = 56.6929;               // EMU per mm, twips per mm
+  const tw = mm => Math.round(mm * TW);
+  const PAGE_W = 210, PAGE_H = 297, M_L = 18, M_T = 40, M_B = 22;
+  const CONT_W = PAGE_W - 2 * M_L;              // 174 mm lebar isi
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
+  const X = s => String(s == null ? "" : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  /* --- zip (tanpa kompresi) --- */
+  const crcT = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = crcT[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function zip(files) {
+    const parts = [], central = []; let off = 0;
+    const u16 = n => [n & 255, (n >> 8) & 255], u32 = n => [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+    for (const f of files) {
+      const nm = enc.encode(f.name), d = f.data, crc = crc32(d);
+      const common = [...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(d.length), ...u32(d.length), ...u16(nm.length), ...u16(0)];
+      parts.push(new Uint8Array([0x50, 0x4b, 3, 4, ...common]), nm, d);
+      central.push(new Uint8Array([0x50, 0x4b, 1, 2, ...u16(20), ...common, ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+      off += 30 + nm.length + d.length;
+    }
+    let cs = 0; central.forEach(c => cs += c.length);
+    const end = new Uint8Array([0x50, 0x4b, 5, 6, 0, 0, 0, 0, ...u16(files.length), ...u16(files.length), ...u32(cs), ...u32(off), 0, 0]);
+    const all = [...parts, ...central, end]; let tot = 0; all.forEach(c => tot += c.length);
+    const out = new Uint8Array(tot); let o = 0; all.forEach(c => { out.set(c, o); o += c.length; });
+    return out;
+  }
+
+  /* --- gambar --- */
+  const toBytes = url => { const bin = atob(url.slice(url.indexOf(",") + 1)); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+  function imgInfo(url) {
+    const m = /^data:image\/(png|jpe?g);base64,/i.exec(url || ""); if (!m) return null;
+    const bytes = toBytes(url); let w = 0, h = 0;
+    if (/png/i.test(m[1])) { if (bytes.length < 24) return null; w = (bytes[16] << 24 | bytes[17] << 16 | bytes[18] << 8 | bytes[19]) >>> 0; h = (bytes[20] << 24 | bytes[21] << 16 | bytes[22] << 8 | bytes[23]) >>> 0; }
+    else {
+      let i = 2;
+      while (i + 9 < bytes.length) {
+        if (bytes[i] !== 0xFF) { i++; continue; }
+        const mk = bytes[i + 1];
+        if (mk >= 0xC0 && mk <= 0xCF && mk !== 0xC4 && mk !== 0xC8 && mk !== 0xCC) { h = bytes[i + 5] << 8 | bytes[i + 6]; w = bytes[i + 7] << 8 | bytes[i + 8]; break; }
+        i += 2 + (bytes[i + 2] << 8 | bytes[i + 3]);
+      }
+    }
+    if (!w || !h) return null;
+    return { bytes, w, h, ext: /png/i.test(m[1]) ? "png" : "jpeg" };
+  }
+
+  /* --- penyusun dokumen --- */
+  function Doc() {
+    const media = [], relBody = [], relHead = [], relFoot = []; let nImg = 0, nDoc = 0;
+    const cache = new Map();
+    const reg = url => {
+      if (cache.has(url)) return cache.get(url);
+      const inf = imgInfo(url); if (!inf) { cache.set(url, null); return null; }
+      const name = `img${media.length + 1}.${inf.ext}`; media.push({ name: "word/media/" + name, data: inf.bytes });
+      const o = { name, w: inf.w, h: inf.h }; cache.set(url, o); return o;
+    };
+    const rel = (arr, name) => { let i = arr.findIndex(r => r.name === name); if (i < 0) { arr.push({ name, id: "rId" + (arr.length + 10) }); i = arr.length - 1; } return arr[i].id; };
+    const gfx = (rid, cx, cy, id) => `<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id}" name="Gambar ${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic>`;
+    // gambar sebaris, dimuat ke kotak maxW x maxH (mm) tanpa mengubah rasio
+    const inline = (url, maxW, maxH, rels) => {
+      const im = reg(url); if (!im) return "";
+      const s = Math.min(maxW / (im.w), maxH / (im.h)); const cx = Math.round(im.w * s * MM), cy = Math.round(im.h * s * MM);
+      const id = ++nImg;
+      return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="Gambar ${id}"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>${gfx(rel(rels || relBody, im.name), cx, cy, id)}</wp:inline></w:drawing></w:r>`;
+    };
+    // gambar kop: seluruh lebar halaman, menempel di tepi atas / bawah halaman
+    const kop = (url, bottom, rels) => {
+      const im = reg(url); if (!im) return "";
+      const cx = PAGE_W * MM, cy = Math.round(PAGE_W * im.h / im.w * MM), id = ++nImg;
+      const y = bottom ? PAGE_H * MM - cy : 0;
+      return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${y}</wp:posOffset></wp:positionV><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Kop ${id}"/><wp:cNvGraphicFramePr/>${gfx(rel(rels, im.name), cx, cy, id)}</wp:anchor></w:drawing></w:r>`;
+    };
+    const run = (t, o = {}) => `<w:r><w:rPr>${o.b ? "<w:b/>" : ""}${o.color ? `<w:color w:val="${o.color}"/>` : ""}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ""}${o.u ? '<w:u w:val="single"/>' : ""}</w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
+    const par = (inner, o = {}) => `<w:p><w:pPr>${o.keep ? "<w:keepNext/>" : ""}<w:spacing w:before="${o.before || 0}" w:after="${o.after || 0}" w:line="${o.line || 240}" w:lineRule="auto"/>${o.ind ? `<w:ind w:left="${o.ind}"/>` : ""}<w:jc w:val="${o.jc || "left"}"/></w:pPr>${inner}</w:p>`;
+    const cell = (w, inner, o = {}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ""}${o.vm ? `<w:vMerge${o.vm === "restart" ? ' w:val="restart"' : ""}/>` : ""}${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ""}<w:vAlign w:val="center"/></w:tcPr>${inner || par("")}</w:tc>`;
+    const row = (cells, o = {}) => `<w:tr><w:trPr><w:cantSplit/>${o.head ? "<w:tblHeader/>" : ""}${o.h ? `<w:trHeight w:val="${o.h}" w:hRule="atLeast"/>` : ""}</w:trPr>${cells}</w:tr>`;
+    const table = (widths, rows, o = {}) => `<w:tbl><w:tblPr><w:tblW w:w="${widths.reduce((a, b) => a + b, 0)}" w:type="dxa"/>${o.border === false ? "" : '<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:left w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:right w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="888888"/></w:tblBorders>'}<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="${o.border === false ? 0 : 113}" w:type="dxa"/><w:right w:w="${o.border === false ? 0 : 113}" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>${rows}</w:tbl>`;
+
+    function build(body, headUrl, footUrl) {
+      const hdr = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${NS}><w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>${kop(headUrl, false, relHead)}</w:p></w:hdr>`;
+      const ftr = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:ftr ${NS}><w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>${kop(footUrl, true, relFoot)}</w:p></w:ftr>`;
+      const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${body}<w:sectPr><w:headerReference w:type="default" r:id="rIdH"/><w:footerReference w:type="default" r:id="rIdF"/><w:pgSz w:w="${tw(PAGE_W)}" w:h="${tw(PAGE_H)}"/><w:pgMar w:top="${tw(M_T)}" w:right="${tw(M_L)}" w:bottom="${tw(M_B)}" w:left="${tw(M_L)}" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+      const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial" w:eastAsia="Arial"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="id-ID"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
+      const R = (arr, extra) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${extra || ""}${arr.map(r => `<Relationship Id="${r.id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${r.name}"/>`).join("")}</Relationships>`;
+      const T = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/";
+      const types = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`;
+      const f = (name, s) => ({ name, data: enc.encode(s) });
+      return zip([
+        f("[Content_Types].xml", types),
+        f("_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${T}officeDocument" Target="word/document.xml"/></Relationships>`),
+        f("word/document.xml", doc), f("word/styles.xml", styles), f("word/header1.xml", hdr), f("word/footer1.xml", ftr),
+        f("word/_rels/document.xml.rels", R(relBody, `<Relationship Id="rIdS" Type="${T}styles" Target="styles.xml"/><Relationship Id="rIdH" Type="${T}header" Target="header1.xml"/><Relationship Id="rIdF" Type="${T}footer" Target="footer1.xml"/>`)),
+        f("word/_rels/header1.xml.rels", R(relHead)), f("word/_rels/footer1.xml.rels", R(relFoot)),
+        ...media
+      ]);
+    }
+    return { run, par, cell, row, table, inline, build };
+  }
+
+  const infoTable = (D, rows) => D.table([tw(32), tw(5), tw(CONT_W - 37)], rows.map(([k, v]) =>
+    D.row(D.cell(tw(32), D.par(D.run(k), { before: 30, after: 30 })) + D.cell(tw(5), D.par(D.run(":"), { before: 30, after: 30 })) + D.cell(tw(CONT_W - 37), D.par(D.run(v || ""), { before: 30, after: 30 })))).join(""), { border: false });
+  const title = (D, t, small) => D.par(D.run(t, { b: 1, u: 1, sz: 30 }) + (small ? D.run(" (lanjutan)", { sz: 20 }) : ""), { jc: "center", after: tw(5) });
+  const gap = D => D.par("", { after: tw(5) });
+
+  /* Daftar hadir + tanda tangan */
+  function daftarHadir(ev, ctx) {
+    const D = Doc(), a = ev.acara, days = ctx.days, multi = days.length > 1;
+    const list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
+    const kosong = Array.from({ length: Math.max(0, +a.barisKosong || 0) }, () => ({ nama: "", instansi: "" }));
+    const rows = list.concat(kosong);
+    const nd = days.length;
+    let widths;
+    if (multi) {
+      const c1 = tw(9), c2 = tw(nd > 4 ? 42 : 50), c3 = tw(nd > 4 ? 32 : 38), rest = tw(CONT_W) - c1 - c2 - c3, dw = Math.floor(rest / nd);
+      widths = [c1, c2, c3, ...days.map((_, i) => i === nd - 1 ? rest - dw * (nd - 1) : dw)];
+    } else widths = [tw(9), tw(CONT_W - 9 - 50 - 44), tw(50), tw(44)];
+    const TH = { fill: "F58220" }, th = (w, t, o = {}) => D.cell(w, D.par(D.run(t, { b: 1, color: "FFFFFF", sz: o.sz || 20 }), { jc: "center", before: 40, after: 40 }), { ...TH, ...o });
+    let head;
+    if (multi) {
+      head = D.row(th(widths[0], "No", { vm: "restart" }) + th(widths[1], "Nama Peserta", { vm: "restart" }) + th(widths[2], "Instansi / Perusahaan", { vm: "restart" }) + th(widths.slice(3).reduce((s, w) => s + w, 0), "Tanda Tangan", { span: nd }), { head: 1 })
+        + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(`Hari ${k + 1}`, { b: 1, color: "FFFFFF", sz: 17 }), { jc: "center", before: 20 }) + D.par(D.run(ctx.pendek(d), { color: "FFFFFF", sz: 16 }), { jc: "center", after: 20 }), TH)).join(""), { head: 1 });
+    } else head = D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Instansi / Perusahaan") + th(widths[3], "Tanda Tangan"), { head: 1 });
+    const body = rows.map((p, i) => {
+      const no = i + 1, cells = [];
+      const sig = (k, w, left) => {
+        const url = p.ttd && days[k] && p.ttd[days[k]]; const im = url ? D.inline(url, multi ? w / TW - 7 : (w / TW) / 2 - 7, 10.5) : "";
+        return D.cell(w, D.par(D.run(no + ".", { sz: multi ? 15 : 17, color: "555555" }) + (im ? D.run("  ") + im : ""), { jc: multi ? "left" : (left ? "left" : "right") }));
+      };
+      const base = D.cell(widths[0], D.par(D.run(no), { jc: "center" })) + D.cell(widths[1], D.par(D.run(p.nama || ""))) + D.cell(widths[2], D.par(D.run(p.instansi || "")));
+      const sg = multi ? days.map((_, k) => sig(k, widths[3 + k], true)).join("") : sig(0, widths[3], no % 2 === 1);
+      return D.row(base + sg, { h: tw(12.5) });
+    }).join("") || D.row(D.cell(widths.reduce((s, w) => s + w, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: widths.length }), { h: tw(12.5) });
+
+    const sp = tw(62), indent = tw(CONT_W - 62);
+    const sign = D.par(D.run(`${a.kota || ""}${a.kota ? ", " : ""}${ctx.tglTtd || ""}`), { jc: "center", ind: indent, before: tw(5), keep: 1 })
+      + D.par(D.run(a.jabatanTtd ? a.jabatanTtd + "," : ""), { jc: "center", ind: indent, keep: 1 })
+      + D.par(a.ttd ? D.inline(a.ttd, 58, 18) : "", { jc: "center", ind: indent, before: a.ttd ? 40 : tw(18), after: a.ttd ? 40 : 0, keep: 1 })
+      + D.par(a.namaTtd ? D.run("( ", {}) + D.run(a.namaTtd, { b: 1, u: 1 }) + D.run(" )") : D.run("( ................................ )"), { jc: "center", ind: indent });
+    const bodyXml = title(D, "DAFTAR HADIR PESERTA") + infoTable(D, [["Kegiatan", a.kegiatan], ["Tanggal", ctx.hariTanggal], ["Waktu", ctx.waktu], ["Tempat", a.tempat]]) + gap(D)
+      + D.table(widths, head + body) + sign;
+    return D.build(bodyXml, ctx.kopHead, ctx.kopFoot);
+  }
+
+  /* Dokumentasi: foto tiap peserta (4 per halaman) */
+  function dokumentasi(ev, ctx) {
+    const D = Doc(), a = ev.acara, list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto), PER = 4;
+    const widths = [tw(10), tw(58), tw(CONT_W - 68)];
+    let xml = "";
+    for (let j = 0, pi = 0; j < Math.max(list.length, 1); j += PER, pi++) {
+      const c = list.slice(j, j + PER);
+      const th = (w, t) => D.cell(w, D.par(D.run(t, { b: 1, color: "FFFFFF", sz: 20 }), { jc: "center", before: 40, after: 40 }), { fill: "F58220" });
+      const rows = c.map((p, k) => D.row(
+        D.cell(widths[0], D.par(D.run(j + k + 1), { jc: "center" })) + D.cell(widths[1], D.par(D.run(p.nama || ""))) +
+        D.cell(widths[2], p.foto ? D.par(D.inline(p.foto, 60, 40), { jc: "center", before: 40, after: 40 }) : D.par(D.run("Belum ada foto", { color: "999999", sz: 18 }), { jc: "center" })), { h: tw(46) })).join("")
+        || D.row(D.cell(widths.reduce((s, w) => s + w, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: 3 }), { h: tw(12.5) });
+      if (pi) xml += `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
+      xml += title(D, "DOKUMENTASI PESERTA", pi) + infoTable(D, [["Nama Kegiatan", a.kegiatan]]) + gap(D)
+        + D.table(widths, D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Foto"), { head: 1 }) + rows);
+    }
+    return D.build(xml, ctx.kopHead, ctx.kopFoot);
+  }
+
+  /* kecilkan foto agar berkas Word ringan (±70 KB/foto); foto asli tetap utuh di folder "Foto Dokumentasi" */
+  async function kecil(url, maxSide = 720) {
+    try {
+      if (typeof document === "undefined" || !/^data:image\/jpe?g/i.test(url || "")) return url;
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      const s = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight)); if (s >= 1) return url;
+      const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      return c.toDataURL("image/jpeg", 0.72);
+    } catch (e) { return url; }
+  }
+  const toDataUrl = bytes => new Promise((res, rej) => {
+    const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error);
+    fr.readAsDataURL(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }));
+  });
+  const MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  // hasil: [{ key, path, name, data(dataURL), hash }] – dipakai Cloud.sync()
+  async function berkas(ev, ctx) {
+    const out = [], nm = safeName(ev.acara.kegiatan || "Kegiatan");
+    const hasP = ev.peserta.some(p => (p.nama || "").trim());
+    if (!hasP && !(ev.acara.kegiatan || "").trim()) return out;
+    const add = async (key, name, bytes) => { const data = await toDataUrl(bytes); out.push({ key, path: [], name, data, hash: fnv(name + "|" + data.length + "|" + data.slice(-64) + "|" + crc32(bytes)) }); };
+    await add("doc:dh", `Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx));
+    if (ev.peserta.some(p => p.foto)) {
+      const ev2 = { ...ev, peserta: [] };
+      for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "" });
+      await add("doc:dk", `Dokumentasi Peserta - ${nm}.docx`, dokumentasi(ev2, ctx));
+    }
+    return out;
+  }
+  return { berkas, daftarHadir, dokumentasi, zip, crc32 };
+})();
+
 const Cloud = {
   cfg: { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" },
   busy: false, again: false, t: null,
@@ -1727,6 +1925,10 @@ const Cloud = {
     if (ev.acara.ttd) add("ttd-org", ["Tanda Tangan Penyelenggara"], safeName(ev.acara.namaTtd || ev.acara.jabatanTtd || "Penyelenggara") + ".png", ev.acara.ttd);
     return out;
   },
+  docCtx(ev) {
+    const days = hariList(ev.acara);
+    return { days, pendek: hariPendek, tglTtd: fmtTglPendek(ev.acara.tglTtd), hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara), kopHead: KOP_HEAD, kopFoot: KOP_FOOT };
+  },
   payload(ev) {
     const a = { ...ev.acara, ttd: ev.acara.ttd ? "(file)" : "" };
     const days = hariList(ev.acara);
@@ -1749,7 +1951,11 @@ const Cloud = {
     const v0 = ev.sync.v || 0;
     try {
       this.status("☁️ Menyinkron…", "busy");
-      const fl = this.files(ev), todo = fl.filter(f => ev.sync.h[f.key] !== f.hash);
+      const fl0 = this.files(ev);
+      // berkas Word (daftar hadir + tanda tangan, dokumentasi foto) disusun ulang tiap sinkron; hanya diunggah bila isinya berubah
+      let docs = [], docOk = true;
+      try { this.status("☁️ Menyusun berkas Word…", "busy"); docs = await Word.berkas(ev, this.docCtx(ev)); } catch (e) { docOk = false; console.warn("Berkas Word gagal disusun", e); }
+      const fl = fl0.concat(docs), todo = fl.filter(f => ev.sync.h[f.key] !== f.hash);
       const evInfo = { id: ev.id, acara: { kegiatan: ev.acara.kegiatan, tanggal: ev.acara.tanggal } };
       let i = 0;
       for (const f of todo) {
@@ -1758,6 +1964,7 @@ const Cloud = {
         ev.sync.h[f.key] = f.hash;
       }
       const keys = new Set(fl.map(f => f.key));
+      if (!docOk) Object.keys(ev.sync.h).filter(k => k.startsWith("doc:")).forEach(k => keys.add(k)); // gagal menyusun Word: jangan hapus berkas Word lama di Drive
       // hanya file yang dulu diunggah perangkat ini lalu dihapus yang dibuang di Drive
       const removed = Object.keys(ev.sync.h).filter(k => !keys.has(k));
       const r = await this.api("saveEvent", { event: this.payload(ev), keys: [...keys], removed });
@@ -1839,7 +2046,7 @@ const Cloud = {
         acara: { ...d.acara, ttd: "" },
         peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: "", ttd: {} }))
       });
-      const keys = Object.keys(files); let i = 0;
+      const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); let i = 0; // berkas Word tidak perlu diunduh
       for (const k of keys) {
         el.querySelector(`[data-id="${CSS.escape(id)}"] .acts`).innerHTML = `<span class="hint">Mengunduh file ${++i}/${keys.length}…</span>`;
         const f = await this.api("getFile", { id: files[k].id });

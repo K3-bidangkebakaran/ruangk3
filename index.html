@@ -8423,7 +8423,7 @@
                 const ada = (key, label) => { const f = files[key]; const u = f && dhLinkFile(f.id); return u ? `<a href="${dhEsc(u)}" target="_blank" rel="noopener" class="text-emerald-600 font-bold">${label}</a>` : '<span class="text-slate-400">–</span>'; };
                 const org = ada('ttd-org', 'Sudah ✓');
                 sel.innerHTML = `
-                    <div class="text-xs text-slate-600 mb-2">${a.narasumber ? '<b>Narasumber:</b> ' + dhEsc(a.narasumber) + ' · ' : ''}<b>TTD penyelenggara:</b> ${org}</div>
+                    <div class="text-xs text-slate-600 mb-2">${a.narasumber ? '<b>Narasumber:</b> ' + dhEsc(a.narasumber) + ' · ' : ''}<b>TTD penyelenggara:</b> ${org} · <b>Berkas Word:</b> ${ada('doc:dh', 'Daftar Hadir (.docx)')} · ${ada('doc:dk', 'Dokumentasi (.docx)')}</div>
                     <div class="overflow-x-auto admin-scroll">
                     <table class="w-full text-left text-xs whitespace-nowrap">
                         <thead class="text-slate-500 text-[10px] uppercase tracking-wider"><tr><th class="px-2 py-1">No</th><th class="px-2 py-1">Nama</th><th class="px-2 py-1">Perusahaan</th><th class="px-2 py-1">Foto</th>${hari.map(d => `<th class="px-2 py-1">TTD ${dhEsc(dhTgl(d))}</th>`).join('')}</tr></thead>

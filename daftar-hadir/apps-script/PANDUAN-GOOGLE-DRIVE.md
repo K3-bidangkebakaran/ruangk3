@@ -11,6 +11,8 @@ Aplikasi **Daftar Hadir & Dokumentasi** menyimpan semua data ke Google Drive mel
      │     ├─ sheet "Kegiatan" : 1 baris per kegiatan (daftar tanggal, tempat, jumlah peserta, foto, TTD, link folder)
      │     └─ sheet "Peserta"  : 1 baris per peserta per kegiatan (nama, perusahaan, link foto, ✓ TTD Hari 1–7)
      └─ 📁 2026-07-15 - Pelatihan K3 Kebakaran       (1 folder per kegiatan)
+           ├─ 📝 Daftar Hadir - <nama kegiatan>.docx      (Word: daftar hadir + tanda tangan, berkop surat)
+           ├─ 📝 Dokumentasi Peserta - <nama kegiatan>.docx (Word: foto tiap peserta, 4 per halaman)
            ├─ data.json                              (data lengkap kegiatan)
            ├─ 📁 Foto Dokumentasi                    (foto bertanda air, 1 per peserta)
            ├─ 📁 Tanda Tangan Peserta / 2026-07-15 (Rabu), 2026-07-17 (Jumat) …   (1 folder per tanggal)
@@ -36,6 +38,8 @@ Folder induk **Ruangk3.com** dicari lewat namanya di Drive akun pemilik script (
 > Akses "Anyone" hanya berarti URL bisa dipanggil tanpa login Google. Setiap permintaan tetap ditolak kalau kode aksesnya salah. Jangan bagikan kode akses di luar tim. Untuk mengganti kode, jalankan fungsi `gantiKodeAkses` lalu isi ulang kodenya di semua perangkat.
 
 ## Cara kerja sinkron
+
+- **Berkas Word dibuat otomatis oleh aplikasi** (bukan oleh Apps Script) setiap sinkron, dan hanya diunggah ulang bila isinya berubah. Untuk kegiatan tanpa foto, berkas Dokumentasi tidak dibuat. Foto dalam berkas Word diperkecil agar ringan; foto asli tetap utuh di folder *Foto Dokumentasi*.
 
 - **Otomatis:** setiap perubahan dikirim kira-kira 4 detik kemudian. Status terlihat di tombol ☁️ (hijau = tersinkron, kuning = sedang/menunggu, merah = gagal, dicoba ulang otomatis tiap 1 menit dan saat internet kembali).
 - **Hemat kuota:** hanya file yang berubah yang diunggah ulang. Foto atau tanda tangan yang diganti akan menggantikan file lama, dan file lama masuk *Sampah* Drive.
