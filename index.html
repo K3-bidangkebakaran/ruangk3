@@ -257,7 +257,7 @@
          (cdn.tailwindcss.com) yang memblokir tampilan & mengompilasi CSS di browser tiap kali halaman
          dibuka (berat di HP sinyal lemah). Kalau menambah class Tailwind baru di index.html, build
          ulang tailwind.css (lihat tailwind.config.js & README) lalu naikkan angka ?v= pada tag link ini. -->
-    <link rel="stylesheet" href="tailwind.css?v=20261005">
+    <link rel="stylesheet" href="tailwind.css?v=20261006">
 </head>
 
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen" oncontextmenu="return false;">
@@ -851,6 +851,13 @@
                 <div><input type="password" id="reg-password" required minlength="6" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Kata Sandi (Min. 6)"></div>
                 <div><input type="text" id="reg-nama" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Nama Lengkap"></div>
                 <div><input type="text" id="reg-instansi" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Instansi / Perusahaan"></div>
+                <div>
+                    <select id="reg-penyelenggara" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
+                        <option value="" disabled selected>-- Pilih PJK3 / Penyelenggara --</option>
+                        <option value="PJK3 LPMI">PJK3 LPMI</option>
+                    </select>
+                    <p class="text-[10px] text-slate-400 pl-1 mt-1">Pilih PJK3/penyelenggara tempat Anda mengikuti pelatihan.</p>
+                </div>
                 <p class="text-[10px] text-slate-400 pl-1 leading-relaxed">Modul Kebakaran <b>Kelas D</b> otomatis terbuka setelah mendaftar. Kelas C, B, dan A memerlukan izin Admin Pusat.</p>
                 <button type="submit" id="btn-do-register" class="w-full py-3.5 bg-navy-900 text-white rounded-xl font-bold mt-4 shadow-lg">Daftar Akun Gratis</button>
             </form>
@@ -1295,13 +1302,25 @@
                                 <select id="filter-peserta-bidang" class="w-1/2 sm:w-44 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
                                     <option value="">Semua Bidang</option>
                                 </select>
+                                <select id="filter-peserta-pjk3" class="w-1/2 sm:w-44 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none bg-white">
+                                    <option value="">Semua PJK3</option>
+                                </select>
                                 <input type="text" id="input-cari-peserta" placeholder="Cari nama / email / instansi..." class="w-1/2 sm:w-64 px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg outline-none">
                             </div>
                         </div>
+                        <div class="p-6 border-b border-slate-200 bg-white">
+                            <h4 class="text-sm font-extrabold text-slate-900">PJK3 / Penyelenggara</h4>
+                            <p class="text-xs text-slate-500 mt-1 mb-3 max-w-xl">Daftar pilihan yang muncul di form pendaftaran peserta. "PJK3 LPMI" adalah bawaan dan tidak bisa dihapus.</p>
+                            <form id="form-tambah-penyelenggara" class="flex flex-col sm:flex-row gap-2 mb-3">
+                                <input type="text" id="input-penyelenggara-baru" maxlength="80" placeholder="Nama PJK3 / penyelenggara baru" class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-safety-500">
+                                <button type="submit" class="px-4 py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">+ Tambah</button>
+                            </form>
+                            <div id="admin-list-penyelenggara" class="flex flex-wrap gap-2"></div>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
-                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Peserta</th><th class="px-6 py-4 font-semibold">Instansi</th><th class="px-6 py-4 font-semibold">Email</th><th class="px-6 py-4 font-semibold">Status</th><th class="px-6 py-4 font-semibold text-right">Aksi</th></tr></thead>
-                                <tbody id="admin-table-akun-peserta" class="divide-y divide-slate-100 bg-white"><tr><td colspan="5" class="text-center py-8 text-slate-500">Memuat data...</td></tr></tbody>
+                                <thead><tr class="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200"><th class="px-6 py-4 font-semibold">Peserta</th><th class="px-6 py-4 font-semibold">Instansi</th><th class="px-6 py-4 font-semibold">PJK3</th><th class="px-6 py-4 font-semibold">Email</th><th class="px-6 py-4 font-semibold">Status</th><th class="px-6 py-4 font-semibold text-right">Aksi</th></tr></thead>
+                                <tbody id="admin-table-akun-peserta" class="divide-y divide-slate-100 bg-white"><tr><td colspan="6" class="text-center py-8 text-slate-500">Memuat data...</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -1964,6 +1983,7 @@
         const pathPeserta = `artifacts/${cleanAppId}/public/data/peserta`;
         // Penghitung PUBLIK kecil ({totalPendaftar, totalLulus}) untuk kartu statistik beranda,
         // supaya pengunjung TIDAK perlu mengunduh seluruh daftar peserta (nama, email, skor).
+        const pathPenyelenggara = `artifacts/${cleanAppId}/public/data/penyelenggara_pjk3`;
         const pathStatistikPublik = `artifacts/${cleanAppId}/public/data/statistik_publik`;
         const pathModul = `artifacts/${cleanAppId}/public/data/modul`;
         const pathTim = `artifacts/${cleanAppId}/public/data/tim`;
@@ -2012,6 +2032,10 @@
         let dataReviewAll = []; let reviewChartInstance = null; let rawVerifikasiSnap = null;
         let dataRiwayatUjian = []; let currentExamMeta = null; let pendingFinishQuiz = false;
         let dataPesertaAll = [];
+        // PJK3 / Penyelenggara: daftar pilihan dikelola Admin Pusat (panel Kelola Akun Peserta).
+        // "PJK3 LPMI" selalu ada (bawaan) dan otomatis jadi penyelenggara semua peserta lama.
+        const PENYELENGGARA_DEFAULT = 'PJK3 LPMI';
+        let dataPenyelenggara = []; // [{id, nama}]
         let dataAkunBidangAll = [];
         // Dipakai form-login-admin supaya tidak salah bilang "PIN Salah" kalau sebenarnya
         // data akun bidang/tim ini belum sempat termuat dari Firebase (lihat catatan di
@@ -4481,6 +4505,8 @@
             const p = document.getElementById('reg-password').value;
             const nama = document.getElementById('reg-nama').value;
             const instansi = document.getElementById('reg-instansi').value;
+            const penyelenggara = (document.getElementById('reg-penyelenggara')?.value || '').trim();
+            if (!penyelenggara) { showAuthMsg("Pilih PJK3 / Penyelenggara terlebih dahulu."); return; }
             const btn = document.getElementById('btn-do-register');
             const ori = btn.innerText;
             btn.innerText = "Mendaftarkan...";
@@ -4500,6 +4526,7 @@
                         email: email,
                         nama: nama,
                         instansi: instansi,
+                        penyelenggara: penyelenggara,
                         izinKelasKebakaran: { [KELAS_D_KEBAKARAN]: true },
                         role: 'peserta',
                         status: 'aktif',
@@ -6033,12 +6060,16 @@
 
             const q = (document.getElementById('input-cari-peserta')?.value || '').toLowerCase().trim();
             const bidangFilter = document.getElementById('filter-peserta-bidang')?.value || '';
+            const pjk3Filter = document.getElementById('filter-peserta-pjk3')?.value || '';
 
             let filtered = q ? dataPesertaAll.filter(p =>
                 (p.nama || '').toLowerCase().includes(q) ||
                 (p.email || '').toLowerCase().includes(q) ||
-                (p.instansi || '').toLowerCase().includes(q)
+                (p.instansi || '').toLowerCase().includes(q) ||
+                window.getPenyelenggaraPeserta(p).toLowerCase().includes(q)
             ) : dataPesertaAll;
+
+            if (pjk3Filter) filtered = filtered.filter(p => window.getPenyelenggaraPeserta(p) === pjk3Filter);
 
             if (bidangFilter) {
                 filtered = filtered.filter(p => window.getBidangListPesertaDariRiwayat(p.id).includes(bidangFilter));
@@ -6048,7 +6079,7 @@
                 const pesanKosong = dataPesertaAll.length === 0
                     ? 'Belum ada akun peserta yang terdaftar.'
                     : (bidangFilter ? `Tidak ada peserta dengan riwayat ujian di bidang "${bidangFilter}" yang cocok.` : 'Tidak ditemukan peserta yang cocok.');
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 italic text-sm">${pesanKosong}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500 italic text-sm">${pesanKosong}</td></tr>`;
                 return;
             }
 
@@ -6063,6 +6094,7 @@
                 return `<tr class="hover:bg-slate-50 border-b border-slate-100">
                     <td class="px-6 py-3 font-bold text-slate-900 text-sm">${p.nama || '-'}</td>
                     <td class="px-6 py-3 text-xs text-slate-600">${p.instansi || '-'}</td>
+                    <td class="px-6 py-3"><span class="px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-sky-50 text-sky-700 border border-sky-200 whitespace-nowrap">${escHtml(window.getPenyelenggaraPeserta(p))}</span></td>
                     <td class="px-6 py-3 text-xs text-slate-600">${p.email || '-'}</td>
                     <td class="px-6 py-3">${statusBadge}</td>
                     <td class="px-6 py-3 text-right">${actionBtn}</td>
@@ -6072,6 +6104,75 @@
 
         document.getElementById('input-cari-peserta')?.addEventListener('input', () => window.renderAkunPeserta());
         document.getElementById('filter-peserta-bidang')?.addEventListener('change', () => window.renderAkunPeserta());
+        document.getElementById('filter-peserta-pjk3')?.addEventListener('change', () => window.renderAkunPeserta());
+
+        /* ---------- PJK3 / Penyelenggara ---------- */
+        // Penyelenggara sebuah peserta; peserta lama (belum punya field) otomatis PJK3 LPMI.
+        window.getPenyelenggaraPeserta = function(p) {
+            return (p && typeof p.penyelenggara === 'string' && p.penyelenggara.trim()) ? p.penyelenggara.trim() : PENYELENGGARA_DEFAULT;
+        };
+        // Daftar pilihan: bawaan (LPMI) + yang ditambahkan Admin Pusat, tanpa duplikat.
+        window.getDaftarPenyelenggara = function() {
+            const seen = new Set([PENYELENGGARA_DEFAULT.toLowerCase()]);
+            const out = [PENYELENGGARA_DEFAULT];
+            dataPenyelenggara.slice().sort((a, b) => a.nama.localeCompare(b.nama, 'id')).forEach(x => {
+                const k = x.nama.toLowerCase();
+                if (!seen.has(k)) { seen.add(k); out.push(x.nama); }
+            });
+            return out;
+        };
+        window.renderPenyelenggaraUI = function() {
+            const daftar = window.getDaftarPenyelenggara();
+            const selReg = document.getElementById('reg-penyelenggara');
+            if (selReg) {
+                const cur = selReg.value;
+                selReg.innerHTML = '<option value="" disabled>-- Pilih PJK3 / Penyelenggara --</option>' +
+                    daftar.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+                selReg.value = daftar.includes(cur) ? cur : '';
+            }
+            const selFil = document.getElementById('filter-peserta-pjk3');
+            if (selFil) {
+                const cur = selFil.value;
+                selFil.innerHTML = '<option value="">Semua PJK3</option>' + daftar.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+                selFil.value = daftar.includes(cur) ? cur : '';
+            }
+            const box = document.getElementById('admin-list-penyelenggara');
+            if (box) {
+                box.innerHTML = daftar.map(n => {
+                    const jml = dataPesertaAll.filter(p => window.getPenyelenggaraPeserta(p) === n).length;
+                    const bawaan = n === PENYELENGGARA_DEFAULT;
+                    const rec = dataPenyelenggara.find(x => x.nama.toLowerCase() === n.toLowerCase());
+                    const hapus = (!bawaan && rec) ? `<button type="button" data-hapus-pjk3="${escHtml(rec.id)}" class="ml-1 text-slate-400 hover:text-red-600 font-black" title="Hapus">✕</button>` : '';
+                    return `<span class="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-xs font-bold border ${bawaan ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-800 border-slate-200'}">${escHtml(n)}<span class="text-[10px] font-semibold text-slate-500">${jml} peserta</span>${bawaan ? '<span class="text-[9px] uppercase tracking-wider text-emerald-700">bawaan</span>' : hapus}</span>`;
+                }).join('');
+            }
+            window.renderAkunPeserta();
+        };
+        document.getElementById('form-tambah-penyelenggara')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || currentUser.role !== 'admin_utama') return window.showToast('Hanya Admin Pusat yang dapat menambah PJK3/Penyelenggara.', 'error');
+            const inp = document.getElementById('input-penyelenggara-baru');
+            const nama = (inp.value || '').replace(/\s+/g, ' ').trim();
+            if (nama.length < 3) return window.showToast('Nama PJK3/Penyelenggara minimal 3 karakter.', 'error');
+            if (window.getDaftarPenyelenggara().some(n => n.toLowerCase() === nama.toLowerCase())) return window.showToast('PJK3/Penyelenggara tersebut sudah ada.', 'error');
+            try {
+                await set(push(ref(db, pathPenyelenggara)), { nama: nama, dibuat: Date.now(), oleh: currentUser.nama || 'Admin Pusat' });
+                inp.value = '';
+                window.showToast(`"${nama}" ditambahkan sebagai PJK3/Penyelenggara.`, 'success');
+            } catch (err) { console.error(err); window.showToast('Gagal menambah PJK3/Penyelenggara.', 'error'); }
+        });
+        document.getElementById('admin-list-penyelenggara')?.addEventListener('click', async (e) => {
+            const b = e.target.closest('[data-hapus-pjk3]');
+            if (!b) return;
+            if (!currentUser || currentUser.role !== 'admin_utama') return window.showToast('Hanya Admin Pusat yang dapat menghapus.', 'error');
+            const rec = dataPenyelenggara.find(x => x.id === b.dataset.hapusPjk3);
+            if (!rec) return;
+            const dipakai = dataPesertaAll.filter(p => window.getPenyelenggaraPeserta(p) === rec.nama).length;
+            if (dipakai > 0) return window.showToast(`"${rec.nama}" masih dipakai ${dipakai} peserta, tidak bisa dihapus.`, 'error');
+            if (!confirm(`Hapus "${rec.nama}" dari daftar PJK3/Penyelenggara?`)) return;
+            try { await remove(ref(db, `${pathPenyelenggara}/${rec.id}`)); window.showToast('PJK3/Penyelenggara dihapus.', 'success'); }
+            catch (err) { console.error(err); window.showToast('Gagal menghapus.', 'error'); }
+        });
 
         window.toggleStatusPeserta = async function(id, freeze) {
             if (!currentUser || currentUser.role !== 'admin_utama') {
@@ -7614,6 +7715,15 @@
                 window.renderSilabusHome();
             });
 
+            // Daftar PJK3/Penyelenggara (kecil) -- dipakai dropdown form pendaftaran.
+            onValue(ref(db, pathPenyelenggara), (snapshot) => {
+                dataPenyelenggara = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(c => { const v = c.val(); if (v && typeof v.nama === 'string' && v.nama.trim()) dataPenyelenggara.push({ id: c.key, nama: v.nama.trim() }); });
+                }
+                window.renderPenyelenggaraUI();
+            });
+
             // Statistik beranda: cukup baca penghitung kecil (bukan seluruh daftar peserta, yang
             // berisi nama/email/skor dan berat diunduh di sinyal lemah).
             onValue(ref(db, pathStatistikPublik), (snapshot) => {
@@ -7654,7 +7764,18 @@
                     window._lastStatSync = `${countDaftar}|${countLulus}`;
                     set(ref(db, pathStatistikPublik), { totalPendaftar: countDaftar, totalLulus: countLulus }).catch(() => {});
                 }
-                window.renderAkunPeserta();
+                // Peserta lama yang belum punya penyelenggara otomatis dimasukkan ke PJK3 LPMI
+                // (disimpan permanen oleh Admin Pusat; tampilan sudah otomatis LPMI sebelumnya).
+                if (currentUser && currentUser.role === 'admin_utama') {
+                    const tanpa = dataPesertaAll.filter(p => !(typeof p.penyelenggara === 'string' && p.penyelenggara.trim()));
+                    if (tanpa.length > 0 && !window._backfillPjk3Jalan) {
+                        window._backfillPjk3Jalan = true;
+                        const upd = {};
+                        tanpa.forEach(p => { upd[`${pathPeserta}/${p.id}/penyelenggara`] = PENYELENGGARA_DEFAULT; });
+                        update(ref(db), upd).catch(() => {}).finally(() => { window._backfillPjk3Jalan = false; });
+                    }
+                }
+                window.renderPenyelenggaraUI();
                 window.renderIzinKelasKebakaran();
                 window.renderRekapNilaiAdmin();
             });
