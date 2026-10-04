@@ -257,7 +257,7 @@
          (cdn.tailwindcss.com) yang memblokir tampilan & mengompilasi CSS di browser tiap kali halaman
          dibuka (berat di HP sinyal lemah). Kalau menambah class Tailwind baru di index.html, build
          ulang tailwind.css (lihat tailwind.config.js & README) lalu naikkan angka ?v= pada tag link ini. -->
-    <link rel="stylesheet" href="tailwind.css?v=20261004">
+    <link rel="stylesheet" href="tailwind.css?v=20261005">
 </head>
 
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen" oncontextmenu="return false;">
@@ -413,6 +413,12 @@
                         </div>
                         <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
                     </div>
+
+                    <!-- Tombol CEK LISENSI: cek lisensi K3 di database TemanK3 Kemnaker RI -->
+                    <button type="button" id="btn-cek-lisensi" onclick="window.openCekLisensi()" class="mt-4 w-full sm:w-auto flex items-center gap-3 text-left bg-gradient-to-br from-safety-600 to-safety-500 hover:from-safety-500 hover:to-safety-400 text-white rounded-2xl pl-3.5 pr-5 py-3 shadow-lg hover:-translate-y-0.5 transition-all">
+                        <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+                        <span><span class="block text-sm font-extrabold tracking-wide">CEK LISENSI</span><span class="block text-xs font-medium text-white/80">Verifikasi lisensi K3 resmi Kemnaker</span></span>
+                    </button>
                 </div>
             </section>
 
@@ -848,6 +854,45 @@
                 <p class="text-[10px] text-slate-400 pl-1 leading-relaxed">Modul Kebakaran <b>Kelas D</b> otomatis terbuka setelah mendaftar. Kelas C, B, dan A memerlukan izin Admin Pusat.</p>
                 <button type="submit" id="btn-do-register" class="w-full py-3.5 bg-navy-900 text-white rounded-xl font-bold mt-4 shadow-lg">Daftar Akun Gratis</button>
             </form>
+        </div>
+
+        <!-- Modal Cek Lisensi: form nama + tanggal lahir (sesuai KTP) -> dicek ke TemanK3 Kemnaker
+             RI lewat server perantara (/api/cek-lisensi), hasil tampil di sini tanpa buka tab lain. -->
+        <div id="modal-cek-lisensi" class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 hidden relative transform transition-all">
+            <div class="flex items-start gap-3 mb-5">
+                <div class="w-11 h-11 rounded-xl bg-emerald-50 text-safety-600 flex items-center justify-center shrink-0"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+                <div class="min-w-0 flex-1">
+                    <h3 id="cl-judul" class="text-xl font-extrabold text-slate-900 leading-tight">Cek Lisensi K3</h3>
+                    <p id="cl-sub" class="text-xs text-slate-500 mt-1">Isi data sesuai KTP untuk dicocokkan dengan database TemanK3 Kemnaker RI.</p>
+                </div>
+                <button type="button" class="btn-close-modal text-slate-400 hover:text-slate-800 bg-slate-100 p-2 rounded-full transition-colors shrink-0" aria-label="Tutup">✕</button>
+            </div>
+
+            <form id="form-cek-lisensi" novalidate class="space-y-4">
+                <div>
+                    <label for="cl-nama" class="block text-xs font-bold text-slate-800 mb-1.5">Nama Lengkap <span class="font-medium text-slate-500">(sesuai KTP)</span></label>
+                    <input type="text" id="cl-nama" autocomplete="name" maxlength="80" placeholder="Contoh: Adrian Anugerah Putra" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl outline-none focus:border-safety-500 text-sm">
+                    <p id="cl-err-nama" class="text-xs mt-1.5 text-slate-500">Tulis lengkap tanpa singkatan, sama seperti di KTP.</p>
+                </div>
+                <div>
+                    <label for="cl-tgl" class="block text-xs font-bold text-slate-800 mb-1.5">Tanggal Lahir <span class="font-medium text-slate-500">(sesuai KTP)</span></label>
+                    <input type="text" id="cl-tgl" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="tgl/bln/tahun, contoh 17/08/1995" class="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl outline-none focus:border-safety-500 text-sm">
+                    <p id="cl-err-tgl" class="text-xs mt-1.5 text-slate-500">Format tgl/bln/tahun. Garis miring terisi otomatis.</p>
+                </div>
+                <div class="flex gap-2.5 bg-emerald-50 rounded-xl p-3 text-xs text-slate-700">
+                    <svg class="w-4 h-4 text-safety-600 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+                    <span>Data hanya dipakai untuk pengecekan ini dan tidak disimpan di RuangK3.</span>
+                </div>
+                <button type="submit" class="w-full py-3.5 bg-safety-600 hover:bg-safety-500 text-white rounded-xl font-extrabold text-sm shadow-lg transition-all">Periksa Lisensi</button>
+            </form>
+
+            <ul id="cl-loading" class="hidden space-y-4 pt-2">
+                <li class="flex items-center gap-3 text-sm font-semibold text-slate-400"><span class="cl-dot w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center text-[11px] shrink-0"></span>Menyiapkan permintaan</li>
+                <li class="flex items-center gap-3 text-sm font-semibold text-slate-400"><span class="cl-dot w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center text-[11px] shrink-0"></span>Menghubungi TemanK3 Kemnaker RI</li>
+                <li class="flex items-center gap-3 text-sm font-semibold text-slate-400"><span class="cl-dot w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center text-[11px] shrink-0"></span>Mencocokkan nama dan tanggal lahir</li>
+            </ul>
+
+            <div id="cl-hasil" class="hidden space-y-4"></div>
         </div>
 
         <!-- Modal Profil Peserta (menu tambahan saat peserta login: ubah kata sandi,
@@ -2751,6 +2796,135 @@
             // buruk, halaman TETAP dimuat ulang (bukan macet tanpa batas sebelum reload).
             try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();
+        };
+
+        /* ---------- CEK LISENSI (TemanK3 Kemnaker RI) ----------
+           Browser melarang ruangk3.com membuka/mengisi form situs lain di belakang layar, jadi
+           pencarian dikirim lewat server perantara (Vercel: /api/cek-lisensi) yang meneruskannya ke
+           https://temank3.kemnaker.go.id/page/cari_personel. Hasilnya ditampilkan di modal ini. */
+        const API_CEK_LISENSI = 'https://ruangk3-wa-webhook.vercel.app/api/cek-lisensi';
+        const clEl = (id) => document.getElementById(id);
+        const clTampil = (v) => {
+            clEl('form-cek-lisensi').classList.toggle('hidden', v !== 'form');
+            clEl('cl-loading').classList.toggle('hidden', v !== 'loading');
+            clEl('cl-hasil').classList.toggle('hidden', v !== 'hasil');
+        };
+        const clJudul = (j, sub) => { clEl('cl-judul').innerText = j; clEl('cl-sub').innerText = sub; };
+        const CL_SUB_FORM = 'Isi data sesuai KTP untuk dicocokkan dengan database TemanK3 Kemnaker RI.';
+        const CL_SUB_NAMA = 'Tulis lengkap tanpa singkatan, sama seperti di KTP.';
+        const CL_SUB_TGL = 'Format tgl/bln/tahun. Garis miring terisi otomatis.';
+
+        window.openCekLisensi = function() {
+            clTampil('form');
+            clJudul('Cek Lisensi K3', CL_SUB_FORM);
+            ['nama', 'tgl'].forEach(k => {
+                const inp = clEl('cl-' + k), er = clEl('cl-err-' + k);
+                inp.classList.remove('border-red-400'); inp.classList.add('border-slate-200');
+                er.className = 'text-xs mt-1.5 text-slate-500';
+                er.innerText = k === 'nama' ? CL_SUB_NAMA : CL_SUB_TGL;
+            });
+            window.openModal('modal-cek-lisensi');
+            const nm = clEl('cl-nama');
+            if (!nm.value && currentUser && currentUser.role === 'peserta' && currentUser.nama) nm.value = currentUser.nama;
+            setTimeout(() => nm.focus(), 50);
+        };
+
+        clEl('cl-tgl')?.addEventListener('input', function() {
+            const d = this.value.replace(/\D/g, '').slice(0, 8);
+            this.value = d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4)
+                       : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+        });
+
+        const clTglValid = (v) => {
+            const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v);
+            if (!m) return false;
+            const d = +m[1], mo = +m[2], y = +m[3], dt = new Date(y, mo - 1, d), now = new Date();
+            if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d || dt > now) return false;
+            return y >= 1940 && (now.getFullYear() - y) >= 15;
+        };
+        const clSetErr = (k, msg) => {
+            const inp = clEl('cl-' + k), er = clEl('cl-err-' + k);
+            inp.classList.remove('border-slate-200'); inp.classList.add('border-red-400');
+            er.className = 'text-xs mt-1.5 text-red-600 font-bold'; er.innerText = msg;
+        };
+
+        clEl('form-cek-lisensi')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nama = clEl('cl-nama').value.trim().replace(/\s+/g, ' ');
+            const tgl = clEl('cl-tgl').value;
+            let ok = true;
+            ['nama', 'tgl'].forEach(k => {
+                clEl('cl-err-' + k).className = 'text-xs mt-1.5 text-slate-500';
+                clEl('cl-err-' + k).innerText = k === 'nama' ? CL_SUB_NAMA : CL_SUB_TGL;
+                clEl('cl-' + k).classList.remove('border-red-400'); clEl('cl-' + k).classList.add('border-slate-200');
+            });
+            if (nama.length < 3 || !/^[A-Za-z .,'\-]+$/.test(nama)) { clSetErr('nama', 'Nama belum benar. Gunakan huruf saja, minimal 3 karakter.'); ok = false; }
+            if (!clTglValid(tgl)) { clSetErr('tgl', 'Tanggal tidak valid. Contoh yang benar: 17/08/1995.'); ok = false; }
+            if (ok) window.jalankanCekLisensi(nama, tgl);
+        });
+
+        window.jalankanCekLisensi = async function(nama, tgl) {
+            clTampil('loading');
+            clJudul('Memeriksa lisensi', 'Mohon tunggu, jangan tutup halaman ini.');
+            const dots = [...document.querySelectorAll('#cl-loading li')];
+            const setStep = (i) => dots.forEach((li, k) => {
+                const dot = li.querySelector('.cl-dot');
+                li.className = 'flex items-center gap-3 text-sm font-semibold ' + (k <= i ? 'text-slate-900' : 'text-slate-400');
+                if (k < i) { dot.className = 'cl-dot w-6 h-6 rounded-full bg-safety-500 border-2 border-safety-500 text-white flex items-center justify-center text-[11px] shrink-0'; dot.innerText = '✓'; }
+                else if (k === i) { dot.className = 'cl-dot w-6 h-6 rounded-full border-2 border-safety-500 border-t-transparent animate-spin shrink-0'; dot.innerText = ''; }
+                else { dot.className = 'cl-dot w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center text-[11px] shrink-0'; dot.innerText = ''; }
+            });
+            setStep(0);
+            setTimeout(() => setStep(1), 700);
+
+            let data = null, gagal = false;
+            const ac = new AbortController();
+            const timer = setTimeout(() => ac.abort(), 28000);
+            try {
+                const r = await fetch(API_CEK_LISENSI, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nama: nama, tgl: tgl }),
+                    signal: ac.signal
+                });
+                data = await r.json().catch(() => null);
+                if (!data || (data.status !== 'found' && data.status !== 'none')) gagal = true;
+            } catch (err) { gagal = true; }
+            clearTimeout(timer);
+            setStep(2);
+            await new Promise(res => setTimeout(res, 500));
+            window.tampilHasilCekLisensi(nama, tgl, gagal ? null : data);
+        };
+
+        window.tampilHasilCekLisensi = function(nama, tgl, data) {
+            const box = clEl('cl-hasil');
+            const maskTgl = tgl.slice(0, 2) + '/••/' + tgl.slice(6);
+            const kv = (k, v) => `<div class="flex justify-between gap-4 text-sm"><dt class="text-slate-500">${k}</dt><dd class="font-bold text-slate-900 text-right min-w-0 break-words">${escHtml(v || '-')}</dd></div>`;
+            const ikon = (path) => `<svg class="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+            const kepala = `<dl class="space-y-1.5">${kv('Nama', nama)}${kv('Tanggal lahir', maskTgl)}</dl>`;
+            const btn = (id, label, primer) => `<button type="button" id="${id}" class="w-full py-3 rounded-xl font-extrabold text-sm transition-all ${primer ? 'bg-safety-600 hover:bg-safety-500 text-white shadow-lg' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200'}">${label}</button>`;
+            let html;
+            if (data && data.status === 'found') {
+                clJudul('Hasil Pengecekan', 'Sumber: TemanK3, Kementerian Ketenagakerjaan RI');
+                const kartu = data.hasil.map(h => `
+                    <div class="border border-slate-200 rounded-xl p-3.5 space-y-2">
+                        <h4 class="font-extrabold text-sm text-slate-900 leading-snug">${escHtml(h.klasifikasi || h.jenisPersonil || 'Lisensi K3')}</h4>
+                        <dl class="space-y-1.5">${kv('Instansi', h.instansi)}${kv('Jenis personil', h.jenisPersonil)}${h.jenisAlat ? kv('Jenis alat', h.jenisAlat) : ''}${kv('Kelas', h.kelas)}${kv('No. registrasi', h.noRegistrasi)}${kv('Masa berlaku', h.masaBerlaku)}</dl>
+                    </div>`).join('');
+                html = `<div class="flex items-center gap-3 bg-emerald-50 text-emerald-800 rounded-xl p-3.5 font-bold">${ikon('<circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/>')}<div>Lisensi ditemukan<span class="block text-xs font-medium">${data.hasil.length} lisensi atas nama ini</span></div></div>${kepala}${kartu}<div class="space-y-2.5">${btn('cl-lagi', 'Cek Orang Lain', false)}${btn('cl-selesai', 'Selesai', true)}</div>`;
+            } else if (data && data.status === 'none') {
+                clJudul('Hasil Pengecekan', 'Sumber: TemanK3, Kementerian Ketenagakerjaan RI');
+                html = `<div class="flex items-center gap-3 bg-amber-50 text-amber-800 rounded-xl p-3.5 font-bold">${ikon('<circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5M8.5 11h5"/>')}<div>Lisensi tidak ditemukan<span class="block text-xs font-medium">Belum ada data dengan nama dan tanggal lahir ini</span></div></div>${kepala}<p class="text-xs text-slate-500 leading-relaxed">Periksa ejaan nama sesuai KTP. Sertifikat yang baru terbit bisa butuh beberapa hari untuk muncul di TemanK3.</p><div class="space-y-2.5">${btn('cl-ubah', 'Perbaiki Data', true)}${btn('cl-selesai', 'Tutup', false)}</div>`;
+            } else {
+                clJudul('Belum Bisa Memeriksa', 'Terjadi gangguan saat menghubungi TemanK3.');
+                html = `<div class="flex items-center gap-3 bg-red-50 text-red-800 rounded-xl p-3.5 font-bold">${ikon('<path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5M12 18h.01"/>')}<div>Situs Kemnaker sedang sibuk<span class="block text-xs font-medium">Pencarian belum berhasil, coba lagi sebentar lagi</span></div></div><div class="space-y-2.5">${btn('cl-ulang', 'Coba Lagi', true)}${btn('cl-selesai', 'Tutup', false)}</div><p class="text-xs text-slate-500 text-center">Data Anda tidak disimpan.</p>`;
+            }
+            box.innerHTML = html;
+            clTampil('hasil');
+            clEl('cl-selesai')?.addEventListener('click', () => window.closeModal());
+            clEl('cl-lagi')?.addEventListener('click', () => { clEl('cl-nama').value = ''; clEl('cl-tgl').value = ''; window.openCekLisensi(); });
+            clEl('cl-ubah')?.addEventListener('click', () => window.openCekLisensi());
+            clEl('cl-ulang')?.addEventListener('click', () => window.jalankanCekLisensi(nama, tgl));
         };
 
         /* Menu "Profil Saya" untuk peserta yang sedang login: ubah kata sandi, ubah email,
