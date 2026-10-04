@@ -21,10 +21,14 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Google dimuat NON-BLOCKING (halaman tampil dulu dengan font sistem, lalu berganti begitu font
+         tiba) -- supaya sinyal lemah tidak membuat layar putih menunggu fonts.googleapis.com. -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap"></noscript>
 
     <!-- Flatpickr (Kalender Multi-Tanggal) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></noscript>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js" defer></script>
 
@@ -2855,7 +2859,7 @@
         };
         window.perbaruiTombolCekLisensi();
 
-        window.openCekLisensi = function() {
+        window.openCekLisensi = function(kosong) {
             if (!window.bolehCekLisensi()) {
                 window.showToast('Mohon maaf, Fitur ini hanya untuk peserta yang terdaftar di PJK3 LPMI', 'error');
                 return;
@@ -2870,7 +2874,7 @@
             });
             window.openModal('modal-cek-lisensi');
             const nm = clEl('cl-nama');
-            if (!nm.value && currentUser && currentUser.role === 'peserta' && currentUser.nama) nm.value = currentUser.nama;
+            if (kosong !== true && !nm.value && currentUser && currentUser.role === 'peserta' && currentUser.nama) nm.value = currentUser.nama;
             setTimeout(() => nm.focus(), 50);
         };
 
@@ -2967,7 +2971,7 @@
             box.innerHTML = html;
             clTampil('hasil');
             clEl('cl-selesai')?.addEventListener('click', () => window.closeModal());
-            clEl('cl-lagi')?.addEventListener('click', () => { clEl('cl-nama').value = ''; clEl('cl-tgl').value = ''; window.openCekLisensi(); });
+            clEl('cl-lagi')?.addEventListener('click', () => { clEl('cl-nama').value = ''; clEl('cl-tgl').value = ''; window.openCekLisensi(true); });
             clEl('cl-ubah')?.addEventListener('click', () => window.openCekLisensi());
             clEl('cl-ulang')?.addEventListener('click', () => window.jalankanCekLisensi(nama, tgl));
         };
@@ -3704,6 +3708,8 @@
             const isViewer = role === 'viewer_kalender';
             const isEldi = role === 'admin_eldi';
             const isBidang = role === 'admin_bidang';
+            // Admin Pusat baru login: cek apakah ada data berat yang perlu dioptimalkan otomatis.
+            if (isUtama && typeof window.perbaruiInfoOptimasi === 'function') setTimeout(() => window.perbaruiInfoOptimasi(), 3000);
             
             document.querySelectorAll('.admin-utama-only').forEach(el => {
                 if (isUtama) { el.classList.remove('hidden'); } 
@@ -6630,16 +6636,30 @@
             } else {
                 el.innerText = `${nModul} dokumen PDF materi dan ${nBerita} foto berita masih menempel di daftar utama, sehingga ikut terunduh di setiap kunjungan peserta (membuat situs lambat di sinyal lemah). Klik tombol untuk memindahkannya; data aman (disalin, diverifikasi, baru dipindah).`;
                 if (btn) btn.classList.remove('hidden');
+                // Optimasi otomatis (sekali per sesi) saat Admin Pusat login -- supaya situs tidak lagi
+                // mengunduh puluhan MB tiap kunjungan peserta tanpa menunggu tombol diklik manual.
+                // Data aman: tiap item disalin, diverifikasi, baru dipindah. Dilewati di koneksi 2G/hemat data.
+                const koneksi = navigator.connection || {};
+                const lambat = koneksi.saveData || /(^|-)2g$/.test(koneksi.effectiveType || '');
+                if (currentUser && currentUser.role === 'admin_utama' && !window._optimasiOtomatisSudah && !lambat
+                    && Array.isArray(window.dataBeritaAll) && window._modulDimuat) {
+                    window._optimasiOtomatisSudah = true;
+                    setTimeout(() => window.jalankanOptimasiData(true), 1500);
+                }
             }
         };
 
-        window.jalankanOptimasiData = async function() {
+        window.jalankanOptimasiData = async function(otomatis) {
             if (!currentUser || (currentUser.role !== 'admin_utama' && currentUser.role !== 'admin_eldi')) return;
             const modulTarget = (dataModulAll || []).filter(m => m.docUrl && m.docUrl.startsWith('data:'));
             const beritaTarget = (window.dataBeritaAll || []).filter(b => b.fotoBase64);
             const total = modulTarget.length + beritaTarget.length;
             if (total === 0) { window.showToast('Tidak ada data yang perlu dioptimalkan.', 'success'); return; }
-            if (!confirm(`Pindahkan ${modulTarget.length} dokumen PDF materi dan ${beritaTarget.length} foto berita ke penyimpanan terpisah? Setiap item disalin lalu diverifikasi sebelum dipindah. Proses bisa beberapa menit; jangan tutup halaman.`)) return;
+            if (otomatis === true) {
+                window.showToast('Mengoptimalkan data situs di latar belakang (tidak perlu tindakan). Jangan tutup halaman beberapa menit.', 'info');
+            } else if (!confirm(`Pindahkan ${modulTarget.length} dokumen PDF materi dan ${beritaTarget.length} foto berita ke penyimpanan terpisah? Setiap item disalin lalu diverifikasi sebelum dipindah. Proses bisa beberapa menit; jangan tutup halaman.`)) return;
+            if (window._optimasiJalan) return;
+            window._optimasiJalan = true;
             const btn = document.getElementById('btn-optimasi-data');
             const info = document.getElementById('info-optimasi-data');
             if (btn) btn.disabled = true;
@@ -6667,6 +6687,7 @@
                 } catch (e) { gagal++; console.error('Optimasi berita gagal:', b.id, e); }
                 tampil();
             }
+            window._optimasiJalan = false;
             if (btn) btn.disabled = false;
             window.showToast(gagal === 0 ? `Optimasi selesai: ${selesai} item dipindahkan.` : `Selesai dengan ${gagal} item gagal (data aslinya tetap utuh). Coba jalankan lagi.`, gagal === 0 ? 'success' : 'warning');
             window.perbaruiInfoOptimasi();
@@ -7731,6 +7752,7 @@
                     });
                 }
                 window.animateNumber('stat-total-modul-count', countModul);
+                window._modulDimuat = true;
                 if (typeof window.perbaruiInfoOptimasi === 'function') window.perbaruiInfoOptimasi();
                 window.renderModulBrowse();
                 window.renderSilabusHome();
