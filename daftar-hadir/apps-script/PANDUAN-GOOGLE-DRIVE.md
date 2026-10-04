@@ -5,16 +5,19 @@ Aplikasi **Daftar Hadir & Dokumentasi** menyimpan semua data ke Google Drive mel
 ## Hasil di Google Drive
 
 ```
-📂 Daftar Hadir & Dokumentasi - LPMI                (folder induk)
- ├─ 📊 Database Induk - Daftar Hadir LPMI           (spreadsheet)
- │     ├─ sheet "Kegiatan" : 1 baris per kegiatan (daftar tanggal, tempat, jumlah peserta, foto, TTD, link folder)
- │     └─ sheet "Peserta"  : 1 baris per peserta per kegiatan (nama, perusahaan, link foto, ✓ TTD Hari 1–7)
- └─ 📁 2026-07-15 - Pelatihan K3 Kebakaran          (1 folder per kegiatan)
-       ├─ data.json                                 (data lengkap kegiatan)
-       ├─ 📁 Foto Dokumentasi                       (foto bertanda air, 1 per peserta)
-       ├─ 📁 Tanda Tangan Peserta / 2026-07-15 (Rabu), 2026-07-17 (Jumat) …   (1 folder per tanggal)
-       └─ 📁 Tanda Tangan Penyelenggara
+📂 Ruangk3.com                                       (folder induk RuangK3: Backup-YYYY-MM-DD, media, dst.)
+ └─ 📂 Daftar Hadir & Dokumentasi - LPMI             (dibuat/dipindah otomatis ke sini)
+     ├─ 📊 Database Induk - Daftar Hadir LPMI        (spreadsheet)
+     │     ├─ sheet "Kegiatan" : 1 baris per kegiatan (daftar tanggal, tempat, jumlah peserta, foto, TTD, link folder)
+     │     └─ sheet "Peserta"  : 1 baris per peserta per kegiatan (nama, perusahaan, link foto, ✓ TTD Hari 1–7)
+     └─ 📁 2026-07-15 - Pelatihan K3 Kebakaran       (1 folder per kegiatan)
+           ├─ data.json                              (data lengkap kegiatan)
+           ├─ 📁 Foto Dokumentasi                    (foto bertanda air, 1 per peserta)
+           ├─ 📁 Tanda Tangan Peserta / 2026-07-15 (Rabu), 2026-07-17 (Jumat) …   (1 folder per tanggal)
+           └─ 📁 Tanda Tangan Penyelenggara
 ```
+
+Folder induk **Ruangk3.com** dicari lewat namanya di Drive akun pemilik script (yang berisi subfolder `media` diutamakan). Kalau tidak ditemukan, folder Daftar Hadir dibuat di My Drive. Jika folder Daftar Hadir sudah terlanjur dibuat di luar `Ruangk3.com`, folder itu dipindahkan otomatis satu kali (isinya ikut, link lama tetap berfungsi). Pastikan **Ruangk3.com tidak dibagikan ke "Siapa saja yang memiliki link"**, karena berisi data pribadi peserta.
 
 ## Langkah pemasangan (sekali saja, ±10 menit)
 
@@ -42,7 +45,7 @@ Aplikasi **Daftar Hadir & Dokumentasi** menyimpan semua data ke Google Drive mel
 
 ## Jika mengubah Code.gs
 
-Setelah mengedit script: **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. URL tetap sama, jadi aplikasi tidak perlu diubah.
+Setelah mengedit script (termasuk saat menempel `Code.gs` versi baru): jalankan fungsi `setup` sekali, lalu **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. URL tetap sama, jadi aplikasi tidak perlu diubah.
 
 ## Catatan & batasan
 

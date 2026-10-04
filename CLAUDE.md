@@ -44,3 +44,4 @@ Hapus bagian ini setelah APK selesai dan assetlinks.json terpasang.
 - 2026-10-04 perf: html2pdf, Chart.js, PDF.js dimuat sesuai kebutuhan lewat `window.muatPustaka`.
 - 2026-10-04 sesi Riksa Uji: nama aplikasi "Riksa Uji", ikon diganti logo perisai RuangK3 (`riksa/icons/`), `VERSION` sw jadi `riksa-v2`. Persiapan APK lewat PWABuilder (package `com.ruangk3.riksa`).
 - 2026-10-04 sesi Riksa Uji: tambah `riksa/`, menu admin "Laporan Riksa Uji" & "Petugas Riksa Uji" (lazy), `PER_ANAK` cadangan ditambah `riksa_foto`, `riksa_laporan_data`. Sudah di-commit & di-push (`4eca888`).
+- 2026-10-05 sesi cse_016qqY9aarWh6D2w7dg4gwjX: folder Drive Daftar Hadir dipindah jadi anak folder "Ruangk3.com" (sejajar Backup & media). `Code.gs` memakai `getParent_()` (cari lewat nama, ID tidak ditaruh di repo publik) dan memindahkan folder lama sekali. Adrian harus tempel Code.gs baru, Run `setup`, lalu Deploy → New version.

@@ -3,13 +3,14 @@
  * ---------------------------------------------------------------------
  * Menyimpan semua data kegiatan ke Google Drive milik akun yang men-deploy:
  *
- *   📂 Daftar Hadir & Dokumentasi - LPMI          (folder induk)
- *    ├─ 📊 Database Induk - Daftar Hadir LPMI     (spreadsheet: sheet "Kegiatan" & "Peserta")
- *    └─ 📁 2026-07-15 - Pelatihan K3 Kebakaran    (1 folder per kegiatan)
- *        ├─ data.json                             (data lengkap kegiatan & peserta)
- *        ├─ 📁 Foto Dokumentasi                   (foto bertanda air per peserta)
- *        ├─ 📁 Tanda Tangan Peserta / 2026-07-15 (Rabu), 2026-07-17 (Jumat), …
- *        └─ 📁 Tanda Tangan Penyelenggara
+ *   📂 Ruangk3.com                                (folder induk RuangK3 – sudah ada: Backup & media)
+ *    └─ 📂 Daftar Hadir & Dokumentasi - LPMI      (folder Daftar Hadir, otomatis dibuat/dipindah ke sini)
+ *        ├─ 📊 Database Induk - Daftar Hadir LPMI (spreadsheet: sheet "Kegiatan" & "Peserta")
+ *        └─ 📁 2026-07-15 - Pelatihan K3 Kebakaran (1 folder per kegiatan)
+ *            ├─ data.json                         (data lengkap kegiatan & peserta)
+ *            ├─ 📁 Foto Dokumentasi               (foto bertanda air per peserta)
+ *            ├─ 📁 Tanda Tangan Peserta / 2026-07-15 (Rabu), 2026-07-17 (Jumat), …
+ *            └─ 📁 Tanda Tangan Penyelenggara
  *
  * Cara pasang: lihat PANDUAN-GOOGLE-DRIVE.md
  *   1. Tempel file ini di https://script.google.com (proyek baru)
@@ -19,6 +20,7 @@
  */
 
 const ROOT_NAME = 'Daftar Hadir & Dokumentasi - LPMI';
+const PARENT_NAME = 'Ruangk3.com'; // folder induk di Google Drive (dicari lewat nama, ID tidak disimpan di repo)
 const SHEET_NAME = 'Database Induk - Daftar Hadir LPMI';
 const MAX_DAYS = 7;
 const KEG_HEAD = ['ID Kegiatan', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'Jumlah Hari', 'Daftar Tanggal', 'Tempat', 'Narasumber',
@@ -90,12 +92,44 @@ function out_(obj) {
 
 /* =========================== DRIVE =========================== */
 
+// Folder induk "Ruangk3.com" (tempat Backup-YYYY-MM-DD & media). null bila tidak ditemukan → folder dibuat di My Drive.
+function getParent_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty('PARENT_ID');
+  if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (e) { } }
+  const it = DriveApp.getFoldersByName(PARENT_NAME);
+  let first = null, best = null;
+  while (it.hasNext()) {
+    const f = it.next();
+    if (f.isTrashed()) continue;
+    if (!first) first = f;
+    if (!best && f.getFoldersByName('media').hasNext()) best = f; // utamakan yang berisi folder "media"
+  }
+  const p = best || first;
+  if (p) props.setProperty('PARENT_ID', p.getId());
+  return p;
+}
+
 function getRoot_() {
   const props = PropertiesService.getScriptProperties();
+  const parent = getParent_();
+  const pid = parent ? parent.getId() : '';
   const id = props.getProperty('ROOT_ID');
-  if (id) { try { const f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (e) { } }
-  const f = DriveApp.createFolder(ROOT_NAME);
+  if (id) {
+    try {
+      const f = DriveApp.getFolderById(id);
+      if (!f.isTrashed()) {
+        // folder lama di luar Ruangk3.com → pindahkan sekali (isinya ikut)
+        if (parent && props.getProperty('ROOT_PARENT') !== pid) {
+          try { f.moveTo(parent); props.setProperty('ROOT_PARENT', pid); } catch (e) { }
+        }
+        return f;
+      }
+    } catch (e) { }
+  }
+  const f = parent ? parent.createFolder(ROOT_NAME) : DriveApp.createFolder(ROOT_NAME);
   props.setProperty('ROOT_ID', f.getId());
+  if (parent) props.setProperty('ROOT_PARENT', pid);
   return f;
 }
 
