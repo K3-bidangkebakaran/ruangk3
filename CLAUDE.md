@@ -30,6 +30,7 @@ Tujuan: beberapa sesi mengerjakan fitur berbeda, tapi hasilnya harus menyatu dan
 ## Daftar node Firebase (tambahkan baris saat membuat node baru)
 Berat/lazy: `modul_dokumen`, `berita_foto`, `riksa_laporan_data`, `riksa_foto`.
 Ringkas/aman dimuat: `statistik_publik`, `riksa_laporan` (ringkasan), `riksa_petugas`, `riksa_log`, `penyelenggara_pjk3`.
+Pengaturan kecil: `pengaturan_admin_lpmi` (hash+salt password Admin LPMI, hanya ada kalau Faros pernah mengganti password; rule `.read/.write: auth != null` harus dipasang Adrian di dalam node `data`).
 
 ## Serah terima terbuka (diperbarui 2026-10-04 oleh sesi cse_016qqY9aarWh6D2w7dg4gwjX)
 Hapus bagian ini setelah APK selesai dan assetlinks.json terpasang.
@@ -39,6 +40,7 @@ Hapus bagian ini setelah APK selesai dan assetlinks.json terpasang.
 - Catatan teknis: browser bawaan Claude belum login GitHub; Safari sudah login, tetapi computer use untuk Safari hanya bisa membaca.
 
 ## Log perubahan lintas sesi (tambah paling atas)
+- 2026-10-05 sesi cse_016qqY9aarWh6D2w7dg4gwjX: **Admin LPMI** (pemegang akun: Faros). Login lewat form Login Admin dengan password bawaan `LPMI01` (cek di akhir handler `form-login-admin` lewat `window.cekLoginLpmi`; peran `admin_lpmi`, uid `admin_lpmi_01`). Panel admin HANYA menu "Daftar Hadir & Dokumentasi" (3 tab) dengan fitur sama seperti Admin Pusat (`dhIsAdmin` mencakup `admin_lpmi`; `setupAdminUI` menyembunyikan menu lain, menandai `data-lpmi-hid` agar dipulihkan saat peran lain login). Data tersambung ke Google Drive yang sama karena sumbernya Apps Script yang sama; koneksi Drive tetap per-browser (`rk3_dh_cfg`, jadi Faros perlu isi URL+Kode Akses sekali atau pakai tautan `#cfg=` dari Admin Pusat). Tombol "Ubah Password" di pojok kanan atas panel (modal `#modal-lpmi-pw`) menyimpan hash SHA-256 + salt ke `pengaturan_admin_lpmi`; tombol "Reset password Admin LPMI" (hanya Admin Pusat, di header panel Daftar Hadir) menghapus node itu -> kembali ke LPMI01. Password baru ditolak kalau sama dengan PIN admin lain. Tidak memakai Firebase Auth khusus; tidak memuat data admin lain (fetchDataRealtimeAdmin sengaja tidak dipanggil).
 - 2026-10-05 sesi cse_016qqY9aarWh6D2w7dg4gwjx: menu "Daftar Hadir & Dokumentasi" jadi panel admin (statistik, filter, tabel kegiatan, Detail peserta + status TTD/foto, Buka Drive), bukan lagi tautan keluar. Tailwind `?v=20261009`. Berikutnya: persiapan APK Daftar Hadir (PWABuilder, pola sama dengan `riksa/`).
 - 2026-10-05 sesi cse_016qqY9aarWh6D2w7dg4gwjX: pasang `daftar-hadir/` + menu admin "Daftar Hadir & Dokumentasi"; penanda sesi `rk3_admin_at` diset di `setupAdminUI` hanya untuk Admin Pusat dan dihapus saat logout. Adrian masih harus memasang `Code.gs` (lihat `daftar-hadir/apps-script/PANDUAN-GOOGLE-DRIVE.md`) dan mengisi URL + Kode Akses di tombol ☁️ tiap perangkat.
 - 2026-10-04 perf: html2pdf, Chart.js, PDF.js dimuat sesuai kebutuhan lewat `window.muatPustaka`.
