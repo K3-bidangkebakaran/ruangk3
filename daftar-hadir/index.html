@@ -269,7 +269,7 @@ td.sign{position:relative;padding:0}
 /* Status peserta di daftar hadir (warna stabilo): Cancel = merah sampai kolom Keterangan; Remedial = kuning sampai kolom TTD terakhir */
 .page,.page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 table.grid tr.batal td{background:#ff6b6b}
-table.grid tr.remedial td:not(.ket){background:#fff200}
+table.grid tr.remedial td:not(.ket):not(.lastd){background:#fff200}
 table.grid tr.batal .ttd{display:none}
 table.grid td.ket{text-align:center;font-weight:700;font-size:9pt;padding:0 1mm}
 table.grid tr.days th{font-size:8.5pt;padding:1.5mm 1mm;line-height:1.25}
@@ -773,8 +773,8 @@ function renderPages() {
   const rowHtml = (p, no) => {
     const rem = !!p.remedial && !p.batal, lastK = days.length - 1;
     const ttd = multi
-      ? days.map((d, k) => rem && k < lastK ? `<td class="sign"></td>` : `<td class="sign"><span class="ttd l">${no}.</span>${sigImg(p, k, "c")}</td>`).join("")
-      : `<td class="sign"><span class="ttd ${no % 2 ? "l" : "r"}">${no}.</span>${sigImg(p, 0, no % 2 ? "l" : "r")}</td>`;
+      ? days.map((d, k) => rem && k < lastK ? `<td class="sign"></td>` : `<td class="sign${rem ? " lastd" : ""}"><span class="ttd l">${no}.</span>${sigImg(p, k, "c")}</td>`).join("")
+      : `<td class="sign${rem ? " lastd" : ""}"><span class="ttd ${no % 2 ? "l" : "r"}">${no}.</span>${sigImg(p, 0, no % 2 ? "l" : "r")}</td>`;
     const cls = p.batal ? "batal" : rem ? "remedial" : "";
     return `<tr${cls ? ` class="${cls}" title="${p.batal ? "Cancel" : "Remedial (hanya hari terakhir)"}"` : ""}><td class="no">${no}</td><td>${v(p.nama)}</td><td>${v(p.instansi)}</td>${ttd}<td class="ket">${p.batal ? "Cancel" : rem ? "Remedial" : ""}</td></tr>`;
   };
@@ -2063,13 +2063,13 @@ const Word = (() => {
       head = D.row(th(widths[0], "No", { vm: "restart" }) + th(widths[1], "Nama Peserta", { vm: "restart" }) + th(widths[2], "Instansi / Perusahaan", { vm: "restart" }) + th(widths.slice(3, 3 + nd).reduce((s, w) => s + w, 0), "Tanda Tangan", { span: nd }) + th(kw, "Keterangan", { vm: "restart", sz: 18 }), { head: 1 })
         + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(`Hari ${k + 1}`, { b: 1, color: "FFFFFF", sz: 17 }), { jc: "center", before: 20 }) + D.par(D.run(ctx.pendek(d), { color: "FFFFFF", sz: 16 }), { jc: "center", after: 20 }), TH)).join("") + th(kw, "", { vm: "cont" }), { head: 1 });
     } else head = D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Instansi / Perusahaan") + th(widths[3], "Tanda Tangan") + th(kw, "Keterangan", { sz: 18 }), { head: 1 });
-    // Warna stabilo: Cancel = merah sampai kolom Keterangan; Remedial = kuning sampai kolom TTD terakhir (Keterangan tanpa warna)
+    // Warna stabilo: Cancel = merah sampai kolom Keterangan; Remedial = kuning sampai kolom TTD sebelum hari terakhir (TTD hari terakhir & Keterangan tanpa warna)
     const RED = "FF6B6B", YEL = "FFF200";
     const body = rows.map((p, i) => {
       const no = i + 1, bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : rem ? { fill: YEL } : {};
       const sig = (k, w, left) => {
         const url = p.ttd && days[k] && p.ttd[days[k]]; const im = url ? D.inline(url, multi ? w / TW - 7 : (w / TW) / 2 - 7, 10.5) : "";
-        return D.cell(w, D.par(D.run(no + ".", { sz: multi ? 15 : 17, color: "555555" }) + (im ? D.run("  ") + im : ""), { jc: multi ? "left" : (left ? "left" : "right") }), F);
+        return D.cell(w, D.par(D.run(no + ".", { sz: multi ? 15 : 17, color: "555555" }) + (im ? D.run("  ") + im : ""), { jc: multi ? "left" : (left ? "left" : "right") }), rem ? {} : F); // remedial: kolom TTD hari terakhir tidak diwarnai (diisi tanda tangan)
       };
       const tc = bt || rem ? { color: "000000" } : {}; // teks hitam tegas di atas warna stabilo (Word otomatis memutihkan teks di warna gelap)
       const base = D.cell(widths[0], D.par(D.run(no, tc), { jc: "center" }), F) + D.cell(widths[1], D.par(D.run(p.nama || "", tc)), F) + D.cell(widths[2], D.par(D.run(p.instansi || "", tc)), F);
