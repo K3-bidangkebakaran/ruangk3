@@ -1,6 +1,6 @@
 // Service worker Portal PIC (ruangk3.com/pic/).
 // Naikkan VERSION setiap kali file aplikasi diubah supaya HP PIC mengambil versi baru.
-const VERSION = 'pic-v6';
+const VERSION = 'pic-v7';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './js/app.js', './js/firebase.js', './icons/icon-192.png', './icons/icon-512.png'];
 const FIREBASE = [
   'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js',
@@ -10,7 +10,7 @@ const FIREBASE = [
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(VERSION);
-    await c.addAll(SHELL);
+    await Promise.all(SHELL.map(u => c.add(new Request(u, { cache: 'reload' })))); // 'reload' = abaikan cache HTTP GitHub Pages (max-age 10 menit)
     await Promise.all(FIREBASE.map(u => c.add(new Request(u, { mode: 'cors' })).catch(() => {})));
     self.skipWaiting();
   })());
@@ -31,7 +31,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith((async () => {
       const c = await caches.open(VERSION);
       try {
-        const res = await fetch(req);
+        const res = await fetch(req, { cache: 'no-cache' }); // selalu cek versi terbaru ke server (304 bila sama)
         if (res.ok) c.put(req, res.clone());
         return res;
       } catch (err) {
