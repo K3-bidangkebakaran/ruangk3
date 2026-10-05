@@ -1,6 +1,6 @@
 // Service worker aplikasi Riksa Uji (ruangk3.com/riksa/).
 // Naikkan VERSION setiap kali file aplikasi diubah supaya HP petugas mengambil versi baru.
-const VERSION = 'riksa-v2';
+const VERSION = 'riksa-v3';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './js/app.js', './js/firebase.js', './js/report.js', './js/hydrant-report.js',
@@ -15,7 +15,7 @@ const FIREBASE = [
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const c = await caches.open(VERSION);
-    await c.addAll(SHELL);
+    await Promise.all(SHELL.map(u => c.add(new Request(u, { cache: 'reload' })))); // 'reload' = abaikan cache HTTP GitHub Pages (max-age 10 menit)
     // pustaka Firebase: gagal diunduh tidak menggagalkan instalasi (akan dicoba lagi saat dipakai)
     await Promise.all(FIREBASE.map(u => c.add(new Request(u, { mode: 'cors' })).catch(() => {})));
     self.skipWaiting();
@@ -43,7 +43,7 @@ self.addEventListener('fetch', (e) => {
     e.respondWith((async () => {
       const c = await caches.open(VERSION);
       try {
-        const res = await fetch(req);
+        const res = await fetch(req, { cache: 'no-cache' }); // selalu cek versi terbaru ke server (304 bila sama)
         if (res.ok) c.put(req, res.clone());
         return res;
       } catch (err) {

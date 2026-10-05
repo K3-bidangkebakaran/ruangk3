@@ -616,8 +616,51 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
 <script src="js/app.js"></script>
 <script>
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));
   }
+</script>
+<script>
+/* Pembaruan otomatis: aplikasi (APK/PWA) membuka halaman dari ruangk3.com, jadi isi terbaru otomatis terambil
+   tiap dibuka. Kode ini mengurus app yang dibiarkan terbuka lama: tiap dibuka kembali & tiap 10 menit, berkas
+   aplikasi dibandingkan dengan server; kalau berbeda -> muat ulang sendiri bila sedang tidak dipakai (editor
+   tertutup, tidak mengetik, tidak sedang menyimpan), kalau tidak -> tombol "Perbarui". Data tersimpan di perangkat. */
+(function () {
+  var FILES = ['./index.html', './js/app.js', './js/report.js', './js/hydrant-report.js', './js/firebase.js', './sw.js'];
+  var base = null, shown = false, checking = false;
+  function hash(t) { var h = 2166136261; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + t.length; }
+  async function sig() {
+    try { var r = await Promise.all(FILES.map(async function (f) { var x = await fetch(f, { cache: 'no-cache' }); if (!x.ok) throw new Error('x'); return hash(await x.text()); })); return r.join('|'); }
+    catch (e) { return null; }
+  }
+  function idle() {
+    var a = document.activeElement, sh = document.getElementById('sheet'), st = document.getElementById('savestate');
+    return !(sh && !sh.hidden) && !(st && /Menyimpan/.test(st.textContent || '')) && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+  }
+  function boleh() { try { return Date.now() - (+sessionStorage.getItem('riksa-upd') || 0) > 120000; } catch (e) { return true; } }
+  function muat() { try { sessionStorage.setItem('riksa-upd', String(Date.now())); } catch (e) { } location.reload(); }
+  function bar() {
+    if (shown) return; shown = true;
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#7f1d1d;color:#fff;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;display:flex;gap:10px;align-items:center;font:600 14px system-ui,sans-serif';
+    d.innerHTML = '<span style="flex:1">Versi baru aplikasi tersedia.</span><button type="button" style="background:#fff;color:#7f1d1d;border:0;border-radius:8px;padding:6px 12px;font:700 13px system-ui,sans-serif">Perbarui</button>';
+    d.querySelector('button').onclick = muat; document.body.appendChild(d);
+  }
+  async function cek() {
+    if (checking || document.hidden || !navigator.onLine) return; checking = true;
+    try {
+      if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.update(); }).catch(function () { });
+      var s = await sig(); if (!s) return;
+      if (base === null) { base = s; return; }
+      if (s === base) return;
+      if (idle() && boleh()) muat(); else bar();
+    } finally { checking = false; }
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) cek(); });
+  window.addEventListener('online', cek);
+  setInterval(cek, 10 * 60000);
+  setInterval(function () { if (shown && idle() && boleh()) muat(); }, 15000);
+  setTimeout(cek, 4000);
+})();
 </script>
 </body>
 </html>

@@ -532,6 +532,46 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { re
 setInterval(() => { if (ME && online()) { pull(); sync(); } }, 5 * 60000);
 window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
 
+/* ---------- pembaruan otomatis ----------
+   Aplikasi (APK/PWA) membuka halaman dari ruangk3.com, jadi isi terbaru otomatis terambil tiap dibuka.
+   Kode di bawah mengurus app yang dibiarkan terbuka lama: tiap dibuka kembali & tiap 10 menit, berkas
+   aplikasi dibandingkan dengan yang ada di server; kalau berbeda -> muat ulang sendiri bila sedang
+   tidak dipakai (tidak sedang kamera / tanda tangan / mengetik / mengirim), kalau tidak -> tombol "Perbarui". */
+(() => {
+  const FILES = ['./index.html', './js/app.js', './js/firebase.js', './sw.js'];
+  let base = null, shown = false, checking = false;
+  const hash = (t) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + t.length; };
+  async function sig() {
+    try { return (await Promise.all(FILES.map(async f => { const r = await fetch(f, { cache: 'no-cache' }); if (!r.ok) throw new Error('x'); return hash(await r.text()); }))).join('|'); }
+    catch (e) { return null; }
+  }
+  const idle = () => { const a = document.activeElement; return !CAM && !$('#pad') && !syncing && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+  const boleh = () => { try { return Date.now() - (+sessionStorage.getItem('pic-upd') || 0) > 120000; } catch (e) { return true; } }; // cegah muat ulang beruntun
+  function muat() { try { sessionStorage.setItem('pic-upd', String(Date.now())); } catch (e) { } location.reload(); }
+  function bar() {
+    if (shown) return; shown = true;
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#14532d;color:#fff;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;display:flex;gap:10px;align-items:center;font:600 14px system-ui,sans-serif';
+    d.innerHTML = '<span style="flex:1">Versi baru aplikasi tersedia.</span><button type="button" style="background:#fff;color:#14532d;border:0;border-radius:8px;padding:6px 12px;font:700 13px system-ui,sans-serif">Perbarui</button>';
+    d.querySelector('button').onclick = muat; document.body.appendChild(d);
+  }
+  async function cek() {
+    if (checking || document.hidden || !navigator.onLine) return; checking = true;
+    try {
+      if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => { });
+      const s = await sig(); if (!s) return;
+      if (base === null) { base = s; return; }
+      if (s === base) return;
+      if (idle() && boleh()) muat(); else bar();
+    } finally { checking = false; }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
+  window.addEventListener('online', cek);
+  setInterval(cek, 10 * 60000);
+  setInterval(() => { if (shown && idle() && boleh()) muat(); }, 15000);
+  setTimeout(cek, 4000);
+})();
+
 /* ---------- mulai ---------- */
 (async () => {
   const me = await iGet('me');
@@ -541,7 +581,7 @@ window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
     P.screen = 'home';
   }
   render();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   if (ME && window.PicFB) { await window.PicFB.ready; if (window.PicFB.uid() !== ME.uid) { /* sesi Firebase habis: data tetap bisa dipakai, kirim butuh login ulang */ syncErr = ''; } pull(); sync(); }
 })();
 window.__pic = { get H() { return H; }, get KEGS() { return KEGS; }, sync, pull, pending };
