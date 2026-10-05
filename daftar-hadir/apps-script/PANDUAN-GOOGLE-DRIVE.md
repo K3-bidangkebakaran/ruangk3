@@ -57,6 +57,17 @@ Folder induk **Ruangk3.com** dicari lewat namanya di Drive akun pemilik script (
 
 Secara bawaan kegiatan yang dihapus dipindah ke **Sampah Drive**. Agar langsung terhapus permanen: di editor Apps Script klik **+** di samping **Layanan**, pilih **Drive API**, klik **Tambahkan**, lalu Deploy versi baru. Tanpa layanan ini kegiatan tetap hilang dari daftar dan folder kegiatan, hanya tersisa di Sampah Drive.
 
+## Memindahkan data ke folder Drive lain
+
+Bila folder penyimpanan ingin diganti (misalnya ke folder baru yang sudah dibagikan ke akun Anda):
+
+1. Tempel Code.gs terbaru di Apps Script (hapus semua isi lama, tempel yang baru), lalu **Simpan**.
+2. Di fungsi `pindahKeFolderBaru`, ganti tulisan `TEMPEL_LINK_FOLDER_DI_SINI` dengan link folder tujuan (langsung di editor Apps Script; **jangan** di-commit ke repo supaya link Drive tetap privat).
+3. Pilih fungsi `pindahKeFolderBaru` → **Jalankan** → izinkan akses bila diminta → lihat **Log eksekusi**.
+4. Seluruh folder "Daftar Hadir & Dokumentasi - LPMI" (spreadsheet, folder tiap kegiatan, foto, TTD) pindah ke dalam folder tujuan. ID file tidak berubah, jadi data lama utuh dan simpanan berikutnya otomatis masuk ke folder baru. Tidak perlu deploy ulang dan URL aplikasi tidak berubah.
+
+Syarat: akun yang men-deploy script harus punya akses **Editor** ke folder tujuan.
+
 ## Jika mengubah Code.gs
 
 Setelah mengedit script (termasuk saat menempel `Code.gs` versi baru): jalankan fungsi `setup` sekali, lalu **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. URL tetap sama, jadi aplikasi tidak perlu diubah.

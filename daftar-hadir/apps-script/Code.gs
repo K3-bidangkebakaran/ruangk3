@@ -55,6 +55,57 @@ function gantiKodeAkses() {
   return setup();
 }
 
+/**
+ * PINDAH FOLDER PENYIMPANAN: memindahkan SEMUA data Daftar Hadir (folder "Daftar Hadir & Dokumentasi - LPMI"
+ * berikut spreadsheet & folder tiap kegiatan) ke folder Google Drive lain, lalu semua simpanan berikutnya
+ * otomatis masuk ke sana. ID file/folder tidak berubah, jadi data lama tetap utuh & tautan di spreadsheet tetap benar.
+ *
+ * Cara pakai (di editor Apps Script, TIDAK perlu di-commit ke repo):
+ *   1. Ganti tulisan TEMPEL_LINK_FOLDER_DI_SINI di bawah dengan link folder tujuan (boleh link lengkap atau ID saja)
+ *   2. Pilih fungsi pindahKeFolderBaru → klik Jalankan → lihat hasilnya di Log eksekusi
+ * Folder tujuan harus bisa diedit oleh akun yang men-deploy script ini.
+ */
+function pindahKeFolderBaru() {
+  const LINK_TUJUAN = 'TEMPEL_LINK_FOLDER_DI_SINI';
+  if (String(LINK_TUJUAN).indexOf('TEMPEL_LINK') >= 0) throw new Error('Link/ID folder tujuan belum diisi. Ganti TEMPEL_LINK_FOLDER_DI_SINI dengan link folder Google Drive tujuan.');
+  const m = String(LINK_TUJUAN).match(/folders\/([-\w]{15,})/) || String(LINK_TUJUAN).match(/^([-\w]{15,})$/);
+  if (!m) throw new Error('Link/ID folder tujuan belum diisi. Ganti TEMPEL_LINK_FOLDER_DI_SINI dengan link folder Google Drive tujuan.');
+  const tujuan = DriveApp.getFolderById(m[1]); // gagal di sini = akun ini belum punya akses ke folder tujuan
+  if (tujuan.isTrashed()) throw new Error('Folder tujuan ada di Sampah.');
+  const props = PropertiesService.getScriptProperties();
+
+  // 1) folder Daftar Hadir lama (dibuat bila belum pernah dipakai)
+  let root = null;
+  const rid = props.getProperty('ROOT_ID');
+  if (rid) { try { const f = DriveApp.getFolderById(rid); if (!f.isTrashed()) root = f; } catch (e) { } }
+  if (root && root.getId() === tujuan.getId()) throw new Error('Folder tujuan tidak boleh sama dengan folder Daftar Hadir itu sendiri.');
+
+  // 2) jadikan folder tujuan sebagai folder induk, lalu pindahkan folder Daftar Hadir ke dalamnya
+  props.setProperty('PARENT_ID', tujuan.getId());
+  if (!root) {
+    root = tujuan.createFolder(ROOT_NAME);
+    props.setProperty('ROOT_ID', root.getId());
+  } else {
+    root.moveTo(tujuan); // semua isi (spreadsheet, folder kegiatan, foto, TTD) ikut pindah
+  }
+  props.setProperty('ROOT_PARENT', tujuan.getId());
+
+  // 3) pastikan spreadsheet induk ada di dalam folder Daftar Hadir
+  const ss = getSheet_();
+  const sf = DriveApp.getFileById(ss.getId());
+  let disini = false; const ps = sf.getParents();
+  while (ps.hasNext()) { if (ps.next().getId() === root.getId()) disini = true; }
+  if (!disini) sf.moveTo(root);
+
+  // 4) ringkasan
+  let nKeg = 0; const it = root.getFolders(); while (it.hasNext()) { it.next(); nKeg++; }
+  Logger.log('SELESAI. Folder Daftar Hadir sekarang ada di: ' + tujuan.getUrl());
+  Logger.log('Folder Daftar Hadir : ' + root.getUrl());
+  Logger.log('Spreadsheet         : ' + ss.getUrl());
+  Logger.log('Jumlah folder kegiatan di dalamnya: ' + nKeg);
+  return { tujuan: tujuan.getUrl(), root: root.getUrl(), sheet: ss.getUrl(), folderKegiatan: nKeg };
+}
+
 /* =========================== HTTP =========================== */
 
 function doGet() {
