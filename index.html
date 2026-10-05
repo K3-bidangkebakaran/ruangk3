@@ -2559,6 +2559,18 @@
         // benar-benar mendaftarkan listener-nya SEKALI, walau admin logout lalu login lagi
         // berkali-kali dalam satu sesi yang sama.
         let isAdminDataInitialized = false;
+        // Penanda data ringkasan panel admin sudah tiba dari Firebase (supaya tabel tidak bohong "kosong" saat masih memuat).
+        const adminSiap = { kegiatan: false, pengeluaran: false };
+        let soalSiap = false; // bank soal (dimuat paling akhir) sudah tiba dari Firebase
+        // Dipakai aksi yang MENGUBAH soal massal (mis. ganti nama kategori) supaya tidak jalan di atas daftar soal yang belum termuat.
+        window.pastikanSoalSiap = async function() {
+            if (soalSiap) return;
+            const snap = await window.withTimeout(get(ref(db, pathSoal)), 20000);
+            const arr = [];
+            if (snap.exists()) snap.forEach(c => { const d = c.val(); d.id = c.key; arr.push(d); });
+            quizDataFromDB = arr;
+            soalSiap = true;
+        };
 
         window.sendWA_Fonnte = async function(hp, message) {
             // Placeholder for WhatsApp API integration
@@ -5591,6 +5603,7 @@
 
                 let jumlahSoal = 0, jumlahModul = 0, jumlahVerifikasi = 0, jumlahLiveCbt = 0, jumlahRiwayat = 0, jumlahIzinPeserta = 0;
 
+                await window.pastikanSoalSiap();
                 (quizDataFromDB || []).forEach(soal => {
                     if(soal.kategori === oldKey) { updates[`${pathSoal}/${soal.id}/kategori`] = newKey; jumlahSoal++; }
                 });
@@ -7435,7 +7448,7 @@
                     });
 
                     if (countTabelBulanIni === 0) {
-                        tbodyPendapatan.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500 text-sm">Belum ada rincian kegiatan di bulan yang dipilih.</td></tr>';
+                        tbodyPendapatan.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-500 text-sm">${adminSiap.kegiatan ? 'Belum ada rincian kegiatan di bulan yang dipilih.' : 'Memuat data...'}</td></tr>`;
                     } else {
                         tbodyPendapatan.innerHTML = tbodyHtml;
                     }
@@ -7482,7 +7495,7 @@
                         const tbodyPengeluaran = document.getElementById('admin-table-pengeluaran');
                         if(tbodyPengeluaran) {
                             if (countKeluarBulanIni === 0) {
-                                tbodyPengeluaran.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-500 text-sm">Tidak ada pengeluaran di bulan ini.</td></tr>';
+                                tbodyPengeluaran.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-500 text-sm">${adminSiap.pengeluaran ? 'Tidak ada pengeluaran di bulan ini.' : 'Memuat data...'}</td></tr>`;
                             } else {
                                 tbodyPengeluaran.innerHTML = tbodyPengeluaranHtml;
                             }
@@ -8116,167 +8129,189 @@
             if (isAdminDataInitialized) return;
             isAdminDataInitialized = true;
 
-            // Daftar peserta lengkap -- HANYA admin. Sekaligus menyinkronkan penghitung publik
-            // (statistik_publik) bila selisih (mis. peserta dihapus / transaksi sebelumnya gagal).
-            onValue(ref(db, pathPeserta), (snapshot) => {
-                let countDaftar = 0; let countLulus = 0;
-                dataPesertaAll = [];
-                if (snapshot.exists()) {
-                    snapshot.forEach(childSnap => {
-                        countDaftar++;
-                        const data = childSnap.val();
-                        dataPesertaAll.push({ id: childSnap.key, ...data });
-                        if (data.skorUjian && data.skorUjian !== '-') countLulus++;
-                    });
-                }
-                if (window._lastStatSync !== `${countDaftar}|${countLulus}`) {
-                    window._lastStatSync = `${countDaftar}|${countLulus}`;
-                    set(ref(db, pathStatistikPublik), { totalPendaftar: countDaftar, totalLulus: countLulus }).catch(() => {});
-                }
-                // Peserta lama yang belum punya penyelenggara otomatis dimasukkan ke PJK3 LPMI
-                // (disimpan permanen oleh Admin Pusat; tampilan sudah otomatis LPMI sebelumnya).
-                if (currentUser && currentUser.role === 'admin_utama') {
-                    const tanpa = dataPesertaAll.filter(p => !(typeof p.penyelenggara === 'string' && p.penyelenggara.trim()));
-                    if (tanpa.length > 0 && !window._backfillPjk3Jalan) {
-                        window._backfillPjk3Jalan = true;
-                        const upd = {};
-                        tanpa.forEach(p => { upd[`${pathPeserta}/${p.id}/penyelenggara`] = PENYELENGGARA_DEFAULT; });
-                        update(ref(db), upd).catch(() => {}).finally(() => { window._backfillPjk3Jalan = false; });
+            // URUTAN PEMUATAN (supaya panel admin terasa cepat): Firebase membalas permintaan lewat
+            // satu koneksi secara berurutan, jadi data BESAR (seluruh peserta, seluruh riwayat ujian,
+            // bank soal + gambar) yang diminta lebih dulu membuat data KECIL yang langsung tampil di
+            // panel (kegiatan, pengeluaran, verifikasi) ikut menunggu. Sekarang: tahap 1 = data kecil
+            // langsung; tahap 2 = peserta & riwayat sebentar kemudian; tahap 3 = bank soal paling
+            // akhir, atau seketika saat admin membuka menu Bank Soal / Kategori K3.
+            const mulaiTahap1 = () => {
+                onValue(ref(db, pathKegiatan), (snapshot) => { 
+                    adminSiap.kegiatan = true;
+                    dataKegiatanAll = []; 
+                    if(snapshot.exists()) { 
+                        snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); 
+                    } 
+                    window.renderDashboardPendapatanHome();
+                });
+
+                onValue(ref(db, pathPengeluaran), (snapshot) => {
+                    adminSiap.pengeluaran = true;
+                    dataPengeluaranAll = [];
+                    if(snapshot.exists()) {
+                        snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); });
                     }
-                }
-                window.renderPenyelenggaraUI();
-                window.renderIzinKelasKebakaran();
-                window.renderRekapNilaiAdmin();
-            });
+                    window.renderDashboardPendapatanHome();
+                    window.renderLaporanTabunganUI();
+                });
 
-            onValue(ref(db, pathVerifikasi), (snapshot) => {
-                rawVerifikasiSnap = snapshot;
-                window.renderVerifikasiUI();
-            });
+                // Target tabungan (Laporan Tabungan, admin_utama) -- disimpan terpisah dari data
+                // transaksi supaya bisa diubah manual tanpa mengubah/duplikasi data Pengeluaran.
+                onValue(ref(db, `${pathPengaturanTabungan}/target`), (snapshot) => {
+                    dataPengaturanTabungan.target = snapshot.exists() ? Number(snapshot.val()) : 50000000;
+                    window.renderLaporanTabunganUI();
+                });
 
-            // Riwayat ujian CBT SELURUH peserta (dipakai panel admin "Izin Kelas Kebakaran"
-            // untuk menampilkan keterangan kelas apa saja yang sudah diselesaikan tiap peserta).
-            // "Lulus" bersifat sticky: begitu pernah lulus di suatu kelas, status tetap tercatat
-            // Lulus walau ada percobaan lain yang gagal; skor terbaik yang ditampilkan.
-            onValue(ref(db, pathRiwayat), (snapshot) => {
-                dataRiwayatSemuaPeserta = {};
-                if (snapshot.exists()) {
-                    snapshot.forEach(uidSnap => {
-                        const perKelas = {};
-                        uidSnap.forEach(attemptSnap => {
-                            const att = attemptSnap.val();
-                            if (!att) return;
-                            const bidangAtt = att.bidang && att.bidang !== '-' ? att.bidang : '';
-                            const kelasAtt = att.kelas && att.kelas !== '-' ? att.kelas : (att.kategori || 'Umum');
-                            const key = bidangAtt ? `${bidangAtt} - ${kelasAtt}` : kelasAtt;
-                            const skor = Number(att.skor) || 0;
-                            const lulus = window.isRiwayatLulus(att);
-                            if (!perKelas[key]) perKelas[key] = { lulus: false, bestSkor: 0, attempts: 0, bidang: bidangAtt, kelas: kelasAtt };
-                            perKelas[key].attempts++;
-                            if (skor > perKelas[key].bestSkor) perKelas[key].bestSkor = skor;
-                            if (lulus) perKelas[key].lulus = true;
+                onValue(ref(db, pathPengeluaranDraftWa), (snapshot) => {
+                    dataPengeluaranDraftWaAll = [];
+                    if(snapshot.exists()) {
+                        snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranDraftWaAll.push(dt); });
+                    }
+                    window.renderPengeluaranDraftWaUI();
+                });
+
+                onValue(ref(db, pathVerifikasi), (snapshot) => {
+                    rawVerifikasiSnap = snapshot;
+                    window.renderVerifikasiUI();
+                });
+
+                onValue(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), (snapshot) => {
+                    dataReviewAll = []; 
+                    if(snapshot.exists()) { 
+                        snapshot.forEach(child => { 
+                            const data = child.val(); 
+                            data.id = child.key; 
+                            dataReviewAll.push(data); 
+                        }); 
+                    } 
+                    window.renderReviewUI(); 
+                });
+            };
+            const mulaiTahap2 = () => {
+                // Daftar peserta lengkap -- HANYA admin. Sekaligus menyinkronkan penghitung publik
+                // (statistik_publik) bila selisih (mis. peserta dihapus / transaksi sebelumnya gagal).
+                onValue(ref(db, pathPeserta), (snapshot) => {
+                    let countDaftar = 0; let countLulus = 0;
+                    dataPesertaAll = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach(childSnap => {
+                            countDaftar++;
+                            const data = childSnap.val();
+                            dataPesertaAll.push({ id: childSnap.key, ...data });
+                            if (data.skorUjian && data.skorUjian !== '-') countLulus++;
                         });
-                        dataRiwayatSemuaPeserta[uidSnap.key] = perKelas;
-                    });
-                }
-                window.renderIzinKelasKebakaran();
-                window.renderRekapNilaiAdmin();
-                window.renderAkunPeserta();
-            });
-
-            onValue(ref(db, `artifacts/${cleanAppId}/public/data/ulasan_instruktur`), (snapshot) => {
-                dataReviewAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(child => { 
-                        const data = child.val(); 
-                        data.id = child.key; 
-                        dataReviewAll.push(data); 
-                    }); 
-                } 
-                window.renderReviewUI(); 
-            });
-
-            onValue(ref(db, pathKegiatan), (snapshot) => { 
-                dataKegiatanAll = []; 
-                if(snapshot.exists()) { 
-                    snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); 
-                } 
-                window.renderDashboardPendapatanHome();
-            });
-
-            onValue(ref(db, pathPengeluaran), (snapshot) => {
-                dataPengeluaranAll = [];
-                if(snapshot.exists()) {
-                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranAll.push(dt); });
-                }
-                window.renderDashboardPendapatanHome();
-                window.renderLaporanTabunganUI();
-            });
-
-            // Target tabungan (Laporan Tabungan, admin_utama) -- disimpan terpisah dari data
-            // transaksi supaya bisa diubah manual tanpa mengubah/duplikasi data Pengeluaran.
-            onValue(ref(db, `${pathPengaturanTabungan}/target`), (snapshot) => {
-                dataPengaturanTabungan.target = snapshot.exists() ? Number(snapshot.val()) : 50000000;
-                window.renderLaporanTabunganUI();
-            });
-
-            onValue(ref(db, pathPengeluaranDraftWa), (snapshot) => {
-                dataPengeluaranDraftWaAll = [];
-                if(snapshot.exists()) {
-                    snapshot.forEach(d => { const dt = d.val(); dt.id = d.key; dataPengeluaranDraftWaAll.push(dt); });
-                }
-                window.renderPengeluaranDraftWaUI();
-            });
-
-            onValue(ref(db, pathSoal), (snapshot) => {
-                quizDataFromDB = [];
-                const listAdmin = document.getElementById('admin-list-soal');
-                if(listAdmin) listAdmin.innerHTML = '';
-
-                const seedQuestions = [
-                    {
-                        id: 'seed_q1',
-                        kategori: 'Kebakaran - Kelas D (Petugas Peran Kebakaran)',
-                        pertanyaan: 'Sistem proteksi kebakaran aktif terdiri dari:',
-                        opsi: [
-                            'APAR, hidran, detektor dan alarm, sprinkler',
-                            'Sarana jalan keluar, kompartemenisasi, titik kumpul',
-                            'Struktur bangunan, tangga darurat, pintu tahan api',
-                            'APD, rambu-rambu, prosedur tanggap darurat'
-                        ],
-                        jawabanBenar: 0
-                    },
-                    {
-                        id: 'seed_q2',
-                        kategori: 'Kebakaran - Kelas C (Regu Penanggulangan)',
-                        pertanyaan: 'Berikut ini adalah contoh proteksi kebakaran pasif, kecuali:',
-                        opsi: [
-                            'Fire stop',
-                            'Detector',
-                            'Fire proofing',
-                            'Sistem pengendali asap'
-                        ],
-                        jawabanBenar: 1
                     }
-                ];
+                    if (window._lastStatSync !== `${countDaftar}|${countLulus}`) {
+                        window._lastStatSync = `${countDaftar}|${countLulus}`;
+                        set(ref(db, pathStatistikPublik), { totalPendaftar: countDaftar, totalLulus: countLulus }).catch(() => {});
+                    }
+                    // Peserta lama yang belum punya penyelenggara otomatis dimasukkan ke PJK3 LPMI
+                    // (disimpan permanen oleh Admin Pusat; tampilan sudah otomatis LPMI sebelumnya).
+                    if (currentUser && currentUser.role === 'admin_utama') {
+                        const tanpa = dataPesertaAll.filter(p => !(typeof p.penyelenggara === 'string' && p.penyelenggara.trim()));
+                        if (tanpa.length > 0 && !window._backfillPjk3Jalan) {
+                            window._backfillPjk3Jalan = true;
+                            const upd = {};
+                            tanpa.forEach(p => { upd[`${pathPeserta}/${p.id}/penyelenggara`] = PENYELENGGARA_DEFAULT; });
+                            update(ref(db), upd).catch(() => {}).finally(() => { window._backfillPjk3Jalan = false; });
+                        }
+                    }
+                    window.renderPenyelenggaraUI();
+                    window.renderIzinKelasKebakaran();
+                    window.renderRekapNilaiAdmin();
+                });
 
-                if (!snapshot.exists()) {
-                    seedQuestions.forEach(q => {
-                        const { id, ...qData } = q;
-                        qData.timestamp = Date.now();
-                        push(ref(db, pathSoal), qData);
-                    });
-                    if(listAdmin) listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Menginisialisasi bank soal awal... Memuat ulang...</p>';
-                    return; 
-                } else {
-                    snapshot.forEach(childSnap => {
-                        const data = childSnap.val();
-                        data.id = childSnap.key;
-                        quizDataFromDB.push(data);
-                    });
-                }
+                // Riwayat ujian CBT SELURUH peserta (dipakai panel admin "Izin Kelas Kebakaran"
+                // untuk menampilkan keterangan kelas apa saja yang sudah diselesaikan tiap peserta).
+                // "Lulus" bersifat sticky: begitu pernah lulus di suatu kelas, status tetap tercatat
+                // Lulus walau ada percobaan lain yang gagal; skor terbaik yang ditampilkan.
+                onValue(ref(db, pathRiwayat), (snapshot) => {
+                    dataRiwayatSemuaPeserta = {};
+                    if (snapshot.exists()) {
+                        snapshot.forEach(uidSnap => {
+                            const perKelas = {};
+                            uidSnap.forEach(attemptSnap => {
+                                const att = attemptSnap.val();
+                                if (!att) return;
+                                const bidangAtt = att.bidang && att.bidang !== '-' ? att.bidang : '';
+                                const kelasAtt = att.kelas && att.kelas !== '-' ? att.kelas : (att.kategori || 'Umum');
+                                const key = bidangAtt ? `${bidangAtt} - ${kelasAtt}` : kelasAtt;
+                                const skor = Number(att.skor) || 0;
+                                const lulus = window.isRiwayatLulus(att);
+                                if (!perKelas[key]) perKelas[key] = { lulus: false, bestSkor: 0, attempts: 0, bidang: bidangAtt, kelas: kelasAtt };
+                                perKelas[key].attempts++;
+                                if (skor > perKelas[key].bestSkor) perKelas[key].bestSkor = skor;
+                                if (lulus) perKelas[key].lulus = true;
+                            });
+                            dataRiwayatSemuaPeserta[uidSnap.key] = perKelas;
+                        });
+                    }
+                    window.renderIzinKelasKebakaran();
+                    window.renderRekapNilaiAdmin();
+                    window.renderAkunPeserta();
+                });
+            };
+            let soalDimulai = false;
+            window.mulaiListenerSoalAdmin = () => {
+                if (soalDimulai) return; soalDimulai = true;
+                onValue(ref(db, pathSoal), (snapshot) => {
+                    soalSiap = true;
+                    quizDataFromDB = [];
+                    const listAdmin = document.getElementById('admin-list-soal');
+                    if(listAdmin) listAdmin.innerHTML = '';
 
-                window.renderBankSoalUI();
+                    const seedQuestions = [
+                        {
+                            id: 'seed_q1',
+                            kategori: 'Kebakaran - Kelas D (Petugas Peran Kebakaran)',
+                            pertanyaan: 'Sistem proteksi kebakaran aktif terdiri dari:',
+                            opsi: [
+                                'APAR, hidran, detektor dan alarm, sprinkler',
+                                'Sarana jalan keluar, kompartemenisasi, titik kumpul',
+                                'Struktur bangunan, tangga darurat, pintu tahan api',
+                                'APD, rambu-rambu, prosedur tanggap darurat'
+                            ],
+                            jawabanBenar: 0
+                        },
+                        {
+                            id: 'seed_q2',
+                            kategori: 'Kebakaran - Kelas C (Regu Penanggulangan)',
+                            pertanyaan: 'Berikut ini adalah contoh proteksi kebakaran pasif, kecuali:',
+                            opsi: [
+                                'Fire stop',
+                                'Detector',
+                                'Fire proofing',
+                                'Sistem pengendali asap'
+                            ],
+                            jawabanBenar: 1
+                        }
+                    ];
+
+                    if (!snapshot.exists()) {
+                        seedQuestions.forEach(q => {
+                            const { id, ...qData } = q;
+                            qData.timestamp = Date.now();
+                            push(ref(db, pathSoal), qData);
+                        });
+                        if(listAdmin) listAdmin.innerHTML = '<p class="text-sm text-slate-500 italic text-center py-4">Menginisialisasi bank soal awal... Memuat ulang...</p>';
+                        return; 
+                    } else {
+                        snapshot.forEach(childSnap => {
+                            const data = childSnap.val();
+                            data.id = childSnap.key;
+                            quizDataFromDB.push(data);
+                        });
+                    }
+
+                    window.renderBankSoalUI();
+                });
+            };
+            mulaiTahap1();
+            setTimeout(mulaiTahap2, 700);
+            setTimeout(() => window.mulaiListenerSoalAdmin(), 3500);
+            document.addEventListener('click', (ev) => {
+                const nb = ev.target && ev.target.closest ? ev.target.closest('.admin-nav-btn') : null;
+                if (nb && /soal|kategori/.test(nb.getAttribute('data-target') || '')) window.mulaiListenerSoalAdmin();
             });
 
         };
