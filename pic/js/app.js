@@ -31,13 +31,13 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, day: 0, q: '', err: '' };
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [] });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {} });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 const isBatal = (h, p) => (p.id in h.batal) ? !!h.batal[p.id] : !!p.batal;
 // Remedial (baris kuning di daftar hadir): hanya tanda tangan di HARI TERAKHIR; Cancel (merah) tidak ikut absensi.
 const isRem = (h, p) => !isBatal(h, p) && ((h.remedial && p.id in h.remedial) ? !!h.remedial[p.id] : !!p.remedial);
 const perluHari = (h, p, d, days) => !isBatal(h, p) && (!isRem(h, p) || d === days[days.length - 1]);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const fotoLengkap = (k, h, p) => !!h.foto[p.id] && (!(k && k.damkar) || !!(h.foto2 && h.foto2[p.id]));
 const LAPK = k => (k && k.lap) || {};
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
@@ -47,6 +47,29 @@ const kelOf = (h, p) => (p.id in h.kel) ? h.kel[p.id] : (p.hasil || '');
 const lapNama = (h, k, w, f) => (h.lapN[w] && f in h.lapN[w]) ? String(h.lapN[w][f] || '') : String(LAPK(k)[w + f] || '');
 const kotaOf = (h, k) => ('nKota' in h.lapN) ? String(h.lapN.nKota || '') : String(LAPK(k).nKota || '');
 const materiOf = (h, k, d) => (d in h.materi) ? String(h.materi[d] || '') : String((LAPK(k).materi || {})[d] || '');
+/* Absensi Narasumber. Salinan katalog yang sama ada di daftar-hadir/index.html (NARA_KAT / MATERI_KAT): ubah keduanya bersamaan.
+   kid: '' = belum dipilih, '_m' = isi manual. Materi hanya ditawarkan bila grup-nya sama dengan grup instansi narasumber. */
+const NARA_KAT = [
+  { id: 'repy', nama: 'Repy, S.T', nip: '198512192015041001', inst: 'Wasnaker Prov. Sulawesi Tengah', grp: 'wasnaker' },
+  { id: 'ronal', nama: 'Ronal Sarira, S.T.', nip: '198309172011611007', inst: 'Wasnaker Prov. Sulawesi Tengah', grp: 'wasnaker' },
+  { id: 'benny', nama: 'Benny, S.H.', nip: '1980061720060110', inst: 'Wasnaker Prov. Sulawesi Tengah', grp: 'wasnaker' },
+  { id: 'adrian', nama: 'Adrian Anugerah P, S.E', nip: '', inst: 'Ahli K3 Penanggulangan Kebakaran', grp: 'ahli' }
+];
+const MATERI_KAT = [
+  { id: 'reg', judul: 'Regulasi Kebakaran (Kelas D)', grp: 'wasnaker', isi: ['Dasar-dasar dan kebijakan K3', 'K3 Penanggulangan Kebakaran', 'UU No 1 Tahun 1970', 'Kepmenaker No 186 Tahun 1999', 'Dasar-dasar pengaman kebakaran', 'Teori Api dan Anatomi Kebakaran'] },
+  { id: 'teori', judul: 'Teori Kebakaran (Kelas D)', grp: 'ahli', isi: ['Prinsip-prinsip pencegahan', 'Teknik Pemadaman Kebakaran', 'Sistem Proteksi Pasif (Komprehensif dll)', 'Sistem Proteksi Aktif (Apar dan Hydrant)'] }
+];
+const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
+const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
+// isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
+const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
+const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
+function naraPilih(r, kid) {
+  r.kid = kid; const n = naraOf(kid);
+  if (n) { r.nama = n.nama; r.nip = n.nip; r.inst = n.inst; }
+  if (r.mid && r.mid !== 'manual' && !materiOpsi(kid).some(m => m.id === r.mid)) { r.mid = ''; r.mtxt = ''; }
+}
+function materiPilih(r, mid) { r.mid = mid; const m = MATERI_KAT.find(x => x.id === mid); if (m) r.mtxt = m.isi.join('\n'); }
 const saveH = kid => iPut('h:' + kid, H[kid]);
 const saveK = () => iPut('kegs', KEGS);
 const online = () => navigator.onLine !== false;
@@ -97,6 +120,7 @@ const mediaList = h => {
   if (h.ttdPic) out.push(['pic', h.ttdPic]);
   if (h.n1) out.push(['n1', h.n1]);
   if (h.n2) out.push(['n2', h.n2]);
+  Object.keys(h.nrs || {}).forEach(d => { if (h.nrs[d]) out.push([`nr_${d}`, h.nrs[d]]); });
   Object.keys(h.hfoto || {}).forEach(d => (h.hfoto[d] || []).forEach(f => out.push([`d_${d}_${me4()}_${f.i}`, f.u])));
   return out;
 };
@@ -115,7 +139,8 @@ const flags = h => {
   const foto = {}; Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) foto[pid] = 1; });
   const foto2 = {}; Object.keys(h.foto2 || {}).forEach(pid => { if (h.foto2[pid]) foto2[pid] = 1; });
   const hari = {}; new Set([...Object.keys(h.materi || {}), ...Object.keys(h.hfoto || {})]).forEach(d => { hari[d] = { ids: ((h.hfoto || {})[d] || []).map(f => f.i) }; if (d in (h.materi || {})) hari[d].materi = String(h.materi[d] || ''); });
-  const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
+  const nr = {}; new Set([...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})]).forEach(d => { const o = { ...((h.nr || {})[d] || {}) }; if ((h.nrs || {})[d]) o.ttd = 1; nr[d] = o; });
+  const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari, nr }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
   return { nilai: h.nilai || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, foto2, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
@@ -166,11 +191,13 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
     const media = await window.PicFB.media(kid);
     const h = newH(); h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0;
     h.nilai = sv.nilai || {}; h.kel = sv.kel || {}; { const l = sv.lap || {}; h.lapN = { s1: l.s1 || {}, s2: l.s2 || {} }; if (l.nKota != null) h.lapN.nKota = l.nKota; Object.keys(l.hari || {}).forEach(d => { if (l.hari[d].materi != null) h.materi[d] = l.hari[d].materi; }); }
+    Object.keys((sv.lap || {}).nr || {}).forEach(d => { const { ttd, ...r } = sv.lap.nr[d] || {}; if (Object.keys(r).length) h.nr[d] = r; });
     const ids = {}; Object.keys((sv.lap || {}).hari || {}).forEach(d => ((sv.lap.hari[d].ids) || []).forEach(i => { ids[`d_${d}_${me4()}_${i}`] = [d, i]; }));
     const own = key => { // hanya gambar yang tercatat di hasil akun ini (gambar PIC lain tidak ikut)
       if (key === 'pic') return !!sv.ttdPic;
       if (key === 'n1') return !!sv.ttdN1;
       if (key === 'n2') return !!sv.ttdN2;
+      if (key.startsWith('nr_')) return !!((((sv.lap || {}).nr || {})[key.slice(3)] || {}).ttd);
       if (key in ids) return true;
       if (key.startsWith('f2_')) return !!(sv.foto2 && sv.foto2[key.slice(3)]);
       if (key.startsWith('f_')) return !!(sv.foto && sv.foto[key.slice(2)]);
@@ -182,6 +209,7 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
       if (key === 'pic') h.ttdPic = d;
       else if (key === 'n1') h.n1 = d;
       else if (key === 'n2') h.n2 = d;
+      else if (key.startsWith('nr_')) h.nrs[key.slice(3)] = d;
       else if (key in ids) { const [dd, ii] = ids[key]; (h.hfoto[dd] = h.hfoto[dd] || []).push({ i: ii, u: d }); }
       else if (key.startsWith('f2_')) h.foto2[key.slice(3)] = d;
       else if (key.startsWith('f_')) h.foto[key.slice(2)] = d;
@@ -305,6 +333,7 @@ function render() {
       ${LAPK(k).nilai || LAPK(k).hasil ? (() => { const hh = hOf(kid), ps = (k.peserta || []).filter(p => !isBatal(hh, p)), ln = LAPK(k), isi = ps.filter(p => (ln.nilai ? nilaiOf(hh, p, 'ut') || nilaiOf(hh, p, 'up') : false) || (ln.hasil && kelOf(hh, p))).length;
         return `<button type="button" class="tile" data-act="go" data-to="nil"><span class="ic">${I.list}</span><span><b>Nilai &amp; Kelulusan</b><small>${isi}/${ps.length} peserta terisi</small></span>${I.chev}</button>`; })() : ''}
       ${LAPK(k).nilai ? (() => { const hh = hOf(kid); return `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>${hh.n1 || lapNama(hh, k, 's1', 'nama') ? 'Pengawas ' + (hh.n1 ? '✔' : '–') : 'Pengawas –'} · Ahli ${hh.n2 ? '✔' : '–'}</small></span>${I.chev}</button>`; })() : ''}
+      ${LAPK(k).nara ? (() => { const hh = hOf(kid), ds = k.tgl || [], n = ds.filter(d => { const r = nrOf(hh, k, d); return r.nama && hh.nrs[d]; }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : ''}
       ${LAPK(k).harian ? (() => { const hh = hOf(kid), n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari</small></span>${I.chev}</button>`; })() : ''}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p></div>`;
@@ -350,6 +379,22 @@ function render() {
       <div class="field"><label for="in_kota">Kota (untuk baris tanggal)</label><input id="in_kota" data-lap="kota" value="${esc(kotaOf(hh, k))}" autocomplete="off" placeholder="Contoh: Morowali"></div>
       ${sg('s1', 1, (ln.s1jab || '').replace(/\n/g, ' '), true)}${sg('s2', 2, (ln.s2jab || '').replace(/\n/g, ' '), false)}
       <p class="hint">Nama dan tanda tangan ini tercetak di bagian bawah Daftar Nilai. Bisa juga diisi lewat aplikasi web Daftar Hadir.</p></div>`;
+  } else if (P.screen === 'nar') {
+    const hh = hOf(kid), days = k.tgl || [];
+    h = appbar('Absensi Narasumber', k.nama, true) + `<div class="screen">${days.map((d, i) => {
+      const r = nrOf(hh, k, d), man = r.kid === '_m', mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null, sg = hh.nrs[d];
+      return `<div class="card2" data-day="${esc(d)}"><b>Hari ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
+      <div class="field"><label for="nk${i}">Narasumber</label><select id="nk${i}" data-nr="kid"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(n => `<option value="${n.id}"${r.kid === n.id ? ' selected' : ''}>${esc(n.nama)}</option>`).join('')}<option value="_m"${man ? ' selected' : ''}>✍️ Isi manual (kosong)</option></select></div>
+      ${man ? `<div class="field"><label for="nn${i}">Nama narasumber</label><input id="nn${i}" data-nr="nama" value="${esc(r.nama)}" autocomplete="off" placeholder="Contoh: Fido Rinekas, S.T"></div>
+        <div class="field"><label for="np${i}">NIP (boleh kosong)</label><input id="np${i}" data-nr="nip" value="${esc(r.nip)}" autocomplete="off"></div>
+        <div class="field"><label for="ni${i}">Instansi</label><input id="ni${i}" data-nr="inst" value="${esc(r.inst)}" autocomplete="off" placeholder="Contoh: Kemnaker"></div>`
+        : r.kid ? `<div class="nauto"><small>Instansi (otomatis)</small><b>${esc(r.inst)}</b><small>NIP: ${esc(r.nip) || '–'}</small></div>` : ''}
+      ${r.kid ? `<div class="field"><label for="nm${i}">Materi</label><select id="nm${i}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
+      ${mk ? `<div class="nbul">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join('')}</div>` : r.mid === 'manual' ? `<div class="field"><label for="nt${i}">Isi materi (satu baris = satu poin)</label><textarea id="nt${i}" data-nr="mtxt" rows="4" placeholder="Contoh: Evaluasi Teori">${esc(r.mtxt)}</textarea></div>` : ''}
+      ${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
+      <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}</div></div>`;
+    }).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
+      <p class="hint">Pilih nama narasumber: instansi terisi otomatis, lalu pilih materi. Serahkan HP ke narasumber untuk tanda tangan. Hasilnya muncul di pratinjau admin dan di berkas Word Absensi Narasumber.</p></div>`;
   } else if (P.screen === 'dhr') {
     const hh = hOf(kid), days = k.tgl || [];
     h = appbar('Dokumentasi Harian', k.nama, true) + `<div class="screen">${days.map((d, i) => `<div class="card2" data-day="${esc(d)}"><b>Day ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
@@ -589,6 +634,8 @@ document.addEventListener('click', e => {
   else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; (k.peserta || []).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
   else if (a === 'nsig' && k) { const h = hOf(kid), n = b.dataset.n, ln = LAPK(k), nm = lapNama(h, k, 's' + n, 'nama'); openPad('Tanda tangan penandatangan', `${nm || (ln['s' + n + 'jab'] || '').replace(/\n/g, ' ')} · ${k.nama}`, u => { h['n' + n] = u; delete h.sent['n' + n]; touch(kid); render(); }, h['n' + n]); }
   else if (a === 'nsigdel' && k) { const h = hOf(kid), n = b.dataset.n; h['n' + n] = ''; delete h.sent['n' + n]; h.gone.includes('n' + n) || h.gone.push('n' + n); touch(kid); render(); }
+  else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(d)}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
+  else if (a === 'nrsigdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); touch(kid); render(); }
   else if (a === 'camx') camClose();
   else if (a === 'camshot' && CAM) camShot();
   else if (a === 'camretake' && CAM) camRetake();
@@ -603,6 +650,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', async e => {
   const kid = P.kid, k = kid && KEGS[kid];
+  if (e.target.tagName === 'SELECT' && e.target.dataset.nr && k) { const d = e.target.closest('.card2').dataset.day, h = hOf(kid), r = nrSet(h, k, d); if (e.target.dataset.nr === 'kid') naraPilih(r, e.target.value); else materiPilih(r, e.target.value); touch(kid); render(); return; }
   if (e.target.id === 'camFile' && CAM) {
     const f = e.target.files[0]; if (!f) return;
     toast('Memproses foto…');
@@ -613,6 +661,7 @@ document.addEventListener('change', async e => {
 document.addEventListener('input', e => {
   const t = e.target, kid = P.kid, k = kid && KEGS[kid];
   if (t.dataset && t.dataset.nf && k) { const pid = t.closest('.nrow').dataset.pid, h = hOf(kid); (h.nilai[pid] = h.nilai[pid] || {})[t.dataset.nf] = t.value.trim(); touch(kid); return; }
+  if (t.dataset && t.dataset.nr && t.tagName !== 'SELECT' && k) { const d = t.closest('.card2').dataset.day, h = hOf(kid); nrSet(h, k, d)[t.dataset.nr] = t.value; touch(kid); return; }
   if (t.dataset && t.dataset.materi && k) { const h = hOf(kid); h.materi[t.dataset.materi] = t.value; touch(kid); return; }
   if (t.dataset && t.dataset.lap && k) { const h = hOf(kid), [w, f] = t.dataset.lap.split('.'); if (w === 'kota') h.lapN.nKota = t.value; else { h.lapN[w] = h.lapN[w] || {}; h.lapN[w][f] = t.value; } touch(kid); return; }
   if (e.target.id === 'nilQ') { P.q = e.target.value; renderNil(); return; }

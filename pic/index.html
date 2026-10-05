@@ -75,7 +75,12 @@ small{color:var(--muted)}
 .tile small{display:block}
 .field{display:flex;flex-direction:column;gap:5px}
 .field label{font-weight:600;font-size:13px}
-.field input{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;min-height:46px;width:100%}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;min-height:46px;width:100%}
+.field textarea{min-height:92px;resize:vertical}
+.nauto{display:flex;flex-direction:column;gap:2px;padding:10px 12px;background:var(--paper);border-radius:12px}
+.nauto small{color:var(--muted)}
+.nbul{padding:10px 12px;background:var(--paper);border-radius:12px;font-size:13px;line-height:1.5}
+.nbul div{display:flex;gap:8px}.nbul i{font-style:normal;flex:none}
 .err{color:var(--bad);font-size:13px;font-weight:600}
 .hint{font-size:12.5px;color:var(--muted)}
 .empty{border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted)}
