@@ -271,6 +271,8 @@
             100%{ transform:translateY(150px) rotate(var(--rot)); opacity:0; }
         }
 
+        #admin-panel-daftarhadir .dh-offscreen{position:absolute;left:-10000px;top:0;width:1100px;height:700px;overflow:hidden;visibility:hidden;pointer-events:none}
+
         @media (prefers-reduced-motion: reduce){
             .tb-rocket-fly, .tb-rocket-flame, .tb-rocket-ring, .tb-rocket-spark, .tb-rocket-trail,
             .tb-rocket-glow, .tb-flag-wave, .tb-confetti{ animation:none !important; }
@@ -1892,7 +1894,7 @@
                         <div class="p-5 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                             <div>
                                 <h3 class="text-lg font-bold text-slate-900">Daftar Hadir &amp; Dokumentasi</h3>
-                                <p class="text-xs text-slate-500 mt-1 max-w-2xl">Input peserta, foto, dan tanda tangan langsung di halaman ini. Arsipnya (daftar hadir Word, foto, tanda tangan) tersimpan otomatis di Google Drive dan terpantau di tab Rekap.</p>
+                                <p class="text-xs text-slate-500 mt-1 max-w-2xl">Input peserta, foto, dan tanda tangan langsung di halaman ini. Arsipnya (daftar hadir Word, foto, tanda tangan) tersimpan otomatis di Google Drive dan terpantau di tab Rekap. Kegiatan yang Anda input otomatis muncul di aplikasi Portal PIC; hasil kerja PIC (TTD, batal, foto, TTD PIC) masuk kembali ke kegiatan yang sama selama halaman ini terbuka.</p>
                             </div>
                             <div class="inline-flex p-1 bg-slate-100 rounded-lg self-start shrink-0" role="tablist" aria-label="Tampilan Daftar Hadir">
                                 <button type="button" id="dh-tab-rekap" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-bold bg-white text-slate-900 shadow-sm">Rekap Kegiatan</button>
@@ -1954,9 +1956,9 @@
                     </div>
 
                     <!-- Tab 2: aplikasi Daftar Hadir berjalan di halaman ini (tanpa tab baru) -->
-                    <div id="dh-view-app" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div id="dh-view-app" class="dh-offscreen bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-                            <p class="text-xs text-slate-600">Data tersimpan otomatis di perangkat ini, lalu dikirim ke Google Drive saat tersambung internet.</p>
+                            <p class="text-xs text-slate-600">Data tersimpan otomatis di perangkat ini, lalu dikirim ke Google Drive dan ke aplikasi Portal PIC saat tersambung internet. Hasil dari PIC masuk otomatis ke kegiatan di bawah (tombol <b>PIC</b> di bilah atas aplikasi).</p>
                             <div class="flex items-center gap-2 shrink-0">
                                 <button type="button" id="btn-dh-app-muat" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Muat ulang</button>
                                 <button type="button" id="btn-dh-app-penuh" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Layar penuh</button>
@@ -1968,16 +1970,16 @@
                         </div>
                     </div>
 
-                    <!-- Tab 3: Portal PIC (akun PIC, input kegiatan, hasil dari APK PIC, cetak). Halaman: /pic/admin.html -->
+                    <!-- Tab 3: Portal PIC (hanya akun PIC). Kegiatan diambil otomatis dari tab Input Kegiatan; hasil PIC masuk ke kegiatan yang sama. Halaman: /pic/admin.html -->
                     <div id="dh-view-pic" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
-                            <p class="text-xs text-slate-600">PIC mengisi absensi, TTD, dan foto lewat aplikasi <b>Portal PIC</b> (bisa offline). Hasilnya muncul di sini, siap dicetak, dan otomatis tersimpan di Google Drive.</p>
+                            <p class="text-xs text-slate-600">Buat akun untuk tiap PIC. Semua PIC melihat semua kegiatan dari tab <b>Input Kegiatan</b>; hasil kerjanya muncul di kegiatan yang sama, siap dicetak, dan tersimpan di Google Drive.</p>
                             <div class="flex items-center gap-2 shrink-0">
                                 <a href="/pic/" target="_blank" rel="noopener" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Buka aplikasi PIC</a>
                                 <button type="button" id="btn-dh-pic-muat" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Muat ulang</button>
                             </div>
                         </div>
-                        <iframe id="dh-pic-frame" title="Admin Portal PIC" class="block w-full border-0 bg-white" style="height:calc(100vh - 17rem);min-height:720px" allow="fullscreen"></iframe>
+                        <iframe id="dh-pic-frame" title="Admin Portal PIC" class="block w-full border-0 bg-white" style="height:calc(100vh - 17rem);min-height:560px" allow="fullscreen"></iframe>
                     </div>
                 </div>
 
@@ -8449,6 +8451,7 @@
             if (!dhIsAdmin()) return;
             let tab = 'rekap'; try { const tv = localStorage.getItem('rk3_dh_view'); tab = (tv === 'app' || tv === 'pic') ? tv : 'rekap'; } catch (e) {}
             window.dhTampilView(tab);
+            try { const f = document.getElementById('dh-frame'); if (f && !f.getAttribute('src')) { localStorage.setItem('rk3_admin_at', String(Date.now())); f.src = '/daftar-hadir/'; } } catch (e) {} // muat di latar: kirim kegiatan ke PIC + tarik hasil PIC
             if (!dhCfg()) { const c = await dhCfgDariAplikasi(); if (c) dhSimpanCfg(c); }
             if (!dhEvents.length) {
                 try { const c = JSON.parse(localStorage.getItem(DH_CACHE_KEY) || 'null'); if (c && Array.isArray(c.events)) { dhEvents = c.events; dhDiCache = c.at || 0; } } catch (e) {}
@@ -8505,7 +8508,7 @@
         window.dhTampilView = function(v) {
             const app = v === 'app', pic = v === 'pic';
             document.getElementById('dh-view-rekap')?.classList.toggle('hidden', app || pic);
-            document.getElementById('dh-view-app')?.classList.toggle('hidden', !app);
+            document.getElementById('dh-view-app')?.classList.toggle('dh-offscreen', !app); // tetap hidup di latar agar kegiatan dikirim ke PIC dan hasil PIC masuk otomatis
             document.getElementById('dh-view-pic')?.classList.toggle('hidden', !pic);
             const aktif = ['bg-white', 'text-slate-900', 'shadow-sm'], mati = ['text-slate-500', 'hover:text-slate-800'];
             [['dh-tab-rekap', !app && !pic], ['dh-tab-app', app], ['dh-tab-pic', pic]].forEach(([id, on]) => {

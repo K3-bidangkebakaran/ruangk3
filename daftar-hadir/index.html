@@ -288,10 +288,6 @@ table.doku td.foto{text-align:center}
 
 #measure{position:absolute;left:-10000px;top:0;visibility:hidden;pointer-events:none}
 #measure .page{box-shadow:none;margin:0}
-body.view .topbar,body.view .tabs,body.view .form-col,body.view .preview-head{display:none!important}
-body.view .layout{display:block;padding:0}
-body.view .preview-col{position:static;height:auto;display:block!important;background:none}
-body.view .preview-scroll{padding:12px;overflow:visible}
 @page{size:A4;margin:0}
 @media print{
   body{background:#fff}
@@ -335,6 +331,7 @@ body.view .preview-scroll{padding:12px;overflow:visible}
   <span class="grow"></span>
   <button class="btn dark sm" id="btnExport" title="Simpan semua data (termasuk foto) ke file">Ekspor</button>
   <button class="btn dark sm" id="btnImport" title="Buka file data yang pernah diekspor">Impor</button>
+  <button class="btn dark sm" id="picBtn" title="Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis">📲 PIC</button>
   <button class="btn dark sm" id="cloudBtn" title="Sinkron Google Drive">☁️ Hubungkan Drive</button>
   <button class="btn dark sm" id="btnEvents" title="Daftar semua kegiatan tersimpan">📁 Kegiatan</button>
   <button class="btn primary" id="btnPrint">Cetak / PDF</button>
@@ -579,8 +576,6 @@ const blank = () => ({
   wm: { alamat: "", auto: true, lat: null, lng: null },
   sync: { h: {}, v: 0, sv: 0, at: 0 }
 });
-const BRIDGE = new URLSearchParams(location.search).has("bridge"), VIEW = new URLSearchParams(location.search).has("view"); // view = hanya pratinjau + cetak (dipakai Portal PIC)
-const _unused = 0; // dipakai panel admin untuk kegiatan dari Portal PIC (tanpa tampilan)
 let S = blank();
 const uid = () => Math.random().toString(36).slice(2, 10);
 const $ = s => document.querySelector(s);
@@ -645,7 +640,6 @@ const meta = x => {
 let saveT = null;
 async function doSave() {
   saveT = null;
-  if (BRIDGE) return;
   try {
     const snap = JSON.parse(JSON.stringify(S));
     if (!snap.peserta.length && !(snap.acara.kegiatan || "").trim() && !snap.acara.ttd && !EV.some(e => e.id === snap.id)) { // kegiatan baru yang masih kosong tidak disimpan
@@ -655,6 +649,7 @@ async function doSave() {
     const m = meta(snap), i = EV.findIndex(e => e.id === snap.id);
     if (i >= 0) EV[i] = m; else EV.push(m);
     await idbPut(IDX, EV);
+    Pic.mark(snap.id);
     $("#saveSt").textContent = "Tersimpan otomatis";
   } catch (e) {
     $("#saveSt").textContent = "Tidak bisa simpan otomatis – gunakan Ekspor";
@@ -1311,7 +1306,7 @@ function setTab(t) {
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => setTab(b.dataset.t));
 $("#btnToFoto").onclick = () => setTab("ttd");
 const setTb = () => document.documentElement.style.setProperty("--tb", $(".topbar").offsetHeight + "px");
-window.addEventListener("resize", setTb); setTb();
+window.addEventListener("resize", () => { setTb(); renderSoon(); }); setTb();
 $("#btnPrint").onclick = () => {
   if (!$("#cDh").checked && !$("#cDk").checked) { toast("Centang minimal satu: Daftar Hadir atau Dokumentasi."); return; }
   clearTimeout(rT); renderPages();
@@ -1440,6 +1435,7 @@ const Ev = {
     Cloud.gone.add(id);
     if (drive) await Cloud.queueDelete(id); // perintah hapus disimpan dulu, jadi tidak hilang walau offline / aplikasi ditutup
     await idbDel("event:" + id);
+    Pic.drop(id);
     EV = EV.filter(x => x.id !== id); await idbPut(IDX, EV).catch(() => { });
     if (id === S.id) {
       const nxt = [...EV].sort((x, y) => y.updated - x.updated)[0];
@@ -1946,7 +1942,7 @@ const Word = (() => {
     if (!hasP && !(ev.acara.kegiatan || "").trim()) return out;
     const add = async (key, name, bytes) => { const data = await toDataUrl(bytes); out.push({ key, path: [], name, data, hash: fnv(name + "|" + data.length + "|" + data.slice(-64) + "|" + crc32(bytes)) }); };
     await add("doc:dh", `Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx));
-    if (ev.peserta.some(p => p.foto && !p.batal)) {
+    if (ev.peserta.some(p => p.foto)) {
       const ev2 = { ...ev, peserta: [] };
       for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "" });
       await add("doc:dk", `Dokumentasi Peserta - ${nm}.docx`, dokumentasi(ev2, ctx));
@@ -2079,7 +2075,7 @@ const Cloud = {
     };
   },
   async sync(manual, evArg) {
-    if (!this.ready()) { if (manual && !BRIDGE) this.openSettings(); return; }
+    if (!this.ready()) { if (manual) this.openSettings(); return; }
     if (this.busy) { this.again = true; return; }
     if (!navigator.onLine) { this.status("☁️ Offline – menunggu", "err"); return; }
     const ev = evArg || S; ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 };
@@ -2113,7 +2109,7 @@ const Cloud = {
       const r = await this.api("saveEvent", { event: this.payload(ev), keys: [...keys], removed });
       removed.forEach(k => delete ev.sync.h[k]);
       ev.sync.at = Date.now(); ev.sync.sv = v0; ev.sync.folderUrl = r.folderUrl || ev.sync.folderUrl;
-      if (ev === S && !BRIDGE) save(); else if (!this.gone.has(ev.id)) await idbPut((ev.pic ? "picev:" : "event:") + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
+      if (ev === S) save(); else if (!this.gone.has(ev.id)) await idbPut("event:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
       this.status();
       if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah).`);
     } catch (e) {
@@ -2247,61 +2243,152 @@ $("#evCloudList").addEventListener("click", e => {
 });
 window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDeletes(); });
 
-/* ---------- jembatan Portal PIC (tanpa tampilan, dipanggil panel admin ruangk3.com) ----------
-   Panel admin mengirim kegiatan hasil kerja PIC lewat postMessage. Di sini kegiatan disusun jadi
-   berkas Word + foto + tanda tangan lalu diunggah ke Google Drive lewat jalur Cloud yang sama dengan
-   aplikasi ini. Data disimpan di kunci "picev:<id>" sehingga tidak bercampur dengan daftar kegiatan manual. */
-const Bridge = {
-  q: Promise.resolve(),
-  reply(m) { try { parent.postMessage({ src: "dh-bridge", ...m }, location.origin); } catch (e) { } },
-  async upload(raw) {
-    const prev = await idbGet("picev:" + raw.id);
-    const ev = normalize(raw);
-    ev.sync = { h: (prev && prev.sync && prev.sync.h) || {}, v: ((prev && prev.sync && prev.sync.v) || 0) + 1, sv: (prev && prev.sync && prev.sync.sv) || 0, at: (prev && prev.sync && prev.sync.at) || 0, folderUrl: prev && prev.sync && prev.sync.folderUrl };
-    if (!Cloud.ready()) throw new Error("NOCFG");
-    if (Cloud.outdated) throw new Error("OUTDATED");
-    for (let i = 0; i < 600 && Cloud.busy; i++) await new Promise(r => setTimeout(r, 200));
-    Cloud.gone.delete(ev.id);
-    await Cloud.sync(false, ev);
-    if ((ev.sync.sv || 0) < (ev.sync.v || 0)) throw new Error("SYNC");
-    await idbPut("picev:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
-    return { folderUrl: ev.sync.folderUrl || "", rootUrl: Cloud.cfg.rootUrl || "" };
-  },
-  async remove(id) {
-    await idbDel("picev:" + id);
-    Cloud.gone.add(id);
-    if (Cloud.ready()) { await Cloud.queueDelete(id); const ok = await Cloud.flushDeletes(); if (!ok) throw new Error(Cloud.delErr || "DEL"); }
-  },
-  handle(e) {
-    if (e.origin !== location.origin || !e.data || e.data.dst !== "dh-bridge") return;
-    const m = e.data;
-    this.q = this.q.then(async () => {
+/* ---------- Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis ----------
+   Kegiatan yang diinput di sini (nama, tanggal, tempat, peserta) dikirim ke Firebase (dh_kegiatan) sehingga
+   SEMUA akun PIC melihatnya di aplikasi Portal PIC. Hasil kerja PIC (TTD peserta, peserta batal, foto, TTD PIC)
+   ditarik (dh_hasil + dh_media) dan digabung ke kegiatan yang sama: pratinjau, Cetak/PDF, Word, dan Google Drive
+   memakai jalur yang sudah ada. Berjalan selama halaman ini terbuka (panel admin memuatnya di latar). */
+const Pic = {
+  CFG: { apiKey: "AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg", authDomain: "portal-k3-bidang-kebakaran.firebaseapp.com", databaseURL: "https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "portal-k3-bidang-kebakaran", storageBucket: "portal-k3-bidang-kebakaran.firebasestorage.app", messagingSenderId: "497833559757", appId: "1:497833559757:web:01c2de15cd5f56dbb18b84" },
+  ROOT: "artifacts/k3-kebakaran-app-v5/public/data",
+  ready: false, initP: null, d: null, db: null, dirty: new Set(), hash: {}, drops: [], err: "", pulling: false, t: null, pt: null, q: Promise.resolve(), nPull: 0,
+  r(p) { return this.d.ref(this.db, `${this.ROOT}/${p}`); },
+  async load() {
+    if (this.initP) return this.initP;
+    this.initP = (async () => {
       try {
-        if (m.t === "upload") this.reply({ t: "done", op: "upload", id: m.ev.id, rid: m.rid, ok: true, ...(await this.upload(m.ev)) });
-        else if (m.t === "remove") { await this.remove(m.id); this.reply({ t: "done", op: "remove", id: m.id, rid: m.rid, ok: true }); }
-        else if (m.t === "preview") { S = normalize(m.ev); $("#cDh").checked = true; $("#cDk").checked = true; document.body.classList.add("view"); renderPages(); this.reply({ t: "previewed", id: S.id, rid: m.rid, info: $("#pgInfo").textContent }); }
-        else if (m.t === "print") { $("#btnPrint").click(); }
-        else if (m.t === "docx") { const ev = normalize(m.ev); const docs = await Word.berkas(ev, Cloud.docCtx(ev)); this.reply({ t: "docx", id: ev.id, rid: m.rid, ok: true, files: docs.map(d => ({ name: d.name, data: d.data })) }); }
-        else if (m.t === "status") this.reply({ t: "status", rid: m.rid, ready: Cloud.ready(), outdated: !!Cloud.outdated });
-      } catch (err) {
-        const c = String(err && err.message || err);
-        this.reply({ t: "done", op: m.t, id: (m.ev && m.ev.id) || m.id, rid: m.rid, ok: false, err: c === "NOCFG" ? "Google Drive belum terhubung di Daftar Hadir." : c === "OUTDATED" ? "Code.gs di Apps Script masih versi lama. Tempel versi terbaru lalu Deploy versi baru." : c === "SYNC" ? "Unggah ke Google Drive belum berhasil. Akan dicoba lagi." : Cloud.friendly(c) });
+        const V = "https://www.gstatic.com/firebasejs/11.6.1/";
+        const [a, au, d] = await Promise.all([import(V + "firebase-app.js"), import(V + "firebase-auth.js"), import(V + "firebase-database.js")]);
+        const app = a.initializeApp(this.CFG, "dh-pic-sync"), auth = au.getAuth(app);
+        await Promise.race([au.signInAnonymously(auth), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 15000))]);
+        this.d = d; this.db = d.getDatabase(app); this.ready = true; this.err = "";
+        d.onValue(this.r("dh_hasil"), () => this.pullSoon(), e => { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; this.status(); });
+      } catch (e) { this.ready = false; this.initP = null; this.err = "net"; }
+      this.status(); return this.ready;
+    })();
+    return this.initP;
+  },
+  status() {
+    const b = $("#picBtn"); if (!b) return;
+    let txt = "📲 PIC", tip = "Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis. Klik untuk memeriksa sekarang.";
+    if (this.err === "rules") { txt = "📲 PIC: aturan Firebase?"; tip = "Aturan Firebase untuk Portal PIC belum dipasang (lihat pic/README.md)."; }
+    else if (!navigator.onLine) txt = "📲 PIC: offline";
+    else if (!this.ready) txt = "📲 PIC: menghubungkan…";
+    else if (this.dirty.size) txt = "📲 PIC: mengirim…";
+    else txt = "📲 PIC tersambung";
+    b.textContent = txt; b.title = tip;
+  },
+  async start() {
+    this.dirty = new Set((await idbGet("pic-pub")) || []); this.hash = (await idbGet("pic-hash")) || {}; this.drops = (await idbGet("pic-del") || []);
+    if (!(await idbGet("pic-seeded"))) { // sekali: kegiatan terbaru yang sudah ada ikut dikirim ke PIC
+      await idbPut("pic-seeded", 1);
+      const batas = Date.now() - 30 * 864e5;
+      for (const e of EV) { const l = (e.hari && e.hari[e.hari.length - 1]) || e.tanggal2 || e.tanggal; if (e.kegiatan && (!l || new Date(l + "T00:00:00").getTime() >= batas)) this.dirty.add(e.id); }
+      await idbPut("pic-pub", [...this.dirty]);
+    }
+    this.status();
+    window.addEventListener("online", () => { this.status(); this.flush(); this.pullAll(); });
+    window.addEventListener("offline", () => this.status());
+    setInterval(() => { if (navigator.onLine) { this.flush(); this.pullAll(); } }, 5 * 60000);
+    $("#picBtn").onclick = () => this.manual();
+    if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
+  },
+  mark(id) {
+    if (!id) return;
+    this.dirty.add(id); idbPut("pic-pub", [...this.dirty]).catch(() => { });
+    clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 3000);
+  },
+  node(ev) {
+    const a = ev.acara, hari = hariList(a).filter(Boolean);
+    return {
+      nama: (a.kegiatan || "").trim(), tgl: hari, tempat: a.tempat || "", kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
+      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", batal: !!p.batal })), dibuat: ev.created
+    };
+  },
+  async flush() {
+    if (!navigator.onLine) { this.status(); return; }
+    if (!(await this.load())) { this.status(); clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 30000); return; }
+    try {
+      for (const id of [...this.drops]) { // kegiatan yang dihapus: buang juga dari aplikasi PIC
+        await Promise.all(["dh_kegiatan", "dh_hasil", "dh_media"].map(n => this.d.remove(this.r(`${n}/${id}`))));
+        this.drops = this.drops.filter(x => x !== id); await idbPut("pic-del", this.drops);
       }
-    });
+      for (const id of [...this.dirty]) {
+        const ev = id === S.id ? S : (await idbGet("event:" + id));
+        if (!ev) { this.dirty.delete(id); continue; }
+        const n = this.node(ev); if (!n.nama || !n.peserta.length || !n.tgl.length) continue; // belum layak dikirim: tunggu sampai ada nama + peserta
+        const h = fnv(JSON.stringify(n));
+        if (this.hash[id] !== h) { await this.d.set(this.r(`dh_kegiatan/${id}`), { ...n, upd: Date.now() }); this.hash[id] = h; await idbPut("pic-hash", this.hash); }
+        this.dirty.delete(id);
+      }
+      this.err = "";
+    } catch (e) { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 60000); }
+    await idbPut("pic-pub", [...this.dirty]).catch(() => { });
+    this.status();
+  },
+  drop(id) {
+    this.dirty.delete(id); delete this.hash[id]; idbPut("pic-hash", this.hash).catch(() => { });
+    if (!this.drops.includes(id)) this.drops.push(id);
+    idbPut("pic-del", this.drops).catch(() => { }); idbPut("pic-pub", [...this.dirty]).catch(() => { });
+    this.flush();
+  },
+  pullSoon(ms) { clearTimeout(this.pt); this.pt = setTimeout(() => this.pullAll(), ms || 3000); },
+  async pullAll(manual) {
+    if (this.pulling || !navigator.onLine) return 0;
+    if (!(await this.load())) return 0;
+    this.pulling = true; let total = 0;
+    try {
+      const all = (await this.d.get(this.r("dh_hasil"))).val() || {};
+      for (const kid of Object.keys(all)) {
+        const nodes = Object.values(all[kid] || {}).filter(x => x && typeof x === "object");
+        const upd = Math.max(0, ...nodes.map(x => x.upd || 0)); if (!upd) continue;
+        if (!EV.some(e => e.id === kid)) continue;                     // kegiatan ini tidak ada di perangkat ini
+        const cur = kid === S.id ? S : await idbGet("event:" + kid);
+        if (cur && cur.pic && (cur.pic.merged || 0) >= upd) continue;  // sudah digabung
+        const media = (await this.d.get(this.r("dh_media/" + kid))).val() || {};
+        const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid));
+        const n = this.merge(ev, all[kid], media, upd);
+        total += n;
+        if (kid === S.id) { if (n) changed(); else save(); renderTtdTab(); renderFoto(); renderTtd(); }
+        else {
+          if (n) ev.sync.v = (ev.sync.v || 0) + 1;
+          await idbPut("event:" + kid, JSON.parse(JSON.stringify(ev)));
+          const i = EV.findIndex(e => e.id === kid); if (i >= 0) { EV[i] = meta(ev); await idbPut(IDX, EV); }
+          if (n && Cloud.ready()) this.q = this.q.then(async () => { for (let i = 0; i < 300 && Cloud.busy; i++) await new Promise(r => setTimeout(r, 200)); await Cloud.sync(false, ev); });
+        }
+        if (n) toast(`Hasil dari PIC masuk: ${ev.acara.kegiatan || "kegiatan"}.`);
+      }
+      this.err = "";
+    } catch (e) { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; }
+    this.pulling = false; this.status();
+    if (manual) toast(total ? "Hasil PIC diperbarui." : (this.err ? "Gagal memeriksa hasil PIC." : "Belum ada hasil baru dari PIC."));
+    return total;
+  },
+  merge(ev, byPic, media, upd) { // gabungkan hasil PIC ke kegiatan; mengembalikan jumlah isian yang berubah
+    const a = ev.acara, hari = hariList(a).filter(Boolean), by = new Map(ev.peserta.map(p => [p.id, p]));
+    let n = 0;
+    const list = Object.values(byPic || {}).filter(x => x && typeof x === "object").sort((x, y) => (x.upd || 0) - (y.upd || 0));
+    let last = null;
+    for (const h of list) {
+      Object.entries(h.batal || {}).forEach(([pid, v]) => { const p = by.get(pid); if (p && !!p.batal !== !!v) { p.batal = !!v; n++; } });
+      Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) return; Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
+      Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (p && u && p.foto !== u) { p.foto = u; n++; } });
+      if (h.ttdPic) last = h;
+    }
+    if (last && media.pic && a.ttd !== media.pic) { a.ttd = media.pic; a.namaTtd = last.ttdPicNama || last.picNama || a.namaTtd; a.jabatanTtd = "PIC Kegiatan"; if (hari.length) a.tglTtd = hari[hari.length - 1]; n++; }
+    ev.pic = { merged: upd };
+    return n;
+  },
+  async manual() {
+    if (!navigator.onLine) { toast("Tidak ada internet."); return; }
+    this.hash = {}; await idbPut("pic-hash", this.hash); this.mark(S.id);
+    toast("Memeriksa Portal PIC…"); await this.flush(); const n = await this.pullAll(true);
+    if (!n && !this.err) toast(S.acara.kegiatan ? "Kegiatan terkirim ke aplikasi PIC. Belum ada hasil baru dari PIC." : "Belum ada hasil baru dari PIC.");
   }
 };
-if (BRIDGE) window.addEventListener("message", e => Bridge.handle(e));
 
 /* ---------- init ---------- */
 (async () => {
-  if (BRIDGE) {
-    if (VIEW) document.body.classList.add("view");
-    await Cloud.loadCfg();
-    ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id));
-    Cloud.flushDeletes(); Cloud.verify();
-    Bridge.reply({ t: "ready" });
-    return;
-  }
   EV = (await idbGet(IDX)) || [];
   if (!EV.length) { // migrasi dari versi lama (1 kegiatan)
     const old = await idbGet(OLD_KEY);
@@ -2317,6 +2404,7 @@ if (BRIDGE) window.addEventListener("message", e => Bridge.handle(e));
   applyState();
   Cloud.flushDeletes();
   Cloud.verify();
+  Pic.start();
   $("#saveSt").textContent = d ? "Data terakhir dimuat" : "Tersimpan otomatis";
 })();
 })();

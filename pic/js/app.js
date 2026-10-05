@@ -1,7 +1,7 @@
 /* Portal PIC – aplikasi lapangan PIC (ruangk3.com/pic/).
-   Alur: admin utama membuat kegiatan + PIC di panel admin → PIC login sekali (butuh sinyal) → kegiatan tersimpan di HP →
+   Alur: admin utama menginput kegiatan di lembar Input Kegiatan (Daftar Hadir) + membuat akun PIC → semua PIC melihat semua kegiatan; PIC login sekali (butuh sinyal) → kegiatan tersimpan di HP →
    PIC mengisi absensi TTD peserta (kolom Batal), TTD PIC, dan foto dokumentasi, boleh tanpa sinyal →
-   begitu ada sinyal, hasil terkirim otomatis ke Firebase; panel admin lalu menyusun Word dan menyimpannya ke Google Drive.
+   begitu ada sinyal, hasil terkirim otomatis ke Firebase; aplikasi Daftar Hadir (admin) menariknya ke kegiatan yang sama, lalu Word/PDF dan Google Drive memakai alur yang sudah ada.
    Semua data kerja disimpan di IndexedDB "portal-pic". */
 (() => {
 'use strict';
@@ -32,6 +32,8 @@ let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, day: 0, q: '', err: '' };
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
 const newH = () => ({ batal: {}, hadir: {}, foto: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {} });
+// batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
+const isBatal = (h, p) => (p.id in h.batal) ? !!h.batal[p.id] : !!p.batal;
 const hOf = kid => (H[kid] = H[kid] || newH());
 const saveH = kid => iPut('h:' + kid, H[kid]);
 const saveK = () => iPut('kegs', KEGS);
@@ -65,7 +67,7 @@ const I = {
 /* ---------- hitung ---------- */
 function stat(kid) {
   const k = KEGS[kid], h = hOf(kid), peserta = (k && k.peserta) || [], days = (k && k.tgl) || [];
-  const aktif = peserta.filter(p => !h.batal[p.id]);
+  const aktif = peserta.filter(p => !isBatal(h, p));
   let ttd = 0; aktif.forEach(p => days.forEach(d => { if (h.hadir[p.id] && h.hadir[p.id][d]) ttd++; }));
   return { aktif: aktif.length, batal: peserta.length - aktif.length, ttd, ttdTotal: aktif.length * days.length, foto: aktif.filter(p => h.foto[p.id]).length, ttdPic: !!h.ttdPic };
 }
@@ -94,7 +96,7 @@ function pending() {
 const flags = h => {
   const hadir = {}; Object.keys(h.hadir).forEach(pid => { const m = {}; Object.keys(h.hadir[pid]).forEach(d => { if (h.hadir[pid][d]) m[d] = 1; }); if (Object.keys(m).length) hadir[pid] = m; });
   const foto = {}; Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) foto[pid] = 1; });
-  return { batal: h.batal, hadir, foto, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', upd: h.upd, rev: h.rev };
+  return { batal: h.batal, hadir, foto, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
 /* ---------- toast ---------- */
@@ -142,11 +144,17 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
     const sv = await window.PicFB.hasil(kid); if (!sv) return;
     const media = await window.PicFB.media(kid);
     const h = newH(); h.batal = sv.batal || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0;
+    const own = key => { // hanya gambar yang tercatat di hasil akun ini (gambar PIC lain tidak ikut)
+      if (key === 'pic') return !!sv.ttdPic;
+      if (key.startsWith('f_')) return !!(sv.foto && sv.foto[key.slice(2)]);
+      if (key.startsWith('s_') && key.length > 13) { const date = key.slice(-10), pid = key.slice(2, -11); return !!(sv.hadir && sv.hadir[pid] && sv.hadir[pid][date]); }
+      return false;
+    };
     Object.keys(media).forEach(key => {
-      const d = media[key]; if (typeof d !== 'string') return;
+      const d = media[key]; if (typeof d !== 'string' || !own(key)) return;
       if (key === 'pic') h.ttdPic = d;
       else if (key.startsWith('f_')) h.foto[key.slice(2)] = d;
-      else if (key.startsWith('s_') && key.length > 13) { const date = key.slice(-10), pid = key.slice(2, -11); (h.hadir[pid] = h.hadir[pid] || {})[date] = d; }
+      else { const date = key.slice(-10), pid = key.slice(2, -11); (h.hadir[pid] = h.hadir[pid] || {})[date] = d; }
       h.sent[key] = fnv(d);
     });
     H[kid] = h; await saveH(kid); render();
@@ -241,12 +249,18 @@ function render() {
       <button class="btn pri" type="submit" style="min-height:48px" id="bLogin">Masuk</button></form>
       ${online() ? '' : '<div class="pill warn">Tidak ada sinyal</div>'}</div>`;
   } else if (P.screen === 'home') {
-    const list = Object.values(KEGS).sort((a, b) => String(a.tgl && a.tgl[0]).localeCompare(String(b.tgl && b.tgl[0])));
-    h = appbar('Portal PIC', ME.nama, false) + `<div class="screen"><div class="hello"><h2>Kegiatan saya</h2><p class="hint" style="margin:4px 0 0">${list.length} kegiatan ditugaskan admin utama.</p></div>
+    const hari = todayIso(), qq = (P.hq || '').trim().toLowerCase();
+    const akhir = x => (x.tgl && x.tgl[x.tgl.length - 1]) || '', awal = x => (x.tgl && x.tgl[0]) || '';
+    const all = Object.values(KEGS);
+    // yang sedang/akan berlangsung di atas (terdekat dulu), lalu yang sudah lewat (terbaru dulu)
+    const list = all.filter(x => !qq || String(x.nama).toLowerCase().includes(qq) || String(x.tempat || '').toLowerCase().includes(qq))
+      .sort((a, b) => { const ua = akhir(a) >= hari, ub = akhir(b) >= hari; if (ua !== ub) return ua ? -1 : 1; return ua ? awal(a).localeCompare(awal(b)) : awal(b).localeCompare(awal(a)); });
+    h = appbar('Portal PIC', ME.nama, false) + `<div class="screen"><div class="hello"><h2>Daftar kegiatan</h2><p class="hint" style="margin:4px 0 0">${qq ? `${list.length} dari ${all.length} kegiatan` : `${all.length} kegiatan dari admin utama`}.</p></div>
+      ${all.length > 4 ? `<div class="field"><input id="homeQ" type="search" placeholder="Cari nama kegiatan atau tempat" aria-label="Cari kegiatan" value="${esc(P.hq || '')}"></div>` : ''}
       ${list.length ? list.map(x => { const s = stat(x.id), st = statusKeg(x.id); return `<button type="button" class="kcard" data-act="open" data-id="${esc(x.id)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(x.nama)}</h3><span class="pill ${st[1]}">${st[0]}</span></div>
         <div class="meta"><span>${esc(rentang(x.tgl))}</span><span>${esc(x.tempat || '')}</span><span>${(x.peserta || []).length} peserta</span></div>
         <div class="bars">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div></button>`; }).join('')
-        : `<div class="empty">Belum ada kegiatan. Kegiatan muncul di sini setelah admin utama menugaskan Anda dan HP mendapat sinyal.</div>`}
+        : `<div class="empty">${qq ? 'Tidak ada kegiatan yang cocok.' : 'Belum ada kegiatan. Semua kegiatan yang diinput admin utama muncul di sini begitu HP mendapat sinyal.'}</div>`}
       ${pullErr && !online() ? '' : (pullErr ? `<div class="err">${esc(pullErr)}</div>` : '')}
       <button class="btn" type="button" data-act="refresh">Perbarui daftar kegiatan</button>
       <button class="btn" type="button" data-act="pw">Ganti kata sandi</button>
@@ -277,7 +291,7 @@ function render() {
   } else if (P.screen === 'dok') {
     const s = stat(kid), hh = hOf(kid);
     h = appbar('Dokumentasi Peserta', k.nama, true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
-      <div class="photos">${(k.peserta || []).map(p => { const cx = hh.batal[p.id], f = hh.foto[p.id]; return `<div class="ph${cx ? ' cx' : ''}"><div class="img">${f ? `<img src="${f}" alt="Foto ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div><div class="cap"><b>${esc(p.nama)}</b>${cx ? '<span class="pill bad">Batal</span>' : `<label class="btn sm filebtn">${f ? 'Ganti foto' : 'Ambil foto'}<input type="file" accept="image/*" capture="environment" data-pid="${esc(p.id)}" aria-label="Ambil foto ${esc(p.nama)}"></label>`}</div></div>`; }).join('')}</div>
+      <div class="photos">${(k.peserta || []).map(p => { const cx = isBatal(hh, p), f = hh.foto[p.id]; return `<div class="ph${cx ? ' cx' : ''}"><div class="img">${f ? `<img src="${f}" alt="Foto ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div><div class="cap"><b>${esc(p.nama)}</b>${cx ? '<span class="pill bad">Batal</span>' : `<label class="btn sm filebtn">${f ? 'Ganti foto' : 'Ambil foto'}<input type="file" accept="image/*" capture="environment" data-pid="${esc(p.id)}" aria-label="Ambil foto ${esc(p.nama)}"></label>`}</div></div>`; }).join('')}</div>
       <p class="hint">Foto otomatis diberi tanggal, jam, lokasi, dan nama kegiatan, lalu diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
   app.innerHTML = h + '<div id="ovl"></div>';
@@ -288,11 +302,11 @@ function render() {
 function renderAbs() {
   const kid = P.kid, k = KEGS[kid]; if (!k) return;
   const h = hOf(kid), days = k.tgl || [], d = days[P.day] || days[0] || '', q = P.q.trim().toLowerCase(), s = stat(kid);
-  const sudah = (k.peserta || []).filter(p => !h.batal[p.id] && h.hadir[p.id] && h.hadir[p.id][d]).length;
+  const sudah = (k.peserta || []).filter(p => !isBatal(h, p) && h.hadir[p.id] && h.hadir[p.id][d]).length;
   $('#absCount').innerHTML = `<div><b>${sudah}</b><small>Sudah TTD</small></div><div><b>${s.aktif - sudah}</b><small>Belum TTD</small></div><div><b style="color:${s.batal ? 'var(--bad)' : 'inherit'}">${s.batal}</b><small>Batal</small></div>`;
   const rows = (k.peserta || []).filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q));
   $('#absList').innerHTML = rows.length ? rows.map(p => {
-    const cx = !!h.batal[p.id], g = h.hadir[p.id] && h.hadir[p.id][d];
+    const cx = isBatal(h, p), g = h.hadir[p.id] && h.hadir[p.id][d];
     return `<div class="arow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><label class="cbx"><input type="checkbox" data-act="batal" ${cx ? 'checked' : ''} aria-label="Batal ikut: ${esc(p.nama)}"><span>${I.check}</span></label>
       <div class="who"><b>${esc(p.nama)}</b><small>${esc(p.instansi || '')}</small></div>
       <div>${g ? `<button type="button" class="sigbtn done" data-act="sig" aria-label="Ganti tanda tangan ${esc(p.nama)}"><img src="${g}" alt="TTD ${esc(p.nama)}"></button>` : `<button type="button" class="sigbtn" data-act="sig">${I.pensm} Tanda tangan</button>`}</div></div>`;
@@ -377,7 +391,7 @@ document.addEventListener('change', async e => {
   const kid = P.kid, k = kid && KEGS[kid];
   if (e.target.matches('[data-act="batal"]') && k) {
     const pid = e.target.closest('.arow').dataset.pid, h = hOf(kid);
-    if (e.target.checked) h.batal[pid] = true; else delete h.batal[pid];
+    h.batal[pid] = !!e.target.checked;
     touch(kid); renderAbs(); toast(e.target.checked ? 'Peserta ditandai batal' : 'Tanda batal dicabut');
   } else if (e.target.matches('input[type=file]') && k) {
     const f = e.target.files[0], pid = e.target.dataset.pid; if (!f) return;
@@ -386,7 +400,10 @@ document.addEventListener('change', async e => {
     catch (err) { toast('Foto tidak bisa dibaca. Coba lagi.'); }
   }
 });
-document.addEventListener('input', e => { if (e.target.id === 'absQ') { P.q = e.target.value; renderAbs(); } });
+document.addEventListener('input', e => {
+  if (e.target.id === 'absQ') { P.q = e.target.value; renderAbs(); }
+  else if (e.target.id === 'homeQ') { P.hq = e.target.value; const pos = e.target.selectionStart; render(); const el = $('#homeQ'); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (_) {} } }
+});
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'fLogin') return; e.preventDefault();
   const u = $('#lUser').value.trim(), pw = $('#lPw').value;

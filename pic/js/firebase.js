@@ -4,12 +4,13 @@
 //
 // Data di Realtime Database (di bawah artifacts/k3-kebakaran-app-v5/public/data):
 //   dh_pic/{uid}              profil akun PIC {nama, user, hp, aktif, dibuat}          (dikelola admin utama)
-//   dh_kegiatan/{kid}         kegiatan {nama, tgl[], tempat, picUid, picNama, peserta[{id,nama,instansi}], upd}
-//   dh_hasil/{kid}            ringkasan hasil kerja PIC {batal, hadir, foto, ttdPic, ttdPicNama, upd, rev, picUid}
+//   dh_kegiatan/{kid}         kegiatan dari lembar Input Kegiatan (aplikasi Daftar Hadir) {nama, tgl[], tempat, peserta[{id,nama,instansi,batal}], upd}
+//                             -> SEMUA akun PIC membaca semua kegiatan; hanya aplikasi Daftar Hadir (admin) yang menulisnya
+//   dh_hasil/{kid}/{uid}      hasil kerja satu akun PIC {batal, hadir, foto, ttdPic, ttdPicNama, picNama, upd, rev, picUid}
 //   dh_media/{kid}/{key}      gambar (dataURL): s_<pid>_<tanggal> = TTD peserta, f_<pid> = foto, pic = TTD PIC
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getDatabase, ref, get, set, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg',
@@ -76,13 +77,13 @@ window.PicFB = {
   },
   async kegiatan() {
     const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.');
-    const snap = await withTimeout(get(query(ref(db, `${ROOT}/dh_kegiatan`), orderByChild('picUid'), equalTo(u.uid))), 30000);
+    const snap = await withTimeout(get(ref(db, `${ROOT}/dh_kegiatan`)), 40000);
     return snap.val() || {};
   },
-  async hasil(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_hasil/${kid}`)), 20000)).val(); },
+  async hasil(kid) { const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.'); return (await withTimeout(get(ref(db, `${ROOT}/dh_hasil/${kid}/${u.uid}`)), 20000)).val(); },
   async media(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}`)), 120000)).val() || {}; },
   // gambar disimpan dengan kunci tetap, jadi kirim ulang menimpa data yang sama
   async putMedia(kid, key, dataUrl) { await withTimeout(set(ref(db, `${ROOT}/dh_media/${kid}/${key}`), dataUrl), 90000); },
-  async putHasil(kid, hasil) { await withTimeout(set(ref(db, `${ROOT}/dh_hasil/${kid}`), clean({ ...hasil, picUid: auth.currentUser.uid })), 30000); },
+  async putHasil(kid, hasil) { await withTimeout(set(ref(db, `${ROOT}/dh_hasil/${kid}/${auth.currentUser.uid}`), clean({ ...hasil, picUid: auth.currentUser.uid })), 30000); },
 };
 window.dispatchEvent(new Event('pic-fb-ready'));
