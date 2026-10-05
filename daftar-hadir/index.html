@@ -2266,7 +2266,7 @@ function parsePesertaPdf(pages) {
   if (!hdr) return null;
   // 3. baris isi tabel (halaman pertama: setelah judul; halaman lain: semua kecuali judul yang diulang)
   const VOC = new Set(["instansi", "perusahaan", "company", "asal", "unit", "kerja", "nama", "peserta", "name", "full", "lengkap", "karyawan", "no", "nomor", "urut", "dan", "tanda", "tangan", "ttd", "paraf", "hari", "ke", "keterangan", "ket", "jabatan", "alamat", "telepon", "telp", "hp", "email", "tanggal", "tgl", "nik", "foto", "absen", "hadir", "kehadiran", "signature", "sign", "day", "date", "remarks", "note", "catatan", "status"]);
-  const vocabOnly = line => { const raw = line.items.map(i => i.s).join(" "), w = norm(raw).split(" ").filter(Boolean); const lt = w.filter(t => /[a-z]/.test(t)); if (!lt.length) return /^[\d\s]*\d{1,2}\s*[\/.-]\s*\d{1,2}(\s*[\/.-]\s*\d{2,4})?[\d\s\/.-]*$/.test(raw.trim()); /* baris tanggal di bawah judul hari, mis. 6/10/26 */ const frag = t => t.length >= 2 && [...VOC].some(v => v.startsWith(t) || v.endsWith(t)); /* kata judul yang terpotong, mis. "Keterang" + "an" */ return lt.every(t => VOC.has(t) || frag(t)) && w.every(t => VOC.has(t) || frag(t) || /^\d{1,4}$/.test(t)); };
+  const vocabOnly = line => { const raw = line.items.map(i => i.s).join(" "), w = norm(raw).split(" ").filter(Boolean); const lt = w.filter(t => /[a-z]/.test(t)); if (!lt.length) return /^[\d\s]*\d{1,2}\s*[\/.-]\s*\d{1,2}(\s*[\/.-]\s*\d{2,4})?[\d\s\/.-]*$/.test(raw.trim()); /* baris tanggal di bawah judul hari, mis. 6/10/26 */ const frag = t => t.length >= 1 && [...VOC].some(v => v.startsWith(t) || v.endsWith(t)); /* kata judul yang terpotong, mis. "Keterang" + "an" */ return lt.every(t => VOC.has(t) || frag(t)) && w.every(t => VOC.has(t) || frag(t) || /^\d{1,4}$/.test(t)); };
   const FOOT = /(^|\s)(penyelenggara|mengetahui|disetujui|dibuat oleh|diperiksa|hormat kami|jumlah peserta|total peserta|catatan|keterangan\s*:)|\b\d{1,2}\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+\d{4}\b/i;
   const body = [];
   P.forEach((lines, p) => {
@@ -2288,6 +2288,12 @@ function parsePesertaPdf(pages) {
   if (!body.length) return { rows: [], adaInst: !!hdr.pr };
   // 4. kolom: ruang kosong vertikal yang konsisten di seluruh baris = pemisah kolom
   const all = body.flatMap(l => l.items), hs = median(all.map(i => i.h)) || 10;
+  if (!hdr.no) { // judul "No" terpecah/tidak terbaca: kolom nomor dikenali dari angka-angka di kiri kolom nama
+    const left = all.filter(it => /^\d{1,4}[.)]?$/.test(it.s.trim()) && it.x + it.w <= hdr.nm.x0 + 2);
+    const vs = []; body.forEach(l => l.items.forEach(it => { if (/^\d{1,4}[.)]?$/.test(it.s.trim()) && it.x + it.w <= hdr.nm.x0 + 2) vs.push(parseInt(it.s, 10)); })); // urutan baca: per halaman, atas ke bawah
+    let seq = 0; for (let i = 1; i < vs.length; i++) if (vs[i] === vs[i - 1] + 1) seq++;
+    if (left.length >= 3 && seq >= (vs.length - 1) * 0.6) hdr.no = { x0: Math.min(...left.map(i => i.x)), x1: Math.max(...left.map(i => i.x + i.w)), text: "no" };
+  }
   const minX = Math.floor(Math.min(...all.map(i => i.x))), maxX = Math.ceil(Math.max(...all.map(i => i.x + i.w)));
   const cov = new Uint16Array(maxX - minX + 2);
   for (const it of all) for (let x = Math.max(0, Math.floor(it.x - minX)); x <= Math.min(cov.length - 1, Math.ceil(it.x + it.w - minX)); x++) cov[x]++;
@@ -2343,11 +2349,15 @@ function parsePesertaPdf(pages) {
     ys.forEach(l => (byP[l.p] = byP[l.p] || []).push(l));
     Object.values(byP).forEach(a => { a.sort((x, y) => y.y - x.y); for (let i = 1; i < a.length; i++) gaps.push(a[i - 1].y - a[i].y); });
     const lg = gaps.filter(g => g >= hs * 0.9), leading = lg.length ? Math.min(...lg) : hs * 1.2; // jarak antar-baris teks dalam satu sel
-    const rowOf = new Map(anchors.map(a => [a, rows.find(r => r.a === a)]));
+    const rowOf = new Map(anchors.map(a => [a, rows.find(r => r.a === a)])); let prevRow = null;
     Object.values(byP).forEach(seq => {
       const ai = seq.map((l, i) => anchors.includes(l) ? i : -1).filter(i => i >= 0);
       if (!ai.length) return;
-      for (let i = 0; i < ai[0]; i++) rowOf.get(seq[ai[0]]).parts.push(seq[i]); // di atas baris bernomor pertama
+      { // di atas baris bernomor pertama. Pada halaman lanjutan, baris yang terpisah celah besar dari sisanya = lanjutan sel peserta terakhir halaman sebelumnya
+        let cut = -1;
+        if (prevRow && ai[0] > 0) { let mx = 0; for (let i = 0; i < ai[0]; i++) { const g = seq[i].y - seq[i + 1].y; if (g > mx) { mx = g; cut = i; } } if (!(mx > leading * 1.3)) cut = -1; }
+        for (let i = 0; i < ai[0]; i++) (i <= cut ? prevRow : rowOf.get(seq[ai[0]])).parts.push(seq[i]);
+      }
       for (let k = 0; k < ai.length; k++) {
         const i0 = ai[k], i1 = k + 1 < ai.length ? ai[k + 1] : -1;
         if (i1 < 0) { // setelah baris bernomor terakhir: ambil selama masih rapat & belum masuk blok tanda tangan/keterangan di bawah tabel
@@ -2367,14 +2377,15 @@ function parsePesertaPdf(pages) {
         } else cut = i0 + g.indexOf(mx);
         for (let i = i0 + 1; i < i1; i++) rowOf.get(i <= cut ? seq[i0] : seq[i1]).parts.push(seq[i]);
       }
+      prevRow = rowOf.get(seq[ai[ai.length - 1]]);
     });
   }
   const out = [];
   for (const r of rows) {
-    r.parts.sort((x, y) => y.y - x.y);
+    r.parts.sort((x, y) => x.p - y.p || y.y - x.y); // halaman dulu, lalu dari atas ke bawah
     const nama = cleanTxt(r.parts.map(l => l.nama).filter(Boolean).join(" ")), inst = cleanTxt(r.parts.map(l => l.inst).filter(Boolean).join(" "));
     if (!nama || /^(halaman|page|hal\.?)\s*\d+/i.test(nama) || /^\d+$/.test(nama) || /^(jumlah|total)\b/i.test(nama)) continue;
-    out.push({ nama, inst });
+    out.push({ nama: nama.replace(/^nama\s+peserta\s+(?=\S)/i, ""), inst: inst.replace(/^(instansi\s*\/\s*)?perusahaan\s+(?=(pt|cv|ud|pd|koperasi|yayasan)\b)/i, "") });
   }
   return { rows: out, adaInst: !!hdr.pr };
 }
@@ -2390,6 +2401,12 @@ async function importPdf(file) {
 }
 // Tambahkan hasil baca file (Excel/PDF) ke daftar peserta: lewati duplikat, urutkan A–Z.
 function masukkanPeserta(list, sumber, adaInst) {
+  { // impor ulang file yang sama (mis. setelah pembacaan diperbaiki): tawarkan mengganti daftar bila belum ada TTD/foto/status
+    const nm = S.peserta.filter(p => (p.nama || "").trim());
+    const bersih = nm.every(p => !p.foto && !p.foto2 && !p.batal && !p.remedial && !(p.ttd && Object.keys(p.ttd).length));
+    const sama = list.filter(r => nm.some(p => norm(p.nama) === norm(r.nama))).length;
+    if (nm.length && bersih && sama >= Math.max(3, Math.min(nm.length, list.length) * 0.5) && confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = GANTI seluruh daftar dengan hasil baca file ini (disarankan bila daftar sebelumnya salah baca).\nBatal = hanya tambahkan nama yang belum ada.`)) S.peserta = [];
+  }
   const key = (n, i) => norm(n) + "|" + norm(i);
   const have = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => key(p.nama, p.instansi)));
   const add = []; let dup = 0;
