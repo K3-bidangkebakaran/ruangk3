@@ -664,7 +664,9 @@ table.lap tr.merah td{background:#da2f20;color:#000}
       <div class="field"><label for="cUrl">URL Web App (Google Apps Script)</label><input id="cUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
       <div class="field"><label for="cToken">Kode Akses</label><input id="cToken" type="password" autocomplete="off"></div>
       <label class="f-filter" style="margin-bottom:10px"><input type="checkbox" id="cAuto" checked> Sinkron otomatis setiap ada perubahan</label>
+      <div class="field"><label for="cRecover">Pulihkan dari Tautan Pengaturan (opsional)</label><div style="display:flex;gap:6px"><input id="cRecover" placeholder="Tempel tautan pengaturan yang pernah disalin" autocomplete="off"><button class="btn" id="cRecoverBtn" type="button">Pulihkan</button></div></div>
       <div class="wm-st" id="cInfo"></div>
+      <p class="hint" id="cPersist" style="margin-top:6px"></p>
       <div id="cLinks"></div>
     </div>
     <div class="sheet-tools">
@@ -2320,8 +2322,8 @@ $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("P
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 3; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
-const CLOUD_KEY = "cloud-config", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 3; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
 const hhmm = d => `${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}`;
@@ -2626,36 +2628,68 @@ const Word = (() => {
 const Cloud = {
   cfg: { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" },
   busy: false, again: false, t: null, gone: new Set(), delBusy: false, delT: null, delErr: "", outdated: false,
+  lastErr: null, fail: 0, nextAt: 0, lost: false, persisted: null, lastVerify: 0, lastHeal: 0, vBusy: false, toldOld: false,
   ready() { return !!(this.cfg.url && this.cfg.token); },
-  /* Pengaturan Drive disimpan di dua tempat (IndexedDB + localStorage, kunci sama dengan panel admin ruangk3.com) agar tidak hilang
-     bila salah satunya dibersihkan browser. Hanya tombol "Putuskan" yang menghapusnya. */
-  lsGet() { try { const c = JSON.parse(localStorage.getItem(CFG_LS) || "null"); return c && c.url && c.token ? c : null; } catch (e) { return null; } },
+  /* Pengaturan Drive disimpan BERLAPIS: IndexedDB + localStorage (kunci sama dengan panel admin) + satu salinan cadangan di masing-masing.
+     Saat dibuka, salinan TERBARU (cap waktu ts) yang dipakai, lalu semua salinan disamakan lagi. Error jaringan / Apps Script TIDAK PERNAH
+     menghapus pengaturan; hanya tombol "Putuskan" yang menghapusnya. */
+  okCfg(c) { return !!(c && typeof c.url === "string" && c.token && DRIVE_URL_OK.test(c.url)); },
+  lsRead(k) { try { const c = JSON.parse(localStorage.getItem(k) || "null"); return this.okCfg(c) ? c : null; } catch (e) { return null; } },
+  lsGet() { return this.lsRead(CFG_LS); },
+  parseLink(str) { // tautan pengaturan lengkap (…#cfg=XXXX) atau kode XXXX saja
+    const t = String(str || "").trim(), m = /#cfg=([A-Za-z0-9+/=_-]+)/.exec(t) || /^([A-Za-z0-9+/=_-]{20,})$/.exec(t);
+    if (!m) return null;
+    try { const j = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, "+").replace(/_/g, "/"))))); return DRIVE_URL_OK.test(j.u || "") && j.t ? j : null; } catch (e) { return null; }
+  },
   async loadCfg() {
-    let c = await idbGet(CLOUD_KEY), restored = false;
-    const ls = this.lsGet();
-    if (!(c && c.url && c.token) && ls) { c = { ...(c || {}), url: ls.url, token: ls.token, auto: c ? c.auto !== false : true }; restored = true; }
-    if (c) this.cfg = { ...this.cfg, ...c };
-    const h = /^#cfg=([A-Za-z0-9+/=_-]+)$/.exec(location.hash || ""); // tautan pengaturan dari perangkat lain
-    if (h) {
-      try {
-        const j = JSON.parse(decodeURIComponent(escape(atob(h[1].replace(/-/g, "+").replace(/_/g, "/")))));
-        if (DRIVE_URL_OK.test(j.u || "") && j.t) { this.cfg = { ...this.cfg, url: j.u, token: j.t, auto: true }; restored = true; setTimeout(() => toast("Google Drive terhubung dari tautan pengaturan ✓"), 600); }
-      } catch (e) { }
+    const main = await idbGet(CLOUD_KEY), bak = await idbGet(CLOUD_BAK);
+    const cands = [main, this.lsRead(CFG_LS), bak, this.lsRead(CFG_BAK)].filter(c => this.okCfg(c));
+    let best = null; cands.forEach(c => { if (!best || (c.ts || 0) > (best.ts || 0)) best = c; });
+    let restored = false;
+    if (main) this.cfg = { ...this.cfg, ...main };
+    if (best) {
+      this.cfg = { ...this.cfg, url: best.url, token: best.token, ts: best.ts || 0 };
+      const same = c => c && c.url === best.url && c.token === best.token;
+      restored = !(same(main) && same(bak) && same(this.lsRead(CFG_LS)) && same(this.lsRead(CFG_BAK))); // ada salinan yang hilang / usang
+    }
+    const j = this.parseLink(location.hash); // tautan pengaturan dari perangkat lain
+    if (/^#cfg=/.test(location.hash || "")) {
+      if (j) { this.cfg = { ...this.cfg, url: j.u, token: j.t, auto: true, ts: Date.now() }; restored = true; setTimeout(() => toast("Google Drive terhubung dari tautan pengaturan ✓"), 600); }
       try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { }
     }
-    if (restored) await this.saveCfg(); else if (this.ready()) { try { localStorage.setItem(CFG_LS, JSON.stringify({ url: this.cfg.url, token: this.cfg.token })); } catch (e) { } }
-    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { } // minta browser tidak menghapus data situs ini
+    if (restored) await this.saveCfg();
+    this.persist(); // minta browser tidak menghapus data situs ini
     if (!this.ready()) {
       let had = false; try { had = localStorage.getItem(CFG_HAD) === "1"; } catch (e) { }
-      if (had || EV.some(e => e.cloud)) setTimeout(() => toast("Koneksi Google Drive terlepas – browser membersihkan data situs. Masukkan URL & Kode Akses sekali lagi.", "Hubungkan", () => this.openSettings()), 1200);
+      if (had || EV.some(e => e.cloud)) {
+        this.lost = true;
+        setTimeout(() => toast("Koneksi Google Drive terlepas – browser membersihkan data situs. Tempel Tautan Pengaturan atau isi URL & Kode Akses sekali lagi.", "Pulihkan", () => this.openSettings()), 1200);
+      }
     }
     this.status();
   },
-  async saveCfg() {
-    await idbPut(CLOUD_KEY, this.cfg).catch(() => { });
+  async saveCfg(touch) { // touch: pengguna baru menyimpan pengaturan → cap waktu diperbarui
+    if (touch) this.cfg.ts = Date.now();
+    const c = this.cfg, ok = this.okCfg(c), slim = ok ? { url: c.url, token: c.token, ts: c.ts || 0 } : null;
+    await idbPut(CLOUD_KEY, c).catch(() => { });
+    if (ok) await idbPut(CLOUD_BAK, slim).catch(() => { }); else await idbDel(CLOUD_BAK);
     try {
-      if (this.cfg.url && this.cfg.token) { localStorage.setItem(CFG_LS, JSON.stringify({ url: this.cfg.url, token: this.cfg.token })); localStorage.setItem(CFG_HAD, "1"); }
-      else { localStorage.removeItem(CFG_LS); localStorage.removeItem(CFG_HAD); }
+      if (ok) { const j = JSON.stringify(slim); localStorage.setItem(CFG_LS, j); localStorage.setItem(CFG_BAK, j); localStorage.setItem(CFG_HAD, "1"); }
+      else { localStorage.removeItem(CFG_LS); localStorage.removeItem(CFG_BAK); localStorage.removeItem(CFG_HAD); }
+    } catch (e) { }
+    if (ok) this.lost = false;
+  },
+  async heal() { // setelah koneksi terbukti jalan: pastikan keempat salinan masih ada & sama (browser kadang menghapus sebagian)
+    if (!this.ready() || Date.now() - this.lastHeal < 600000) return;
+    this.lastHeal = Date.now();
+    const a = await idbGet(CLOUD_KEY), b = await idbGet(CLOUD_BAK), same = c => c && c.url === this.cfg.url && c.token === this.cfg.token;
+    if (!(same(a) && same(b) && same(this.lsRead(CFG_LS)) && same(this.lsRead(CFG_BAK)))) await this.saveCfg();
+  },
+  async persist() { // penyimpanan "permanen": browser tidak boleh membuang data situs saat ruang penuh / lama tidak dibuka
+    try {
+      if (!navigator.storage) return;
+      if (navigator.storage.persisted && await navigator.storage.persisted()) { this.persisted = true; return; }
+      if (navigator.storage.persist) this.persisted = !!(await navigator.storage.persist());
     } catch (e) { }
   },
   linkPengaturan() {
@@ -2663,38 +2697,95 @@ const Cloud = {
     return location.origin + location.pathname + "#cfg=" + b;
   },
   status(txt, st) {
-    const b = $("#cloudBtn");
-    if (!txt) { txt = this.ready() ? (S.sync && S.sync.at ? `☁️ Tersinkron ${hhmm(new Date(S.sync.at))}` : "☁️ Drive terhubung") : "☁️ Hubungkan Drive"; st = this.ready() ? "ok" : "";
-      if (this.ready() && this.outdated) { txt = "⚠️ Perbarui Apps Script"; st = "err"; } }
-    b.textContent = txt; b.dataset.st = st || "";
+    const b = $("#cloudBtn"); let tip = "Sinkron Google Drive";
+    if (!txt) {
+      if (!this.ready()) { txt = this.lost ? "⚠️ Drive terlepas – pulihkan" : "☁️ Hubungkan Drive"; st = this.lost ? "err" : ""; if (this.lost) tip = "Koneksi Google Drive hilang dari browser ini. Ketuk untuk memulihkan."; }
+      else if (this.outdated) { txt = "⚠️ Perbarui Apps Script"; st = "err"; }
+      else if (this.lastErr) {
+        const soft = /^(net|timeout|badresp)$/.test(this.lastErr.kind);
+        txt = soft ? "☁️ Menunggu sinyal – dicoba lagi otomatis" : "⚠️ Drive bermasalah – ketuk untuk detail"; st = soft ? "wait" : "err"; tip = this.lastErr.msg;
+      } else { txt = S.sync && S.sync.at ? `☁️ Tersinkron ${hhmm(new Date(S.sync.at))}` : "☁️ Drive terhubung"; st = "ok"; }
+    }
+    b.textContent = txt; b.dataset.st = st || ""; b.title = tip;
   },
-  async api(action, payload, url, token) {
+  /* Satu panggilan ke Apps Script. Error diberi label: kind = net | timeout | badresp | auth | setup | server, retry = layak diulang. */
+  async api1(action, payload, url, token) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 120000);
+    const err = (msg, kind, retry) => Object.assign(new Error(msg), { kind, retry });
     try {
       const r = await fetch(url || this.cfg.url, {
         method: "POST", redirect: "follow", signal: ctl.signal,
         headers: { "Content-Type": "text/plain;charset=utf-8" }, // simple request: tanpa preflight CORS
         body: JSON.stringify({ token: token || this.cfg.token, action, ...(payload || {}) })
       });
-      const j = await r.json().catch(() => { throw new Error("Respons server tidak valid – cek URL Web App & akses 'Anyone'."); });
-      if (!j.ok) throw new Error(j.error || "Gagal");
+      const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) { }
+      if (!j || typeof j !== "object") throw err("Respons server tidak valid – cek URL Web App & akses 'Anyone'." + (r.status >= 500 ? ` (server ${r.status})` : ""), "badresp", true);
+      if (!j.ok) { const m = String(j.error || "Gagal"); throw err(m, /kode akses salah/i.test(m) ? "auth" : /belum di-setup/i.test(m) ? "setup" : "server", /lock|time ?out|timed out|too many|temporar|try again|unavailable|server error|rate limit|sedang sibuk/i.test(m)); }
       return j;
     } catch (e) {
-      if (e.name === "AbortError") throw new Error("Waktu koneksi habis.");
-      if (e instanceof TypeError) throw new Error("Tidak bisa terhubung ke Google Apps Script (cek internet / URL).");
+      if (e.kind) throw e;
+      if (e.name === "AbortError") throw err("Waktu koneksi habis.", "timeout", true);
+      if (e instanceof TypeError) throw err("Tidak bisa terhubung ke Google Apps Script (cek internet / URL).", "net", true);
       throw e;
     } finally { clearTimeout(t); }
   },
-  friendly(msg) { return /tidak dikenal|deleteEvent/i.test(msg || "") ? "Apps Script belum diperbarui – tempel Code.gs terbaru, lalu Deploy → Kelola deployment → Versi baru." : (msg || "gagal"); },
-  async verify() { // cek apakah Code.gs di Apps Script sudah versi terbaru
-    if (!this.ready() || !navigator.onLine) return;
+  /* Panggilan dengan percobaan ulang otomatis untuk gangguan sementara (sinyal putus-nyambung, Apps Script "dingin"/sibuk).
+     Semua aksi aman diulang (unggah memakai kunci, jadi hasilnya sama). Error sementara TIDAK menghapus pengaturan. */
+  async api(action, payload, url, token) {
+    const own = !url; let e1;
+    for (let i = 1; i <= (own ? 3 : 1); i++) {
+      try {
+        const j = await this.api1(action, payload, url, token);
+        if (own && this.lastErr) { this.lastErr = null; if (!this.busy) this.status(); }
+        return j;
+      } catch (e) {
+        e1 = e;
+        if (!own || !e.retry || i >= 3 || (e.kind === "timeout" && i >= 2) || !navigator.onLine) break;
+        if (this.busy) this.status("☁️ Sinyal lemah – mencoba lagi…", "wait");
+        await new Promise(r => setTimeout(r, i === 1 ? 2500 : 7000));
+      }
+    }
+    if (own) { this.lastErr = { kind: e1.kind || "other", msg: this.friendly(e1.message) }; if (!this.busy) this.status(); }
+    throw e1;
+  },
+  friendly(msg) {
+    msg = msg || "gagal";
+    if (/tidak dikenal|deleteEvent/i.test(msg)) return "Apps Script belum diperbarui – tempel Code.gs terbaru, lalu Deploy → Kelola deployment → Versi baru.";
+    if (/kode akses salah/i.test(msg)) return "Kode Akses ditolak Apps Script. Pengaturan Anda tetap tersimpan; buka Pengaturan Drive dan periksa Kode Akses (mungkin setup() dijalankan ulang di Apps Script).";
+    return msg;
+  },
+  async verify(force) { // cek koneksi + apakah Code.gs di Apps Script sudah versi terbaru
+    if (!this.ready() || !navigator.onLine || this.vBusy) return;
+    if (!force && Date.now() - this.lastVerify < 240000) return;
+    this.vBusy = true; this.lastVerify = Date.now();
     try {
       const r = await this.api("ping");
       this.outdated = (r.ver || 0) < API_VER;
       this.cfg.rootUrl = r.rootUrl || this.cfg.rootUrl; this.cfg.sheetUrl = r.sheetUrl || this.cfg.sheetUrl;
-      this.status();
-      if (this.outdated) toast("Apps Script Daftar Hadir masih versi lama, jadi hapus kegiatan di Drive belum jalan. Tempel Code.gs terbaru lalu Deploy versi baru.");
-    } catch (e) { }
+      this.status(); this.heal();
+      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama, jadi hapus kegiatan di Drive belum jalan. Tempel Code.gs terbaru lalu Deploy versi baru."); }
+    } catch (e) { this.status(); } finally { this.vBusy = false; }
+  },
+  /* Pemulihan otomatis: saat aplikasi dibuka kembali / sinyal kembali / tiap 2 menit, coba lagi bila ada yang tertunda atau gagal. */
+  watch() {
+    const kick = back => {
+      if (!this.ready() || !navigator.onLine || document.hidden || this.busy) return;
+      if (!back && this.fail && Date.now() < this.nextAt) return; // masih menunggu jadwal coba-ulang
+      if (this.cfg.auto && this.dirty(S)) this.sync(false);
+      this.verify(!!this.lastErr); this.flushDeletes();
+    };
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => kick(true), 800); });
+    window.addEventListener("focus", () => setTimeout(() => kick(true), 800));
+    setInterval(() => kick(false), 120000);
+    document.addEventListener("pointerdown", () => this.persist(), { once: true });
+    window.addEventListener("storage", e => { // panel admin / tab lain menyimpan pengaturan yang lebih baru
+      if (e.key !== CFG_LS || !e.newValue) return;
+      const c = this.lsRead(CFG_LS);
+      if (c && (c.url !== this.cfg.url || c.token !== this.cfg.token) && (c.ts || 0) > (this.cfg.ts || 0)) {
+        this.cfg = { ...this.cfg, url: c.url, token: c.token, ts: c.ts || 0 }; this.outdated = false; this.lastErr = null; this.lastVerify = 0;
+        this.saveCfg(); this.status(); this.verify(true);
+      }
+    });
   },
   /* ---- penghapusan di Drive (antrean tahan offline) ---- */
   async queueDelete(id) { const q = (await idbGet(DEL_KEY)) || []; if (!q.includes(id)) q.push(id); await idbPut(DEL_KEY, q).catch(() => { }); },
@@ -2711,7 +2802,7 @@ const Cloud = {
       clearTimeout(this.delT); this.delErr = ""; return true;
     } catch (e) {
       this.delErr = this.friendly(e && e.message);
-      clearTimeout(this.delT); this.delT = setTimeout(() => this.flushDeletes(), 60000);
+      clearTimeout(this.delT); this.delT = setTimeout(() => this.flushDeletes(), 90000);
       return false;
     } finally { this.delBusy = false; }
   },
@@ -2754,7 +2845,7 @@ const Cloud = {
   async sync(manual, evArg) {
     if (!this.ready()) { if (manual) this.openSettings(); return; }
     if (this.busy) { this.again = true; return; }
-    if (!navigator.onLine) { this.status("☁️ Offline – menunggu", "err"); return; }
+    if (!navigator.onLine) { this.status("☁️ Offline – menunggu", "wait"); return; }
     const ev = evArg || S; ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 };
     if (this.gone.has(ev.id)) return;
     if (!manual && !this.dirty(ev)) { this.status(); return; }
@@ -2787,13 +2878,16 @@ const Cloud = {
       removed.forEach(k => delete ev.sync.h[k]);
       ev.sync.at = Date.now(); ev.sync.sv = v0; ev.sync.folderUrl = r.folderUrl || ev.sync.folderUrl;
       if (ev === S) save(); else if (!this.gone.has(ev.id)) await idbPut("event:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
-      this.status();
+      this.fail = 0; this.nextAt = 0; this.lastErr = null; this.status(); this.heal();
       if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah).`);
     } catch (e) {
       if (e && e.message === "GONE") { this.status(); return; } // kegiatan dihapus saat sinkron berjalan: berhenti, jangan buat ulang di Drive
-      this.status("☁️ Gagal sinkron – coba lagi", "err");
-      if (manual) toast("Sinkron gagal: " + e.message);
-      clearTimeout(this.t); this.t = setTimeout(() => this.sync(false), 60000);
+      if (!this.lastErr) this.lastErr = { kind: e.kind || "other", msg: this.friendly(e.message) };
+      this.status();
+      if (manual) toast("Sinkron gagal: " + this.friendly(e.message));
+      this.fail = Math.min(this.fail + 1, 6); const wait = Math.min(300000, 15000 * 2 ** (this.fail - 1)); // 15 dtk, 30, 60, 2 mnt … maks 5 mnt
+      this.nextAt = Date.now() + wait;
+      clearTimeout(this.t); this.t = setTimeout(() => this.sync(false), wait);
     } finally {
       this.busy = false;
       this.flushDeletes();
@@ -2803,8 +2897,11 @@ const Cloud = {
   /* ---- pengaturan ---- */
   openSettings() {
     $("#cloudModal").hidden = false;
-    $("#cUrl").value = this.cfg.url; $("#cToken").value = this.cfg.token; $("#cAuto").checked = this.cfg.auto;
-    this.info(this.ready() ? (this.cfg.rootUrl ? "Terhubung." : "Tersimpan.") : "Belum terhubung. Isi URL Web App & Kode Akses dari hasil pemasangan Apps Script.", this.ready() ? "ok" : "");
+    $("#cUrl").value = this.cfg.url; $("#cToken").value = this.cfg.token; $("#cAuto").checked = this.cfg.auto; $("#cRecover").value = "";
+    if (!this.ready()) this.info(this.lost ? "Koneksi terlepas dari browser ini (data situs dibersihkan). Tempel Tautan Pengaturan di kolom 'Pulihkan' di bawah, atau isi URL & Kode Akses lagi. Data di Google Drive aman." : "Belum terhubung. Isi URL Web App & Kode Akses dari hasil pemasangan Apps Script.", this.lost ? "err" : "");
+    else if (this.lastErr) this.info("Pengaturan tersimpan, tetapi koneksi terakhir bermasalah: " + this.lastErr.msg + (/^(net|timeout|badresp)$/.test(this.lastErr.kind) ? " Aplikasi mencoba lagi otomatis." : ""), "err");
+    else this.info(this.cfg.rootUrl ? "Terhubung." : "Tersimpan.", "ok");
+    $("#cPersist").textContent = this.ready() ? (this.persisted === false ? "Browser belum menjamin penyimpanan permanen untuk situs ini. Simpan juga 'Tautan Pengaturan' (tombol di bawah) di catatan pribadi sebagai cadangan; bila koneksi terlepas, tinggal ditempel." : "Pengaturan disimpan berlapis di perangkat ini dan dipulihkan otomatis. Tetap simpan 'Tautan Pengaturan' sebagai cadangan.") : "";
     this.links();
   },
   closeSettings() { $("#cloudModal").hidden = true; },
@@ -2831,7 +2928,8 @@ const Cloud = {
   async saveSettings() {
     const ok = await this.test(); if (!ok) return;
     this.cfg.url = $("#cUrl").value.trim(); this.cfg.token = $("#cToken").value.trim(); this.cfg.auto = $("#cAuto").checked;
-    await this.saveCfg(); this.links(); this.status(); this.closeSettings();
+    this.lastErr = null; this.fail = 0; this.nextAt = 0; this.lost = false;
+    await this.saveCfg(true); this.persist(); this.links(); this.status(); this.closeSettings();
     S.sync = S.sync || { h: {}, v: 0, sv: 0, at: 0 }; S.sync.v = (S.sync.v || 0) + 1; // paksa sinkron awal
     toast("Google Drive terhubung ✓");
     this.sync(false);
@@ -2913,10 +3011,15 @@ $("#cCopyLink").onclick = async () => {
   catch (e) { prompt("Salin tautan ini (rahasiakan, berisi Kode Akses):", l); }
 };
 $("#cSave").onclick = () => Cloud.saveSettings();
+$("#cRecoverBtn").onclick = () => {
+  const j = Cloud.parseLink($("#cRecover").value);
+  if (!j) { Cloud.info("Tautan pengaturan tidak dikenali. Tempel seluruh tautan yang tadi disalin (berisi #cfg=…).", "err"); return; }
+  $("#cUrl").value = j.u; $("#cToken").value = j.t; Cloud.saveSettings();
+};
 $("#cSyncNow").onclick = () => { if (!Cloud.ready()) { Cloud.info("Simpan pengaturan dulu.", "err"); return; } Cloud.closeSettings(); Cloud.sync(true); };
 $("#cDisconnect").onclick = async () => {
   if (!confirm("Putuskan sinkron Google Drive di perangkat ini? Data di Drive tidak dihapus.")) return;
-  Cloud.cfg = { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" }; await Cloud.saveCfg(); Cloud.status(); Cloud.openSettings();
+  Cloud.cfg = { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" }; Cloud.lastErr = null; Cloud.lost = false; await Cloud.saveCfg(); Cloud.status(); Cloud.openSettings();
 };
 $("#evCloudLoad").onclick = () => Cloud.listRemote();
 $("#evCloudList").addEventListener("click", e => {
@@ -3115,6 +3218,7 @@ const Pic = {
   if (d) S = normalize(d); else { S = blank(); await doSave(); }
   idbPut(CUR, S.id).catch(() => { });
   await Cloud.loadCfg();
+  Cloud.watch();
   ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
   applyState();
   Cloud.flushDeletes();

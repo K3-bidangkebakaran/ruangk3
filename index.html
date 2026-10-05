@@ -8477,7 +8477,7 @@
         const dhLinkDrive = (u) => /^https:\/\/(drive|docs)\.google\.com\//.test(String(u || '')) ? String(u) : '';
         const dhLinkFile = (id) => /^[\w-]+$/.test(String(id || '')) ? 'https://drive.google.com/file/d/' + id + '/view' : '';
         const dhCfg = () => { try { const c = JSON.parse(localStorage.getItem(DH_CFG_KEY) || 'null'); return c && DH_URL_OK.test(c.url || '') && c.token ? c : null; } catch (e) { return null; } };
-        const dhSimpanCfg = (c) => { try { localStorage.setItem(DH_CFG_KEY, JSON.stringify({ url: c.url, token: c.token })); } catch (e) {} };
+        const dhSimpanCfg = (c) => { try { localStorage.setItem(DH_CFG_KEY, JSON.stringify({ url: c.url, token: c.token, ts: c.ts || Date.now() })); } catch (e) {} };
         const dhHapusCfg = () => { try { localStorage.removeItem(DH_CFG_KEY); localStorage.removeItem(DH_CACHE_KEY); } catch (e) {} };
         const dhTgl = (d) => { const t = new Date(String(d) + 'T00:00:00'); return isNaN(t) ? String(d || '–') : t.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); };
         const dhWaktu = (v) => { const t = typeof v === 'number' ? v : Date.parse(v); return t ? new Date(t).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–'; };
@@ -8520,7 +8520,7 @@
                         try {
                             if (!d.objectStoreNames.contains('kv')) { d.close(); return res(null); }
                             const q = d.transaction('kv', 'readonly').objectStore('kv').get('cloud-config');
-                            q.onsuccess = () => { d.close(); const c = q.result; res(c && DH_URL_OK.test(c.url || '') && c.token ? { url: c.url, token: c.token } : null); };
+                            q.onsuccess = () => { d.close(); const c = q.result; res(c && DH_URL_OK.test(c.url || '') && c.token ? { url: c.url, token: c.token, ts: c.ts || 0 } : null); };
                             q.onerror = () => { d.close(); res(null); };
                         } catch (e) { try { d.close(); } catch (e2) {} res(null); }
                     };
@@ -8617,7 +8617,7 @@
             let tab = 'rekap'; try { const tv = localStorage.getItem('rk3_dh_view'); tab = (tv === 'app' || tv === 'pic') ? tv : 'rekap'; } catch (e) {}
             window.dhTampilView(tab);
             try { const f = document.getElementById('dh-frame'); if (f && !f.getAttribute('src')) { localStorage.setItem('rk3_admin_at', String(Date.now())); f.src = '/daftar-hadir/'; } } catch (e) {} // muat di latar: kirim kegiatan ke PIC + tarik hasil PIC
-            if (!dhCfg()) { const c = await dhCfgDariAplikasi(); if (c) dhSimpanCfg(c); }
+            { const c = await dhCfgDariAplikasi(), cur = dhCfg(); if (c && (!cur || ((c.ts || 0) > (cur.ts || 0) && (c.url !== cur.url || c.token !== cur.token)))) dhSimpanCfg(c); } // salinan aplikasi Daftar Hadir yang lebih baru ikut dipakai panel
             if (!dhEvents.length) {
                 try { const c = JSON.parse(localStorage.getItem(DH_CACHE_KEY) || 'null'); if (c && Array.isArray(c.events)) { dhEvents = c.events; dhDiCache = c.at || 0; } } catch (e) {}
             }
