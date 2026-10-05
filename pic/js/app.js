@@ -63,7 +63,7 @@ const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v13';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v14';
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrKeys = (h, k, d) => [d, ...[...new Set([...Object.keys(LAPK(k).nr || {}), ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { const m = NR_KEY.exec(x); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_')[1] - +q.split('_')[1])];
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
@@ -223,23 +223,46 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
   } catch (e) { /* dicoba lagi saat tarik data berikutnya */ }
 }
 
-async function pull() {
-  if (!fbOk() || !online()) return;
+/* Kegiatan dari server. Dua jalur memakai fungsi yang sama: pendengar realtime (perubahan dari web tampil dalam hitungan detik)
+   dan pull() (cadangan: dipanggil saat dibuka / kembali online / tiap 1 menit bila pendengar putus). */
+let lastSrv = '', watchOff = null, watchUid = null, watchGot = 0, pendR = false;
+const busy = () => { const a = document.activeElement; return !!CAM || !!$('#pad') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+function renderSoft() { if (busy()) { pendR = true; return; } pendR = false; render(); } // jangan merusak layar yang sedang diketik/dipakai kamera
+setInterval(() => { if (pendR && !busy()) renderSoft(); }, 1200);
+document.addEventListener('focusout', () => { if (pendR) setTimeout(() => { if (pendR && !busy()) renderSoft(); }, 300); });
+async function applyKegs(srv) {
+  const sg = fnv(JSON.stringify(srv)); if (sg === lastSrv) return false; lastSrv = sg;
+  const baru = [];
+  Object.keys(srv).forEach(kid => { const k = srv[kid]; k.id = kid; if (!KEGS[kid]) baru.push(kid); KEGS[kid] = k; });
+  Object.keys(KEGS).forEach(kid => { // dihapus admin: buang dari HP bila tidak ada data yang belum terkirim
+    if (srv[kid]) return;
+    const h = H[kid]; if (h && (h.dirty || mediaList(h).some(([k, d]) => h.sent[k] !== fnv(d)))) return;
+    delete KEGS[kid]; delete H[kid]; iDel('h:' + kid);
+  });
+  await saveK(); pullErr = '';
+  baru.forEach(kid => { if (!H[kid]) restore(kid); });
+  renderSoft(); return true;
+}
+function stopWatch() { if (watchOff) { try { watchOff(); } catch (e) { } } watchOff = null; watchUid = null; watchGot = 0; }
+function startWatch() {
+  if (!fbOk() || !window.PicFB.watchKegiatan) return;
+  if (watchOff && watchUid === ME.uid) return;
+  stopWatch();
+  const uid = ME.uid; watchUid = uid;
   try {
-    const [srv, prof] = await Promise.all([window.PicFB.kegiatan(), window.PicFB.profile(ME.uid)]);
+    watchOff = window.PicFB.watchKegiatan(srv => { if (ME && ME.uid === uid) { watchGot = Date.now(); applyKegs(srv || {}).catch(() => { }); } }, () => { if (watchUid === uid) { watchOff = null; watchUid = null; watchGot = 0; } });
+  } catch (e) { watchOff = null; watchUid = null; }
+}
+async function pull(force) {
+  if (!fbOk() || !online()) return;
+  startWatch();
+  try {
+    const live = !force && watchOff && watchGot; // pendengar realtime hidup: tak perlu unduh ulang seluruh daftar
+    const [srv, prof] = await Promise.all([live ? null : window.PicFB.kegiatan(), window.PicFB.profile(ME.uid)]);
     if (!prof) { await doLogout(true, 'Akun PIC ini sudah dihapus oleh admin utama.'); return; }
     if (prof.aktif === false) { await doLogout(true, 'Akun ini dinonaktifkan oleh admin utama.'); return; }
     if (prof.nama && prof.nama !== ME.nama) { ME.nama = prof.nama; iPut('me', ME); }
-    const baru = [];
-    Object.keys(srv).forEach(kid => { const k = srv[kid]; k.id = kid; if (!KEGS[kid]) baru.push(kid); KEGS[kid] = k; });
-    Object.keys(KEGS).forEach(kid => { // dihapus admin: buang dari HP bila tidak ada data yang belum terkirim
-      if (srv[kid]) return;
-      const h = H[kid]; if (h && (h.dirty || mediaList(h).some(([k, d]) => h.sent[k] !== fnv(d)))) return;
-      delete KEGS[kid]; delete H[kid]; iDel('h:' + kid);
-    });
-    await saveK(); pullErr = '';
-    baru.forEach(kid => { if (!H[kid]) restore(kid); });
-    render();
+    if (!srv || !await applyKegs(srv)) { if (pullErr) { pullErr = ''; renderSoft(); } }
   } catch (e) { pullErr = friendlyErr(e); }
 }
 
@@ -249,10 +272,11 @@ async function doLogin(user, pw) {
   const me = await window.PicFB.login(user, pw);
   ME = me; await iPut('me', ME);
   P = { screen: 'home', kid: null, day: 0, q: '', err: '' };
-  render(); pull(); sync();
+  render(); startWatch(); pull(); sync();
 }
 async function doLogout(force, msg) {
   if (!force && pending()) { askLogout(); return; }
+  stopWatch(); lastSrv = '';
   try { if (window.PicFB) await window.PicFB.logout(); } catch (e) {}
   ME = null; KEGS = {}; const ks = Object.keys(H); H = {};
   await iDel('me'); await iDel('kegs'); await Promise.all(ks.map(k => iDel('h:' + k)));
@@ -605,7 +629,7 @@ function camSave(url) {
 /* ---------- aksi ---------- */
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, kid = P.kid, k = kid && KEGS[kid];
-  if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { syncErr = ''; sync(); pull(); toast('Memeriksa dan mengirim data…'); } }
+  if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { syncErr = ''; sync(); pull(true); toast('Memeriksa dan mengirim data…'); } }
   else if (a === 'open') { P.kid = b.dataset.id; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'back') { P.screen = (P.screen === 'keg') ? 'home' : 'keg'; render(); }
   else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; render(); }
@@ -613,7 +637,7 @@ document.addEventListener('click', e => {
   else if (a === 'logoutforce') { doLogout(true); }
   else if (a === 'pw') askPw();
   else if (a === 'pwok') savePw();
-  else if (a === 'refresh') { if (!online()) toast('Belum ada sinyal.'); else { pull().then(() => toast('Daftar kegiatan diperbarui.')); } }
+  else if (a === 'refresh') { if (!online()) toast('Belum ada sinyal.'); else { pull(true).then(() => toast('Daftar kegiatan diperbarui.')); } }
   else if (a === 'day') { P.day = +b.dataset.i; render(); }
   else if (a === 'status' && k) {
     const pid = b.closest('.arow').dataset.pid, p = (k.peserta || []).find(x => x.id === pid), h = hOf(kid); if (!p) return;
@@ -682,10 +706,10 @@ document.addEventListener('submit', async e => {
 });
 
 /* ---------- jaringan ---------- */
-window.addEventListener('online', () => { renderPill(); pull(); sync(); });
+window.addEventListener('online', () => { renderPill(); pull(true); sync(); });
 window.addEventListener('offline', () => renderPill());
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderPill(); pull(); sync(); } });
-setInterval(() => { if (ME && online()) { pull(); sync(); } }, 5 * 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderPill(); pull(true); sync(); } });
+setInterval(() => { if (ME && online()) { pull(); sync(); } }, 60000); // cadangan bila pendengar realtime putus
 window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
 
 /* ---------- pembaruan otomatis ----------
@@ -702,7 +726,7 @@ window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
     catch (e) { return null; }
   }
   const idle = () => { const a = document.activeElement; return !CAM && !$('#pad') && !syncing && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
-  const boleh = () => { try { return Date.now() - (+sessionStorage.getItem('pic-upd') || 0) > 120000; } catch (e) { return true; } }; // cegah muat ulang beruntun
+  const boleh = () => { try { return Date.now() - (+sessionStorage.getItem('pic-upd') || 0) > 30000; } catch (e) { return true; } }; // cegah muat ulang beruntun (30 dtk)
   function muat() { try { sessionStorage.setItem('pic-upd', String(Date.now())); } catch (e) { } location.reload(); }
   function bar() {
     if (shown) return; shown = true;
@@ -722,10 +746,10 @@ window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
     } finally { checking = false; }
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
-  window.addEventListener('online', cek);
-  setInterval(cek, 10 * 60000);
-  setInterval(() => { if (shown && idle() && boleh()) muat(); }, 15000);
-  setTimeout(cek, 4000);
+  window.addEventListener('online', cek); window.addEventListener('focus', cek);
+  setInterval(cek, 60000); // tiap 1 menit selama layar terbuka
+  setInterval(() => { if (shown && idle() && boleh()) muat(); }, 5000);
+  setTimeout(cek, 3000);
 })();
 
 /* ---------- mulai ---------- */

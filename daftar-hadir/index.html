@@ -3202,14 +3202,17 @@ const Pic = {
     this.status();
     window.addEventListener("online", () => { this.status(); this.flush(); this.pullAll(); });
     window.addEventListener("offline", () => this.status());
-    setInterval(() => { if (navigator.onLine) { this.flush(); this.pullAll(); } }, 5 * 60000);
+    const kirimSkrg = () => { if (this.dirty.size && navigator.onLine) { clearTimeout(this.t); this.flush(); } }; // tab ditutup/disembunyikan: kirim sekarang juga
+    document.addEventListener("visibilitychange", () => { if (document.hidden) kirimSkrg(); else if (navigator.onLine) { this.flush(); this.pullAll(); } });
+    window.addEventListener("pagehide", kirimSkrg);
+    setInterval(() => { if (navigator.onLine) { this.flush(); this.pullAll(); } }, 2 * 60000);
     $("#picBtn").onclick = () => this.manual();
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
   },
   mark(id) {
     if (!id) return;
     this.dirty.add(id); idbPut("pic-pub", [...this.dirty]).catch(() => { });
-    clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 3000);
+    clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 800); // cepat: PIC melihat perubahan dalam hitungan detik
   },
   node(ev) {
     const a = ev.acara, hari = hariList(a).filter(Boolean);

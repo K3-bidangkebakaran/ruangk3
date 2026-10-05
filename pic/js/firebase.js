@@ -10,7 +10,7 @@
 //   dh_media/{kid}/{key}      gambar (dataURL): s_<pid>_<tanggal> = TTD peserta, f_<pid> = foto, pic = TTD PIC
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+import { getDatabase, ref, get, set, onValue } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg',
@@ -79,6 +79,11 @@ window.PicFB = {
     const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.');
     const snap = await withTimeout(get(ref(db, `${ROOT}/dh_kegiatan`)), 40000);
     return snap.val() || {};
+  },
+  // pendengar realtime: perubahan dari aplikasi Daftar Hadir (web) sampai dalam hitungan detik. Mengembalikan fungsi untuk berhenti.
+  watchKegiatan(cb, errCb) {
+    if (!auth.currentUser) throw fail('session', 'Sesi berakhir.');
+    return onValue(ref(db, `${ROOT}/dh_kegiatan`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); });
   },
   async hasil(kid) { const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.'); return (await withTimeout(get(ref(db, `${ROOT}/dh_hasil/${kid}/${u.uid}`)), 20000)).val(); },
   async media(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}`)), 120000)).val() || {}; },
