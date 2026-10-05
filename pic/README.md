@@ -112,6 +112,14 @@ Juga pastikan **Authentication → Sign-in method → Email/Password** aktif (su
    Package ID mis. `com.ruangk3.pic`), lalu gabungkan entri baru ke `/.well-known/assetlinks.json` (jangan menimpa
    entri `com.ruangk3.twa` yang sudah ada). Simpan keystore di tempat aman, jangan di repo.
 
+## Kamera & watermark foto
+
+Dokumentasi diambil **langsung dari kamera di dalam aplikasi** (bukan memilih file): pratinjau langsung, tombol ambil, lalu
+"Ulangi" / "Pakai foto". Watermark di bagian bawah foto: **nama peserta**, kegiatan + tempat, **titik lokasi Maps**
+(koordinat GPS + akurasi), serta **tanggal dan jam** (dari jam HP). Tombol ambil menunggu GPS terkunci (maks. 8 detik; bila
+GPS tidak ada, foto bertanda "tidak tersedia"). Bila kamera langsung gagal (izin ditolak, dsb.), tersedia cadangan kamera bawaan HP
+dengan watermark yang sama. Untuk APK (PWABuilder) aktifkan **Location delegation** agar GPS berfungsi di dalam aplikasi.
+
 ## Kapasitas
 
 Foto ±100–250 KB (maks 1280 px), TTD ±10–20 KB. Satu kegiatan 30 peserta × 2 hari ≈ 8–10 MB di Realtime Database

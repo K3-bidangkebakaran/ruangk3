@@ -291,8 +291,8 @@ function render() {
   } else if (P.screen === 'dok') {
     const s = stat(kid), hh = hOf(kid);
     h = appbar('Dokumentasi Peserta', k.nama, true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
-      <div class="photos">${(k.peserta || []).map(p => { const cx = isBatal(hh, p), f = hh.foto[p.id]; return `<div class="ph${cx ? ' cx' : ''}"><div class="img">${f ? `<img src="${f}" alt="Foto ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div><div class="cap"><b>${esc(p.nama)}</b>${cx ? '<span class="pill bad">Batal</span>' : `<label class="btn sm filebtn">${f ? 'Ganti foto' : 'Ambil foto'}<input type="file" accept="image/*" capture="environment" data-pid="${esc(p.id)}" aria-label="Ambil foto ${esc(p.nama)}"></label>`}</div></div>`; }).join('')}</div>
-      <p class="hint">Foto otomatis diberi tanggal, jam, lokasi, dan nama kegiatan, lalu diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
+      <div class="photos">${(k.peserta || []).map(p => { const cx = isBatal(hh, p), f = hh.foto[p.id]; return `<div class="ph${cx ? ' cx' : ''}"><div class="img">${f ? `<img src="${f}" alt="Foto ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div><div class="cap"><b>${esc(p.nama)}</b>${cx ? '<span class="pill bad">Batal</span>' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" aria-label="${f ? 'Ganti' : 'Ambil'} foto ${esc(p.nama)}">${f ? 'Ganti foto' : 'Ambil foto'}</button>`}</div></div>`; }).join('')}</div>
+      <p class="hint">Foto diambil langsung dari kamera dan otomatis diberi watermark: nama peserta, kegiatan, titik lokasi (koordinat Google Maps), tanggal, dan jam. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
   app.innerHTML = h + '<div id="ovl"></div>';
   if (P.screen === 'abs') renderAbs();
@@ -336,32 +336,113 @@ function openPad(title, sub, onSave, existing) {
   };
 }
 
-/* ---------- foto ---------- */
+/* ---------- foto: kamera langsung + watermark ---------- */
 let POS = null;
-function getPos() {
-  if (POS && Date.now() - POS.t < 10 * 60000) return Promise.resolve(POS);
-  return new Promise(res => {
-    if (!navigator.geolocation) return res(null);
-    const to = setTimeout(() => res(POS), 1500);
-    navigator.geolocation.getCurrentPosition(p => { clearTimeout(to); POS = { lat: p.coords.latitude, lng: p.coords.longitude, t: Date.now() }; res(POS); }, () => { clearTimeout(to); res(POS); }, { timeout: 3000, maximumAge: 600000 });
-  });
+const zonaOf = k => (k && k.zona) || 'WIB';
+const pad2 = n => String(n).padStart(2, '0');
+function wmLines(k, nama, pos, d) {
+  const tgl = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  const jam = pad2(d.getHours()) + '.' + pad2(d.getMinutes()) + '.' + pad2(d.getSeconds());
+  const lok = pos ? `Lokasi (Maps): ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}${pos.acc ? ' (±' + Math.round(pos.acc) + ' m)' : ''}` : 'Lokasi (Maps): tidak tersedia';
+  return [nama, `${k.nama}${k.tempat ? ' · ' + k.tempat : ''}`, lok, `${tgl} · ${jam} ${zonaOf(k)}`];
 }
 function stamp(x, w, h, lines) {
-  const f = Math.max(12, Math.round(w / 38)), pad = Math.round(f * .5), bh = pad * 2 + lines.length * (f + 3);
-  x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(0, h - bh, w, bh); x.fillStyle = '#fff'; x.textBaseline = 'top';
-  lines.forEach((t, i) => { x.font = (i === 0 ? '600 ' : '') + f + 'px Arial'; x.fillText(t, pad, h - bh + pad + i * (f + 3), w - pad * 2); });
+  const f = Math.max(14, Math.round(w / 40)), pad = Math.round(f * .55), gap = Math.round(f * .25), bh = pad * 2 + f * 1.25 + (lines.length - 1) * (f + gap);
+  x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect(0, h - bh, w, bh); x.fillStyle = '#fff'; x.textBaseline = 'top';
+  let y = h - bh + pad;
+  lines.forEach((t, i) => { const fs = i === 0 ? Math.round(f * 1.25) : f; x.font = (i === 0 ? '700 ' : '') + fs + 'px Arial, sans-serif'; x.fillText(t, pad, y, w - pad * 2); y += fs + gap; });
 }
-async function prosesFoto(file, k, nama) {
-  const url = URL.createObjectURL(file);
+const tidyPos = p => ({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() });
+function toJpeg(src, sw, sh, k, nama, pos) { // src: video/image/bitmap
+  const s = Math.min(1, 1280 / Math.max(sw, sh)), w = Math.round(sw * s), h = Math.round(sh * s);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(src, 0, 0, w, h);
+  stamp(x, w, h, wmLines(k, nama, pos, new Date()));
+  return c.toDataURL('image/jpeg', .72);
+}
+async function prosesFoto(file, k, nama, pos) { // cadangan bila kamera langsung tidak bisa dipakai: kamera bawaan HP
+  let src, sw, sh, rev = null;
   try {
-    const im = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
-    const s = Math.min(1, 1280 / Math.max(im.width, im.height)), w = Math.round(im.width * s), h = Math.round(im.height * s);
-    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(im, 0, 0, w, h);
-    const pos = await getPos();
-    const d = new Date(), tgl = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
-    stamp(x, w, h, [`${tgl} · ${jamNow()} WIB`, `${k.nama}${k.tempat ? ' · ' + k.tempat : ''}`, `${nama}${pos ? ` · ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : ''}`]);
-    return c.toDataURL('image/jpeg', .72);
-  } finally { URL.revokeObjectURL(url); }
+    if (window.createImageBitmap) { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); sw = src.width; sh = src.height; }
+  } catch (e) { src = null; }
+  if (!src) {
+    rev = URL.createObjectURL(file);
+    src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = rev; });
+    sw = src.naturalWidth || src.width; sh = src.naturalHeight || src.height;
+  }
+  try { return toJpeg(src, sw, sh, k, nama, pos); } finally { if (rev) URL.revokeObjectURL(rev); if (src.close) src.close(); }
+}
+
+let CAM = null;
+function camClose() {
+  if (!CAM) return;
+  try { CAM.stream && CAM.stream.getTracks().forEach(t => t.stop()); } catch (e) { }
+  try { if (CAM.watch != null) navigator.geolocation.clearWatch(CAM.watch); } catch (e) { }
+  clearInterval(CAM.tick); clearTimeout(CAM.wait);
+  CAM.el.remove(); CAM = null;
+}
+function camStatus() {
+  if (!CAM) return;
+  const st = $('#camSt', CAM.el), sh = $('#camShot', CAM.el);
+  let txt, ok = true;
+  if (CAM.locErr === 'denied') txt = 'Lokasi ditolak — izinkan Lokasi untuk Portal PIC di pengaturan HP';
+  else if (CAM.pos) txt = `Lokasi terkunci (±${Math.round(CAM.pos.acc || 0)} m)`;
+  else if (CAM.waited) txt = 'Lokasi belum didapat — foto akan bertanda "tidak tersedia"';
+  else { txt = 'Mencari lokasi…'; ok = false; }
+  st.textContent = txt; st.className = CAM.pos ? 'ok' : (CAM.waited || CAM.locErr ? 'bad' : '');
+  sh.disabled = !(ok && CAM.live && !CAM.review);
+}
+function camWm() {
+  if (!CAM) return;
+  $('#camWm', CAM.el).innerHTML = wmLines(CAM.k, CAM.nama, CAM.pos, new Date()).map((t, i) => i === 0 ? `<b>${esc(t)}</b>` : `<span>${esc(t)}</span>`).join('');
+}
+async function camStart() {
+  const v = $('#camV', CAM.el); CAM.live = false; camStatus();
+  try { CAM.stream && CAM.stream.getTracks().forEach(t => t.stop()); } catch (e) { }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return camFallback('Kamera langsung tidak didukung di perangkat ini.');
+  try {
+    CAM.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: CAM.facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    v.srcObject = CAM.stream; v.classList.toggle('mirror', CAM.facing === 'user');
+    await v.play(); CAM.live = true; camStatus();
+  } catch (e) {
+    const n = (e && e.name) || '';
+    camFallback(/NotAllowed|Security/.test(n) ? 'Izin kamera ditolak. Aktifkan izin Kamera untuk Portal PIC di pengaturan HP, lalu coba lagi.' : /NotFound|Overconstrained/.test(n) ? 'Kamera tidak ditemukan di perangkat ini.' : 'Kamera tidak bisa dibuka (' + (n || 'kesalahan') + '). Tutup aplikasi lain yang memakai kamera lalu coba lagi.');
+  }
+}
+function camFallback(msg) {
+  if (!CAM) return;
+  const b = $('#camFb', CAM.el); b.hidden = false;
+  b.innerHTML = `<p>${esc(msg)}</p><div class="row" style="justify-content:center"><button type="button" class="btn" data-act="camretry">Coba lagi</button><label class="btn pri filebtn">Pakai kamera bawaan HP<input type="file" accept="image/*" capture="environment" id="camFile"></label></div><small>Foto dari kamera bawaan tetap diberi watermark yang sama.</small>`;
+  CAM.live = false; camStatus();
+}
+function openCam(kid, pid) {
+  const k = KEGS[kid], p = k && k.peserta.find(x => x.id === pid); if (!p) return;
+  camClose();
+  const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
+  el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(p.nama)}</b><span id="camSt"></span></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
+    <div class="camstage"><video id="camV" playsinline muted autoplay></video><img id="camImg" alt="Hasil foto" hidden><div id="camWm" class="camwm"></div><div id="camFb" class="camfb" hidden></div></div>
+    <div class="cambar"><div id="camLive"><button type="button" class="shutter" id="camShot" data-act="camshot" aria-label="Ambil foto" disabled></button></div>
+    <div id="camRev" class="row" style="justify-content:center;gap:12px" hidden><button type="button" class="btn" data-act="camretake">Ulangi</button><button type="button" class="btn pri" data-act="camuse">Pakai foto</button></div></div>`;
+  document.body.appendChild(el);
+  CAM = { el, kid, pid, k, nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
+  if (navigator.geolocation) {
+    try { CAM.watch = navigator.geolocation.watchPosition(g => { if (!CAM) return; CAM.pos = POS = tidyPos(g); CAM.locErr = ''; camStatus(); }, er => { if (!CAM) return; if (er && er.code === 1) CAM.locErr = 'denied'; camStatus(); }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }); } catch (e) { }
+  } else CAM.locErr = 'denied';
+  CAM.wait = setTimeout(() => { if (CAM) { CAM.waited = true; camStatus(); } }, 8000);
+  CAM.tick = setInterval(camWm, 1000); camWm(); camStatus(); camStart();
+}
+function camShot() {
+  const v = $('#camV', CAM.el); if (!v.videoWidth) return;
+  const url = toJpeg(v, v.videoWidth, v.videoHeight, CAM.k, CAM.nama, CAM.pos);
+  CAM.review = url; v.pause();
+  const im = $('#camImg', CAM.el); im.src = url; im.hidden = false; v.hidden = true; $('#camWm', CAM.el).hidden = true;
+  $('#camLive', CAM.el).hidden = true; $('#camRev', CAM.el).hidden = false;
+}
+function camRetake() {
+  CAM.review = null; const v = $('#camV', CAM.el); v.hidden = false; v.play().catch(() => { });
+  $('#camImg', CAM.el).hidden = true; $('#camWm', CAM.el).hidden = false; $('#camLive', CAM.el).hidden = false; $('#camRev', CAM.el).hidden = true; camStatus();
+}
+function camSave(url) {
+  const { kid, pid } = CAM, h = hOf(kid); h.foto[pid] = url; camClose(); touch(kid); render(); toast('Foto tersimpan');
 }
 
 /* ---------- aksi ---------- */
@@ -382,6 +463,13 @@ document.addEventListener('click', e => {
     openPad('Tanda tangan peserta', `${p.nama} · ${d ? tglPanjang(d) : ''}`, u => { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][d] = u; touch(kid); renderAbs(); }, h.hadir[pid] && h.hadir[pid][d]);
   }
   else if (a === 'ttdpic' && k) { const h = hOf(kid); openPad('TTD PIC', `${ME.nama} · ${k.nama}`, u => { h.ttdPic = u; h.ttdPicNama = ME.nama; touch(kid); render(); }, h.ttdPic); }
+  else if (a === 'foto' && k) openCam(kid, b.dataset.pid);
+  else if (a === 'camx') camClose();
+  else if (a === 'camshot' && CAM) camShot();
+  else if (a === 'camretake' && CAM) camRetake();
+  else if (a === 'camuse' && CAM && CAM.review) camSave(CAM.review);
+  else if (a === 'camflip' && CAM) { CAM.facing = CAM.facing === 'environment' ? 'user' : 'environment'; $('#camFb', CAM.el).hidden = true; camStart(); }
+  else if (a === 'camretry' && CAM) { $('#camFb', CAM.el).hidden = true; camStart(); }
   else if (a === 'padno' && padApi) padApi.no();
   else if (a === 'padno') { $('#ovl').innerHTML = ''; }
   else if (a === 'padclr' && padApi) padApi.clear();
@@ -393,11 +481,11 @@ document.addEventListener('change', async e => {
     const pid = e.target.closest('.arow').dataset.pid, h = hOf(kid);
     h.batal[pid] = !!e.target.checked;
     touch(kid); renderAbs(); toast(e.target.checked ? 'Peserta ditandai batal' : 'Tanda batal dicabut');
-  } else if (e.target.matches('input[type=file]') && k) {
-    const f = e.target.files[0], pid = e.target.dataset.pid; if (!f) return;
-    const p = k.peserta.find(x => x.id === pid), h = hOf(kid);
-    try { h.foto[pid] = await prosesFoto(f, k, p.nama); touch(kid); render(); toast('Foto tersimpan'); }
-    catch (err) { toast('Foto tidak bisa dibaca. Coba lagi.'); }
+  } else if (e.target.id === 'camFile' && CAM) {
+    const f = e.target.files[0]; if (!f) return;
+    toast('Memproses foto…');
+    try { const pos = CAM.pos || await new Promise(r => { if (!navigator.geolocation) return r(null); navigator.geolocation.getCurrentPosition(g => r(POS = tidyPos(g)), () => r(null), { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }); }); camSave(await prosesFoto(f, CAM.k, CAM.nama, pos)); }
+    catch (err) { toast('Foto tidak bisa dibaca. Coba ambil ulang.'); }
   }
 });
 document.addEventListener('input', e => {
