@@ -406,12 +406,12 @@ table.doku td.foto{text-align:center}
     <section class="card" data-pane="data">
       <h2><span class="n">3</span> Peserta <span class="count" id="pCount"></span><span class="grow"></span></h2>
       <div class="p-tools">
-        <button class="btn sm primary" id="btnXls">📄 Upload Excel</button>
+        <button class="btn sm primary" id="btnXls">📄 Upload Excel / PDF</button>
         <button class="btn sm" id="btnAdd">+ Tambah Manual</button>
         <button class="btn sm" id="btnSort" title="Urutkan nama peserta sesuai abjad">Urutkan A–Z</button>
-        <input type="file" id="fileXls" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
+        <input type="file" id="fileXls" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
       </div>
-      <p class="xl-tip">Excel dibaca dari kolom <b>Nama Peserta</b> dan <b>Perusahaan</b>, lalu otomatis diurutkan sesuai abjad. <a href="#" id="btnTpl">Unduh template Excel</a></p>
+      <p class="xl-tip">File Excel atau PDF dibaca otomatis dari kolom <b>Nama Peserta</b> dan <b>Instansi/Perusahaan</b> (urutan kolom bebas), lalu diurutkan sesuai abjad (A–Z). PDF harus berupa PDF asli, bukan foto/scan. <a href="#" id="btnTpl">Unduh template Excel</a></p>
       <details class="paste" id="pasteBox">
         <summary>Tempel dari Excel</summary>
         <p class="hint" style="margin-top:6px">Salin kolom <b>Nama | Instansi</b> dari Excel lalu tempel di sini (satu baris = satu peserta). Kolom nomor & baris judul otomatis diabaikan; jika ada 3 kolom (Nama | Jabatan | Instansi), kolom jabatan dilewati.</p>
@@ -1701,23 +1701,187 @@ async function importExcel(file) {
     }
     if (!found) { toast('Kolom "Nama Peserta" tidak ditemukan. Pastikan baris judul berisi "Nama Peserta" dan "Perusahaan".'); return; }
     const { rows, h } = found;
-    const key = (n, i) => norm(n) + "|" + norm(i);
-    const have = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => key(p.nama, p.instansi)));
-    const add = []; let dup = 0;
-    for (const r of rows.slice(h.r + 1)) {
-      const nama = cleanTxt(r[h.ni]); if (!nama) continue;
-      const inst = h.pi >= 0 ? cleanTxt(r[h.pi]) : "";
-      const k = key(nama, inst);
-      if (have.has(k)) { dup++; continue; }
-      have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {} });
-    }
-    if (!add.length) { toast(dup ? `Semua nama (${dup}) sudah ada di daftar peserta.` : "Tidak ada nama peserta di file tersebut."); return; }
-    S.peserta = S.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
-    S.peserta.push(...add); sortPeserta();
-    renderList(); changed();
-    toast(`${add.length} peserta ditambahkan dari Excel${dup ? ` (${dup} duplikat dilewati)` : ""}${h.pi < 0 ? ' – kolom "Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
+    masukkanPeserta(rows.slice(h.r + 1).map(r => ({ nama: r[h.ni], inst: h.pi >= 0 ? r[h.pi] : "" })), "Excel", h.pi >= 0);
   } catch (e) { toast(e.message || "File Excel tidak bisa dibaca."); }
 }
+/* ---------- upload PDF peserta ---------- */
+let pdfP = null;
+function loadPDFJS() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (!pdfP) pdfP = new Promise((res, rej) => {
+    const src = [["https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"],
+                 ["https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js", "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"]];
+    const tryN = i => {
+      if (i >= src.length) { pdfP = null; rej(new Error("Pembaca PDF gagal dimuat – periksa koneksi internet.")); return; }
+      const sc = document.createElement("script"); sc.src = src[i][0];
+      sc.onload = () => { if (window.pdfjsLib) { window.pdfjsLib.GlobalWorkerOptions.workerSrc = src[i][1]; res(window.pdfjsLib); } else tryN(i + 1); };
+      sc.onerror = () => { sc.remove(); tryN(i + 1); };
+      document.head.appendChild(sc);
+    };
+    tryN(0);
+  });
+  return pdfP;
+}
+// Teks PDF per halaman: [{s, x, y, w, h}] (koordinat PDF: y makin besar = makin ke atas)
+async function pdfTextPages(file) {
+  const lib = await loadPDFJS();
+  const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const pages = [];
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const tc = await (await pdf.getPage(n)).getTextContent();
+    pages.push(tc.items.filter(it => typeof it.str === "string" && it.str.trim()).map(it => ({
+      s: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0, h: Math.abs(it.height) || Math.abs(it.transform[3]) || 10
+    })));
+  }
+  return pages;
+}
+// Membaca tabel peserta dari teks PDF: kolom dicari lewat judul "Nama Peserta" & "Instansi/Perusahaan"
+// (tidak bergantung pada urutan/lebar kolom). Hasil: { rows:[{nama, inst}], adaInst } atau null bila judul tidak ditemukan.
+function parsePesertaPdf(pages) {
+  const median = a => { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[s.length >> 1]; };
+  const RX_PERUS = /^(instansi|perusahaan|company|asal|unit)/;
+  const RX_NO = /^(no|nomor|no urut|urut)$/;
+  const joinItems = its => { let t = "", prev = null; for (const it of its) { if (prev && it.x - (prev.x + prev.w) > it.h * 0.18) t += " "; t += it.s; prev = it; } return cleanTxt(t); };
+  // 1. kelompokkan teks menjadi baris (per halaman)
+  const P = pages.map(items => {
+    const its = items.slice().sort((a, b) => b.y - a.y || a.x - b.x), lines = [];
+    for (const it of its) {
+      const L = lines.find(l => Math.abs(l.y - it.y) <= Math.max(2, it.h * 0.4));
+      if (L) L.items.push(it); else lines.push({ y: it.y, items: [it] });
+    }
+    lines.forEach(l => l.items.sort((a, b) => a.x - b.x));
+    return lines.sort((a, b) => b.y - a.y);
+  });
+  // 2. cari baris judul tabel
+  const cellOf = (line, item) => { // gabungkan kata-kata yang berdekatan jadi satu sel judul
+    const its = line.items; let i = its.indexOf(item), a = i, b = i;
+    while (a > 0 && its[a].x - (its[a - 1].x + its[a - 1].w) <= item.h * 1.0) a--;
+    while (b < its.length - 1 && its[b + 1].x - (its[b].x + its[b].w) <= item.h * 1.0) b++;
+    const seg = its.slice(a, b + 1); return { x0: seg[0].x, x1: seg[seg.length - 1].x + seg[seg.length - 1].w, text: norm(seg.map(s => s.s).join(" ")) };
+  };
+  const findHeader = (line, needInst) => {
+    for (const nm of line.items) {
+      const t = norm(nm.s);
+      if (!(/^nama\b/.test(t) || /^(name|full name)$/.test(t))) continue;
+      const nc = cellOf(line, nm); if (RX_PERUS.test(nc.text.replace(/^nama /, ""))) continue; // "Nama Perusahaan" bukan kolom nama
+      const pr = line.items.find(it => { // judul kolom instansi boleh di kiri atau kanan kolom nama ("Nama Perusahaan" juga dikenali)
+        if (it === nm || !RX_PERUS.test(norm(it.s).replace(/^nama /, ""))) return false;
+        const c = cellOf(line, it); return c.x0 >= nc.x1 - 1 || c.x1 <= nc.x0 + 1;
+      });
+      if (needInst && !pr) continue;
+      const no = line.items.find(it => RX_NO.test(norm(it.s)) && (it.x + it.w <= nc.x0 + 1 || it.x >= nc.x1 - 1));
+      return { nm: nc, pr: pr ? cellOf(line, pr) : null, no: no ? cellOf(line, no) : null };
+    }
+    return null;
+  };
+  let hdr = null, hp = -1, hl = -1;
+  for (const needInst of [true, false]) {
+    for (let p = 0; p < P.length && !hdr; p++) for (let l = 0; l < P[p].length && !hdr; l++) { const h = findHeader(P[p][l], needInst); if (h) { hdr = h; hp = p; hl = l; } }
+    if (hdr) break;
+  }
+  if (!hdr) return null;
+  // 3. baris isi tabel (halaman pertama: setelah judul; halaman lain: semua kecuali judul yang diulang)
+  const body = [];
+  P.forEach((lines, p) => lines.forEach((line, l) => {
+    if (p < hp || (p === hp && l <= hl)) return;
+    if (findHeader(line, false)) return;
+    body.push({ p, y: line.y, items: line.items });
+  }));
+  if (!body.length) return { rows: [], adaInst: !!hdr.pr };
+  // 4. kolom: ruang kosong vertikal yang konsisten di seluruh baris = pemisah kolom
+  const all = body.flatMap(l => l.items), hs = median(all.map(i => i.h)) || 10;
+  const minX = Math.floor(Math.min(...all.map(i => i.x))), maxX = Math.ceil(Math.max(...all.map(i => i.x + i.w)));
+  const cov = new Uint16Array(maxX - minX + 2);
+  for (const it of all) for (let x = Math.max(0, Math.floor(it.x - minX)); x <= Math.min(cov.length - 1, Math.ceil(it.x + it.w - minX)); x++) cov[x]++;
+  const tol = Math.floor(body.length * 0.04), minRun = Math.max(3, Math.round(hs * 0.5));
+  const regions = []; let start = null, run = 0;
+  for (let x = 0; x < cov.length; x++) {
+    if (cov[x] <= tol) { run++; if (start !== null && run >= minRun) { regions.push([start + minX, x - run + 1 + minX]); start = null; } }
+    else { if (start === null) start = x; run = 0; }
+  }
+  if (start !== null) regions.push([start + minX, cov.length - 1 + minX]);
+  const regionOf = x => regions.findIndex(r => x >= r[0] - 0.5 && x <= r[1] + 0.5);
+  const best = c => { let bi = -1, bo = 0; regions.forEach((r, i) => { const o = Math.min(r[1], c.x1) - Math.max(r[0], c.x0); if (o > bo) { bo = o; bi = i; } }); return bi; };
+  const rNama = best(hdr.nm), rInst = hdr.pr ? best(hdr.pr) : -2, rNo = hdr.no ? best(hdr.no) : -3;
+  const splitX = hdr.pr ? hdr.pr.x0 - 2 : null; // dipakai bila kolom nama & instansi tak terpisah celah
+  const role = it => {
+    const c = it.x + it.w / 2, r = regionOf(c);
+    // nomor urut yang menempel pada kolom nama (tanpa celah, mis. PDF hasil cetak Excel)
+    if (hdr.no && /^\d+[.)]?$/.test(it.s.trim()) && (c <= hdr.no.x1 + hs * 1.5 || it.x + it.w <= hdr.nm.x0 + 2) && (rNo === rNama || r === rNo)) return "no";
+    if (rNama >= 0 && rNama === rInst) return splitX !== null && it.x >= splitX ? "inst" : "nama";
+    if (r === rNama && r >= 0) return "nama";
+    if (r === rInst && r >= 0) return "inst";
+    if (r === rNo && r >= 0) return "no";
+    if (rNama < 0 && it.x < (hdr.pr ? hdr.pr.x0 - 2 : Infinity) && it.x + it.w > hdr.nm.x0 - 2) return "nama"; // tanpa celah sama sekali
+    return "";
+  };
+  for (const l of body) {
+    const g = { nama: [], inst: [], no: [] };
+    l.items.forEach(it => { const r = role(it); if (r) g[r].push(it); });
+    l.g = g;
+  }
+  // Nomor urut kadang ikut menempel di depan nama dalam satu teks ("1 Ahmad Fauzi", umum pada PDF hasil cetak Excel):
+  // dipisahkan bila kolom No berjudul "No", atau bila hampir semua baris berawalan nomor.
+  const RX_NUMNAMA = /^(\d{1,4})[.)]?\s+(\S.*)$/;
+  const adaNoSendiri = l => l.g.no.length > 0;
+  const rate = body.filter(l => l.g.nama.length && RX_NUMNAMA.test(l.g.nama[0].s.trim())).length / Math.max(1, body.filter(l => l.g.nama.length).length);
+  const pecahNo = !!hdr.no || rate >= 0.8;
+  for (const l of body) {
+    if (pecahNo && !adaNoSendiri(l) && l.g.nama.length) { const m = RX_NUMNAMA.exec(l.g.nama[0].s.trim()); if (m) { l.g.no = [{ ...l.g.nama[0], s: m[1] }]; l.g.nama = [{ ...l.g.nama[0], s: m[2] }, ...l.g.nama.slice(1)]; } }
+    l.nama = joinItems(l.g.nama); l.inst = joinItems(l.g.inst); l.no = joinItems(l.g.no);
+  }
+  if (!hdr.no && rate >= 0.8) hdr.no = { x0: 0, x1: 0, text: "no" }; // kolom nomor tanpa judul: pakai baris bernomor sebagai patokan
+  // 5. satu peserta = satu baris bernomor (atau satu baris ber-nama bila tak ada kolom No). Baris lanjutan
+  //    (nama/instansi yang terpotong ke baris berikut) digabung ke baris peserta terdekat.
+  const isNo = l => /^\d+[.)]?$/.test(l.no);
+  let anchors = body.filter(l => hdr.no && isNo(l));
+  if (!anchors.length) anchors = body.filter(l => l.nama);
+  const rows = anchors.map(a => ({ a, parts: [a] }));
+  const byPage = {}; anchors.forEach(a => (byPage[a.p] = byPage[a.p] || []).push(a));
+  const pitchOf = p => { const ys = (byPage[p] || []).map(a => a.y); const d = []; for (let i = 1; i < ys.length; i++) d.push(ys[i - 1] - ys[i]); return d.length ? median(d) : hs * 2.5; };
+  for (const l of body) {
+    if (anchors.includes(l) || (!l.nama && !l.inst)) continue;
+    let bi = -1, bd = Infinity;
+    rows.forEach((r, i) => { if (r.a.p !== l.p) return; const d = Math.abs(r.a.y - l.y); if (d < bd) { bd = d; bi = i; } });
+    if (bi >= 0 && bd <= pitchOf(l.p) * 0.9) rows[bi].parts.push(l);
+  }
+  const out = [];
+  for (const r of rows) {
+    r.parts.sort((x, y) => y.y - x.y);
+    const nama = cleanTxt(r.parts.map(l => l.nama).filter(Boolean).join(" ")), inst = cleanTxt(r.parts.map(l => l.inst).filter(Boolean).join(" "));
+    if (!nama || /^(halaman|page|hal\.?)\s*\d+/i.test(nama) || /^\d+$/.test(nama) || /^(jumlah|total)\b/i.test(nama)) continue;
+    out.push({ nama, inst });
+  }
+  return { rows: out, adaInst: !!hdr.pr };
+}
+async function importPdf(file) {
+  try {
+    toast("Membaca file PDF…");
+    const pages = await pdfTextPages(file);
+    if (!pages.some(p => p.length)) { toast("PDF ini berupa gambar/hasil scan, tidak bisa dibaca otomatis. Gunakan PDF asli (bukan foto) atau file Excel."); return; }
+    const res = parsePesertaPdf(pages);
+    if (!res) { toast('Kolom "Nama Peserta" tidak ditemukan di PDF. Pastikan ada baris judul "Nama Peserta" dan "Instansi/Perusahaan".'); return; }
+    masukkanPeserta(res.rows, "PDF", res.adaInst);
+  } catch (e) { toast(e.message || "File PDF tidak bisa dibaca."); }
+}
+// Tambahkan hasil baca file (Excel/PDF) ke daftar peserta: lewati duplikat, urutkan A–Z.
+function masukkanPeserta(list, sumber, adaInst) {
+  const key = (n, i) => norm(n) + "|" + norm(i);
+  const have = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => key(p.nama, p.instansi)));
+  const add = []; let dup = 0;
+  for (const r of list) {
+    const nama = cleanTxt(r.nama); if (!nama) continue;
+    const inst = cleanTxt(r.inst), k = key(nama, inst);
+    if (have.has(k)) { dup++; continue; }
+    have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {} });
+  }
+  if (!add.length) { toast(dup ? `Semua nama (${dup}) sudah ada di daftar peserta.` : `Tidak ada nama peserta di file ${sumber} tersebut.`); return; }
+  S.peserta = S.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
+  S.peserta.push(...add); sortPeserta();
+  renderList(); changed();
+  toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
+}
+function importFile(file) { return /\.pdf$/i.test(file.name) || file.type === "application/pdf" ? importPdf(file) : importExcel(file); }
 async function downloadTemplate() {
   try {
     const XLSX = await loadXLSX();
@@ -1728,18 +1892,18 @@ async function downloadTemplate() {
   } catch (e) { toast(e.message); }
 }
 $("#btnXls").onclick = () => { $("#fileXls").value = ""; $("#fileXls").click(); };
-$("#fileXls").addEventListener("change", e => { const f = e.target.files[0]; if (f) importExcel(f); });
+$("#fileXls").addEventListener("change", e => { const f = e.target.files[0]; if (f) importFile(f); });
 $("#btnTpl").onclick = e => { e.preventDefault(); downloadTemplate(); };
 $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("Peserta diurutkan A–Z."); };
-// seret file Excel ke kartu peserta
+// seret file Excel / PDF ke kartu peserta
 {
   const card = $("#pList").closest(".card");
   card.addEventListener("dragover", e => { if ([...e.dataTransfer.items].some(i => i.kind === "file")) { e.preventDefault(); card.classList.add("drag-over"); } });
   card.addEventListener("dragleave", e => { if (!card.contains(e.relatedTarget)) card.classList.remove("drag-over"); });
   card.addEventListener("drop", e => {
     card.classList.remove("drag-over"); e.preventDefault();
-    const f = [...e.dataTransfer.files].find(f => /\.(xlsx|xls|csv)$/i.test(f.name));
-    if (f) importExcel(f); else toast("Hanya file Excel (.xlsx, .xls) atau .csv.");
+    const f = [...e.dataTransfer.files].find(f => /\.(xlsx|xls|csv|pdf)$/i.test(f.name));
+    if (f) importFile(f); else toast("Hanya file Excel (.xlsx, .xls, .csv) atau PDF.");
   });
 }
 
