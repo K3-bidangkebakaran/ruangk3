@@ -82,11 +82,11 @@ small{color:var(--muted)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .chips button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 12px;font-weight:600;white-space:nowrap;font-size:13px}
 .chips button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.counter{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.counter div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--surface-2)}
+.counter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.counter div{border:1px solid var(--line);border-radius:10px;padding:8px 8px;background:var(--surface-2)}
 .counter b{font-family:var(--f-display);font-size:20px;display:block;line-height:1.1;font-variant-numeric:tabular-nums}
 .counter small{font-size:11.5px}
-.ahead,.arow{display:grid;grid-template-columns:48px minmax(0,1fr) 112px;gap:8px;align-items:center}
+.ahead,.arow{display:grid;grid-template-columns:76px minmax(0,1fr) 112px;gap:8px;align-items:center}
 .ahead{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;padding:0 8px}
 .alist{display:flex;flex-direction:column;gap:6px}
 .arow{position:relative;border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--surface);min-height:62px}
@@ -101,9 +101,14 @@ small{color:var(--muted)}
 .sigbtn{border:1.5px dashed var(--muted);border-radius:10px;background:transparent;min-height:46px;width:100%;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--ink);padding:2px}
 .sigbtn.done{border:1px solid var(--ok);background:var(--paper)}
 .sigbtn img{max-height:38px;max-width:100%;display:block}
-.arow.cx{background:var(--surface-2)}
-.arow.cx .who{color:var(--muted)}
-.arow.cx::after{content:"";position:absolute;left:60px;right:10px;top:50%;height:2px;background:var(--bad);border-radius:2px;pointer-events:none}
+.stbtn{min-height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;font-size:12.5px;padding:0 4px;cursor:pointer}
+.stbtn.rm{background:#fff200;border-color:#ca8a04;color:#1d1d1f}
+.stbtn.cx{background:#ff6b6b;border-color:#dc2626;color:#1d1d1f}
+.stbtn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* warna stabilo sama seperti di daftar hadir: Remedial kuning, Cancel merah */
+.arow.rm{background:#fff7a8;border-color:#eab308;color:#1d1d1f}
+.arow.cx{background:#ffb3b3;border-color:#ff6b6b;color:#1d1d1f}
+.arow.rm .who small,.arow.cx .who small{color:#3b3b3b}
 .arow.cx .sigbtn{visibility:hidden}
 .photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .ph{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column}

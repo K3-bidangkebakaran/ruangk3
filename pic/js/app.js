@@ -1,6 +1,6 @@
 /* Portal PIC – aplikasi lapangan PIC (ruangk3.com/pic/).
    Alur: admin utama menginput kegiatan di lembar Input Kegiatan (Daftar Hadir) + membuat akun PIC → semua PIC melihat semua kegiatan; PIC login sekali (butuh sinyal) → kegiatan tersimpan di HP →
-   PIC mengisi absensi TTD peserta (kolom Batal), TTD PIC, dan foto dokumentasi, boleh tanpa sinyal →
+   PIC mengisi absensi TTD peserta (status Hadir/Remedial/Cancel), TTD PIC, dan foto dokumentasi, boleh tanpa sinyal →
    begitu ada sinyal, hasil terkirim otomatis ke Firebase; aplikasi Daftar Hadir (admin) menariknya ke kegiatan yang sama, lalu Word/PDF dan Google Drive memakai alur yang sudah ada.
    Semua data kerja disimpan di IndexedDB "portal-pic". */
 (() => {
@@ -31,9 +31,12 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, day: 0, q: '', err: '' };
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, hadir: {}, foto: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {} });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {} });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 const isBatal = (h, p) => (p.id in h.batal) ? !!h.batal[p.id] : !!p.batal;
+// Remedial (baris kuning di daftar hadir): hanya tanda tangan di HARI TERAKHIR; Cancel (merah) tidak ikut absensi.
+const isRem = (h, p) => !isBatal(h, p) && ((h.remedial && p.id in h.remedial) ? !!h.remedial[p.id] : !!p.remedial);
+const perluHari = (h, p, d, days) => !isBatal(h, p) && (!isRem(h, p) || d === days[days.length - 1]);
 const hOf = kid => (H[kid] = H[kid] || newH());
 const saveH = kid => iPut('h:' + kid, H[kid]);
 const saveK = () => iPut('kegs', KEGS);
@@ -68,8 +71,8 @@ const I = {
 function stat(kid) {
   const k = KEGS[kid], h = hOf(kid), peserta = (k && k.peserta) || [], days = (k && k.tgl) || [];
   const aktif = peserta.filter(p => !isBatal(h, p));
-  let ttd = 0; aktif.forEach(p => days.forEach(d => { if (h.hadir[p.id] && h.hadir[p.id][d]) ttd++; }));
-  return { aktif: aktif.length, batal: peserta.length - aktif.length, ttd, ttdTotal: aktif.length * days.length, foto: aktif.filter(p => h.foto[p.id]).length, ttdPic: !!h.ttdPic };
+  let ttd = 0, ttdTotal = 0; aktif.forEach(p => days.forEach(d => { if (!perluHari(h, p, d, days)) return; ttdTotal++; if (h.hadir[p.id] && h.hadir[p.id][d]) ttd++; }));
+  return { aktif: aktif.length, batal: peserta.length - aktif.length, remedial: aktif.filter(p => isRem(h, p)).length, ttd, ttdTotal, foto: aktif.filter(p => h.foto[p.id]).length, ttdPic: !!h.ttdPic };
 }
 function statusKeg(kid) {
   const s = stat(kid);
@@ -96,7 +99,7 @@ function pending() {
 const flags = h => {
   const hadir = {}; Object.keys(h.hadir).forEach(pid => { const m = {}; Object.keys(h.hadir[pid]).forEach(d => { if (h.hadir[pid][d]) m[d] = 1; }); if (Object.keys(m).length) hadir[pid] = m; });
   const foto = {}; Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) foto[pid] = 1; });
-  return { batal: h.batal, hadir, foto, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
+  return { batal: h.batal, remedial: h.remedial || {}, hadir, foto, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
 /* ---------- toast ---------- */
@@ -143,7 +146,7 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
   try {
     const sv = await window.PicFB.hasil(kid); if (!sv) return;
     const media = await window.PicFB.media(kid);
-    const h = newH(); h.batal = sv.batal || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0;
+    const h = newH(); h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0;
     const own = key => { // hanya gambar yang tercatat di hasil akun ini (gambar PIC lain tidak ikut)
       if (key === 'pic') return !!sv.ttdPic;
       if (key.startsWith('f_')) return !!(sv.foto && sv.foto[key.slice(2)]);
@@ -268,7 +271,7 @@ function render() {
   } else if (P.screen === 'keg') {
     const s = stat(kid);
     h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
-      <button type="button" class="tile" data-act="go" data-to="abs"><span class="ic">${I.list}</span><span><b>Absensi TTD Peserta</b><small>${s.ttd}/${s.ttdTotal} tanda tangan${s.batal ? ` · ${s.batal} batal` : ''}</small></span>${I.chev}</button>
+      <button type="button" class="tile" data-act="go" data-to="abs"><span class="ic">${I.list}</span><span><b>Absensi TTD Peserta</b><small>${s.ttd}/${s.ttdTotal} tanda tangan${s.batal ? ` · ${s.batal} cancel` : ''}</small></span>${I.chev}</button>
       <button type="button" class="tile" data-act="go" data-to="pic"><span class="ic">${I.pen}</span><span><b>TTD PIC</b><small>${s.ttdPic ? 'Sudah ditandatangani' : 'Belum ditandatangani'}</small></span>${I.chev}</button>
       <button type="button" class="tile" data-act="go" data-to="dok"><span class="ic">${I.cam}</span><span><b>Dokumentasi Peserta</b><small>${s.foto}/${s.aktif} foto diambil</small></span>${I.chev}</button>
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
@@ -279,9 +282,9 @@ function render() {
       ${days.length > 1 ? `<div class="chips" role="tablist">${days.map((t, i) => `<button type="button" role="tab" data-act="day" data-i="${i}" aria-selected="${i === P.day}">Hari ${i + 1} · ${esc(tglPendek(t))}</button>`).join('')}</div>` : (d ? `<div class="hint">${esc(hariNama(d))}, ${esc(tglPanjang(d))}</div>` : '')}
       <div class="counter" id="absCount"></div>
       <div class="field"><input id="absQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
-      <div class="ahead"><span>Batal</span><span>Peserta</span><span style="text-align:center">TTD</span></div>
+      <div class="ahead"><span>Status</span><span>Peserta</span><span style="text-align:center">TTD</span></div>
       <div class="alist" id="absList"></div>
-      <p class="hint">Centang <b>Batal</b> bagi peserta yang tidak jadi ikut. Namanya akan dicoret sampai kolom TTD di daftar hadir yang dicetak.</p></div>`;
+      <p class="hint">Ketuk tombol <b>Status</b> untuk mengganti: <b>Hadir</b> → <b>Remedial</b> (baris kuning, hanya tanda tangan di hari terakhir) → <b>Cancel</b> (baris merah, tidak jadi ikut) → Hadir. Warna ini tercetak di daftar hadir beserta kolom Keterangan.</p></div>`;
   } else if (P.screen === 'pic') {
     const hh = hOf(kid);
     h = appbar('TTD PIC', k.nama, true) + `<div class="screen">
@@ -302,15 +305,17 @@ function render() {
 function renderAbs() {
   const kid = P.kid, k = KEGS[kid]; if (!k) return;
   const h = hOf(kid), days = k.tgl || [], d = days[P.day] || days[0] || '', q = P.q.trim().toLowerCase(), s = stat(kid);
-  const sudah = (k.peserta || []).filter(p => !isBatal(h, p) && h.hadir[p.id] && h.hadir[p.id][d]).length;
-  $('#absCount').innerHTML = `<div><b>${sudah}</b><small>Sudah TTD</small></div><div><b>${s.aktif - sudah}</b><small>Belum TTD</small></div><div><b style="color:${s.batal ? 'var(--bad)' : 'inherit'}">${s.batal}</b><small>Batal</small></div>`;
-  const rows = (k.peserta || []).filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q));
+  const peserta = k.peserta || [], perlu = peserta.filter(p => perluHari(h, p, d, days));
+  const sudah = perlu.filter(p => h.hadir[p.id] && h.hadir[p.id][d]).length;
+  $('#absCount').innerHTML = `<div><b>${sudah}</b><small>Sudah TTD</small></div><div><b>${perlu.length - sudah}</b><small>Belum TTD</small></div><div><b>${s.remedial}</b><small>Remedial</small></div><div><b style="color:${s.batal ? 'var(--bad)' : 'inherit'}">${s.batal}</b><small>Cancel</small></div>`;
+  const rows = peserta.filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q));
   $('#absList').innerHTML = rows.length ? rows.map(p => {
-    const cx = isBatal(h, p), g = h.hadir[p.id] && h.hadir[p.id][d];
-    return `<div class="arow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><label class="cbx"><input type="checkbox" data-act="batal" ${cx ? 'checked' : ''} aria-label="Batal ikut: ${esc(p.nama)}"><span>${I.check}</span></label>
+    const cx = isBatal(h, p), rm = isRem(h, p), g = h.hadir[p.id] && h.hadir[p.id][d], lewat = rm && !perluHari(h, p, d, days);
+    const st = cx ? 'Cancel' : rm ? 'Remedial' : 'Hadir', cls = cx ? ' cx' : rm ? ' rm' : '';
+    return `<div class="arow${cls}" data-pid="${esc(p.id)}"><button type="button" class="stbtn${cx ? ' cx' : rm ? ' rm' : ''}" data-act="status" aria-label="Status ${esc(p.nama)}: ${st}. Ketuk untuk mengganti">${st}</button>
       <div class="who"><b>${esc(p.nama)}</b><small>${esc(p.instansi || '')}</small></div>
-      <div>${g ? `<button type="button" class="sigbtn done" data-act="sig" aria-label="Ganti tanda tangan ${esc(p.nama)}"><img src="${g}" alt="TTD ${esc(p.nama)}"></button>` : `<button type="button" class="sigbtn" data-act="sig">${I.pensm} Tanda tangan</button>`}</div></div>`;
-  }).join('') : `<div class="empty">${(k.peserta || []).length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
+      <div>${lewat ? `<div class="sigbtn" style="border-style:solid;border-color:var(--line);font-size:11px;text-align:center;opacity:.8">Hanya hari terakhir</div>` : g ? `<button type="button" class="sigbtn done" data-act="sig" aria-label="Ganti tanda tangan ${esc(p.nama)}"><img src="${g}" alt="TTD ${esc(p.nama)}"></button>` : `<button type="button" class="sigbtn" data-act="sig">${I.pensm} Tanda tangan</button>`}</div></div>`;
+  }).join('') : `<div class="empty">${peserta.length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
 }
 
 /* ---------- bantalan tanda tangan ---------- */
@@ -482,6 +487,13 @@ document.addEventListener('click', e => {
   else if (a === 'pwok') savePw();
   else if (a === 'refresh') { if (!online()) toast('Belum ada sinyal.'); else { pull().then(() => toast('Daftar kegiatan diperbarui.')); } }
   else if (a === 'day') { P.day = +b.dataset.i; render(); }
+  else if (a === 'status' && k) {
+    const pid = b.closest('.arow').dataset.pid, p = (k.peserta || []).find(x => x.id === pid), h = hOf(kid); if (!p) return;
+    const cur = isBatal(h, p) ? 'cx' : isRem(h, p) ? 'rm' : '', nxt = cur === '' ? 'rm' : cur === 'rm' ? 'cx' : ''; // Hadir -> Remedial -> Cancel -> Hadir
+    h.batal[pid] = nxt === 'cx'; h.remedial[pid] = nxt === 'rm'; // false eksplisit = mencabut tanda dari admin
+    touch(kid); renderAbs();
+    toast(nxt === 'cx' ? 'Ditandai Cancel (baris merah)' : nxt === 'rm' ? 'Ditandai Remedial (baris kuning, TTD hanya hari terakhir)' : 'Dikembalikan ke Hadir');
+  }
   else if (a === 'sig' && k) {
     const pid = b.closest('.arow').dataset.pid, p = k.peserta.find(x => x.id === pid), d = (k.tgl || [])[P.day] || (k.tgl || [])[0], h = hOf(kid);
     openPad('Tanda tangan peserta', `${p.nama} · ${d ? tglPanjang(d) : ''}`, u => { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][d] = u; touch(kid); renderAbs(); }, h.hadir[pid] && h.hadir[pid][d]);
@@ -502,11 +514,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', async e => {
   const kid = P.kid, k = kid && KEGS[kid];
-  if (e.target.matches('[data-act="batal"]') && k) {
-    const pid = e.target.closest('.arow').dataset.pid, h = hOf(kid);
-    h.batal[pid] = !!e.target.checked;
-    touch(kid); renderAbs(); toast(e.target.checked ? 'Peserta ditandai batal' : 'Tanda batal dicabut');
-  } else if (e.target.id === 'camFile' && CAM) {
+  if (e.target.id === 'camFile' && CAM) {
     const f = e.target.files[0]; if (!f) return;
     toast('Memproses foto…');
     try { const pos = CAM.pos || await new Promise(r => { if (!navigator.geolocation) return r(null); navigator.geolocation.getCurrentPosition(g => r(POS = tidyPos(g)), () => r(null), { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }); }); camSave(await prosesFoto(f, CAM.k, CAM.nama, pos)); }

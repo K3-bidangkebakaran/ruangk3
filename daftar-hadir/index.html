@@ -162,17 +162,23 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .day-chip .today{font-size:10.5px;font-weight:700;color:#fff;background:var(--ok);border-radius:99px;padding:0 6px;margin-left:4px}
 .t-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .t-tools input[type=search]{flex:1;min-width:150px;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px}
-.t-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.t-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
 .t-row{display:flex;gap:6px;align-items:stretch}
-.t-cx{flex:none;display:grid;place-items:center;width:40px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+.t-cx{flex:none;display:grid;place-items:center;width:34px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
 .t-cx input{position:absolute;opacity:0;width:0;height:0}
 .t-cx span{width:20px;height:20px;border:2px solid #94a3b8;border-radius:5px;display:grid;place-items:center;color:#fff;font-size:13px;line-height:1}
 .t-cx input:checked+span{background:#dc2626;border-color:#dc2626}.t-cx input:checked+span::after{content:"✓"}
 .t-cx input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
-.t-row.cx .t-item{background:#fef2f2;border-color:#fecaca;color:#7f1d1d;position:relative;opacity:.9}
-.t-row.cx .t-item::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;background:#b91c1c}
+.t-row.cx .t-item{background:#ffd9d9;border-color:#ff6b6b;color:#7f1d1d;position:relative;opacity:.9}
+.t-rm{flex:none;display:grid;place-items:center;width:34px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+.t-rm input{position:absolute;opacity:0;width:0;height:0}
+.t-rm span{width:20px;height:20px;border:2px solid #94a3b8;border-radius:5px;display:grid;place-items:center;font-size:11px;font-weight:800;line-height:1;color:#94a3b8}
+.t-rm span::after{content:"R"}
+.t-rm input:checked+span{background:#fff200;border-color:#ca8a04;color:#713f12}
+.t-rm input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.t-row.rm .t-item{background:#fffbd0;border-color:#eab308}
 .t-row.cx .t-item .sg{opacity:.35}
-.t-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;text-align:left;width:100%}
+.t-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;text-align:left;flex:1;min-width:0}
 .t-item:hover{border-color:var(--accent);background:#fffaf5}
 .t-item .no{font-weight:700;color:var(--muted);min-width:20px;font-size:12px}
 .t-item .who{flex:1;min-width:0}
@@ -260,8 +266,12 @@ table.grid th{background:var(--accent);color:#fff;font-size:10pt;padding:2.5mm 2
 table.grid td{border:1px solid #888;padding:0 2mm;height:12.5mm;font-size:10pt;word-wrap:break-word}
 table.grid td.no{text-align:center}
 td.sign{position:relative;padding:0}
-table.grid tr.batal td:not(.no){background:linear-gradient(#222,#222) center/100% 1px no-repeat;color:#555}
+/* Status peserta di daftar hadir (warna stabilo): Cancel = merah sampai kolom Keterangan; Remedial = kuning sampai kolom TTD terakhir */
+.page,.page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+table.grid tr.batal td{background:#ff6b6b}
+table.grid tr.remedial td:not(.ket){background:#fff200}
 table.grid tr.batal .ttd{display:none}
+table.grid td.ket{text-align:center;font-weight:700;font-size:9pt;padding:0 1mm}
 table.grid tr.days th{font-size:8.5pt;padding:1.5mm 1mm;line-height:1.25}
 table.grid tr.days th span{font-weight:400;font-size:8pt}
 table.grid.multi .ttd{font-size:7.5pt;left:1.2mm;top:1mm}
@@ -618,7 +628,7 @@ function migTtd(d) {
   return (d.peserta || []).map(p => {
     const t = {}, src = p.ttd && typeof p.ttd === "object" ? p.ttd : {};
     Object.keys(src).forEach(k => { const m = /^h(\d+)$/.exec(k); const key = m ? old[+m[1] - 1] : k; if (key && src[k]) t[key] = src[k]; });
-    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", ttd: t, batal: !!p.batal };
+    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", ttd: t, batal: !!p.batal, remedial: !!p.remedial && !p.batal };
   });
 }
 const normalize = d => {
@@ -748,23 +758,25 @@ function renderPages() {
     <tr><td class="k">Tempat</td><td class="c">:</td><td>${v(a.tempat)}</td></tr></table>`;
   const infoMini = `<table class="info"><tr><td class="k">Kegiatan</td><td class="c">:</td><td>${v(a.kegiatan)}</td></tr></table>`;
   const cols = multi
-    ? `<colgroup><col style="width:9mm"><col style="width:${days.length > 4 ? 42 : 50}mm"><col style="width:${days.length > 4 ? 32 : 38}mm">${days.map(() => "<col>").join("")}</colgroup>`
-    : `<colgroup><col style="width:9mm"><col><col style="width:50mm"><col style="width:44mm"></colgroup>`;
+    ? `<colgroup><col style="width:9mm"><col style="width:${days.length > 4 ? 40 : 46}mm"><col style="width:${days.length > 4 ? 30 : 34}mm">${days.map(() => "<col>").join("")}<col style="width:${days.length > 4 ? 22 : 24}mm"></colgroup>`
+    : `<colgroup><col style="width:9mm"><col><col style="width:46mm"><col style="width:42mm"><col style="width:26mm"></colgroup>`;
   const thead = multi
-    ? `<thead><tr><th rowspan="2">No</th><th rowspan="2">Nama Peserta</th><th rowspan="2">Instansi / Perusahaan</th><th colspan="${days.length}">Tanda Tangan</th></tr>
+    ? `<thead><tr><th rowspan="2">No</th><th rowspan="2">Nama Peserta</th><th rowspan="2">Instansi / Perusahaan</th><th colspan="${days.length}">Tanda Tangan</th><th rowspan="2">Keterangan</th></tr>
        <tr class="days">${days.map((d, k) => `<th>Hari ${k + 1}<br><span>${esc(hariPendek(d))}</span></th>`).join("")}</tr></thead>`
-    : `<thead><tr><th>No</th><th>Nama Peserta</th><th>Instansi / Perusahaan</th><th>Tanda Tangan</th></tr></thead>`;
-  const nCol = 3 + days.length;
+    : `<thead><tr><th>No</th><th>Nama Peserta</th><th>Instansi / Perusahaan</th><th>Tanda Tangan</th><th>Keterangan</th></tr></thead>`;
+  const nCol = 4 + days.length;
   const sign = `<div class="sign-block" title="Klik untuk menggoreskan tanda tangan penyelenggara"><div>${esc(a.kota || "")}${a.kota ? ", " : ""}${esc(fmtTglPendek(a.tglTtd))}<br>${esc(a.jabatanTtd || "")}${a.jabatanTtd ? "," : ""}</div><div class="space">${a.ttd ? `<img class="ttd-img" src="${a.ttd}" alt="">` : (orgLocked() ? `<span class="sign-hint">🔒 TTD mulai ${esc(fmtTglPendek(lastDay(a)))}</span>` : `<span class="sign-hint">✍️ Klik untuk tanda tangan</span>`)}</div><div>( ${a.namaTtd ? "<b><u>" + esc(a.namaTtd) + "</u></b>" : dots} )</div></div>`;
 
   // --- daftar hadir: pagination by measuring real height (handles long names that wrap)
   const tbl = body => `<table class="grid${multi ? " multi" : ""}">${cols}${thead}<tbody>${body}</tbody></table>`;
   const sigImg = (p, k, cls) => !p.batal && p.ttd && days[k] && p.ttd[days[k]] ? `<span class="sig-cell ${cls}"><img src="${p.ttd[days[k]]}" alt=""></span>` : "";
   const rowHtml = (p, no) => {
+    const rem = !!p.remedial && !p.batal, lastK = days.length - 1;
     const ttd = multi
-      ? days.map((d, k) => `<td class="sign"><span class="ttd l">${no}.</span>${sigImg(p, k, "c")}</td>`).join("")
+      ? days.map((d, k) => rem && k < lastK ? `<td class="sign"></td>` : `<td class="sign"><span class="ttd l">${no}.</span>${sigImg(p, k, "c")}</td>`).join("")
       : `<td class="sign"><span class="ttd ${no % 2 ? "l" : "r"}">${no}.</span>${sigImg(p, 0, no % 2 ? "l" : "r")}</td>`;
-    return `<tr${p.batal ? ' class="batal" title="Batal ikut"' : ""}><td class="no">${no}</td><td>${v(p.nama)}</td><td>${v(p.instansi)}</td>${ttd}</tr>`;
+    const cls = p.batal ? "batal" : rem ? "remedial" : "";
+    return `<tr${cls ? ` class="${cls}" title="${p.batal ? "Cancel" : "Remedial (hanya hari terakhir)"}"` : ""}><td class="no">${no}</td><td>${v(p.nama)}</td><td>${v(p.instansi)}</td>${ttd}<td class="ket">${p.batal ? "Cancel" : rem ? "Remedial" : ""}</td></tr>`;
   };
   const dhBody = (c, pi, start, withSign) => `<h1>DAFTAR HADIR PESERTA${pi ? " <small>(lanjutan)</small>" : ""}</h1>${pi ? infoMini : info}
       ${c.length ? tbl(c.map((p, k) => rowHtml(p, start + k + 1)).join("")) : (pi ? "" : tbl(`<tr><td colspan="${nCol}" style="text-align:center;color:#999">Belum ada peserta</td></tr>`))}
@@ -1586,15 +1598,18 @@ function renderTtdTab() {
   const ds = ttdDays(), semua = namaList(), all = fotoList();
   if (T_DAY == null || T_DAY >= ds.length || (ds[T_DAY] && ds[T_DAY].locked && ds.some(d => !d.locked))) T_DAY = pickDefaultDay(ds);
   const key = (ds[T_DAY] && ds[T_DAY].iso) || "";
-  const cnt = k => all.filter(p => p.ttd && ds[k].iso && p.ttd[ds[k].iso]).length;
+  // Peserta Remedial hanya tanda tangan di hari terakhir; peserta Cancel tidak ikut dihitung.
+  const lastK = ds.length - 1, perlu = (p, k) => !p.batal && (!p.remedial || k === lastK);
+  const cnt = k => all.filter(p => perlu(p, k) && p.ttd && ds[k].iso && p.ttd[ds[k].iso]).length;
+  const tot = k => all.filter(p => perlu(p, k)).length;
   // badge di tab: total tanda tangan terisi / dibutuhkan
-  const need = all.length * ds.length, have = ds.reduce((n, d) => n + cnt(d.k), 0);
+  const need = ds.reduce((n, d) => n + tot(d.k), 0), have = ds.reduce((n, d) => n + cnt(d.k), 0);
   $("#tbTtd").textContent = `${have}/${need}`;
 
   $("#tDays").innerHTML = ds.map(d => `
     <button class="day-chip ${d.k === T_DAY ? "on" : ""}" data-k="${d.k}" ${d.locked ? "disabled title='Hari ini belum tiba'" : ""}>
       <b>${d.locked ? "🔒 " : ""}Hari ${d.k + 1}${d.today ? '<span class="today">Hari ini</span>' : ""}</b>
-      <span>${d.iso ? esc(fmtTgl(d.iso)) : "Tanggal belum diisi"}</span><br><span>${cnt(d.k)}/${all.length} sudah TTD</span>
+      <span>${d.iso ? esc(fmtTgl(d.iso)) : "Tanggal belum diisi"}</span><br><span>${cnt(d.k)}/${tot(d.k)} sudah TTD</span>
     </button>`).join("");
 
   const cur = ds[T_DAY] || {};
@@ -1603,22 +1618,24 @@ function renderTtdTab() {
   else if (cur.locked) note = `<div class="lock-note">🔒 Hari ${T_DAY + 1} (${esc(fmtTgl(cur.iso))}) belum tiba – tanda tangan dibuka pada hari tersebut.</div>`;
   $("#tNote").innerHTML = note;
 
-  const done = cnt(T_DAY), nb = semua.length - all.length;
-  $("#tProgTxt").textContent = all.length ? `Hari ${T_DAY + 1}: ${done} dari ${all.length} peserta sudah tanda tangan${nb ? ` · ${nb} batal` : ""}` : "";
-  $("#tProgBar").style.width = all.length ? (done / all.length * 100) + "%" : "0";
+  const done = cnt(T_DAY), nb = semua.length - all.length, nr = all.filter(p => p.remedial).length, tdy = tot(T_DAY);
+  $("#tProgTxt").textContent = tdy ? `Hari ${T_DAY + 1}: ${done} dari ${tdy} peserta sudah tanda tangan${nb ? ` · ${nb} cancel` : ""}${nr ? ` · ${nr} remedial` : ""}` : "";
+  $("#tProgBar").style.width = tdy ? (done / tdy * 100) + "%" : "0";
 
   const el = $("#tList");
   if (!semua.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1">Belum ada peserta. Isi dulu nama peserta di tab <b>1. Kegiatan &amp; Peserta</b>.</div>`; return; }
   const q = norm($("#tSearch").value), only = $("#tOnlyEmpty").checked;
-  const shown = semua.filter(p => (!q || norm(p.nama + " " + p.instansi).includes(q)) && (!only || (!p.batal && !(p.ttd && p.ttd[key]))));
+  const shown = semua.filter(p => (!q || norm(p.nama + " " + p.instansi).includes(q)) && (!only || (perlu(p, T_DAY) && !(p.ttd && p.ttd[key]))));
   if (!shown.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1">${only && !q ? "Semua peserta sudah tanda tangan untuk hari ini 👍" : "Tidak ada nama yang cocok."}</div>`; return; }
   el.innerHTML = shown.map(p => {
-    const sg = !p.batal && p.ttd && p.ttd[key];
-    return `<div class="t-row ${p.batal ? "cx" : ""}"><label class="t-cx" title="Centang bila peserta batal ikut"><input type="checkbox" data-cx="${p.id}" ${p.batal ? "checked" : ""} aria-label="Batal ikut: ${esc(p.nama)}"><span></span></label>
-    <button class="t-item ${sg ? "done" : ""}" data-id="${p.id}" ${cur.locked || !S.acara.tanggal || p.batal ? "disabled" : ""}>
+    const skip = !perlu(p, T_DAY) && !p.batal; // remedial di hari selain hari terakhir
+    const sg = perlu(p, T_DAY) && p.ttd && p.ttd[key];
+    return `<div class="t-row ${p.batal ? "cx" : p.remedial ? "rm" : ""}"><label class="t-cx" title="Centang bila peserta Cancel (baris merah di daftar hadir)"><input type="checkbox" data-cx="${p.id}" ${p.batal ? "checked" : ""} aria-label="Cancel: ${esc(p.nama)}"><span></span></label>
+    <label class="t-rm" title="Centang bila peserta Remedial (baris kuning, tanda tangan hanya hari terakhir)"><input type="checkbox" data-rm="${p.id}" ${p.remedial ? "checked" : ""} aria-label="Remedial: ${esc(p.nama)}"><span></span></label>
+    <button class="t-item ${sg ? "done" : ""}" data-id="${p.id}" ${cur.locked || !S.acara.tanggal || p.batal || skip ? "disabled" : ""}>
       <span class="no">${semua.indexOf(p) + 1}.</span>
       <span class="who"><span class="nm">${esc(p.nama)}</span><br><span class="in">${esc(p.instansi || "-")}</span></span>
-      <span class="sg" ${sg ? `style="background-image:url('${sg}')"` : ""}>${sg ? "" : (p.batal ? "Batal" : "Belum TTD")}</span>
+      <span class="sg" ${sg ? `style="background-image:url('${sg}')"` : ""}>${sg ? "" : (p.batal ? "Cancel" : skip ? "Hari terakhir" : "Belum TTD")}</span>
     </button></div>`;
   }).join("");
 }
@@ -1626,16 +1643,20 @@ $("#tDays").addEventListener("click", e => { const b = e.target.closest(".day-ch
 $("#tSearch").addEventListener("input", renderTtdTab);
 $("#tOnlyEmpty").onchange = renderTtdTab;
 $("#tList").addEventListener("change", e => {
-  const c = e.target.closest("[data-cx]"); if (!c) return;
-  const p = S.peserta.find(x => x.id === c.dataset.cx); if (!p) return;
-  p.batal = c.checked; changed(); renderTtdTab(); renderFoto();
-  toast(p.batal ? `${p.nama} ditandai batal. Namanya dicoret sampai kolom TTD di daftar hadir.` : `${p.nama} dikembalikan sebagai peserta.`);
+  const c = e.target.closest("[data-cx],[data-rm]"); if (!c) return;
+  const rm = c.hasAttribute("data-rm"), p = S.peserta.find(x => x.id === (rm ? c.dataset.rm : c.dataset.cx)); if (!p) return;
+  if (rm) { p.remedial = c.checked; if (p.remedial) p.batal = false; } else { p.batal = c.checked; if (p.batal) p.remedial = false; } // Cancel & Remedial tidak bisa bersamaan
+  changed(); renderTtdTab(); renderFoto(); renderTtd();
+  toast(p.batal ? `${p.nama} ditandai Cancel. Barisnya diberi warna merah sampai kolom Keterangan.`
+    : p.remedial ? `${p.nama} ditandai Remedial. Barisnya diberi warna kuning; tanda tangan hanya di hari terakhir.`
+    : `${p.nama} dikembalikan sebagai peserta biasa.`);
 });
 $("#tList").addEventListener("click", e => {
   const b = e.target.closest(".t-item"); if (!b || b.disabled) return;
   const p = S.peserta.find(x => x.id === b.dataset.id); if (!p) return;
   const ds = ttdDays(), d = ds[T_DAY], key = d && d.iso;
   if (!d || d.locked || !key) return;
+  if (p.remedial && T_DAY !== ds.length - 1) return; // Remedial: hanya hari terakhir
   Sig.open({
     title: `✍️ ${p.nama}`,
     help: `Tanda tangan <b>Hari ${T_DAY + 1}</b> – ${esc(fmtTgl(d.iso))}. Goreskan tanda tangan Anda di kotak ini, lalu tekan <b>Simpan</b>.`,
@@ -2022,6 +2043,7 @@ const Word = (() => {
   const gap = D => D.par("", { after: tw(5) });
 
   /* Daftar hadir + tanda tangan */
+  // GARIS tidak dipakai lagi (coretan diganti warna stabilo); dibiarkan agar perubahan kecil.
   const GARIS = (() => { try { const c = document.createElement("canvas"); c.width = 600; c.height = 4; const x = c.getContext("2d"); x.fillStyle = "#222"; x.fillRect(0, 0, 600, 4); return c.toDataURL("image/png"); } catch (e) { return ""; } })();
   function daftarHadir(ev, ctx) {
     const D = Doc(), a = ev.acara, days = ctx.days, multi = days.length > 1;
@@ -2030,28 +2052,33 @@ const Word = (() => {
     const rows = list.concat(kosong);
     const nd = days.length;
     let widths;
+    const kw = tw(multi ? (nd > 4 ? 22 : 24) : 26); // lebar kolom Keterangan (kolom terakhir)
     if (multi) {
-      const c1 = tw(9), c2 = tw(nd > 4 ? 42 : 50), c3 = tw(nd > 4 ? 32 : 38), rest = tw(CONT_W) - c1 - c2 - c3, dw = Math.floor(rest / nd);
-      widths = [c1, c2, c3, ...days.map((_, i) => i === nd - 1 ? rest - dw * (nd - 1) : dw)];
-    } else widths = [tw(9), tw(CONT_W - 9 - 50 - 44), tw(50), tw(44)];
+      const c1 = tw(9), c2 = tw(nd > 4 ? 40 : 46), c3 = tw(nd > 4 ? 30 : 34), rest = tw(CONT_W) - c1 - c2 - c3 - kw, dw = Math.floor(rest / nd);
+      widths = [c1, c2, c3, ...days.map((_, i) => i === nd - 1 ? rest - dw * (nd - 1) : dw), kw];
+    } else widths = [tw(9), tw(CONT_W - 9 - 46 - 42 - 26), tw(46), tw(42), kw];
     const TH = { fill: "F58220" }, th = (w, t, o = {}) => D.cell(w, D.par(D.run(t, { b: 1, color: "FFFFFF", sz: o.sz || 20 }), { jc: "center", before: 40, after: 40 }), { ...TH, ...o });
     let head;
     if (multi) {
-      head = D.row(th(widths[0], "No", { vm: "restart" }) + th(widths[1], "Nama Peserta", { vm: "restart" }) + th(widths[2], "Instansi / Perusahaan", { vm: "restart" }) + th(widths.slice(3).reduce((s, w) => s + w, 0), "Tanda Tangan", { span: nd }), { head: 1 })
-        + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(`Hari ${k + 1}`, { b: 1, color: "FFFFFF", sz: 17 }), { jc: "center", before: 20 }) + D.par(D.run(ctx.pendek(d), { color: "FFFFFF", sz: 16 }), { jc: "center", after: 20 }), TH)).join(""), { head: 1 });
-    } else head = D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Instansi / Perusahaan") + th(widths[3], "Tanda Tangan"), { head: 1 });
+      head = D.row(th(widths[0], "No", { vm: "restart" }) + th(widths[1], "Nama Peserta", { vm: "restart" }) + th(widths[2], "Instansi / Perusahaan", { vm: "restart" }) + th(widths.slice(3, 3 + nd).reduce((s, w) => s + w, 0), "Tanda Tangan", { span: nd }) + th(kw, "Keterangan", { vm: "restart", sz: 18 }), { head: 1 })
+        + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(`Hari ${k + 1}`, { b: 1, color: "FFFFFF", sz: 17 }), { jc: "center", before: 20 }) + D.par(D.run(ctx.pendek(d), { color: "FFFFFF", sz: 16 }), { jc: "center", after: 20 }), TH)).join("") + th(kw, "", { vm: "cont" }), { head: 1 });
+    } else head = D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Instansi / Perusahaan") + th(widths[3], "Tanda Tangan") + th(kw, "Keterangan", { sz: 18 }), { head: 1 });
+    // Warna stabilo: Cancel = merah sampai kolom Keterangan; Remedial = kuning sampai kolom TTD terakhir (Keterangan tanpa warna)
+    const RED = "FF6B6B", YEL = "FFF200";
     const body = rows.map((p, i) => {
-      const no = i + 1, cells = [];
+      const no = i + 1, bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : rem ? { fill: YEL } : {};
       const sig = (k, w, left) => {
         const url = p.ttd && days[k] && p.ttd[days[k]]; const im = url ? D.inline(url, multi ? w / TW - 7 : (w / TW) / 2 - 7, 10.5) : "";
-        return D.cell(w, D.par(D.run(no + ".", { sz: multi ? 15 : 17, color: "555555" }) + (im ? D.run("  ") + im : ""), { jc: multi ? "left" : (left ? "left" : "right") }));
+        return D.cell(w, D.par(D.run(no + ".", { sz: multi ? 15 : 17, color: "555555" }) + (im ? D.run("  ") + im : ""), { jc: multi ? "left" : (left ? "left" : "right") }), F);
       };
-      const bt = !!p.batal, so = bt ? { strike: 1, color: "555555" } : {};
-      const base = D.cell(widths[0], D.par(D.run(no), { jc: "center" })) + D.cell(widths[1], D.par(D.run(p.nama || "", so))) + D.cell(widths[2], D.par(D.run(p.instansi || "", so)));
-      const lineSig = w => D.cell(w, D.par(D.inline(GARIS, w / TW - 3, 0.25), { jc: "center" })); // garis coretan menerus sampai kolom TTD
-      if (bt) return D.row(base + (multi ? days.map((_, k) => lineSig(widths[3 + k])).join("") : lineSig(widths[3])), { h: tw(12.5) });
-      const sg = multi ? days.map((_, k) => sig(k, widths[3 + k], true)).join("") : sig(0, widths[3], no % 2 === 1);
-      return D.row(base + sg, { h: tw(12.5) });
+      const tc = bt || rem ? { color: "000000" } : {}; // teks hitam tegas di atas warna stabilo (Word otomatis memutihkan teks di warna gelap)
+      const base = D.cell(widths[0], D.par(D.run(no, tc), { jc: "center" }), F) + D.cell(widths[1], D.par(D.run(p.nama || "", tc)), F) + D.cell(widths[2], D.par(D.run(p.instansi || "", tc)), F);
+      const ket = D.cell(kw, D.par(D.run(bt ? "Cancel" : rem ? "Remedial" : "", { b: 1, sz: 18, color: "000000" }), { jc: "center" }), bt ? { fill: RED } : {});
+      let tt;
+      if (bt) tt = (multi ? days.map((_, k) => D.cell(widths[3 + k], D.par(""), F)).join("") : D.cell(widths[3], D.par(""), F)); // cancel: tanpa nomor & tanda tangan
+      else if (multi) tt = days.map((_, k) => rem && k < nd - 1 ? D.cell(widths[3 + k], D.par(""), F) : sig(k, widths[3 + k], true)).join(""); // remedial: hanya hari terakhir
+      else tt = sig(0, widths[3], no % 2 === 1);
+      return D.row(base + tt + ket, { h: tw(12.5) });
     }).join("") || D.row(D.cell(widths.reduce((s, w) => s + w, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: widths.length }), { h: tw(12.5) });
 
     const sp = tw(62), indent = tw(CONT_W - 62);
@@ -2235,7 +2262,7 @@ const Cloud = {
     return {
       id: ev.id, created: ev.created, acara: a, wm: ev.wm, days,
       hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara),
-      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: !!p.foto, batal: !!p.batal, ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
+      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: !!p.foto, batal: !!p.batal, remedial: !!p.remedial, ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
     };
   },
   async sync(manual, evArg) {
@@ -2466,7 +2493,7 @@ const Pic = {
     const a = ev.acara, hari = hariList(a).filter(Boolean);
     return {
       nama: (a.kegiatan || "").trim(), tgl: hari, tempat: a.tempat || "", kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
-      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", batal: !!p.batal })), dibuat: ev.created
+      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", batal: !!p.batal, remedial: !!p.remedial && !p.batal })), dibuat: ev.created
     };
   },
   async flush() {
@@ -2534,7 +2561,14 @@ const Pic = {
     const list = Object.values(byPic || {}).filter(x => x && typeof x === "object").sort((x, y) => (x.upd || 0) - (y.upd || 0));
     let last = null;
     for (const h of list) {
-      Object.entries(h.batal || {}).forEach(([pid, v]) => { const p = by.get(pid); if (p && !!p.batal !== !!v) { p.batal = !!v; n++; } });
+      { // status Cancel / Remedial dari PIC (salah satu saja; false eksplisit = dicabut)
+        const hb = h.batal || {}, hr = h.remedial || {};
+        new Set([...Object.keys(hb), ...Object.keys(hr)]).forEach(pid => {
+          const p = by.get(pid); if (!p) return;
+          const b = pid in hb ? !!hb[pid] : !!p.batal, r = pid in hr ? !!hr[pid] : !!p.remedial, nr = !b && r;
+          if (!!p.batal !== b) { p.batal = b; n++; } if (!!p.remedial !== nr) { p.remedial = nr; n++; }
+        });
+      }
       Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) return; Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
       Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (p && u && p.foto !== u) { p.foto = u; n++; } });
       if (h.ttdPic) last = h;
