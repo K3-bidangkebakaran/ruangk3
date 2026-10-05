@@ -385,11 +385,13 @@ function camStatus() {
   const st = $('#camSt', CAM.el), sh = $('#camShot', CAM.el);
   let txt, ok = true;
   if (CAM.pos) txt = `Lokasi terkunci (±${Math.round(CAM.pos.acc || 0)} m)`;
+  else if (CAM.perm === 'denied') txt = 'Lokasi DIBLOKIR di pengaturan situs Chrome untuk ruangk3.com. Buka Chrome > ⋮ > Setelan > Setelan situs > Lokasi > ruangk3.com > Izinkan';
   else if (CAM.locErr === 'denied') txt = 'Izin Lokasi ditolak. Aktifkan Lokasi untuk Portal PIC di Pengaturan HP > Aplikasi > Portal PIC > Izin';
   else if (CAM.locErr === 'off') txt = 'Lokasi/GPS HP mati atau tidak tersedia. Nyalakan Lokasi di HP lalu ketuk Ulangi lokasi';
   else if (CAM.waited) txt = 'Lokasi belum didapat. Ketuk Ulangi lokasi (coba di tempat terbuka)';
   else { txt = 'Mencari lokasi…'; ok = false; }
   st.textContent = txt; st.className = CAM.pos ? 'ok' : (CAM.waited || CAM.locErr ? 'bad' : '');
+  const dg = $('#camDiag', CAM.el); if (dg) dg.textContent = `diagnosa: izin situs=${CAM.perm || '?'} · kode=${CAM.code == null ? '-' : CAM.code}${CAM.msg ? ' · ' + CAM.msg : ''} · v5`;
   const lb = $('#camLoc', CAM.el); if (lb) lb.hidden = !!CAM.pos || !(CAM.waited || CAM.locErr);
   sh.disabled = !(ok && CAM.live && !CAM.review);
 }
@@ -420,7 +422,7 @@ function openCam(kid, pid) {
   const k = KEGS[kid], p = k && k.peserta.find(x => x.id === pid); if (!p) return;
   camClose();
   const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
-  el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(p.nama)}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
+  el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(p.nama)}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button><small id="camDiag" style="opacity:.7;font-size:10.5px"></small></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
     <div class="camstage"><video id="camV" playsinline muted autoplay></video><img id="camImg" alt="Hasil foto" hidden><div id="camWm" class="camwm"></div><div id="camFb" class="camfb" hidden></div></div>
     <div class="cambar"><div id="camLive"><button type="button" class="shutter" id="camShot" data-act="camshot" aria-label="Ambil foto" disabled></button></div>
     <div id="camRev" class="row" style="justify-content:center;gap:12px" hidden><button type="button" class="btn" data-act="camretake">Ulangi</button><button type="button" class="btn pri" data-act="camuse">Pakai foto</button></div></div>`;
@@ -436,7 +438,8 @@ function camLocStart() { // dua jalur: lokasi cepat (jaringan/Wi-Fi, berfungsi d
   clearTimeout(c.wait); c.watch = null; c.waited = false; c.locErr = '';
   if (!navigator.geolocation) { c.locErr = 'off'; camStatus(); return; }
   const ok = g => { if (CAM !== c) return; const n = tidyPos(g); if (!c.pos || (n.acc || 1e9) <= (c.pos.acc || 1e9) + 5 || Date.now() - c.pos.t > 60000) { c.pos = POS = n; } c.locErr = ''; camStatus(); camWm(); };
-  const bad = er => { if (CAM !== c) return; if (er && er.code === 1) c.locErr = 'denied'; else if (!c.pos) c.locErr = c.locErr || 'off'; camStatus(); };
+  const bad = er => { if (CAM !== c) return; c.code = er && er.code; c.msg = String((er && er.message) || '').slice(0, 60); if (er && er.code === 1) c.locErr = 'denied'; else if (!c.pos) c.locErr = c.locErr || 'off'; camStatus(); };
+  try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: 'geolocation' }).then(r => { if (CAM !== c) return; c.perm = r.state; camStatus(); r.onchange = () => { if (CAM === c) { c.perm = r.state; camStatus(); } }; }).catch(() => { }); } catch (e) { }
   try { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: false, maximumAge: 300000, timeout: 12000 }); } catch (e) { bad(e); }
   try { c.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, maximumAge: 10000, timeout: 30000 }); } catch (e) { bad(e); }
   c.wait = setTimeout(() => { if (CAM === c) { c.waited = true; camStatus(); } }, 10000);
