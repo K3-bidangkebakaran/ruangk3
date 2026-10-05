@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portal PIC – Admin</title>
+<script>try{if(Date.now()-(+localStorage.getItem('rk3_admin_at')||0)>12*36e5)location.replace('/');}catch(e){}</script>
+<style>
+/* Halaman admin Portal PIC. Dipasang sebagai tab di menu Daftar Hadir panel admin ruangk3.com (iframe, satu origin). */
+:root{--bg:#f6f7f4;--surface:#fff;--s2:#f3f4f0;--ink:#17201b;--muted:#5b665e;--line:#d9ded5;--brand:#f6c800;--brand-ink:#1e1a00;--ok:#14804a;--ok-soft:#dcf2e5;--warn:#a85a05;--warn-soft:#fdebcf;--bad:#b42318;--bad-soft:#fde2df;--focus:#1d4ed8;--accent:#f58220}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h2,h3{margin:0}
+small,.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:10px 14px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--brand)}
+.btn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink);border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 14px;font-weight:700;min-height:38px}
+.btn:hover{background:var(--s2)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.btn.sm{padding:4px 10px;min-height:30px;font-size:12.5px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;background:var(--s2);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.note{border-radius:10px;padding:10px 12px;font-size:13px;background:var(--s2);border:1px solid var(--line)}
+.note.warn{background:var(--warn-soft);border-color:#f3cf94;color:#6b3a02}.note.bad{background:var(--bad-soft);border-color:#f2b8b2;color:#7a1810}.note.ok{background:var(--ok-soft);border-color:#a8dcc0;color:#0c5a33}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.flow div{background:var(--s2);padding:9px 12px;display:grid;grid-template-columns:24px 1fr;gap:10px;font-size:12.5px}
+.flow .n{width:24px;height:24px;border-radius:50%;background:var(--brand);color:var(--brand-ink);font-weight:800;display:grid;place-items:center;font-size:12px}
+.flow b{display:block}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table.t{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+.t th{background:var(--s2);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px 12px;white-space:nowrap}
+.t td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:middle}
+.t td.num,.t th.num{text-align:right;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.grid .wide{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-weight:700;font-size:12.5px}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 10px;min-height:38px;width:100%}
+.field textarea{min-height:140px;resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.field .h{font-size:12px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--s2);border-radius:99px;padding:3px 6px 3px 12px;font-size:12.5px;font-weight:600}
+.chip button{border:0;background:transparent;width:20px;height:20px;border-radius:50%;line-height:1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.stats div{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--s2)}
+.stats small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.stats b{font-size:22px;font-variant-numeric:tabular-nums}
+.pv{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#d6d8d2}
+.pv iframe{display:block;width:100%;border:0;min-height:560px;height:78vh}
+.empty{border:1.5px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted)}
+.legend i{display:inline-block;width:26px;height:2px;background:var(--bad);vertical-align:middle;margin-right:6px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="stack" id="root">
+  <div class="flow" aria-label="Alur kerja Portal PIC">
+    <div><span class="n">1</span><span><b>Input kegiatan</b>Nama, tanggal, PIC, peserta</span></div>
+    <div><span class="n">2</span><span><b>PIC mengisi di APK</b>TTD, batal, foto</span></div>
+    <div><span class="n">3</span><span><b>Masuk otomatis</b>Website dan Google Drive</span></div>
+    <div><span class="n">4</span><span><b>Siap cetak</b>Daftar hadir dan dokumentasi</span></div>
+  </div>
+  <div id="banner"></div>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="keg" aria-selected="true">Kegiatan</button>
+    <button role="tab" data-tab="pic" aria-selected="false">Akun PIC</button>
+    <button role="tab" data-tab="hasil" aria-selected="false">Hasil &amp; Cetak</button>
+  </div>
+  <div id="view"></div>
+</div>
+<!-- mesin Word + Google Drive (aplikasi Daftar Hadir mode jembatan, tanpa tampilan) -->
+<iframe id="worker" title="Penyusun Word dan Google Drive" src="/daftar-hadir/?bridge=1" style="position:absolute;width:1px;height:1px;border:0;left:-9999px" tabindex="-1" aria-hidden="true"></iframe>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+import { getAuth, signInAnonymously, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+import { getDatabase, ref, get, set, update, remove, onValue } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+
+const cfg = { apiKey: 'AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg', authDomain: 'portal-k3-bidang-kebakaran.firebaseapp.com', databaseURL: 'https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app', projectId: 'portal-k3-bidang-kebakaran', storageBucket: 'portal-k3-bidang-kebakaran.firebasestorage.app', messagingSenderId: '497833559757', appId: '1:497833559757:web:01c2de15cd5f56dbb18b84' };
+const ROOT = 'artifacts/k3-kebakaran-app-v5/public/data';
+const DOMAIN = 'pic.ruangk3.com';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-3);
+const fm = (iso, o) => new Intl.DateTimeFormat('id-ID', o).format(new Date(iso + 'T00:00:00'));
+const tglPanjang = i => fm(i, { day: 'numeric', month: 'long', year: 'numeric' });
+const tglPendek = i => fm(i, { day: 'numeric', month: 'short', year: 'numeric' });
+const rentang = d => (!d || !d.length) ? '–' : d.length === 1 ? tglPanjang(d[0]) : `${tglPendek(d[0])} – ${tglPendek(d[d.length - 1])}`;
+const waktuFmt = t => t ? new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(t)) : '–';
+const todayIso = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+/* ---------- Firebase ---------- */
+const app = initializeApp(cfg, 'pic-admin');
+const auth = getAuth(app), db = getDatabase(app);
+const P = path => ref(db, `${ROOT}/${path}`);
+let PIC = {}, KEG = {}, HAS = {}, loaded = { pic: false, keg: false, has: false }, fbErr = '';
+const ST = { tab: 'keg', kid: '', edit: null, dates: [], msg: '', hasilKid: '', drive: {} };
+try { ST.drive = JSON.parse(localStorage.getItem('rk3_pic_drive') || '{}') || {}; } catch (e) {}
+const saveDrive = () => { try { localStorage.setItem('rk3_pic_drive', JSON.stringify(ST.drive)); } catch (e) {} };
+
+(async () => {
+  try { await Promise.race([signInAnonymously(auth), new Promise((_, r) => setTimeout(() => r(new Error('timeout')), 15000))]); } catch (e) {}
+  const onErr = e => { fbErr = /permission/i.test(String(e && e.message)) ? 'rules' : 'net'; render(); };
+  onValue(P('dh_pic'), s => { PIC = s.val() || {}; loaded.pic = true; fbErr = ''; render(); }, onErr);
+  onValue(P('dh_kegiatan'), s => { KEG = s.val() || {}; loaded.keg = true; render(); }, onErr);
+  onValue(P('dh_hasil'), s => { HAS = s.val() || {}; loaded.has = true; render(); queueAuto(); }, onErr);
+})();
+
+/* ---------- jembatan ke aplikasi Daftar Hadir (Word + Google Drive) ---------- */
+const worker = $('#worker'); let workerReady = false, rid = 0; const waits = new Map();
+let driveStatus = null; // {ready, outdated}
+window.addEventListener('message', e => {
+  if (e.origin !== location.origin || !e.data || e.data.src !== 'dh-bridge') return;
+  const m = e.data;
+  if (m.t === 'ready') {
+    if (e.source !== worker.contentWindow) return;
+    workerReady = true; queueAuto();
+    const st = () => call({ t: 'status' }).then(r => { driveStatus = r; render(); }).catch(() => {});
+    st(); setTimeout(st, 6000); return;
+  }
+  const w = waits.get(m.rid); if (w) { waits.delete(m.rid); w(m); }
+});
+function call(msg, target = worker, timeout = 300000) {
+  return new Promise((res, rej) => {
+    if (target === worker && !workerReady) return rej(new Error('Mesin Word/Drive belum siap. Tunggu sebentar.'));
+    const id = ++rid; const t = setTimeout(() => { waits.delete(id); rej(new Error('Waktu habis.')); }, timeout);
+    waits.set(id, m => { clearTimeout(t); res(m); });
+    target.contentWindow.postMessage({ dst: 'dh-bridge', rid: id, ...msg }, location.origin);
+  });
+}
+
+/* ---------- rakit data kegiatan + hasil + gambar jadi "event" Daftar Hadir ---------- */
+async function bangunEvent(kid) {
+  const k = KEG[kid], h = HAS[kid] || {};
+  const media = (await get(P(`dh_media/${kid}`))).val() || {};
+  const hari = [...(k.tgl || [])].sort();
+  const batal = h.batal || {};
+  return {
+    id: kid, created: k.dibuat || Date.now(),
+    acara: { kegiatan: k.nama, tanggal: hari[0] || todayIso(), tanggal2: hari[hari.length - 1] || '', hari, jamMulai: k.jamMulai || '08:00', jamSelesai: k.jamSelesai || '16:00', zona: k.zona || 'WIB', tempat: k.tempat || '', kota: k.kota || 'Depok', tglTtd: hari[hari.length - 1] || todayIso(), jabatanTtd: 'PIC Kegiatan', namaTtd: h.ttdPicNama || k.picNama || '', ttd: media.pic || '', barisKosong: 0 },
+    peserta: (k.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi || '', foto: media['f_' + p.id] || '', ttd: Object.fromEntries(hari.map(d => [d, media[`s_${p.id}_${d}`]]).filter(x => x[1])), batal: !!batal[p.id] })),
+    wm: {}, pic: { kid, rev: h.rev || 0 },
+  };
+}
+
+/* ---------- unggah otomatis ke Google Drive ---------- */
+let autoT = null, autoBusy = false, autoErr = '';
+const sig = kid => `${(HAS[kid] || {}).upd || 0}.${(KEG[kid] || {}).upd || 0}`;
+const terbaru = kid => { const t = (KEG[kid] && KEG[kid].tgl) || []; const l = t[t.length - 1]; return !l || (Date.now() - new Date(l + 'T00:00:00').getTime()) < 120 * 864e5; };
+const perluDrive = kid => (HAS[kid] && HAS[kid].upd) && terbaru(kid) && (ST.drive[kid] || {}).sig !== sig(kid);
+function queueAuto(delay = 4000) { clearTimeout(autoT); autoT = setTimeout(autoRun, delay); }
+async function autoRun() {
+  if (autoBusy || !workerReady || !loaded.has || !loaded.keg) return;
+  const todo = Object.keys(KEG).filter(perluDrive); if (!todo.length) { autoErr = ''; render(); return; }
+  if (!navigator.onLine) return;
+  autoBusy = true; render();
+  try {
+    for (const kid of todo) {
+      const s = sig(kid);
+      const ev = await bangunEvent(kid);
+      const r = await call({ t: 'upload', ev });
+      if (!r.ok) { autoErr = r.err || 'Gagal menyimpan ke Google Drive.'; break; }
+      ST.drive[kid] = { sig: s, at: Date.now(), url: r.folderUrl || '' }; saveDrive(); autoErr = '';
+    }
+  } catch (e) { autoErr = (e && e.message) || 'Gagal menyimpan ke Google Drive.'; }
+  autoBusy = false; render();
+  if (autoErr || Object.keys(KEG).some(perluDrive)) queueAuto(autoErr ? 60000 : 3000);
+}
+window.addEventListener('online', () => queueAuto(1500));
+
+/* ---------- hitung status ---------- */
+function stat(kid) {
+  const k = KEG[kid] || {}, h = HAS[kid] || {}, ps = k.peserta || [], hari = k.tgl || [], b = h.batal || {};
+  const aktif = ps.filter(p => !b[p.id]);
+  let ttd = 0; aktif.forEach(p => hari.forEach(d => { if (h.hadir && h.hadir[p.id] && h.hadir[p.id][d]) ttd++; }));
+  return { n: ps.length, aktif: aktif.length, batal: ps.length - aktif.length, ttd, ttdTotal: aktif.length * hari.length, foto: aktif.filter(p => h.foto && h.foto[p.id]).length, ttdPic: !!h.ttdPic, mulai: !!h.upd };
+}
+function statusKeg(kid) {
+  const s = stat(kid);
+  if (!s.mulai) return ['Menunggu PIC', ''];
+  if (s.aktif && s.ttd >= s.ttdTotal && s.foto >= s.aktif && s.ttdPic) return ['Siap cetak', 'ok'];
+  return ['Berjalan', 'warn'];
+}
+function driveBadge(kid) {
+  const d = ST.drive[kid]; if (!HAS[kid] || !HAS[kid].upd) return '<span class="pill">–</span>';
+  if (d && d.sig === sig(kid)) return `<span class="pill ok" title="${esc(waktuFmt(d.at))}">Tersimpan di Drive</span>`;
+  return autoBusy ? '<span class="pill warn">Mengunggah…</span>' : '<span class="pill warn">Menunggu</span>';
+}
+
+/* ---------- tampilan ---------- */
+function banners() {
+  let h = '';
+  if (fbErr === 'rules') h += `<div class="note bad"><b>Aturan Firebase belum dipasang.</b> Data Portal PIC (node <code>dh_pic</code>, <code>dh_kegiatan</code>, <code>dh_hasil</code>, <code>dh_media</code>) ditolak server. Tempel aturan dari berkas <code>pic/README.md</code> di Firebase Console → Realtime Database → Rules, lalu muat ulang halaman ini.</div>`;
+  else if (fbErr === 'net') h += `<div class="note warn">Tidak bisa terhubung ke Firebase. Periksa internet lalu muat ulang.</div>`;
+  if (workerReady && driveStatus && !driveStatus.ready) h += `<div class="note warn"><b>Google Drive belum terhubung.</b> Hasil PIC tetap tersimpan di website dan bisa dicetak. Agar otomatis masuk Drive, buka tab <b>Rekap Kegiatan → Pengaturan Drive</b> dan isi URL + Kode Akses sekali, lalu muat ulang tab ini.</div>`;
+  else if (driveStatus && driveStatus.outdated) h += `<div class="note warn"><b>Code.gs di Apps Script masih versi lama.</b> Tempel versi terbaru lalu Deploy → Kelola deployment → Versi baru.</div>`;
+  else if (autoErr) h += `<div class="note warn">Penyimpanan ke Google Drive tertunda: ${esc(autoErr)} Dicoba lagi otomatis.</div>`;
+  $('#banner').innerHTML = h;
+}
+function render(fresh) {
+  banners();
+  const snap = fresh ? null : $$('#view [id]').filter(el => /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)).map(el => [el.id, el.value]);
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ST.tab)));
+  const v = $('#view');
+  if (!loaded.pic || !loaded.keg || !loaded.has) { if (!fbErr) v.innerHTML = '<div class="empty">Memuat data Portal PIC…</div>'; else v.innerHTML = ''; return; }
+  const keepScroll = document.scrollingElement.scrollTop;
+  if (ST.tab === 'keg') v.innerHTML = viewKeg();
+  else if (ST.tab === 'pic') v.innerHTML = viewPic();
+  else if (ST.tab === 'hasil') { if (!$('#hasil-root')) v.innerHTML = '<div id="hasil-root"></div>'; viewHasil(); }
+  if (snap) snap.forEach(([id, v]) => { const el = $('#' + id); if (el && el.value !== v && !el.matches('#hSel')) el.value = v; });
+  document.scrollingElement.scrollTop = keepScroll;
+}
+
+function viewKeg() {
+  const list = Object.entries(KEG).map(([id, k]) => ({ id, ...k })).sort((a, b) => String((b.tgl || [])[0]).localeCompare(String((a.tgl || [])[0])));
+  const pics = Object.entries(PIC).filter(([, p]) => p.aktif !== false).sort((a, b) => String(a[1].nama).localeCompare(String(b[1].nama)));
+  const e = ST.edit, k = e ? KEG[e] : null;
+  const picOpt = pics.map(([u, p]) => `<option value="${esc(u)}" ${k && k.picUid === u ? 'selected' : ''}>${esc(p.nama)}</option>`).join('');
+  const pesText = k ? (k.peserta || []).map(p => `${p.nama}${p.instansi ? '\t' + p.instansi : ''}`).join('\n') : '';
+  const form = `<form class="card stack" id="fKeg">
+    <div class="row between"><h3>${k ? 'Ubah kegiatan' : 'Kegiatan baru'}</h3>${k ? '<button type="button" class="btn sm" data-a="batalEdit">Batal ubah</button>' : ''}</div>
+    <div class="grid">
+      <div class="field wide"><label for="kNama">Nama kegiatan</label><input id="kNama" required value="${esc(k ? k.nama : '')}" placeholder="Contoh: Pelatihan K3 Kebakaran Dasar"></div>
+      <div class="field"><label for="kTempat">Tempat</label><input id="kTempat" required value="${esc(k ? k.tempat : '')}" placeholder="Aula PT … , Kota"></div>
+      <div class="field"><label for="kKota">Kota tanda tangan</label><input id="kKota" value="${esc(k ? k.kota || 'Depok' : 'Depok')}"></div>
+      <div class="field"><label for="kMulai">Jam mulai</label><input id="kMulai" type="time" value="${esc(k ? k.jamMulai || '08:00' : '08:00')}"></div>
+      <div class="field"><label for="kSelesai">Jam selesai</label><input id="kSelesai" type="time" value="${esc(k ? k.jamSelesai || '16:00' : '16:00')}"></div>
+      <div class="field wide"><label for="kTgl">Tanggal kegiatan (boleh lebih dari satu hari, maksimal 7)</label>
+        <div class="row"><input id="kTgl" type="date" style="width:auto"><button type="button" class="btn sm" data-a="tglTambah">Tambah tanggal</button></div>
+        <div class="row" id="kTglList" style="margin-top:6px">${ST.dates.map(d => `<span class="chip">${esc(tglPendek(d))}<button type="button" data-a="tglHapus" data-d="${d}" aria-label="Hapus ${esc(d)}">×</button></span>`).join('') || '<small>Belum ada tanggal.</small>'}</div></div>
+      <div class="field wide"><label for="kPic">Nama PIC</label><select id="kPic" required><option value="">Pilih PIC…</option>${picOpt}</select>${pics.length ? '' : '<span class="h">Belum ada akun PIC. Buat dulu di tab Akun PIC.</span>'}</div>
+      <div class="field wide"><label for="kPes">Nama peserta (satu baris satu orang; boleh tempel dari Excel: kolom Nama lalu Instansi)</label><textarea id="kPes" required placeholder="Ahmad Fauzi&#9;PT Sinar Mandiri&#10;Budi Hartono&#9;PT Sinar Mandiri">${esc(pesText)}</textarea><span class="h">Pemisah nama dan instansi: tab (dari Excel), titik koma (;) atau garis tegak (|).</span></div>
+    </div>
+    <div class="row"><button class="btn pri" type="submit">${k ? 'Simpan perubahan' : 'Simpan kegiatan'}</button><span class="muted" id="kInfo"></span></div>
+  </form>`;
+  const rows = list.map(x => {
+    const s = stat(x.id), st = statusKeg(x.id), pic = PIC[x.picUid];
+    return `<tr><td><b>${esc(x.nama)}</b><br><small>${esc(x.tempat || '')}</small></td><td>${esc(rentang(x.tgl))}</td><td>${esc(x.picNama || (pic && pic.nama) || '–')}</td>
+      <td class="num">${s.n}${s.batal ? ` <small>(${s.batal} batal)</small>` : ''}</td><td class="num">${s.ttd}/${s.ttdTotal}</td><td class="num">${s.foto}/${s.aktif}</td><td>${s.ttdPic ? '<span class="pill ok">Sudah</span>' : '<span class="pill">Belum</span>'}</td>
+      <td><span class="pill ${st[1]}">${st[0]}</span></td><td>${driveBadge(x.id)}</td>
+      <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-a="lihat" data-id="${x.id}">Lihat hasil</button><button class="btn sm" data-a="ubah" data-id="${x.id}">Ubah</button>${ST.kid === x.id ? `<button class="btn sm bad" data-a="hapusYa" data-id="${x.id}">Yakin hapus?</button><button class="btn sm" data-a="hapusTidak">Tidak</button>` : `<button class="btn sm bad" data-a="hapus" data-id="${x.id}">Hapus</button>`}</div></td></tr>`;
+  }).join('');
+  return `<div class="stack">${ST.msg ? `<div class="note ok">${esc(ST.msg)}</div>` : ''}${form}
+    <div class="card stack"><div class="row between"><h3>Daftar kegiatan</h3><small>${list.length} kegiatan</small></div>
+    ${list.length ? `<div class="tw"><table class="t"><thead><tr><th>Kegiatan</th><th>Tanggal</th><th>PIC</th><th class="num">Peserta</th><th class="num">TTD</th><th class="num">Foto</th><th>TTD PIC</th><th>Status</th><th>Google Drive</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">Belum ada kegiatan. Isi formulir di atas untuk menugaskan PIC.</div>'}
+    <small>Menghapus kegiatan juga menghapus hasil PIC dan folder kegiatan di Google Drive.</small></div></div>`;
+}
+
+function viewPic() {
+  const list = Object.entries(PIC).map(([u, p]) => ({ uid: u, ...p })).sort((a, b) => String(a.nama).localeCompare(String(b.nama)));
+  const n = u => Object.values(KEG).filter(k => k.picUid === u).length;
+  const rows = list.map(p => `<tr><td><b>${esc(p.nama)}</b></td><td>${esc(p.user || '')}</td><td>${esc(p.hp || '–')}</td><td class="num">${n(p.uid)}</td><td>${p.aktif === false ? '<span class="pill bad">Nonaktif</span>' : '<span class="pill ok">Aktif</span>'}</td><td>${esc(waktuFmt(p.dibuat))}</td>
+    <td><div class="row" style="flex-wrap:nowrap"><button class="btn sm" data-a="picReset" data-u="${p.uid}">Reset kata sandi</button><button class="btn sm ${p.aktif === false ? '' : 'bad'}" data-a="picToggle" data-u="${p.uid}">${p.aktif === false ? 'Aktifkan' : 'Nonaktifkan'}</button></div></td></tr>`).join('');
+  return `<div class="stack">${ST.msg ? `<div class="note ok">${esc(ST.msg)}</div>` : ''}
+    <form class="card stack" id="fPic"><h3>Tambah akun PIC</h3>
+      <div class="grid">
+        <div class="field"><label for="pNama">Nama lengkap PIC</label><input id="pNama" required placeholder="Rina Wulandari"></div>
+        <div class="field"><label for="pUser">Email atau username</label><input id="pUser" required autocapitalize="none" spellcheck="false" placeholder="rina@gmail.com atau rina"><span class="h">Dipakai untuk masuk di aplikasi. Email asli memungkinkan reset kata sandi lewat email; tanpa @ akan menjadi <code>username@${DOMAIN}</code>.</span></div>
+        <div class="field"><label for="pPw">Kata sandi awal</label><input id="pPw" type="password" required minlength="6" autocomplete="new-password"><span class="h">Minimal 6 karakter. PIC bisa menggantinya sendiri di aplikasi.</span></div>
+        <div class="field"><label for="pHp">No. HP (opsional)</label><input id="pHp" inputmode="tel"></div>
+      </div>
+      <div id="pErr" class="note bad hide"></div>
+      <div class="row"><button class="btn pri" type="submit" id="pBtn">Buat akun PIC</button></div></form>
+    <div class="card stack"><div class="row between"><h3>Akun PIC</h3><small>${list.length} akun</small></div>
+      ${list.length ? `<div class="tw"><table class="t" style="min-width:680px"><thead><tr><th>Nama</th><th>Masuk dengan</th><th>HP</th><th class="num">Kegiatan</th><th>Status</th><th>Dibuat</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty">Belum ada akun PIC.</div>'}
+      <small>Akun yang dinonaktifkan tidak bisa mengirim data dan otomatis keluar dari aplikasi begitu HP mendapat sinyal.</small></div></div>`;
+}
+
+/* ---------- hasil & cetak ---------- */
+let viewFrame = null, shownKid = '', shownSig = '', loadingKid = '';
+function viewHasil() {
+  const root = $('#hasil-root');
+  const list = Object.entries(KEG).map(([id, k]) => ({ id, ...k })).sort((a, b) => String((b.tgl || [])[0]).localeCompare(String((a.tgl || [])[0])));
+  if (!list.length) { root.innerHTML = '<div class="empty">Belum ada kegiatan.</div>'; root.dataset.cur = ''; return; }
+  if (!ST.hasilKid || !KEG[ST.hasilKid]) ST.hasilKid = list[0].id;
+  const kid = ST.hasilKid, s = stat(kid), st = statusKeg(kid), d = ST.drive[kid];
+  if (root.dataset.cur !== kid) { root.innerHTML = '<div class="stack"><div id="hTop"></div><div class="pv" id="pvBox"></div></div>'; root.dataset.cur = kid; shownSig = ''; }
+  $('#hTop').innerHTML = `<div class="card stack"><div class="row between"><div class="field" style="min-width:240px;flex:1"><label for="hSel">Kegiatan</label><select id="hSel">${list.map(x => `<option value="${x.id}" ${x.id === kid ? 'selected' : ''}>${esc(x.nama)} · ${esc(rentang(x.tgl))}</option>`).join('')}</select></div>
+      <div class="row"><span class="pill ${st[1]}">${st[0]}</span>${driveBadge(kid)}</div></div>
+      <div class="stats"><div><small>Peserta aktif</small><b>${s.aktif}</b></div><div><small>Batal</small><b style="color:${s.batal ? 'var(--bad)' : 'inherit'}">${s.batal}</b></div><div><small>TTD peserta</small><b>${s.ttd}/${s.ttdTotal}</b></div><div><small>Foto</small><b>${s.foto}/${s.aktif}</b></div><div><small>TTD PIC</small><b>${s.ttdPic ? 'Sudah' : 'Belum'}</b></div></div>
+      <div class="row"><button class="btn pri" data-a="cetak" ${s.mulai ? '' : 'disabled'}>Cetak / PDF</button><button class="btn" data-a="word" ${s.mulai ? '' : 'disabled'}>Unduh Word</button><button class="btn" data-a="driveNow" ${s.mulai ? '' : 'disabled'}>Simpan ke Google Drive sekarang</button>${d && d.url ? `<a class="btn" href="${esc(d.url)}" target="_blank" rel="noopener">Buka folder di Drive</a>` : ''}<span class="muted" id="hInfo">${esc(ST.hInfo || '')}</span></div>
+      <div class="legend muted"><i></i>Peserta yang dicentang Batal di aplikasi: namanya dicoret sampai kolom TTD di daftar hadir, dan tidak ikut halaman dokumentasi.</div></div>`;
+  const box = $('#pvBox');
+  if (!s.mulai && !$('#pvFrame')) box.innerHTML = '<div class="empty" style="margin:12px;background:#fff">PIC belum mengirim hasil untuk kegiatan ini. Pratinjau muncul begitu PIC mulai mengisi di aplikasi.</div>';
+  const cur = `${kid}|${sig(kid)}`;
+  if (s.mulai && shownSig !== cur) { shownSig = cur; muatPratinjau(kid); }
+}
+function hInfo(t) { ST.hInfo = t; const el = $('#hInfo'); if (el) el.textContent = t; }
+async function muatPratinjau(kid) {
+  const box = $('#pvBox'); if (!box) return;
+  loadingKid = kid; hInfo('Memuat foto dan tanda tangan…');
+  try {
+    const ev = await bangunEvent(kid); if (loadingKid !== kid) return;
+    let f = $('#pvFrame');
+    if (!f) { box.innerHTML = '<iframe id="pvFrame" title="Pratinjau daftar hadir dan dokumentasi" src="/daftar-hadir/?bridge=1&view=1" allow="fullscreen"></iframe>'; f = $('#pvFrame'); await new Promise(res => { const h = e => { if (e.origin === location.origin && e.data && e.data.src === 'dh-bridge' && e.data.t === 'ready' && e.source === f.contentWindow) { removeEventListener('message', h); res(); } }; addEventListener('message', h); setTimeout(res, 15000); }); }
+    const r = await call({ t: 'preview', ev }, f, 60000);
+    hInfo(r.info || '');
+  } catch (e) { hInfo('Gagal memuat pratinjau: ' + e.message); }
+}
+function unduh(name, dataUrl) { const a = document.createElement('a'); a.href = dataUrl; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+
+/* ---------- aksi ---------- */
+function setMsg(m) { ST.msg = m; render(true); setTimeout(() => { if (ST.msg === m) { ST.msg = ''; render(); } }, 6000); }
+function parsePeserta(txt, lama) {
+  const peta = new Map((lama || []).map(p => [(p.nama + '|' + (p.instansi || '')).toLowerCase(), p.id]));
+  const seen = new Set(), out = [];
+  txt.split(/\r?\n/).forEach(l => {
+    const t = l.trim(); if (!t) return;
+    const parts = t.split(/\t|;|\|/).map(x => x.trim()); const nama = parts[0]; if (!nama) return;
+    const inst = parts.slice(1).filter(Boolean).join(' / ');
+    const key = (nama + '|' + inst).toLowerCase(); if (seen.has(key)) return; seen.add(key);
+    out.push({ id: peta.get(key) || uid(), nama, instansi: inst });
+  });
+  return out;
+}
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-tab]'); if (t && t.closest('.tabs')) { ST.tab = t.dataset.tab; ST.kid = ''; render(true); return; }
+  const b = e.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
+  if (a === 'tglTambah') { const v = $('#kTgl').value; if (!v) return; if (ST.dates.length >= 7) { alert('Maksimal 7 hari.'); return; } if (!ST.dates.includes(v)) ST.dates = [...ST.dates, v].sort(); keepForm(); }
+  else if (a === 'tglHapus') { ST.dates = ST.dates.filter(d => d !== b.dataset.d); keepForm(); }
+  else if (a === 'ubah') { ST.edit = b.dataset.id; ST.dates = [...(KEG[ST.edit].tgl || [])]; render(true); scrollTo(0, 0); }
+  else if (a === 'batalEdit') { ST.edit = null; ST.dates = []; render(true); }
+  else if (a === 'lihat') { ST.hasilKid = b.dataset.id; ST.tab = 'hasil'; $('#view').innerHTML = ''; render(true); }
+  else if (a === 'hapus') { ST.kid = b.dataset.id; render(); }
+  else if (a === 'hapusTidak') { ST.kid = ''; render(); }
+  else if (a === 'hapusYa') {
+    const id = b.dataset.id; b.disabled = true; b.textContent = 'Menghapus…';
+    try {
+      await Promise.all([remove(P(`dh_kegiatan/${id}`)), remove(P(`dh_hasil/${id}`)), remove(P(`dh_media/${id}`))]);
+      delete ST.drive[id]; saveDrive();
+      let drv = ''; if (workerReady) { try { const r = await call({ t: 'remove', id }, worker, 120000); drv = r.ok ? ' Folder di Google Drive ikut dihapus.' : (r.err && !/belum terhubung/i.test(r.err) ? ' Folder di Drive belum terhapus: ' + r.err : ''); } catch (er) { drv = ' Folder di Drive belum terhapus: ' + er.message; } }
+      ST.kid = ''; if (ST.edit === id) ST.edit = null; setMsg('Kegiatan dihapus.' + drv);
+    } catch (er) { ST.kid = ''; setMsg('Gagal menghapus: ' + (er.message || er)); }
+  }
+  else if (a === 'picToggle') { const p = PIC[b.dataset.u]; try { await update(P(`dh_pic/${b.dataset.u}`), { aktif: p.aktif === false }); } catch (er) { setMsg('Gagal: ' + er.message); } }
+  else if (a === 'picReset') {
+    const p = PIC[b.dataset.u]; if (!p || !/@/.test(p.user || '') || new RegExp('@' + DOMAIN.replace(/\./g, '\\.') + '$').test(p.user)) { setMsg('Akun ini tanpa email asli, jadi kata sandi tidak bisa direset lewat email. Minta PIC memakai tombol "Ganti kata sandi" di aplikasi, atau buat akun baru dengan email asli.'); return; }
+    try { const a2 = getAuth(initializeApp(cfg, 'pic-pembuat-' + uid())); await sendPasswordResetEmail(a2, p.user); setMsg(`Tautan reset kata sandi dikirim ke ${p.user}.`); } catch (er) { setMsg('Gagal mengirim email reset: ' + (er.code || er.message)); }
+  }
+  else if (a === 'cetak') { const f = $('#pvFrame'); if (f) f.contentWindow.postMessage({ dst: 'dh-bridge', t: 'print' }, location.origin); }
+  else if (a === 'word') {
+    b.disabled = true; hInfo('Menyusun file Word…');
+    try { const ev = await bangunEvent(ST.hasilKid); const r = await call({ t: 'docx', ev }); (r.files || []).forEach((f, i) => setTimeout(() => unduh(f.name, f.data), i * 400)); hInfo((r.files || []).length ? 'File Word diunduh.' : 'Belum ada data untuk disusun.'); }
+    catch (er) { hInfo('Gagal: ' + er.message); } b.disabled = false;
+  }
+  else if (a === 'driveNow') {
+    b.disabled = true; hInfo('Menyimpan ke Google Drive…'); const kid = ST.hasilKid;
+    try { const ev = await bangunEvent(kid); const r = await call({ t: 'upload', ev }); if (r.ok) { ST.drive[kid] = { sig: sig(kid), at: Date.now(), url: r.folderUrl || '' }; saveDrive(); hInfo('Tersimpan di Google Drive ✓'); render(); } else hInfo(r.err || 'Gagal.'); }
+    catch (er) { hInfo('Gagal: ' + er.message); } b.disabled = false;
+  }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'hSel') { ST.hasilKid = e.target.value; ST.hInfo = ''; render(true); }
+  if (e.target.id === 'kTgl' && e.target.value) { const v = e.target.value; if (ST.dates.length >= 7) { alert('Maksimal 7 hari.'); return; } if (!ST.dates.includes(v)) ST.dates = [...ST.dates, v].sort(); keepForm(); }
+});
+function keepForm() { const keep = ['kNama', 'kTempat', 'kKota', 'kMulai', 'kSelesai', 'kPic', 'kPes'].map(id => [id, $('#' + id) && $('#' + id).value]); render(); keep.forEach(([id, v]) => { const el = $('#' + id); if (el && v != null) el.value = v; }); }
+document.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (e.target.id === 'fKeg') {
+    const lama = ST.edit && KEG[ST.edit], peserta = parsePeserta($('#kPes').value, lama && lama.peserta);
+    if (!ST.dates.length) { $('#kInfo').textContent = 'Tambahkan minimal satu tanggal.'; return; }
+    if (!peserta.length) { $('#kInfo').textContent = 'Isi minimal satu nama peserta.'; return; }
+    const picUid = $('#kPic').value; if (!picUid) { $('#kInfo').textContent = 'Pilih PIC.'; return; }
+    const id = ST.edit || 'k' + uid();
+    const data = { nama: $('#kNama').value.trim(), tgl: [...ST.dates].sort(), tempat: $('#kTempat').value.trim(), kota: $('#kKota').value.trim() || 'Depok', jamMulai: $('#kMulai').value || '08:00', jamSelesai: $('#kSelesai').value || '16:00', zona: 'WIB', picUid, picNama: (PIC[picUid] || {}).nama || '', peserta, dibuat: (lama && lama.dibuat) || Date.now(), upd: Date.now() };
+    try { await set(P(`dh_kegiatan/${id}`), data); ST.edit = null; ST.dates = []; setMsg(lama ? 'Perubahan disimpan. PIC menerimanya begitu HP mendapat sinyal.' : `Kegiatan disimpan dan ditugaskan ke ${data.picNama}. Muncul di aplikasinya begitu HP mendapat sinyal.`); }
+    catch (er) { $('#kInfo').textContent = 'Gagal menyimpan: ' + (er.message || er); }
+  } else if (e.target.id === 'fPic') {
+    const nama = $('#pNama').value.trim(), raw = $('#pUser').value.trim().toLowerCase(), pw = $('#pPw').value, hp = $('#pHp').value.trim();
+    const email = raw.includes('@') ? raw : `${raw}@${DOMAIN}`, errEl = $('#pErr'); errEl.classList.add('hide');
+    if (!/^[a-z0-9._+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) { errEl.textContent = 'Username hanya huruf kecil, angka, titik, atau strip. Atau isi email yang valid.'; errEl.classList.remove('hide'); return; }
+    if (Object.values(PIC).some(p => String(p.user).toLowerCase() === email)) { errEl.textContent = 'Email/username itu sudah dipakai akun lain.'; errEl.classList.remove('hide'); return; }
+    const btn = $('#pBtn'); btn.disabled = true; btn.textContent = 'Membuat akun…';
+    try {
+      const a2 = getAuth(initializeApp(cfg, 'pic-pembuat-' + uid()));
+      const cred = await createUserWithEmailAndPassword(a2, email, pw);
+      await set(P(`dh_pic/${cred.user.uid}`), { nama, user: email, hp, aktif: true, dibuat: Date.now() });
+      await signOut(a2).catch(() => {});
+      setMsg(`Akun PIC ${nama} dibuat. Beri tahu PIC: masuk dengan "${raw}" dan kata sandi awalnya.`);
+    } catch (er) {
+      const c = er.code || ''; errEl.textContent = /email-already/.test(c) ? 'Email/username itu sudah terdaftar di Firebase. Pakai yang lain.' : /weak-password/.test(c) ? 'Kata sandi terlalu lemah (minimal 6 karakter).' : /operation-not-allowed/.test(c) ? 'Login email/kata sandi belum diaktifkan di Firebase Authentication.' : (/permission/i.test(er.message) ? 'Aturan Firebase belum dipasang (dh_pic).' : 'Gagal: ' + (er.message || c));
+      errEl.classList.remove('hide'); btn.disabled = false; btn.textContent = 'Buat akun PIC';
+    }
+  }
+});
+</script>
+</body>
+</html>

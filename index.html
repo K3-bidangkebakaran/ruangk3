@@ -1897,6 +1897,7 @@
                             <div class="inline-flex p-1 bg-slate-100 rounded-lg self-start shrink-0" role="tablist" aria-label="Tampilan Daftar Hadir">
                                 <button type="button" id="dh-tab-rekap" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-bold bg-white text-slate-900 shadow-sm">Rekap Kegiatan</button>
                                 <button type="button" id="dh-tab-app" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Input Kegiatan</button>
+                                <button type="button" id="dh-tab-pic" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Portal PIC</button>
                             </div>
                         </div>
                         <ol class="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200 border-t border-slate-200">
@@ -1965,6 +1966,18 @@
                             <p id="dh-app-loading" class="absolute inset-0 flex items-center justify-center text-sm text-slate-500">Memuat aplikasi Daftar Hadir…</p>
                             <iframe id="dh-frame" title="Aplikasi Daftar Hadir dan Dokumentasi" class="relative block w-full border-0 bg-white" style="height:calc(100vh - 17rem);min-height:640px" allow="camera; geolocation; clipboard-write; fullscreen"></iframe>
                         </div>
+                    </div>
+
+                    <!-- Tab 3: Portal PIC (akun PIC, input kegiatan, hasil dari APK PIC, cetak). Halaman: /pic/admin.html -->
+                    <div id="dh-view-pic" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-2.5 bg-slate-50 border-b border-slate-200">
+                            <p class="text-xs text-slate-600">PIC mengisi absensi, TTD, dan foto lewat aplikasi <b>Portal PIC</b> (bisa offline). Hasilnya muncul di sini, siap dicetak, dan otomatis tersimpan di Google Drive.</p>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <a href="/pic/" target="_blank" rel="noopener" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Buka aplikasi PIC</a>
+                                <button type="button" id="btn-dh-pic-muat" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Muat ulang</button>
+                            </div>
+                        </div>
+                        <iframe id="dh-pic-frame" title="Admin Portal PIC" class="block w-full border-0 bg-white" style="height:calc(100vh - 17rem);min-height:720px" allow="fullscreen"></iframe>
                     </div>
                 </div>
 
@@ -5130,7 +5143,7 @@
         document.getElementById('btn-admin-logout')?.addEventListener('click', async () => {
             currentUser = null;
             try { localStorage.removeItem('rk3_admin_at'); localStorage.removeItem('rk3_dh_cache'); /* rk3_dh_cfg sengaja dipertahankan: koneksi Drive permanen, hanya tombol Putuskan yang menghapus */ localStorage.removeItem('rk3_dh_view'); } catch (e) {}
-            try { const fr = document.getElementById('dh-frame'); if (fr && fr.getAttribute('src')) fr.src = 'about:blank'; } catch (e) {}
+            try { ['dh-frame', 'dh-pic-frame'].forEach(id => { const fr = document.getElementById(id); if (fr && fr.getAttribute('src')) fr.src = 'about:blank'; }); } catch (e) {}
             try { await window.withTimeout(signInAnonymously(auth), TIMEOUT_JARINGAN_MS); } catch(e){}
             window.location.reload();
         });
@@ -8434,7 +8447,7 @@
 
         window.dhBukaPanel = async function() {
             if (!dhIsAdmin()) return;
-            let tab = 'rekap'; try { tab = localStorage.getItem('rk3_dh_view') === 'app' ? 'app' : 'rekap'; } catch (e) {}
+            let tab = 'rekap'; try { const tv = localStorage.getItem('rk3_dh_view'); tab = (tv === 'app' || tv === 'pic') ? tv : 'rekap'; } catch (e) {}
             window.dhTampilView(tab);
             if (!dhCfg()) { const c = await dhCfgDariAplikasi(); if (c) dhSimpanCfg(c); }
             if (!dhEvents.length) {
@@ -8490,21 +8503,28 @@
         // Tab Rekap / Input: aplikasi Daftar Hadir dimuat di dalam halaman ini (iframe satu origin), bukan tab baru.
         let dhAppDipakai = false;
         window.dhTampilView = function(v) {
-            const app = v === 'app';
-            document.getElementById('dh-view-rekap')?.classList.toggle('hidden', app);
+            const app = v === 'app', pic = v === 'pic';
+            document.getElementById('dh-view-rekap')?.classList.toggle('hidden', app || pic);
             document.getElementById('dh-view-app')?.classList.toggle('hidden', !app);
+            document.getElementById('dh-view-pic')?.classList.toggle('hidden', !pic);
             const aktif = ['bg-white', 'text-slate-900', 'shadow-sm'], mati = ['text-slate-500', 'hover:text-slate-800'];
-            [['dh-tab-rekap', !app], ['dh-tab-app', app]].forEach(([id, on]) => {
+            [['dh-tab-rekap', !app && !pic], ['dh-tab-app', app], ['dh-tab-pic', pic]].forEach(([id, on]) => {
                 const b = document.getElementById(id); if (!b) return;
                 aktif.forEach(c => b.classList.toggle(c, on)); mati.forEach(c => b.classList.toggle(c, !on));
                 b.setAttribute('aria-selected', on ? 'true' : 'false');
             });
-            try { localStorage.setItem('rk3_dh_view', app ? 'app' : 'rekap'); } catch (e) {}
+            try { localStorage.setItem('rk3_dh_view', app ? 'app' : (pic ? 'pic' : 'rekap')); } catch (e) {}
             if (app) {
                 if (!dhIsAdmin()) return;
                 try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} // sesi admin masih berlaku; aplikasi memeriksa penanda ini
                 const f = document.getElementById('dh-frame');
                 if (f && !f.getAttribute('src')) f.src = '/daftar-hadir/';
+                dhAppDipakai = true;
+            } else if (pic) {
+                if (!dhIsAdmin()) return;
+                try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {}
+                const pf = document.getElementById('dh-pic-frame');
+                if (pf && !pf.getAttribute('src')) pf.src = '/pic/admin.html';
                 dhAppDipakai = true;
             } else if (dhAppDipakai) {
                 dhAppDipakai = false;
@@ -8513,6 +8533,8 @@
         };
         document.getElementById('dh-tab-rekap')?.addEventListener('click', () => window.dhTampilView('rekap'));
         document.getElementById('dh-tab-app')?.addEventListener('click', () => window.dhTampilView('app'));
+        document.getElementById('dh-tab-pic')?.addEventListener('click', () => window.dhTampilView('pic'));
+        document.getElementById('btn-dh-pic-muat')?.addEventListener('click', () => { const pf = document.getElementById('dh-pic-frame'); if (pf) { try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} pf.src = '/pic/admin.html'; } });
         document.getElementById('dh-frame')?.addEventListener('load', () => {
             const f = document.getElementById('dh-frame');
             if (f && f.getAttribute('src')) document.getElementById('dh-app-loading')?.classList.add('hidden');
