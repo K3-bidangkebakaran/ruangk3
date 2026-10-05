@@ -384,11 +384,13 @@ function camStatus() {
   if (!CAM) return;
   const st = $('#camSt', CAM.el), sh = $('#camShot', CAM.el);
   let txt, ok = true;
-  if (CAM.locErr === 'denied') txt = 'Lokasi ditolak — izinkan Lokasi untuk Portal PIC di pengaturan HP';
-  else if (CAM.pos) txt = `Lokasi terkunci (±${Math.round(CAM.pos.acc || 0)} m)`;
-  else if (CAM.waited) txt = 'Lokasi belum didapat — foto akan bertanda "tidak tersedia"';
+  if (CAM.pos) txt = `Lokasi terkunci (±${Math.round(CAM.pos.acc || 0)} m)`;
+  else if (CAM.locErr === 'denied') txt = 'Izin Lokasi ditolak. Aktifkan Lokasi untuk Portal PIC di Pengaturan HP > Aplikasi > Portal PIC > Izin';
+  else if (CAM.locErr === 'off') txt = 'Lokasi/GPS HP mati atau tidak tersedia. Nyalakan Lokasi di HP lalu ketuk Ulangi lokasi';
+  else if (CAM.waited) txt = 'Lokasi belum didapat. Ketuk Ulangi lokasi (coba di tempat terbuka)';
   else { txt = 'Mencari lokasi…'; ok = false; }
   st.textContent = txt; st.className = CAM.pos ? 'ok' : (CAM.waited || CAM.locErr ? 'bad' : '');
+  const lb = $('#camLoc', CAM.el); if (lb) lb.hidden = !!CAM.pos || !(CAM.waited || CAM.locErr);
   sh.disabled = !(ok && CAM.live && !CAM.review);
 }
 function camWm() {
@@ -418,21 +420,32 @@ function openCam(kid, pid) {
   const k = KEGS[kid], p = k && k.peserta.find(x => x.id === pid); if (!p) return;
   camClose();
   const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
-  el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(p.nama)}</b><span id="camSt"></span></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
+  el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(p.nama)}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
     <div class="camstage"><video id="camV" playsinline muted autoplay></video><img id="camImg" alt="Hasil foto" hidden><div id="camWm" class="camwm"></div><div id="camFb" class="camfb" hidden></div></div>
     <div class="cambar"><div id="camLive"><button type="button" class="shutter" id="camShot" data-act="camshot" aria-label="Ambil foto" disabled></button></div>
     <div id="camRev" class="row" style="justify-content:center;gap:12px" hidden><button type="button" class="btn" data-act="camretake">Ulangi</button><button type="button" class="btn pri" data-act="camuse">Pakai foto</button></div></div>`;
   document.body.appendChild(el);
   CAM = { el, kid, pid, k, nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
-  if (navigator.geolocation) {
-    try { CAM.watch = navigator.geolocation.watchPosition(g => { if (!CAM) return; CAM.pos = POS = tidyPos(g); CAM.locErr = ''; camStatus(); }, er => { if (!CAM) return; if (er && er.code === 1) CAM.locErr = 'denied'; camStatus(); }, { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }); } catch (e) { }
-  } else CAM.locErr = 'denied';
-  CAM.wait = setTimeout(() => { if (CAM) { CAM.waited = true; camStatus(); } }, 8000);
+  camLocStart();
   CAM.tick = setInterval(camWm, 1000); camWm(); camStatus(); camStart();
+}
+function camLocStart() { // dua jalur: lokasi cepat (jaringan/Wi-Fi, berfungsi di dalam ruangan) + GPS akurat yang menyusul
+  if (!CAM) return;
+  const c = CAM;
+  try { if (c.watch != null) navigator.geolocation.clearWatch(c.watch); } catch (e) { }
+  clearTimeout(c.wait); c.watch = null; c.waited = false; c.locErr = '';
+  if (!navigator.geolocation) { c.locErr = 'off'; camStatus(); return; }
+  const ok = g => { if (CAM !== c) return; const n = tidyPos(g); if (!c.pos || (n.acc || 1e9) <= (c.pos.acc || 1e9) + 5 || Date.now() - c.pos.t > 60000) { c.pos = POS = n; } c.locErr = ''; camStatus(); camWm(); };
+  const bad = er => { if (CAM !== c) return; if (er && er.code === 1) c.locErr = 'denied'; else if (!c.pos) c.locErr = c.locErr || 'off'; camStatus(); };
+  try { navigator.geolocation.getCurrentPosition(ok, bad, { enableHighAccuracy: false, maximumAge: 300000, timeout: 12000 }); } catch (e) { bad(e); }
+  try { c.watch = navigator.geolocation.watchPosition(ok, bad, { enableHighAccuracy: true, maximumAge: 10000, timeout: 30000 }); } catch (e) { bad(e); }
+  c.wait = setTimeout(() => { if (CAM === c) { c.waited = true; camStatus(); } }, 10000);
+  camStatus();
 }
 function camShot() {
   const v = $('#camV', CAM.el); if (!v.videoWidth) return;
   const url = toJpeg(v, v.videoWidth, v.videoHeight, CAM.k, CAM.nama, CAM.pos);
+  if (!CAM.pos) toast('Foto ini belum memuat lokasi. Tekan Ulangi setelah lokasi terkunci.');
   CAM.review = url; v.pause();
   const im = $('#camImg', CAM.el); im.src = url; im.hidden = false; v.hidden = true; $('#camWm', CAM.el).hidden = true;
   $('#camLive', CAM.el).hidden = true; $('#camRev', CAM.el).hidden = false;
@@ -469,6 +482,7 @@ document.addEventListener('click', e => {
   else if (a === 'camretake' && CAM) camRetake();
   else if (a === 'camuse' && CAM && CAM.review) camSave(CAM.review);
   else if (a === 'camflip' && CAM) { CAM.facing = CAM.facing === 'environment' ? 'user' : 'environment'; $('#camFb', CAM.el).hidden = true; camStart(); }
+  else if (a === 'camloc' && CAM) camLocStart();
   else if (a === 'camretry' && CAM) { $('#camFb', CAM.el).hidden = true; camStart(); }
   else if (a === 'padno' && padApi) padApi.no();
   else if (a === 'padno') { $('#ovl').innerHTML = ''; }
