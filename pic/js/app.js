@@ -63,7 +63,7 @@ const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v16';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v17';
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrKeys = (h, k, d) => [d, ...[...new Set([...Object.keys(LAPK(k).nr || {}), ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { const m = NR_KEY.exec(x); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_')[1] - +q.split('_')[1])];
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
@@ -544,41 +544,38 @@ async function prosesFoto(file, k, nama, pos, crop) { // cadangan bila kamera la
 }
 
 let CAM = null;
-/* Orientasi HP. Aplikasi terkunci tegak (portrait), jadi bila HP dipegang miring (landscape) gambar kamera ikut miring.
-   Sensor gerak dipakai untuk tahu arah "atas" sebenarnya; foto & pratinjau diputar supaya tegak dan watermark ada di tepi bawah gambar. */
-const MOT = { ax: 0, ay: 9.8, n: 0, rot: 0 };
-function motHandler(e) {
-  const g = e && e.accelerationIncludingGravity; if (!g || g.x == null || g.y == null) return;
-  MOT.ax = MOT.ax * .6 + g.x * .4; MOT.ay = MOT.ay * .6 + g.y * .4; MOT.n++;
-  const ax = MOT.ax, ay = MOT.ay;
-  if (Math.max(Math.abs(ax), Math.abs(ay)) < 5.5) return; // HP rebah/menghadap bawah: pertahankan arah terakhir
-  const r = Math.abs(ax) > Math.abs(ay) + 1.5 ? (ax > 0 ? 270 : 90) : (Math.abs(ay) > Math.abs(ax) + 1.5 ? 0 : MOT.rot);
-  if (r !== MOT.rot) { MOT.rot = r; if (CAM) camLayout(); }
+/* Mode kamera: Portrait (bawaan) atau Landscape (pilih sendiri lewat tombol). Aplikasi terkunci tegak, jadi pada mode Landscape seluruh
+   layar kamera diputar 90° mengikuti HP yang dipegang miring (kiri/kanan), pratinjau & foto ditegakkan, watermark ada di tepi bawah foto landscape. */
+const CAMMODES = { p: 0, l: 270, r: 90 }; // putaran bingkai video (searah jarum jam) agar gambar tegak: HP diputar ke kiri -> 270°, ke kanan -> 90°
+const getMode = () => { try { const m = localStorage.getItem('pic-cammode'); return m in CAMMODES ? m : 'p'; } catch (e) { return 'p'; } };
+const setMode = m => { try { localStorage.setItem('pic-cammode', m); } catch (e) { } };
+function uiLandscape() { return window.innerWidth > window.innerHeight; } // layar aplikasi sendiri sudah landscape (HP tidak terkunci): tidak perlu diputar
+function camRot() { // putaran yang dikenakan pada bingkai video untuk foto & pratinjau
+  if (!CAM || uiLandscape()) return 0;
+  const v = $('#camV', CAM.el); if (v && v.videoWidth && v.videoWidth >= v.videoHeight) return 0; // bingkai sudah landscape: sudah mengikuti HP
+  return CAMMODES[CAM.mode] || 0;
 }
-function motStart() { try { window.addEventListener('devicemotion', motHandler); } catch (e) { } }
-function motStop() { try { window.removeEventListener('devicemotion', motHandler); } catch (e) { } }
-function uiLandscape() { return window.innerWidth > window.innerHeight; } // tampilan aplikasi sendiri (bukan orientasi layar fisik)
-function camRot() { // putaran yang perlu dikenakan pada bingkai video agar gambar tegak
-  if (!CAM) return 0; const v = $('#camV', CAM.el);
-  if (!v || !v.videoWidth || v.videoWidth >= v.videoHeight) return 0; // bingkai sudah landscape: sudah mengikuti HP
-  if (uiLandscape()) return 0; // layar aplikasi ikut berputar: bingkai sudah sesuai
-  return MOT.rot;
-}
-function camLayout() { // pratinjau langsung: putar video & letakkan watermark di tepi bawah gambar yang tegak
-  if (!CAM) return; const st = $('.camstage', CAM.el), v = $('#camV', CAM.el), wm = $('#camWm', CAM.el); if (!st || !v || !wm) return;
+function camLayout() { // putar layar kamera sesuai mode, lalu atur video & watermark di dalamnya
+  if (!CAM) return; const el = CAM.el, st = $('.camstage', el), v = $('#camV', el), wm = $('#camWm', el); if (!st || !v || !wm) return;
   const rot = camRot(); CAM.rot = rot;
+  el.classList.toggle('land', !!rot);
+  if (rot) { // kontainer penuh layar diputar: lebar = tinggi layar, tinggi = lebar layar
+    const W = window.innerWidth, H = window.innerHeight;
+    el.style.cssText = `inset:auto;left:0;top:0;width:${H}px;height:${W}px;transform-origin:0 0;transform:${rot === 270 ? `translateX(${W}px) rotate(90deg)` : `translateY(${H}px) rotate(-90deg)`}`;
+  } else el.style.cssText = '';
+  $$('[data-act=cammode]', el).forEach(b => b.classList.toggle('on', b.dataset.m === CAM.mode));
   if (!rot || !v.videoWidth) { v.style.cssText = ''; wm.style.cssText = ''; return; }
   const W = st.clientWidth, H = st.clientHeight, vw = v.videoWidth, vh = v.videoHeight;
-  const sc = Math.min(W / vh, H / vw), dw = vh * sc, dh = vw * sc; // ukuran gambar tegak di layar
-  v.style.cssText = `position:absolute;left:50%;top:50%;width:${dh}px;height:${dw}px;max-width:none;object-fit:fill;transform:translate(-50%,-50%) rotate(${rot === 90 ? 90 : rot === 270 ? -90 : 180}deg)${v.classList.contains('mirror') ? ' scaleX(-1)' : ''}`;
-  wm.style.cssText = `left:${(W - dw) / 2}px;right:auto;width:${dw}px;bottom:${(H - dh) / 2}px;font-size:${Math.max(10, Math.round(dw / 34))}px`;
+  const sc = Math.min(W / vh, H / vw), dw = vh * sc, dh = vw * sc; // ukuran gambar tegak di layar yang sudah diputar
+  v.style.cssText = `position:absolute;left:50%;top:50%;width:${dh}px;height:${dw}px;max-width:none;object-fit:fill;transform:translate(-50%,-50%) rotate(${rot === 90 ? 90 : -90}deg)${v.classList.contains('mirror') ? ' scaleX(-1)' : ''}`;
+  wm.style.cssText = `left:${(W - dw) / 2}px;right:auto;width:${dw}px;bottom:${(H - dh) / 2}px;font-size:${Math.max(11, Math.round(dw / 36))}px`;
 }
 window.addEventListener('resize', () => { if (CAM) camLayout(); });
 function camClose() {
   if (!CAM) return;
   try { CAM.stream && CAM.stream.getTracks().forEach(t => t.stop()); } catch (e) { }
   try { if (CAM.watch != null) navigator.geolocation.clearWatch(CAM.watch); } catch (e) { }
-  clearInterval(CAM.tick); clearTimeout(CAM.wait); motStop();
+  clearInterval(CAM.tick); clearTimeout(CAM.wait);
   CAM.el.remove(); CAM = null;
 }
 function camStatus() {
@@ -626,13 +623,14 @@ function openCam(kid, pid, slot, hari) {
   camClose();
   const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
   el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(judul)}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button><small id="camDiag" style="opacity:.7;font-size:10.5px"></small></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
+    <div class="camrot" role="group" aria-label="Arah foto"><button type="button" data-act="cammode" data-m="p">Portrait<small>HP tegak</small></button><button type="button" data-act="cammode" data-m="l" aria-label="Landscape, HP diputar ke kiri">Landscape ◀<small>putar HP ke kiri</small></button><button type="button" data-act="cammode" data-m="r" aria-label="Landscape, HP diputar ke kanan">Landscape ▶<small>putar HP ke kanan</small></button></div>
     <div class="camstage"><video id="camV" playsinline muted autoplay></video><img id="camImg" alt="Hasil foto" hidden><div id="camWm" class="camwm"></div><div id="camFb" class="camfb" hidden></div></div>
     <div class="cambar"><div id="camLive"><button type="button" class="shutter" id="camShot" data-act="camshot" aria-label="Ambil foto" disabled></button></div>
     <div id="camRev" class="row" style="justify-content:center;gap:12px" hidden><button type="button" class="btn" data-act="camretake">Ulangi</button><button type="button" class="btn pri" data-act="camuse">Pakai foto</button></div></div>`;
   document.body.appendChild(el);
-  CAM = { el, kid, pid, k, hari: hari || '', slot: slot === 'foto2' ? 'foto2' : 'foto', nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
+  CAM = { el, mode: getMode(), kid, pid, k, hari: hari || '', slot: slot === 'foto2' ? 'foto2' : 'foto', nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
   camLocStart();
-  CAM.tick = setInterval(() => { camWm(); camLayout(); }, 1000); camWm(); camStatus(); motStart(); camStart();
+  CAM.tick = setInterval(() => { camWm(); camLayout(); }, 1000); camWm(); camStatus(); camStart(); camLayout();
 }
 function camLocStart() { // dua jalur: lokasi cepat (jaringan/Wi-Fi, berfungsi di dalam ruangan) + GPS akurat yang menyusul
   if (!CAM) return;
@@ -710,6 +708,7 @@ document.addEventListener('click', e => {
   else if (a === 'camshot' && CAM) camShot();
   else if (a === 'camretake' && CAM) camRetake();
   else if (a === 'camuse' && CAM && CAM.review) camSave(CAM.review);
+  else if (a === 'cammode' && CAM) { CAM.mode = b.dataset.m; setMode(CAM.mode); camLayout(); }
   else if (a === 'camflip' && CAM) { CAM.facing = CAM.facing === 'environment' ? 'user' : 'environment'; $('#camFb', CAM.el).hidden = true; camStart(); }
   else if (a === 'camloc' && CAM) camLocStart();
   else if (a === 'camretry' && CAM) { $('#camFb', CAM.el).hidden = true; camStart(); }
