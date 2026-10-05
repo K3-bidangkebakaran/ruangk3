@@ -613,12 +613,12 @@ table.lap tr.merah td{background:#da2f20;color:#000}
   <div class="preview-col">
     <div class="preview-head">
       <b>Pratinjau</b>
-      <label><input type="checkbox" id="cDh" checked> Daftar Hadir</label>
-      <label><input type="checkbox" id="cDk" checked> Dokumentasi</label>
+      <label hidden><input type="checkbox" id="cLn" checked> Keterangan Lulus</label>
+      <label><input type="checkbox" id="cDh" checked> Absensi Peserta</label>
       <label hidden><input type="checkbox" id="cNl" checked> Daftar Nilai</label>
-      <label hidden><input type="checkbox" id="cLn" checked> Daftar Nama</label>
+      <label hidden><input type="checkbox" id="cNr" checked> Absensi Narasumber</label>
       <label hidden><input type="checkbox" id="cDy" checked> Dok. Harian</label>
-      <label hidden><input type="checkbox" id="cNr" checked> Narasumber</label>
+      <label><input type="checkbox" id="cDk" checked> Dokumentasi Peserta</label>
       <span class="grow"></span>
       <span class="hint" id="pgInfo"></span>
       <button class="btn sm" id="btnSig2">✍️ TTD Penyelenggara</button>
@@ -1024,8 +1024,9 @@ function renderPages() {
   }
   meas.innerHTML = "";
 
-  let html = "", no0 = 0;
+  let html = "", no0 = 0; const sec = {}; // urutan cetak: Keterangan Lulus, Absensi Peserta, Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta
   ch.forEach((c, pi) => { html += page(dhBody(c, pi, no0, pi === ch.length - 1), "pg-dh"); no0 += c.length; });
+  sec.dh = html; html = "";
 
 
   // --- dokumentasi chunks (baris Cancel merah & Remedial kuning mengikuti daftar hadir; mode Damkar = 2 kolom foto)
@@ -1065,6 +1066,7 @@ function renderPages() {
   const colg = W => `<colgroup>${W.map(w => `<col style="width:${w}mm">`).join("")}</colgroup>`;
   const empty = n => `<tr><td colspan="${n}" class="c" style="color:#999">Belum ada peserta</td></tr>`;
   let nNl = 0, nLn = 0, nDy = 0, nNr = 0;
+  sec.dk = html; html = "";
   if (L.nilai) {
     const rows = lpPeserta.filter(p => !p.batal);
     const tbl = (c, st) => `<table class="lap nl">${colg([10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th></tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td></tr>`).join("") || empty(5)}</tbody></table>`;
@@ -1076,6 +1078,7 @@ function renderPages() {
     chs.forEach((c, pi) => { html += page(bodyN(c, pi, n0, pi === chs.length - 1), "pg-lap pg-nl"); n0 += c.length; });
     nNl = chs.length;
   }
+  sec.nl = html; html = "";
   if (L.hasil) {
     const ket = p => p.batal ? ["CANCEL", 1] : p.hasil === "tidak" ? ["TIDAK LULUS", 1] : p.hasil === "lulus" ? ["LULUS", 0] : ["", 0];
     const tbl = (c, st) => `<table class="lap">${colg([10.5, 64, 89, 26.5])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>KETERANGAN</th></tr></thead><tbody>${c.map((p, k) => { const [t, red] = ket(p); return `<tr${red ? ' class="merah"' : ""}><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td class="c">${up(p.instansi)}</td><td class="k">${t}</td></tr>`; }).join("") || empty(4)}</tbody></table>`;
@@ -1086,6 +1089,7 @@ function renderPages() {
     chs.forEach((c, pi) => { html += page(bodyL(c, pi, n0, pi === chs.length - 1), "pg-lap pg-ln"); n0 += c.length; });
     nLn = chs.length;
   }
+  sec.ln = html; html = "";
   if (L.harian) {
     LT.days.forEach(({ iso, title }) => {
       const h = L.hari[iso] || { materi: "", fotos: [] }, fs = h.fotos || [], np = Math.max(1, Math.ceil(fs.length / 2));
@@ -1096,6 +1100,7 @@ function renderPages() {
       }
     });
   }
+  sec.dy = html; html = "";
   if (L.nara) { // Absensi Narasumber: satu baris per hari kegiatan
     const WN = [27, 50, 31, 52, 30], hrNama = d => new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(d);
     const bul = t => String(t || "").split("\n").map(x => x.trim()).filter(Boolean).map(x => `<div class="bl"><i>↓</i><span>${esc(x)}</span></div>`).join("");
@@ -1110,6 +1115,8 @@ function renderPages() {
     chs.forEach((c, pi) => { html += page(bodyR(c, pi, 0, pi === chs.length - 1), "pg-lap pg-nr"); });
     nNr = chs.length;
   }
+  sec.nr = html;
+  html = (sec.ln || "") + (sec.dh || "") + (sec.nl || "") + (sec.nr || "") + (sec.dy || "") + (sec.dk || "");
   meas.innerHTML = "";
   [["Nl", nNl], ["Ln", nLn], ["Dy", nDy], ["Nr", nNr]].forEach(([k, n]) => { const lb = $("#c" + k).closest("label"); if (lb) lb.hidden = !n; });
 
@@ -1925,7 +1932,7 @@ function renderLap() {
   const L = S.lap, days = hariList(S.acara).filter(Boolean), nilai = L.nilai, hasil = L.hasil;
   $("#lpSecSign").hidden = !nilai; $("#lpSecPes").hidden = !(nilai || hasil); $("#lpSecHari").hidden = !L.harian; $("#lpSecNr").hidden = !L.nara;
   [["#lpT1", L.s1.ttd], ["#lpT2", L.s2.ttd]].forEach(([s, u]) => { const t = $(s); t.style.backgroundImage = u ? `url('${u}')` : ""; t.textContent = u ? "" : "Belum ada"; });
-  $("#lpDl").innerHTML = [["nl", "Daftar Nilai", nilai], ["ln", "Daftar Nama", hasil], ["dy", "Dok. Harian", L.harian], ["nr", "Absensi Narasumber", L.nara]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
+  $("#lpDl").innerHTML = [["ln", "Daftar Keterangan Lulus", hasil], ["dh", "Absensi Peserta", true], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
   const ps = S.peserta.filter(p => (p.nama || "").trim());
   const list = $("#lpList");
   list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["80px", "80px"] : []), ...(hasil ? ["auto"] : [])].join(" "));
@@ -2705,6 +2712,12 @@ const Word = (() => {
   }
   async function lapFile(kind, ev, ctx) {
     const nm = safeName(ev.acara.kegiatan || "Kegiatan");
+    if (kind === "dh") return { name: `Daftar Hadir - ${nm}.docx`, bytes: daftarHadir(ev, ctx) };
+    if (kind === "dk") {
+      const ev2 = { ...ev, peserta: [] };
+      for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "", foto2: p.foto2 ? await kecil(p.foto2) : "" });
+      return { name: `Dokumentasi Peserta - ${nm}.docx`, bytes: dokumentasi(ev2, ctx) };
+    }
     if (kind === "nl") return { name: `Daftar Nilai Peserta - ${nm}.docx`, bytes: nilai(ev, ctx) };
     if (kind === "ln") return { name: `Daftar Nama Peserta - ${nm}.docx`, bytes: hasil(ev, ctx) };
     if (kind === "nr") return { name: `Absensi Narasumber - ${nm}.docx`, bytes: narasumber(ev, ctx) };
@@ -2735,10 +2748,10 @@ const Word = (() => {
     const hasP = ev.peserta.some(p => (p.nama || "").trim());
     if (!hasP && !(ev.acara.kegiatan || "").trim()) return out;
     const add = async (key, name, bytes) => { const data = await toDataUrl(bytes); out.push({ key, path: [], name, data, hash: fnv(name + "|" + data.length + "|" + data.slice(-64) + "|" + crc32(bytes)) }); };
-    await add("doc:dh", `Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx));
-    const LP = ev.lap || {};
-    for (const [flag, kind] of [[LP.nilai, "nl"], [LP.hasil, "ln"], [LP.harian, "dy"], [LP.nara, "nr"]]) {
+    const LP = ev.lap || {}; // urutan: Keterangan Lulus, Absensi Peserta, Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta
+    for (const [flag, kind] of [[LP.hasil, "ln"], [true, "dh"], [LP.nilai, "nl"], [LP.nara, "nr"], [LP.harian, "dy"]]) {
       if (!flag) continue;
+      if (kind === "dh") { await add("doc:dh", `Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx)); continue; }
       const r = await lapFile(kind, ev, ctx); await add("doc:" + kind, r.name, r.bytes);
     }
     if (ev.peserta.some(p => p.foto || p.foto2)) {
