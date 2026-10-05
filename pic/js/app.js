@@ -344,13 +344,21 @@ function wmLines(k, nama, pos, d) {
   const tgl = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
   const jam = pad2(d.getHours()) + '.' + pad2(d.getMinutes()) + '.' + pad2(d.getSeconds());
   const lok = pos ? `Lokasi (Maps): ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}${pos.acc ? ' (±' + Math.round(pos.acc) + ' m)' : ''}` : 'Lokasi (Maps): tidak tersedia';
-  return [nama, `${k.nama}${k.tempat ? ' · ' + k.tempat : ''}`, lok, `${tgl} · ${jam} ${zonaOf(k)}`];
+  const tmp = [k.tempat, k.kota].map(x => String(x || '').trim()).filter((x, i, a) => x && a.indexOf(x) === i).join(', '); // nama tempat dari Input Kegiatan
+  return [nama, k.nama, tmp ? `Tempat: ${tmp}` : '', lok, `${tgl} · ${jam} ${zonaOf(k)}`].filter(Boolean);
 }
 function stamp(x, w, h, lines) {
-  const f = Math.max(14, Math.round(w / 40)), pad = Math.round(f * .55), gap = Math.round(f * .25), bh = pad * 2 + f * 1.25 + (lines.length - 1) * (f + gap);
+  const f = Math.max(14, Math.round(w / 40)), pad = Math.round(f * .55), gap = Math.round(f * .25), maxW = w - pad * 2;
+  const rows = []; // pecah baris panjang (nama kegiatan / tempat) agar tidak terpotong
+  lines.forEach((t, i) => {
+    const fs = i === 0 ? Math.round(f * 1.25) : f; x.font = (i === 0 ? '700 ' : '') + fs + 'px Arial, sans-serif';
+    let cur = ''; String(t).split(' ').forEach(wd => { const tr = cur ? cur + ' ' + wd : wd; if (cur && x.measureText(tr).width > maxW) { rows.push([cur, fs, i === 0]); cur = wd; } else cur = tr; });
+    if (cur) rows.push([cur, fs, i === 0]);
+  });
+  const bh = pad * 2 + rows.reduce((a, r) => a + r[1] + gap, 0) - gap;
   x.fillStyle = 'rgba(0,0,0,.6)'; x.fillRect(0, h - bh, w, bh); x.fillStyle = '#fff'; x.textBaseline = 'top';
   let y = h - bh + pad;
-  lines.forEach((t, i) => { const fs = i === 0 ? Math.round(f * 1.25) : f; x.font = (i === 0 ? '700 ' : '') + fs + 'px Arial, sans-serif'; x.fillText(t, pad, y, w - pad * 2); y += fs + gap; });
+  rows.forEach(([t, fs, b]) => { x.font = (b ? '700 ' : '') + fs + 'px Arial, sans-serif'; x.fillText(t, pad, y, maxW); y += fs + gap; });
 }
 const tidyPos = p => ({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() });
 function toJpeg(src, sw, sh, k, nama, pos) { // src: video/image/bitmap
@@ -391,7 +399,7 @@ function camStatus() {
   else if (CAM.waited) txt = 'Lokasi belum didapat. Ketuk Ulangi lokasi (coba di tempat terbuka)';
   else { txt = 'Mencari lokasi…'; ok = false; }
   st.textContent = txt; st.className = CAM.pos ? 'ok' : (CAM.waited || CAM.locErr ? 'bad' : '');
-  const dg = $('#camDiag', CAM.el); if (dg) dg.textContent = `diagnosa: izin situs=${CAM.perm || '?'} · kode=${CAM.code == null ? '-' : CAM.code}${CAM.msg ? ' · ' + CAM.msg : ''} · v5`;
+  const dg = $('#camDiag', CAM.el); if (dg) dg.textContent = `diagnosa: izin situs=${CAM.perm || '?'} · kode=${CAM.code == null ? '-' : CAM.code}${CAM.msg ? ' · ' + CAM.msg : ''} · v6`;
   const lb = $('#camLoc', CAM.el); if (lb) lb.hidden = !!CAM.pos || !(CAM.waited || CAM.locErr);
   sh.disabled = !(ok && CAM.live && !CAM.review);
 }

@@ -118,7 +118,9 @@ Dokumentasi diambil **langsung dari kamera di dalam aplikasi** (bukan memilih fi
 "Ulangi" / "Pakai foto". Watermark di bagian bawah foto: **nama peserta**, kegiatan + tempat, **titik lokasi Maps**
 (koordinat GPS + akurasi), serta **tanggal dan jam** (dari jam HP). Tombol ambil menunggu GPS terkunci (maks. 8 detik; bila
 GPS tidak ada, foto bertanda "tidak tersedia"). Bila kamera langsung gagal (izin ditolak, dsb.), tersedia cadangan kamera bawaan HP
-dengan watermark yang sama. Untuk APK (PWABuilder) aktifkan **Location delegation** agar GPS berfungsi di dalam aplikasi.
+dengan watermark yang sama. Nama tempat di watermark diambil dari kolom Tempat (+ Kota) yang diisi admin di Input Kegiatan.
+
+**Pasang untuk PIC: lewat Chrome (Instal aplikasi), bukan APK.** Di APK hasil PWABuilder (TWA) GPS ditolak di HP uji walau Location delegation menyala; di Chrome (menu ⋮ → Instal aplikasi) lokasi bekerja normal. Buka `https://ruangk3.com/pic/` di Chrome, izinkan Kamera + Lokasi (akurat), lalu Instal.
 
 ## Kapasitas
 
