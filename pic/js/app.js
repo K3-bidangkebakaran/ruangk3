@@ -63,6 +63,9 @@ const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v13';
+// baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
+const nrKeys = (h, k, d) => [d, ...[...new Set([...Object.keys(LAPK(k).nr || {}), ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { const m = NR_KEY.exec(x); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_')[1] - +q.split('_')[1])];
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
 function naraPilih(r, kid) {
   r.kid = kid; const n = naraOf(kid);
@@ -323,7 +326,7 @@ function render() {
       ${pullErr && !online() ? '' : (pullErr ? `<div class="err">${esc(pullErr)}</div>` : '')}
       <button class="btn" type="button" data-act="refresh">Perbarui daftar kegiatan</button>
       <button class="btn" type="button" data-act="pw">Ganti kata sandi</button>
-      <button class="btn" type="button" data-act="logout">Keluar</button></div>`;
+      <button class="btn" type="button" data-act="logout">Keluar</button></div><p class="hint" style="text-align:center">Versi aplikasi ${APP_VER}</p>`;
   } else if (P.screen === 'keg') {
     const s = stat(kid);
     h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
@@ -381,19 +384,19 @@ function render() {
       <p class="hint">Nama dan tanda tangan ini tercetak di bagian bawah Daftar Nilai. Bisa juga diisi lewat aplikasi web Daftar Hadir.</p></div>`;
   } else if (P.screen === 'nar') {
     const hh = hOf(kid), days = k.tgl || [];
-    h = appbar('Absensi Narasumber', k.nama, true) + `<div class="screen">${days.map((d, i) => {
+    h = appbar('Absensi Narasumber', k.nama, true) + `<div class="screen">${days.map((d0, i) => { const ks = nrKeys(hh, k, d0); return ks.map((d, n) => {
       const r = nrOf(hh, k, d), man = r.kid === '_m', mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null, sg = hh.nrs[d];
-      return `<div class="card2" data-day="${esc(d)}"><b>Hari ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
-      <div class="field"><label for="nk${i}">Narasumber</label><select id="nk${i}" data-nr="kid"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(n => `<option value="${n.id}"${r.kid === n.id ? ' selected' : ''}>${esc(n.nama)}</option>`).join('')}<option value="_m"${man ? ' selected' : ''}>✍️ Isi manual (kosong)</option></select></div>
-      ${man ? `<div class="field"><label for="nn${i}">Nama narasumber</label><input id="nn${i}" data-nr="nama" value="${esc(r.nama)}" autocomplete="off" placeholder="Contoh: Fido Rinekas, S.T"></div>
-        <div class="field"><label for="np${i}">NIP (boleh kosong)</label><input id="np${i}" data-nr="nip" value="${esc(r.nip)}" autocomplete="off"></div>
-        <div class="field"><label for="ni${i}">Instansi</label><input id="ni${i}" data-nr="inst" value="${esc(r.inst)}" autocomplete="off" placeholder="Contoh: Kemnaker"></div>`
+      return `<div class="card2" data-day="${esc(d)}"><b>${n ? `Narasumber ke-${n + 1} · Hari ${i + 1}` : `Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}`}</b>
+      <div class="field"><label for="nk${i}_${n}">Narasumber</label><select id="nk${i}_${n}" data-nr="kid"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(n => `<option value="${n.id}"${r.kid === n.id ? ' selected' : ''}>${esc(n.nama)}</option>`).join('')}<option value="_m"${man ? ' selected' : ''}>✍️ Isi manual (kosong)</option></select></div>
+      ${man ? `<div class="field"><label for="nn${i}_${n}">Nama narasumber</label><input id="nn${i}_${n}" data-nr="nama" value="${esc(r.nama)}" autocomplete="off" placeholder="Contoh: Fido Rinekas, S.T"></div>
+        <div class="field"><label for="np${i}_${n}">NIP (boleh kosong)</label><input id="np${i}_${n}" data-nr="nip" value="${esc(r.nip)}" autocomplete="off"></div>
+        <div class="field"><label for="ni${i}_${n}">Instansi</label><input id="ni${i}_${n}" data-nr="inst" value="${esc(r.inst)}" autocomplete="off" placeholder="Contoh: Kemnaker"></div>`
         : r.kid ? `<div class="nauto"><small>Instansi (otomatis)</small><b>${esc(r.inst)}</b><small>NIP: ${esc(r.nip) || '–'}</small></div>` : ''}
-      ${r.kid ? `<div class="field"><label for="nm${i}">Materi</label><select id="nm${i}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
-      ${mk ? `<div class="nbul">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join('')}</div>` : r.mid === 'manual' ? `<div class="field"><label for="nt${i}">Isi materi (satu baris = satu poin)</label><textarea id="nt${i}" data-nr="mtxt" rows="4" placeholder="Contoh: Evaluasi Teori">${esc(r.mtxt)}</textarea></div>` : ''}
+      ${r.kid ? `<div class="field"><label for="nm${i}_${n}">Materi</label><select id="nm${i}_${n}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
+      ${mk ? `<div class="nbul">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join('')}</div>` : r.mid === 'manual' ? `<div class="field"><label for="nt${i}_${n}">Isi materi (satu baris = satu poin)</label><textarea id="nt${i}_${n}" data-nr="mtxt" rows="4" placeholder="Contoh: Evaluasi Teori">${esc(r.mtxt)}</textarea></div>` : ''}
       ${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
-      <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}</div></div>`;
-    }).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
+      <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}${n ? '<button type="button" class="btn" data-act="nrclr">Kosongkan baris</button>' : ''}</div></div>`;
+    }).join('') + (ks.length < NR_MAX ? `<button type="button" class="btn" data-act="nradd" data-d="${esc(d0)}">➕ Tambah narasumber di hari ini</button>` : ''); }).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
       <p class="hint">Pilih nama narasumber: instansi terisi otomatis, lalu pilih materi. Serahkan HP ke narasumber untuk tanda tangan. Hasilnya muncul di pratinjau admin dan di berkas Word Absensi Narasumber.</p></div>`;
   } else if (P.screen === 'dhr') {
     const hh = hOf(kid), days = k.tgl || [];
@@ -634,7 +637,9 @@ document.addEventListener('click', e => {
   else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; (k.peserta || []).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
   else if (a === 'nsig' && k) { const h = hOf(kid), n = b.dataset.n, ln = LAPK(k), nm = lapNama(h, k, 's' + n, 'nama'); openPad('Tanda tangan penandatangan', `${nm || (ln['s' + n + 'jab'] || '').replace(/\n/g, ' ')} · ${k.nama}`, u => { h['n' + n] = u; delete h.sent['n' + n]; touch(kid); render(); }, h['n' + n]); }
   else if (a === 'nsigdel' && k) { const h = hOf(kid), n = b.dataset.n; h['n' + n] = ''; delete h.sent['n' + n]; h.gone.includes('n' + n) || h.gone.push('n' + n); touch(kid); render(); }
-  else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(d)}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
+  else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(d.slice(0, 10))}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
+  else if (a === 'nradd' && k) { const d = b.dataset.d, h = hOf(kid), ks = nrKeys(h, k, d); if (ks.length >= NR_MAX) return; let n = 2; while (ks.includes(`${d}_${n}`)) n++; nrSet(h, k, `${d}_${n}`); touch(kid); render(); toast('Baris narasumber ditambahkan'); }
+  else if (a === 'nrclr' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nr[d] = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }; if (h.nrs[d]) { h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); } touch(kid); render(); toast('Baris dikosongkan (tidak ikut dicetak)'); }
   else if (a === 'nrsigdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); touch(kid); render(); }
   else if (a === 'camx') camClose();
   else if (a === 'camshot' && CAM) camShot();

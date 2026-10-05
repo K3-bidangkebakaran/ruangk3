@@ -745,6 +745,13 @@ const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; }; // narasumber manual: semua materi katalog boleh dipakai
 const naraNew = () => ({ kid: "", nama: "", nip: "", inst: "", mid: "", mtxt: "", ttd: "" });
 const naraRow = r => { const o = naraNew(); r = r && typeof r === "object" ? r : {}; Object.keys(o).forEach(k => { o[k] = String(r[k] == null ? "" : r[k]); }); return o; };
+/* Baris narasumber: kunci "YYYY-MM-DD" = baris utama hari itu; "YYYY-MM-DD_2", "_3", "_4" = narasumber tambahan di hari yang sama
+   (baris tambahan yang masih kosong tidak ikut dicetak). */
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4;
+const nrIso = k => (NR_KEY.exec(k) || [])[1] || "";
+const nrKeys = (L, d) => [d, ...Object.keys(L.nr || {}).filter(k => { const m = NR_KEY.exec(k); return m && m[1] === d && m[2]; }).sort((a, b) => +a.split("_")[1] - +b.split("_")[1])];
+const nrKosong = r => !(r && (r.kid || r.nama || r.mtxt || r.ttd || r.inst));
+const nrCetak = (L, days) => days.flatMap(d => nrKeys(L, d).filter((k, i) => i === 0 || !nrKosong((L.nr || {})[k]))); // daftar baris yang dicetak
 function naraPilih(r, kid) { // pilih narasumber: nama, NIP, instansi terisi otomatis; materi yang tidak cocok dengan instansinya dikosongkan
   r.kid = kid; const n = naraOf(kid);
   if (n) { r.nama = n.nama; r.nip = n.nip; r.inst = n.inst; }
@@ -1091,14 +1098,14 @@ function renderPages() {
   if (L.nara) { // Absensi Narasumber: satu baris per hari kegiatan
     const WN = [27, 50, 31, 52, 30], hrNama = d => new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(d);
     const bul = t => String(t || "").split("\n").map(x => x.trim()).filter(Boolean).map(x => `<div class="bl"><i>↓</i><span>${esc(x)}</span></div>`).join("");
-    const rowN = iso => {
-      const r = (L.nr || {})[iso] || naraNew(), d = toD(iso), nip = (r.kid && r.kid !== "_m") || r.nip ? `<div class="nip">NIP : ${esc(r.nip)}</div>` : "";
-      return `<tr><td class="c">${esc(hrNama(d))}<br>${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}</td><td><div>${esc(r.nama)}</div>${nip}</td><td class="c">${esc(r.inst)}</td><td class="mt">${bul(r.mtxt)}</td><td class="c sg">${r.ttd ? `<img src="${r.ttd}" alt="">` : ""}</td></tr>`;
+    const rowN = key => {
+      const iso = nrIso(key), first = key === iso, r = (L.nr || {})[key] || naraNew(), d = toD(iso), nip = (r.kid && r.kid !== "_m") || r.nip ? `<div class="nip">NIP : ${esc(r.nip)}</div>` : "";
+      return `<tr><td class="c">${first ? `${esc(hrNama(d))}<br>${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}` : ""}</td><td><div>${esc(r.nama)}</div>${nip}</td><td class="c">${esc(r.inst)}</td><td class="mt">${bul(r.mtxt)}</td><td class="c sg">${r.ttd ? `<img src="${r.ttd}" alt="">` : ""}</td></tr>`;
     };
     const tblN = c => `<table class="lap nr">${colg(WN)}<thead><tr><th>Hari / Tanggal</th><th>Narasumber</th><th>Instansi</th><th>Materi</th><th>Tanda Tangan</th></tr></thead><tbody>${c.map(rowN).join("") || empty(5)}</tbody></table>`;
     const headN = pi => `<div class="lp-h">ABSENSI NARASUMBER${pi ? " <small>(lanjutan)</small>" : ""}</div>${pi ? "" : `<div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.rentang)}${LT.batch ? ` (BATCH ${esc(LT.batch)})` : ""}</div>`}<div class="lp-gap"></div>`;
     const bodyR = (c, pi, st, tail) => headN(pi) + tblN(c) + (tail ? sign : "");
-    const chs = lapChunk(LT.days.map(x => x.iso), bodyR);
+    const chs = lapChunk(nrCetak(L, LT.days.map(x => x.iso)), bodyR);
     chs.forEach((c, pi) => { html += page(bodyR(c, pi, 0, pi === chs.length - 1), "pg-lap pg-nr"); });
     nNr = chs.length;
   }
@@ -1929,15 +1936,19 @@ function renderLap() {
     if (p.batal) return `<div class="lp-r cx" data-id="${p.id}">${nm}<div class="cxl" style="grid-column:3/-1">CANCEL</div></div>`;
     return `<div class="lp-r" data-id="${p.id}">${nm}${nilai ? `<input type="text" data-f="ut" inputmode="decimal" placeholder="UT" value="${esc(p.ut)}" aria-label="Nilai UT ${esc(p.nama)}" autocomplete="off"><input type="text" data-f="up" inputmode="decimal" placeholder="UP" value="${esc(p.up)}" aria-label="Nilai UP ${esc(p.nama)}" autocomplete="off">` : ""}${hasil ? `<div class="ck"><label><input type="checkbox" data-f="lulus" ${p.hasil === "lulus" ? "checked" : ""}>Lulus</label><label><input type="checkbox" data-f="tidak" ${p.hasil === "tidak" ? "checked" : ""}>Tidak lulus</label></div>` : ""}</div>`;
   }).join("") : `<div class="empty">Belum ada peserta. Isi dulu di tab 1.</div>`;
-  $("#lpNr").innerHTML = !L.nara ? "" : days.length ? days.map((d, i) => {
-    const r = L.nr[d] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null;
-    return `<div class="lp-day lp-nr" data-day="${d}"><div class="h">HARI ${i + 1} · ${esc(fmtTgl(d))}</div>
-      <select data-nf="kid" aria-label="Narasumber hari ${i + 1}"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(n => `<option value="${n.id}"${r.kid === n.id ? " selected" : ""}>${esc(n.nama)}</option>`).join("")}<option value="_m"${man ? " selected" : ""}>✍️ Isi manual</option></select>
+  const nrCard = (d, i, key, n) => {
+    const r = L.nr[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`;
+    return `<div class="lp-day lp-nr" data-day="${key}"><div class="h">${ttl}</div>
+      <select data-nf="kid" aria-label="Narasumber ${ttl}"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(x => `<option value="${x.id}"${r.kid === x.id ? " selected" : ""}>${esc(x.nama)}</option>`).join("")}<option value="_m"${man ? " selected" : ""}>✍️ Isi manual</option></select>
       ${man ? `<input type="text" data-nf="nama" placeholder="Nama narasumber (mis. Fido Rinekas, S.T)" value="${esc(r.nama)}" autocomplete="off"><input type="text" data-nf="nip" placeholder="NIP (opsional)" value="${esc(r.nip)}" autocomplete="off"><input type="text" data-nf="inst" placeholder="Instansi (mis. Kemnaker)" value="${esc(r.inst)}" autocomplete="off">`
         : r.kid ? `<div class="auto">Instansi: <b>${esc(r.inst)}</b><br>NIP: ${esc(r.nip) || "–"}</div>` : ""}
-      ${r.kid ? `<select data-nf="mid" aria-label="Materi hari ${i + 1}"><option value="">— Pilih materi —</option>${opsi.map(m => `<option value="${m.id}"${r.mid === m.id ? " selected" : ""}>${esc(m.judul)}</option>`).join("")}<option value="manual"${r.mid === "manual" ? " selected" : ""}>✍️ Isi manual</option></select>` : ""}
+      ${r.kid ? `<select data-nf="mid" aria-label="Materi ${ttl}"><option value="">— Pilih materi —</option>${opsi.map(m => `<option value="${m.id}"${r.mid === m.id ? " selected" : ""}>${esc(m.judul)}</option>`).join("")}<option value="manual"${r.mid === "manual" ? " selected" : ""}>✍️ Isi manual</option></select>` : ""}
       ${mk ? `<div class="bls">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join("")}</div>` : r.mid === "manual" ? `<textarea data-nf="mtxt" rows="4" placeholder="Isi materi, satu baris = satu poin">${esc(r.mtxt)}</textarea>` : ""}
-      <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd ? `background-image:url('${r.ttd}')` : ""}">${r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button></div></div>`;
+      <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd ? `background-image:url('${r.ttd}')` : ""}">${r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button>${n ? `<button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan baris</button>` : ""}</div></div>`;
+  };
+  $("#lpNr").innerHTML = !L.nara ? "" : days.length ? days.map((d, i) => {
+    const ks = nrKeys(L, d);
+    return ks.map((k, n) => nrCard(d, i, k, n)).join("") + (ks.length < NR_MAX ? `<button class="btn sm" type="button" data-act="nadd" data-d="${d}" style="margin-top:8px">➕ Tambah narasumber di hari ini</button>` : "");
   }).join("") : `<div class="empty">Isi tanggal kegiatan di tab 1 dulu.</div>`;
   $("#lpDays").innerHTML = days.length ? days.map((d, i) => {
     const h = L.hari[d] || { materi: "", fotos: [] };
@@ -2000,11 +2011,17 @@ $("#lapBox").addEventListener("click", e => {
   const day = b.closest(".lp-day");
   if (b.dataset.act === "sig1") lapSig("s1");
   else if (b.dataset.act === "sig2") lapSig("s2");
+  else if (b.dataset.act === "nadd") {
+    const d = b.dataset.d, ks = nrKeys(S.lap, d); if (ks.length >= NR_MAX) return;
+    let n = 2; while (ks.includes(`${d}_${n}`)) n++;
+    S.lap.nr[`${d}_${n}`] = naraNew(); renderLap(); changed(); toast("Baris narasumber ditambahkan. Isi lewat pilihan nama atau Isi manual.");
+  }
+  else if (b.dataset.act === "nclr" && day) { S.lap.nr[day.dataset.day] = naraNew(); renderLap(); changed(); toast("Baris dikosongkan (tidak ikut dicetak)."); }
   else if (b.dataset.act === "nsig" && day) {
     const d = day.dataset.day, r = lapNr(d);
     Sig.open({
       title: "✍️ Tanda Tangan Narasumber", help: "Narasumber menggoreskan tanda tangan dengan jari, stylus, atau mouse. Hasilnya muncul pada kolom Tanda Tangan di Absensi Narasumber.",
-      who: `${r.nama || "Narasumber"} · ${fmtTgl(d)}`, existing: r.ttd,
+      who: `${r.nama || "Narasumber"} · ${fmtTgl(nrIso(d))}`, existing: r.ttd,
       onSave: url => { lapNr(d).ttd = url; renderLap(); changed(); toast("Tanda tangan tersimpan."); },
       onRemove: () => { lapNr(d).ttd = ""; renderLap(); changed(); toast("Tanda tangan dihapus."); }
     });
@@ -2666,12 +2683,12 @@ const Word = (() => {
   function narasumber(ev, ctx) {
     const D = Doc(), L = ev.lap || {}, a = ev.acara, T = ctx.lap, Wm = [27, 50, 31, 52, 30], W = Wm.map(tw), GR = "D9D9D9";
     const hr = d => new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(d);
-    const rows = T.days.map(({ iso }) => {
-      const r = (L.nr || {})[iso] || {}, d = toD(iso), lines = String(r.mtxt || "").split("\n").map(x => x.trim()).filter(Boolean);
+    const rows = nrCetak(L, T.days.map(x => x.iso)).map(key => {
+      const iso = nrIso(key), first = key === iso, r = (L.nr || {})[key] || {}, d = toD(iso), lines = String(r.mtxt || "").split("\n").map(x => x.trim()).filter(Boolean);
       const nip = (r.kid && r.kid !== "_m") || r.nip ? D.par(lr(D, "NIP : " + (r.nip || ""), { sz: 21 }), { before: 20 }) : "";
       const mat = lines.length ? lines.map(x => D.par(lr(D, "↓") + "<w:r><w:tab/></w:r>" + lr(D, x), { ind: tw(5), hang: tw(5), before: 10 })).join("") : D.par("");
       return D.row(
-        D.cell(W[0], D.par(lr(D, hr(d)), { jc: "center" }) + D.par(lr(D, `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`), { jc: "center" }))
+        D.cell(W[0], first ? D.par(lr(D, hr(d)), { jc: "center" }) + D.par(lr(D, `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`), { jc: "center" }) : D.par(""))
         + D.cell(W[1], D.par(lr(D, r.nama || "")) + nip) + D.cell(W[2], D.par(lr(D, r.inst || ""), { jc: "center" }))
         + D.cell(W[3], mat) + D.cell(W[4], D.par(r.ttd ? D.inline(r.ttd, 26, 15) : "", { jc: "center", before: 20, after: 20 })), { h: tw(17) });
     }).join("");
@@ -3283,7 +3300,7 @@ const Pic = {
         if (x.nKota != null) set(LP, "nKota", x.nKota);
         ["s1", "s2"].forEach(w => { const y = x[w] || {}; ["nama", "nip"].forEach(k => { if (k in y && (w === "s1" || k === "nama")) set(LP[w], k, y[k]); }); });
         Object.entries(x.hari || {}).forEach(([d, hh]) => { if (hari.includes(d) && hh && hh.materi != null) set(lapHariOf(ev, d), "materi", hh.materi); });
-        Object.entries(x.nr || {}).forEach(([d, rr]) => { if (hari.includes(d) && rr && typeof rr === "object") { const t = (LP.nr[d] = LP.nr[d] || naraNew()); ["kid", "nama", "nip", "inst", "mid", "mtxt"].forEach(k => { if (k in rr) set(t, k, rr[k]); }); } });
+        Object.entries(x.nr || {}).forEach(([d, rr]) => { if (NR_KEY.test(d) && hari.includes(nrIso(d)) && rr && typeof rr === "object") { const t = (LP.nr[d] = LP.nr[d] || naraNew()); ["kid", "nama", "nip", "inst", "mid", "mtxt"].forEach(k => { if (k in rr) set(t, k, rr[k]); }); } });
       }
       Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) return; Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
       Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (p && u && p.foto !== u) { p.foto = u; n++; } });
@@ -3294,7 +3311,7 @@ const Pic = {
       const LP = ev.lap;
       if (media.n1 && LP.s1.ttd !== media.n1) { LP.s1.ttd = media.n1; n++; }
       if (media.n2 && LP.s2.ttd !== media.n2) { LP.s2.ttd = media.n2; n++; }
-      hari.forEach(d => { const u = media["nr_" + d]; if (u) { const t = (LP.nr[d] = LP.nr[d] || naraNew()); if (t.ttd !== u) { t.ttd = u; n++; } } }); // tanda tangan narasumber dari PIC
+      Object.keys(media).filter(k => k.startsWith("nr_")).forEach(k => { const d = k.slice(3), u = media[k]; if (u && NR_KEY.test(d) && hari.includes(nrIso(d))) { const t = (LP.nr[d] = LP.nr[d] || naraNew()); if (t.ttd !== u) { t.ttd = u; n++; } } }); // tanda tangan narasumber dari PIC
       const hf = { ...(((ev.pic || {}).hf) || {}) };
       hari.forEach(d => {
         const keys = Object.keys(media).filter(k => k.startsWith(`d_${d}_`)).sort(), urls = keys.map(k => media[k]).filter(Boolean);
