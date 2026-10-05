@@ -3233,7 +3233,7 @@ const Pic = {
       for (const id of [...this.dirty]) {
         const ev = id === S.id ? S : (await idbGet("event:" + id));
         if (!ev) { this.dirty.delete(id); continue; }
-        const n = this.node(ev); if (!n.nama || !n.peserta.length || !n.tgl.length) continue; // belum layak dikirim: tunggu sampai ada nama + peserta
+        const n = this.node(ev); if (!n.nama || !n.tgl.length) { this.dirty.delete(id); continue; } // belum layak dikirim: butuh nama + tanggal (peserta boleh kosong, kegiatan tetap tampil di APK; dikirim lagi otomatis saat diubah)
         const h = fnv(JSON.stringify(n));
         if (this.hash[id] !== h) { await this.d.set(this.r(`dh_kegiatan/${id}`), { ...n, upd: Date.now() }); this.hash[id] = h; await idbPut("pic-hash", this.hash); }
         this.dirty.delete(id);

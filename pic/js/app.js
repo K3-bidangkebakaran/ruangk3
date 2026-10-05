@@ -63,7 +63,7 @@ const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v14';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v15';
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrKeys = (h, k, d) => [d, ...[...new Set([...Object.keys(LAPK(k).nr || {}), ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { const m = NR_KEY.exec(x); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_')[1] - +q.split('_')[1])];
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
@@ -233,7 +233,7 @@ document.addEventListener('focusout', () => { if (pendR) setTimeout(() => { if (
 async function applyKegs(srv) {
   const sg = fnv(JSON.stringify(srv)); if (sg === lastSrv) return false; lastSrv = sg;
   const baru = [];
-  Object.keys(srv).forEach(kid => { const k = srv[kid]; k.id = kid; if (!KEGS[kid]) baru.push(kid); KEGS[kid] = k; });
+  Object.keys(srv).forEach(kid => { const k = srv[kid]; if (!k || typeof k !== 'object') return; k.id = kid; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {}); if (!KEGS[kid]) baru.push(kid); KEGS[kid] = k; });
   Object.keys(KEGS).forEach(kid => { // dihapus admin: buang dari HP bila tidak ada data yang belum terkirim
     if (srv[kid]) return;
     const h = H[kid]; if (h && (h.dirty || mediaList(h).some(([k, d]) => h.sent[k] !== fnv(d)))) return;
@@ -349,6 +349,7 @@ function render() {
         : `<div class="empty">${qq ? 'Tidak ada kegiatan yang cocok.' : 'Belum ada kegiatan. Semua kegiatan yang diinput admin utama muncul di sini begitu HP mendapat sinyal.'}</div>`}
       ${pullErr && !online() ? '' : (pullErr ? `<div class="err">${esc(pullErr)}</div>` : '')}
       <button class="btn" type="button" data-act="refresh">Perbarui daftar kegiatan</button>
+      <button class="btn" type="button" data-act="upd">Periksa pembaruan aplikasi</button>
       <button class="btn" type="button" data-act="pw">Ganti kata sandi</button>
       <button class="btn" type="button" data-act="logout">Keluar</button></div><p class="hint" style="text-align:center">Versi aplikasi ${APP_VER}</p>`;
   } else if (P.screen === 'keg') {
@@ -637,6 +638,7 @@ document.addEventListener('click', e => {
   else if (a === 'logoutforce') { doLogout(true); }
   else if (a === 'pw') askPw();
   else if (a === 'pwok') savePw();
+  else if (a === 'upd') { if (!online()) toast('Belum ada sinyal.'); else if (window.__picCek) { toast('Memeriksa pembaruan…'); window.__picCek(true); } }
   else if (a === 'refresh') { if (!online()) toast('Belum ada sinyal.'); else { pull(true).then(() => toast('Daftar kegiatan diperbarui.')); } }
   else if (a === 'day') { P.day = +b.dataset.i; render(); }
   else if (a === 'status' && k) {
@@ -712,43 +714,50 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { re
 setInterval(() => { if (ME && online()) { pull(); sync(); } }, 60000); // cadangan bila pendengar realtime putus
 window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
 
-/* ---------- pembaruan otomatis ----------
-   Aplikasi (APK/PWA) membuka halaman dari ruangk3.com, jadi isi terbaru otomatis terambil tiap dibuka.
-   Kode di bawah mengurus app yang dibiarkan terbuka lama: tiap dibuka kembali & tiap 10 menit, berkas
-   aplikasi dibandingkan dengan yang ada di server; kalau berbeda -> muat ulang sendiri bila sedang
-   tidak dipakai (tidak sedang kamera / tanda tangan / mengetik / mengirim), kalau tidak -> tombol "Perbarui". */
+/* ---------- pembaruan aplikasi ----------
+   Aplikasi (APK/PWA) membuka halaman dari ruangk3.com. Kode di bawah membandingkan berkas aplikasi dengan yang ada di server
+   (saat dibuka, kembali aktif/online, dan tiap 1 menit). Bila ada versi baru -> muncul bar hijau "Perbarui" di atas layar.
+   Setelah ditekan, aplikasi membersihkan simpanan lama lalu memuat ulang sendiri. Data di HP (IndexedDB) tidak ikut terhapus. */
 (() => {
   const FILES = ['./index.html', './js/app.js', './js/firebase.js', './sw.js'];
-  let base = null, shown = false, checking = false;
+  let base = null, shown = false, checking = false, bekerja = false;
   const hash = (t) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + t.length; };
+  let serverVer = '';
   async function sig() {
-    try { return (await Promise.all(FILES.map(async f => { const r = await fetch(f, { cache: 'no-cache' }); if (!r.ok) throw new Error('x'); return hash(await r.text()); }))).join('|'); }
+    try { return (await Promise.all(FILES.map(async f => { const r = await fetch(f, { cache: 'no-cache' }); if (!r.ok) throw new Error('x'); const t = await r.text(); if (f === './js/app.js') { const m = /APP_VER = '([^']+)'/.exec(t); serverVer = m ? m[1] : ''; } return hash(t); }))).join('|'); }
     catch (e) { return null; }
   }
-  const idle = () => { const a = document.activeElement; return !CAM && !$('#pad') && !syncing && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
-  const boleh = () => { try { return Date.now() - (+sessionStorage.getItem('pic-upd') || 0) > 30000; } catch (e) { return true; } }; // cegah muat ulang beruntun (30 dtk)
-  function muat() { try { sessionStorage.setItem('pic-upd', String(Date.now())); } catch (e) { } location.reload(); }
+  async function muat() {
+    if (bekerja) return; bekerja = true;
+    const b = document.getElementById('picUpdBtn'); if (b) { b.disabled = true; b.textContent = 'Memperbarui…'; }
+    try { if (pending()) await Promise.race([sync(), new Promise(r => setTimeout(r, 6000))]); } catch (e) { }
+    try { await Promise.race([Promise.all(FILES.map(f => fetch(f, { cache: 'reload' }).then(r => r.text()))), new Promise(r => setTimeout(r, 8000))]); } catch (e) { } // segarkan simpanan HTTP
+    try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => k.startsWith('pic-')).map(k => caches.delete(k))); } } catch (e) { }
+    try { if (navigator.serviceWorker) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); } } catch (e) { }
+    location.reload();
+  }
   function bar() {
     if (shown) return; shown = true;
-    const d = document.createElement('div');
-    d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#14532d;color:#fff;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;display:flex;gap:10px;align-items:center;font:600 14px system-ui,sans-serif';
-    d.innerHTML = '<span style="flex:1">Versi baru aplikasi tersedia.</span><button type="button" style="background:#fff;color:#14532d;border:0;border-radius:8px;padding:6px 12px;font:700 13px system-ui,sans-serif">Perbarui</button>';
+    const d = document.createElement('div'); d.id = 'picUpdBar';
+    d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99999;background:#14532d;color:#fff;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;display:flex;gap:10px;align-items:center;font:600 14px system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.4)';
+    d.innerHTML = '<span style="flex:1">Ada versi baru aplikasi.</span><button id="picUpdBtn" type="button" style="background:#fff;color:#14532d;border:0;border-radius:8px;padding:9px 16px;font:700 14px system-ui,sans-serif">Perbarui</button>';
     d.querySelector('button').onclick = muat; document.body.appendChild(d);
   }
-  async function cek() {
-    if (checking || document.hidden || !navigator.onLine) return; checking = true;
+  async function cek(manual) {
+    if (checking || !navigator.onLine || (document.hidden && manual !== true)) return; checking = true;
     try {
       if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => { });
-      const s = await sig(); if (!s) return;
-      if (base === null) { base = s; return; }
-      if (s === base) return;
-      if (idle() && boleh()) muat(); else bar();
+      const s = await sig(); if (!s) { if (manual === true) toast('Gagal memeriksa. Cek sinyal lalu coba lagi.'); return; }
+      if (serverVer && serverVer !== APP_VER) { bar(); if (manual === true) toast('Ada versi baru. Tekan tombol hijau "Perbarui".'); return; }
+      if (base === null) { base = s; if (manual === true) toast('Aplikasi sudah versi terbaru (' + APP_VER + ').'); return; }
+      if (s === base) { if (manual === true) toast('Aplikasi sudah versi terbaru (' + APP_VER + ').'); return; }
+      bar(); if (manual === true) toast('Ada versi baru. Tekan tombol hijau "Perbarui".');
     } finally { checking = false; }
   }
+  window.__picCek = cek;
   document.addEventListener('visibilitychange', () => { if (!document.hidden) cek(); });
   window.addEventListener('online', cek); window.addEventListener('focus', cek);
-  setInterval(cek, 60000); // tiap 1 menit selama layar terbuka
-  setInterval(() => { if (shown && idle() && boleh()) muat(); }, 5000);
+  setInterval(cek, 60000);
   setTimeout(cek, 3000);
 })();
 
