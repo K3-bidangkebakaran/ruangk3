@@ -31,13 +31,14 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, day: 0, q: '', err: '' };
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {} });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {} });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 const isBatal = (h, p) => (p.id in h.batal) ? !!h.batal[p.id] : !!p.batal;
 // Remedial (baris kuning di daftar hadir): hanya tanda tangan di HARI TERAKHIR; Cancel (merah) tidak ikut absensi.
 const isRem = (h, p) => !isBatal(h, p) && ((h.remedial && p.id in h.remedial) ? !!h.remedial[p.id] : !!p.remedial);
 const perluHari = (h, p, d, days) => !isBatal(h, p) && (!isRem(h, p) || d === days[days.length - 1]);
-const hOf = kid => (H[kid] = H[kid] || newH());
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.foto2) h.foto2 = {}; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const fotoLengkap = (k, h, p) => !!h.foto[p.id] && (!(k && k.damkar) || !!(h.foto2 && h.foto2[p.id]));
 const saveH = kid => iPut('h:' + kid, H[kid]);
 const saveK = () => iPut('kegs', KEGS);
 const online = () => navigator.onLine !== false;
@@ -72,7 +73,7 @@ function stat(kid) {
   const k = KEGS[kid], h = hOf(kid), peserta = (k && k.peserta) || [], days = (k && k.tgl) || [];
   const aktif = peserta.filter(p => !isBatal(h, p));
   let ttd = 0, ttdTotal = 0; aktif.forEach(p => days.forEach(d => { if (!perluHari(h, p, d, days)) return; ttdTotal++; if (h.hadir[p.id] && h.hadir[p.id][d]) ttd++; }));
-  return { aktif: aktif.length, batal: peserta.length - aktif.length, remedial: aktif.filter(p => isRem(h, p)).length, ttd, ttdTotal, foto: aktif.filter(p => h.foto[p.id]).length, ttdPic: !!h.ttdPic };
+  return { aktif: aktif.length, batal: peserta.length - aktif.length, remedial: aktif.filter(p => isRem(h, p)).length, ttd, ttdTotal, foto: aktif.filter(p => fotoLengkap(k, h, p)).length, ttdPic: !!h.ttdPic };
 }
 function statusKeg(kid) {
   const s = stat(kid);
@@ -84,6 +85,7 @@ const mediaList = h => {
   const out = [];
   Object.keys(h.hadir).forEach(pid => Object.keys(h.hadir[pid]).forEach(d => { if (h.hadir[pid][d]) out.push([`s_${pid}_${d}`, h.hadir[pid][d]]); }));
   Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) out.push([`f_${pid}`, h.foto[pid]]); });
+  Object.keys(h.foto2 || {}).forEach(pid => { if (h.foto2[pid]) out.push([`f2_${pid}`, h.foto2[pid]]); });
   if (h.ttdPic) out.push(['pic', h.ttdPic]);
   return out;
 };
@@ -99,7 +101,8 @@ function pending() {
 const flags = h => {
   const hadir = {}; Object.keys(h.hadir).forEach(pid => { const m = {}; Object.keys(h.hadir[pid]).forEach(d => { if (h.hadir[pid][d]) m[d] = 1; }); if (Object.keys(m).length) hadir[pid] = m; });
   const foto = {}; Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) foto[pid] = 1; });
-  return { batal: h.batal, remedial: h.remedial || {}, hadir, foto, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
+  const foto2 = {}; Object.keys(h.foto2 || {}).forEach(pid => { if (h.foto2[pid]) foto2[pid] = 1; });
+  return { batal: h.batal, remedial: h.remedial || {}, hadir, foto, foto2, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
 /* ---------- toast ---------- */
@@ -149,6 +152,7 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
     const h = newH(); h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0;
     const own = key => { // hanya gambar yang tercatat di hasil akun ini (gambar PIC lain tidak ikut)
       if (key === 'pic') return !!sv.ttdPic;
+      if (key.startsWith('f2_')) return !!(sv.foto2 && sv.foto2[key.slice(3)]);
       if (key.startsWith('f_')) return !!(sv.foto && sv.foto[key.slice(2)]);
       if (key.startsWith('s_') && key.length > 13) { const date = key.slice(-10), pid = key.slice(2, -11); return !!(sv.hadir && sv.hadir[pid] && sv.hadir[pid][date]); }
       return false;
@@ -156,6 +160,7 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
     Object.keys(media).forEach(key => {
       const d = media[key]; if (typeof d !== 'string' || !own(key)) return;
       if (key === 'pic') h.ttdPic = d;
+      else if (key.startsWith('f2_')) h.foto2[key.slice(3)] = d;
       else if (key.startsWith('f_')) h.foto[key.slice(2)] = d;
       else { const date = key.slice(-10), pid = key.slice(2, -11); (h.hadir[pid] = h.hadir[pid] || {})[date] = d; }
       h.sent[key] = fnv(d);
@@ -294,7 +299,10 @@ function render() {
   } else if (P.screen === 'dok') {
     const s = stat(kid), hh = hOf(kid);
     h = appbar('Dokumentasi Peserta', k.nama, true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
-      <div class="photos">${(k.peserta || []).map(p => { const cx = isBatal(hh, p), f = hh.foto[p.id]; return `<div class="ph${cx ? ' cx' : ''}"><div class="img">${f ? `<img src="${f}" alt="Foto ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div><div class="cap"><b>${esc(p.nama)}</b>${cx ? '<span class="pill bad">Batal</span>' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" aria-label="${f ? 'Ganti' : 'Ambil'} foto ${esc(p.nama)}">${f ? 'Ganti foto' : 'Ambil foto'}</button>`}</div></div>`; }).join('')}</div>
+      <div class="photos${k.damkar ? ' dk' : ''}">${(k.peserta || []).map(p => {
+        const cx = isBatal(hh, p), rm = isRem(hh, p), keys = k.damkar ? ['foto', 'foto2'] : ['foto'];
+        const slot = (key, i) => { const f = hh[key] && hh[key][p.id], lb = k.damkar ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div>${cx ? '' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button>`}</div>`; };
+        return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi ? `<small>${esc(p.instansi)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
       <p class="hint">Foto diambil langsung dari kamera dan otomatis diberi watermark: nama peserta, kegiatan, titik lokasi (koordinat Google Maps), tanggal, dan jam. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
   app.innerHTML = h + '<div id="ovl"></div>';
@@ -431,16 +439,16 @@ function camFallback(msg) {
   b.innerHTML = `<p>${esc(msg)}</p><div class="row" style="justify-content:center"><button type="button" class="btn" data-act="camretry">Coba lagi</button><label class="btn pri filebtn">Pakai kamera bawaan HP<input type="file" accept="image/*" capture="environment" id="camFile"></label></div><small>Foto dari kamera bawaan tetap diberi watermark yang sama.</small>`;
   CAM.live = false; camStatus();
 }
-function openCam(kid, pid) {
+function openCam(kid, pid, slot) {
   const k = KEGS[kid], p = k && k.peserta.find(x => x.id === pid); if (!p) return;
   camClose();
   const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
-  el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(p.nama)}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button><small id="camDiag" style="opacity:.7;font-size:10.5px"></small></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
+  el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(p.nama)}${k.damkar ? ' · Foto ' + (slot === 'foto2' ? 2 : 1) : ''}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button><small id="camDiag" style="opacity:.7;font-size:10.5px"></small></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
     <div class="camstage"><video id="camV" playsinline muted autoplay></video><img id="camImg" alt="Hasil foto" hidden><div id="camWm" class="camwm"></div><div id="camFb" class="camfb" hidden></div></div>
     <div class="cambar"><div id="camLive"><button type="button" class="shutter" id="camShot" data-act="camshot" aria-label="Ambil foto" disabled></button></div>
     <div id="camRev" class="row" style="justify-content:center;gap:12px" hidden><button type="button" class="btn" data-act="camretake">Ulangi</button><button type="button" class="btn pri" data-act="camuse">Pakai foto</button></div></div>`;
   document.body.appendChild(el);
-  CAM = { el, kid, pid, k, nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
+  CAM = { el, kid, pid, k, slot: slot === 'foto2' ? 'foto2' : 'foto', nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
   camLocStart();
   CAM.tick = setInterval(camWm, 1000); camWm(); camStatus(); camStart();
 }
@@ -471,7 +479,7 @@ function camRetake() {
   $('#camImg', CAM.el).hidden = true; $('#camWm', CAM.el).hidden = false; $('#camLive', CAM.el).hidden = false; $('#camRev', CAM.el).hidden = true; camStatus();
 }
 function camSave(url) {
-  const { kid, pid } = CAM, h = hOf(kid); h.foto[pid] = url; camClose(); touch(kid); render(); toast('Foto tersimpan');
+  const { kid, pid, slot } = CAM, h = hOf(kid); h[slot][pid] = url; camClose(); touch(kid); render(); toast('Foto tersimpan');
 }
 
 /* ---------- aksi ---------- */
@@ -499,7 +507,7 @@ document.addEventListener('click', e => {
     openPad('Tanda tangan peserta', `${p.nama} · ${d ? tglPanjang(d) : ''}`, u => { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][d] = u; touch(kid); renderAbs(); }, h.hadir[pid] && h.hadir[pid][d]);
   }
   else if (a === 'ttdpic' && k) { const h = hOf(kid); openPad('TTD PIC', `${ME.nama} · ${k.nama}`, u => { h.ttdPic = u; h.ttdPicNama = ME.nama; touch(kid); render(); }, h.ttdPic); }
-  else if (a === 'foto' && k) openCam(kid, b.dataset.pid);
+  else if (a === 'foto' && k) openCam(kid, b.dataset.pid, b.dataset.slot);
   else if (a === 'camx') camClose();
   else if (a === 'camshot' && CAM) camShot();
   else if (a === 'camretake' && CAM) camRetake();

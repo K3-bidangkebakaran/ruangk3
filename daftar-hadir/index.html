@@ -87,6 +87,11 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .f-prog .bar2 i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
 .f-filter{display:flex;gap:6px;align-items:center;font-size:12.5px}
 .f-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.f-grid.dk{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.f-phs{display:grid;grid-template-columns:1fr 1fr}.f-phs .f-ph:first-child{border-right:1px solid var(--line)}
+.f-meta .rms{display:flex;gap:6px}
+.dk-chk{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13.5px;cursor:pointer}
+.dk-chk input{width:18px;height:18px;accent-color:var(--accent)}
 .f-tile{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
 .f-tile.drag-over{border-color:var(--accent);box-shadow:0 0 0 2px #fdba74}
 .f-ph{aspect-ratio:4/3;background:#f8fafc center/cover no-repeat;border:0;border-bottom:1px solid var(--line);display:grid;place-items:center;color:#94a3b8;font-size:12px;font-weight:600;width:100%}
@@ -288,7 +293,14 @@ table.grid.multi .ttd{font-size:7.5pt;left:1.2mm;top:1mm}
   #pages .sign-block:hover{outline-color:var(--accent);background:#fff7ed}
   .sign-hint{font:600 9pt system-ui,sans-serif;color:var(--accent);border:1px dashed var(--accent);border-radius:2mm;padding:2mm 3mm;background:#fff}
 }
+table.doku{table-layout:fixed}
 table.doku td{height:44mm;padding:2mm}
+table.doku tr.batal td{background:#ff6b6b;color:#000}
+table.doku tr.remedial td:not(.foto){background:#fff200;color:#000}
+table.grid.doku tr.remedial td.foto{background:transparent}
+table.doku.dk .ph{width:46mm;height:30.7mm}table.doku.dk .ph-img{width:46mm;height:30.7mm}
+table.doku.dk td{padding:2mm 1.5mm}table.doku.dk td.nama,table.doku.dk td.inst{font-size:9pt}
+table.doku td.inst{font-size:9.5pt}
 table.doku td.nama{font-weight:600;padding-left:3mm}
 table.doku td.foto{text-align:center}
 .ph{height:40mm;width:60mm;margin:0 auto;border-radius:1.5mm;background:repeating-linear-gradient(45deg,#f3f4f6 0 10px,#eceef1 10px 20px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:9pt}
@@ -361,7 +373,8 @@ table.doku td.foto{text-align:center}
     <section class="card" data-pane="data">
       <h2><span class="n">1</span> Informasi Kegiatan</h2>
       <div class="field"><label for="f-kegiatan">Nama Kegiatan</label>
-        <input id="f-kegiatan" data-k="kegiatan" placeholder="cth. Pelatihan K3 Penanggulangan Kebakaran"></div>
+        <input id="f-kegiatan" data-k="kegiatan" placeholder="cth. Pelatihan K3 Penanggulangan Kebakaran">
+        <label class="dk-chk"><input type="checkbox" id="f-damkar"> <b>Damkar</b> <span class="hint">(dokumentasi 2 foto per peserta)</span></label></div>
       <div class="row2">
         <div class="field" style="grid-column:1/-1;margin-bottom:4px"><label for="dateField">Tanggal Kegiatan <span class="hint">(klik per tanggal, boleh tidak berurutan, maks. 7 hari)</span></label>
           <div class="dp-wrap" id="dpWrap">
@@ -581,7 +594,7 @@ const today = (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
   acara: { kegiatan: "", tanggal: today, tanggal2: "", hari: [today], jamMulai: "08:00", jamSelesai: "16:00", zona: "WIB",
-           tempat: "", narasumber: "", kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
+           tempat: "", narasumber: "", damkar: false, kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
   peserta: [],
   wm: { alamat: "", auto: true, lat: null, lng: null },
   sync: { h: {}, v: 0, sv: 0, at: 0 }
@@ -628,7 +641,7 @@ function migTtd(d) {
   return (d.peserta || []).map(p => {
     const t = {}, src = p.ttd && typeof p.ttd === "object" ? p.ttd : {};
     Object.keys(src).forEach(k => { const m = /^h(\d+)$/.exec(k); const key = m ? old[+m[1] - 1] : k; if (key && src[k]) t[key] = src[k]; });
-    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", ttd: t, batal: !!p.batal, remedial: !!p.remedial && !p.batal };
+    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, batal: !!p.batal, remedial: !!p.remedial && !p.batal };
   });
 }
 const normalize = d => {
@@ -644,7 +657,7 @@ const normalize = d => {
 const meta = x => {
   const named = x.peserta.filter(p => (p.nama || "").trim() && !p.batal);
   return { id: x.id, created: x.created, updated: Date.now(), kegiatan: x.acara.kegiatan, tanggal: x.acara.tanggal, tanggal2: x.acara.tanggal2, hari: hariList(x.acara).filter(Boolean),
-           tempat: x.acara.tempat, n: named.length, foto: named.filter(p => p.foto).length, ttd: !!x.acara.ttd,
+           tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, x.acara.damkar)).length, ttd: !!x.acara.ttd,
            cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)) };
 };
 let saveT = null;
@@ -806,24 +819,26 @@ function renderPages() {
   ch.forEach((c, pi) => { html += page(dhBody(c, pi, no0, pi === ch.length - 1), "pg-dh"); no0 += c.length; });
 
 
-  // --- dokumentasi chunks
-  const dk = list.filter(p => !p.batal);
+  // --- dokumentasi chunks (baris Cancel merah & Remedial kuning mengikuti daftar hadir; mode Damkar = 2 kolom foto)
+  const dk = list, dkOn = !!a.damkar;
   const dch = [];
   for (let j = 0; j < dk.length; j += DK_PER) dch.push(dk.slice(j, j + DK_PER));
   if (!dch.length) dch.push([]);
+  const fk = dkOn ? ["foto", "foto2"] : ["foto"], nFoto = fk.length;
   dch.forEach((c, pi) => {
     const tr = c.map((p, k) => {
-      const n = pi * DK_PER + k + 1;
-      const foto = p.foto ? `<img class="ph-img" src="${p.foto}" alt="">` : `<div class="ph">${CAM}<span>Belum ada foto</span></div>`;
-      return `<tr><td class="no">${n}</td><td class="nama">${v(p.nama)}</td><td class="foto">${foto}</td></tr>`;
-    }).join("") || `<tr><td colspan="3" style="text-align:center;color:#999">Belum ada peserta</td></tr>`;
+      const n = pi * DK_PER + k + 1, bt = !!p.batal, rem = !bt && !!p.remedial;
+      const fotos = fk.map(key => `<td class="foto">${bt ? "" : p[key] ? `<img class="ph-img" src="${p[key]}" alt="">` : `<div class="ph">${CAM}<span>Belum ada foto</span></div>`}</td>`).join("");
+      return `<tr${bt ? ' class="batal"' : rem ? ' class="remedial"' : ""}><td class="no">${n}</td><td class="nama">${v(p.nama)}</td><td class="inst">${v(p.instansi)}</td>${fotos}</tr>`;
+    }).join("") || `<tr><td colspan="${3 + nFoto}" style="text-align:center;color:#999">Belum ada peserta</td></tr>`;
+    const wd = dkOn ? [9, 32, 32] : [10, 45, 44];
     html += page(`<h1>DOKUMENTASI PESERTA${pi ? " <small>(lanjutan)</small>" : ""}</h1>
       <table class="info"><tr><td class="k">Nama Kegiatan</td><td class="c">:</td><td>${v(a.kegiatan)}</td></tr></table>
-      <table class="grid doku"><thead><tr><th style="width:10mm">No</th><th style="width:58mm">Nama Peserta</th><th>Foto</th></tr></thead><tbody>${tr}</tbody></table>`, "pg-dk");
+      <table class="grid doku${dkOn ? " dk" : ""}"><thead><tr><th style="width:${wd[0]}mm">No</th><th style="width:${wd[1]}mm">Nama Peserta</th><th style="width:${wd[2]}mm">Instansi / Perusahaan</th>${dkOn ? "<th>Foto 1</th><th>Foto 2</th>" : "<th>Foto</th>"}</tr></thead><tbody>${tr}</tbody></table>`, "pg-dk");
   });
 
   $("#pages").innerHTML = html;
-  const nd = ch.length, nk = dch.length, noFoto = dk.filter(p => !p.foto).length;
+  const nd = ch.length, nk = dch.length, noFoto = dk.filter(p => !p.batal && !fotoOk(p, dkOn)).length;
   $("#pgInfo").textContent = `${nd} hal. daftar hadir · ${nk} hal. dokumentasi${dk.length && noFoto ? ` · ${noFoto} peserta belum ada foto` : ""}`;
   fitPreview();
 }
@@ -864,20 +879,26 @@ function renderList() {
 /* ---------- render: foto dokumentasi ---------- */
 const namaList = () => S.peserta.filter(p => (p.nama || "").trim());
 const fotoList = () => namaList().filter(p => !p.batal);
+const fotoOk = (p, dk) => !!p.foto && (!dk || !!p.foto2);
+const fotoKeys = () => S.acara.damkar ? ["foto", "foto2"] : ["foto"];
 function renderFoto() {
-  const el = $("#fList"), all = fotoList(), done = all.filter(p => p.foto).length;
+  const el = $("#fList"), all = fotoList(), dk = !!S.acara.damkar, done = all.filter(p => fotoOk(p, dk)).length;
+  el.classList.toggle("dk", dk);
   $("#tbPeserta").textContent = all.length;
   $("#tbFoto").textContent = `${done}/${all.length}`;
-  $("#fProgTxt").textContent = all.length ? `${done} dari ${all.length} peserta sudah ada foto` : "";
+  $("#fProgTxt").textContent = all.length ? `${done} dari ${all.length} peserta sudah ada foto${dk ? " (2 foto per peserta)" : ""}` : "";
   $("#fProgBar").style.width = all.length ? (done / all.length * 100) + "%" : "0";
   if (!all.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1">Belum ada peserta. Isi dulu nama peserta di tab <b>1. Kegiatan &amp; Peserta</b>.</div>`; return; }
   const only = $("#fOnlyEmpty").checked;
-  const shown = all.filter(p => !only || !p.foto);
+  const shown = all.filter(p => !only || !fotoOk(p, dk));
   if (!shown.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1">Semua peserta sudah ada foto 👍</div>`; return; }
+  const slot = (p, k, lbl) => `<button class="f-ph ${p[k] ? "has" : ""}" data-act="foto" data-slot="${k}" title="${p[k] ? "Foto ulang" : "Ambil foto"}" ${p[k] ? `style="background-image:url('${p[k]}')"` : ""}>${p[k] ? "📷 Foto ulang" : "📷 " + lbl}</button>`;
   el.innerHTML = shown.map(p => `
     <div class="f-tile" data-id="${p.id}">
-      <button class="f-ph ${p.foto ? "has" : ""}" data-act="foto" title="${p.foto ? "Foto ulang" : "Ambil foto"}" ${p.foto ? `style="background-image:url('${p.foto}')"` : ""}>${p.foto ? "📷 Foto ulang" : "📷 Ambil Foto"}</button>
-      <div class="f-meta"><span class="no">${all.indexOf(p) + 1}.</span><span class="nm">${esc(p.nama)}</span>${p.foto ? `<button class="rm" data-act="rmfoto" title="Hapus foto">Hapus</button>` : ""}</div>
+      ${dk ? `<div class="f-phs">${slot(p, "foto", "Foto 1")}${slot(p, "foto2", "Foto 2")}</div>` : slot(p, "foto", "Ambil Foto")}
+      <div class="f-meta"><span class="no">${all.indexOf(p) + 1}.</span><span class="nm">${esc(p.nama)}</span>${dk
+        ? `<span class="rms">${p.foto ? `<button class="rm" data-act="rmfoto" data-slot="foto" title="Hapus foto 1">Hapus 1</button>` : ""}${p.foto2 ? `<button class="rm" data-act="rmfoto" data-slot="foto2" title="Hapus foto 2">Hapus 2</button>` : ""}</span>`
+        : (p.foto ? `<button class="rm" data-act="rmfoto" data-slot="foto" title="Hapus foto">Hapus</button>` : "")}</div>
     </div>`).join("");
 }
 let fT = null;
@@ -1001,18 +1022,19 @@ function drawWM(ctx, W, H, info) {
 
 /* ---------- kamera ---------- */
 const Cam = {
-  id: null, queue: false, stream: null, facing: "environment", shot: null, tick: null,
+  id: null, slot: "foto", queue: false, stream: null, facing: "environment", shot: null, tick: null,
   person() { return S.peserta.find(p => p.id === this.id); },
-  nextEmpty() {
-    const all = fotoList(), i = all.findIndex(p => p.id === this.id);
-    return all.slice(i + 1).find(p => !p.foto) || all.slice(0, Math.max(0, i)).find(p => !p.foto);
+  nextEmpty() { // foto berikutnya yang masih kosong (peserta berikutnya; pada mode Damkar: foto 1 lalu foto 2)
+    const all = fotoList(), seq = []; all.forEach(p => fotoKeys().forEach(k => seq.push({ id: p.id, k })));
+    const i = seq.findIndex(t => t.id === this.id && t.k === this.slot), need = t => !S.peserta.find(p => p.id === t.id)[t.k];
+    return seq.slice(i + 1).find(need) || seq.slice(0, Math.max(0, i)).find(need);
   },
-  async open(id, queue) {
-    this.id = id; this.queue = queue;
+  async open(id, queue, slot) {
+    this.id = id; this.queue = queue; this.slot = slot || "foto";
     const p = this.person(); if (!p) return;
     const all = fotoList();
     $("#cam").hidden = false; document.body.style.overflow = "hidden";
-    $("#camWho").textContent = `${all.indexOf(p) + 1}. ${p.nama}`;
+    $("#camWho").textContent = `${all.indexOf(p) + 1}. ${p.nama}${S.acara.damkar ? ` · Foto ${this.slot === "foto2" ? 2 : 1}` : ""}`;
     $("#camLoc").textContent = "📍 " + wmAlamat();
     this.live();
     if (!S.wm.alamat && !Loc.busy) Loc.detect(true);
@@ -1096,10 +1118,10 @@ const Cam = {
   },
   save(goNext) {
     const p = this.person(); if (!p || !this.shot) return;
-    p.foto = this.shot; renderFoto(); changed();
+    p[this.slot] = this.shot; renderFoto(); changed();
     const nxt = goNext && this.nextEmpty();
-    if (nxt) this.open(nxt.id, this.queue);
-    else { this.close(); toast(`Foto ${p.nama} tersimpan.`); }
+    if (nxt) this.open(nxt.id, this.queue, nxt.k);
+    else { this.close(); toast(`Foto ${p.nama}${S.acara.damkar ? ` (foto ${this.slot === "foto2" ? 2 : 1})` : ""} tersimpan.`); }
   }
 };
 $("#camClose").onclick = () => Cam.close();
@@ -1124,9 +1146,9 @@ $("#fileCam").addEventListener("change", e => {
 $("#btnCamStart").onclick = () => {
   const all = fotoList();
   if (!all.length) { toast("Isi nama peserta dulu di tab 1."); return; }
-  const first = all.find(p => !p.foto);
+  let first = null; for (const p of all) { const k = fotoKeys().find(k => !p[k]); if (k) { first = { id: p.id, k }; break; } }
   if (!first) { toast("Semua peserta sudah ada foto."); return; }
-  Cam.open(first.id, true);
+  Cam.open(first.id, true, first.k);
 };
 
 /* ---------- paste from Excel ---------- */
@@ -1244,6 +1266,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && DP.open) {
 /* ---------- bind acara fields ---------- */
 function fillForm() {
   document.querySelectorAll("[data-k]").forEach(el => { el.value = S.acara[el.dataset.k] ?? ""; });
+  $("#f-damkar").checked = !!S.acara.damkar;
   renderDates();
 }
 document.querySelectorAll("[data-k]").forEach(el => {
@@ -1252,6 +1275,11 @@ document.querySelectorAll("[data-k]").forEach(el => {
     S.acara[k] = el.hasAttribute("data-num") ? Math.max(0, Math.min(60, parseInt(el.value) || 0)) : el.value;
     changed();
   });
+});
+
+$("#f-damkar").addEventListener("change", e => {
+  S.acara.damkar = e.target.checked; changed(); renderFoto();
+  toast(S.acara.damkar ? "Mode Damkar aktif: dokumentasi tiap peserta memakai 2 kolom foto." : "Mode Damkar dimatikan: dokumentasi kembali 1 foto per peserta.");
 });
 
 /* ---------- participant events ---------- */
@@ -1283,9 +1311,10 @@ $("#pList").addEventListener("click", e => {
 $("#fList").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   const id = b.closest(".f-tile").dataset.id, i = idx(id);
-  if (b.dataset.act === "rmfoto") { const old = S.peserta[i].foto; S.peserta[i].foto = ""; renderFoto(); changed();
-    toast(`Foto ${S.peserta[i].nama} dihapus.`, "Batalkan", () => { S.peserta[i].foto = old; renderFoto(); changed(); }); }
-  if (b.dataset.act === "foto") Cam.open(id, false);
+  const k = b.dataset.slot || "foto";
+  if (b.dataset.act === "rmfoto") { const old = S.peserta[i][k]; S.peserta[i][k] = ""; renderFoto(); changed();
+    toast(`Foto ${S.peserta[i].nama} dihapus.`, "Batalkan", () => { S.peserta[i][k] = old; renderFoto(); changed(); }); }
+  if (b.dataset.act === "foto") Cam.open(id, false, k);
 });
 $("#fOnlyEmpty").onchange = renderFoto;
 
@@ -1780,34 +1809,57 @@ function parsePesertaPdf(pages) {
     while (b < its.length - 1 && its[b + 1].x - (its[b].x + its[b].w) <= item.h * 1.0) b++;
     const seg = its.slice(a, b + 1); return { x0: seg[0].x, x1: seg[seg.length - 1].x + seg[seg.length - 1].w, text: norm(seg.map(s => s.s).join(" ")) };
   };
-  const findHeader = (line, needInst) => {
+  // Judul kolom bisa terpecah ke beberapa baris (mis. "Instansi /" di atas, "Perusahaan" di bawah): baris-baris tetangga ikut dibaca.
+  const near = (lines, li, y, h) => lines.filter((l, i) => i === li || Math.abs(l.y - y) <= h * 3.2);
+  const findHeader = (lines, li, needInst) => {
+    const line = lines[li];
     for (const nm of line.items) {
       const t = norm(nm.s);
       if (!(/^nama\b/.test(t) || /^(name|full name)$/.test(t))) continue;
       const nc = cellOf(line, nm); if (RX_PERUS.test(nc.text.replace(/^nama /, ""))) continue; // "Nama Perusahaan" bukan kolom nama
-      const pr = line.items.find(it => { // judul kolom instansi boleh di kiri atau kanan kolom nama ("Nama Perusahaan" juga dikenali)
-        if (it === nm || !RX_PERUS.test(norm(it.s).replace(/^nama /, ""))) return false;
-        const c = cellOf(line, it); return c.x0 >= nc.x1 - 1 || c.x1 <= nc.x0 + 1;
-      });
+      const nb = near(lines, li, line.y, nm.h);
+      let pr = null, prLine = null;
+      for (const L of nb) {
+        pr = L.items.find(it => { // judul kolom instansi boleh di kiri atau kanan kolom nama ("Nama Perusahaan" juga dikenali)
+          if (it === nm || !RX_PERUS.test(norm(it.s).replace(/^nama /, ""))) return false;
+          const c = cellOf(L, it); return c.x0 >= nc.x1 - 1 || c.x1 <= nc.x0 + 1;
+        });
+        if (pr) { prLine = L; break; }
+      }
       if (needInst && !pr) continue;
-      const no = line.items.find(it => RX_NO.test(norm(it.s)) && (it.x + it.w <= nc.x0 + 1 || it.x >= nc.x1 - 1));
-      return { nm: nc, pr: pr ? cellOf(line, pr) : null, no: no ? cellOf(line, no) : null };
+      let no = null;
+      for (const L of nb) { no = L.items.find(it => RX_NO.test(norm(it.s)) && (it.x + it.w <= nc.x0 + 1 || it.x >= nc.x1 - 1)); if (no) { no = { ...cellOf(L, no) }; break; } }
+      return { nm: nc, pr: pr ? cellOf(prLine, pr) : null, no };
     }
     return null;
   };
   let hdr = null, hp = -1, hl = -1;
   for (const needInst of [true, false]) {
-    for (let p = 0; p < P.length && !hdr; p++) for (let l = 0; l < P[p].length && !hdr; l++) { const h = findHeader(P[p][l], needInst); if (h) { hdr = h; hp = p; hl = l; } }
+    for (let p = 0; p < P.length && !hdr; p++) for (let l = 0; l < P[p].length && !hdr; l++) { const h = findHeader(P[p], l, needInst); if (h) { hdr = h; hp = p; hl = l; } }
     if (hdr) break;
   }
   if (!hdr) return null;
   // 3. baris isi tabel (halaman pertama: setelah judul; halaman lain: semua kecuali judul yang diulang)
+  const VOC = new Set(["instansi", "perusahaan", "company", "asal", "unit", "kerja", "nama", "peserta", "name", "full", "lengkap", "karyawan", "no", "nomor", "urut", "dan", "tanda", "tangan", "ttd", "paraf", "hari", "ke", "keterangan", "ket", "jabatan", "alamat", "telepon", "telp", "hp", "email", "tanggal", "tgl", "nik", "foto", "absen", "hadir", "kehadiran", "signature", "sign", "day", "date", "remarks", "note", "catatan", "status"]);
+  const vocabOnly = line => { const raw = line.items.map(i => i.s).join(" "), w = norm(raw).split(" ").filter(Boolean); const lt = w.filter(t => /[a-z]/.test(t)); if (!lt.length) return /^[\d\s]*\d{1,2}\s*[\/.-]\s*\d{1,2}(\s*[\/.-]\s*\d{2,4})?[\d\s\/.-]*$/.test(raw.trim()); /* baris tanggal di bawah judul hari, mis. 6/10/26 */ const frag = t => t.length >= 2 && [...VOC].some(v => v.startsWith(t) || v.endsWith(t)); /* kata judul yang terpotong, mis. "Keterang" + "an" */ return lt.every(t => VOC.has(t) || frag(t)) && w.every(t => VOC.has(t) || frag(t) || /^\d{1,4}$/.test(t)); };
+  const FOOT = /(^|\s)(penyelenggara|mengetahui|disetujui|dibuat oleh|diperiksa|hormat kami|jumlah peserta|total peserta|catatan|keterangan\s*:)|\b\d{1,2}\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+\d{4}\b/i;
   const body = [];
-  P.forEach((lines, p) => lines.forEach((line, l) => {
-    if (p < hp || (p === hp && l <= hl)) return;
-    if (findHeader(line, false)) return;
-    body.push({ p, y: line.y, items: line.items });
-  }));
+  P.forEach((lines, p) => {
+    const isH = new Set();
+    lines.forEach((line, l) => { if ((p === hp && l === hl) || (p !== hp || l !== hl) && findHeader(lines, l, false)) isH.add(l); });
+    for (let ch = true; ch;) { // baris judul lanjutan (judul kolom yang terpotong ke baris lain) ikut dibuang
+      ch = false;
+      lines.forEach((line, l) => {
+        if (isH.has(l) || !vocabOnly(line)) return;
+        const h = line.items[0].h;
+        if ([...isH].some(k => Math.abs(lines[k].y - line.y) <= h * 3.2)) { isH.add(l); ch = true; }
+      });
+    }
+    lines.forEach((line, l) => {
+      if (p < hp || (p === hp && l <= hl) || isH.has(l)) return;
+      body.push({ p, y: line.y, items: line.items });
+    });
+  });
   if (!body.length) return { rows: [], adaInst: !!hdr.pr };
   // 4. kolom: ruang kosong vertikal yang konsisten di seluruh baris = pemisah kolom
   const all = body.flatMap(l => l.items), hs = median(all.map(i => i.h)) || 10;
@@ -1858,13 +1910,39 @@ function parsePesertaPdf(pages) {
   let anchors = body.filter(l => hdr.no && isNo(l));
   if (!anchors.length) anchors = body.filter(l => l.nama);
   const rows = anchors.map(a => ({ a, parts: [a] }));
-  const byPage = {}; anchors.forEach(a => (byPage[a.p] = byPage[a.p] || []).push(a));
-  const pitchOf = p => { const ys = (byPage[p] || []).map(a => a.y); const d = []; for (let i = 1; i < ys.length; i++) d.push(ys[i - 1] - ys[i]); return d.length ? median(d) : hs * 2.5; };
-  for (const l of body) {
-    if (anchors.includes(l) || (!l.nama && !l.inst)) continue;
-    let bi = -1, bd = Infinity;
-    rows.forEach((r, i) => { if (r.a.p !== l.p) return; const d = Math.abs(r.a.y - l.y); if (d < bd) { bd = d; bi = i; } });
-    if (bi >= 0 && bd <= pitchOf(l.p) * 0.9) rows[bi].parts.push(l);
+  { // Baris lanjutan (nama/instansi yang terpotong ke baris berikut) digabung ke peserta yang tepat. Nomor bisa rata atas, tengah,
+    // atau bawah sel, jadi batas antar-peserta dicari dari celah terbesar di antara dua baris bernomor (celah antar-peserta > jarak antar-baris dalam satu sel).
+    const info = l => l.nama || l.inst;
+    const ys = body.filter(l => info(l) || anchors.includes(l)).map(l => l);
+    const gaps = []; const byP = {};
+    ys.forEach(l => (byP[l.p] = byP[l.p] || []).push(l));
+    Object.values(byP).forEach(a => { a.sort((x, y) => y.y - x.y); for (let i = 1; i < a.length; i++) gaps.push(a[i - 1].y - a[i].y); });
+    const lg = gaps.filter(g => g >= hs * 0.9), leading = lg.length ? Math.min(...lg) : hs * 1.2; // jarak antar-baris teks dalam satu sel
+    const rowOf = new Map(anchors.map(a => [a, rows.find(r => r.a === a)]));
+    Object.values(byP).forEach(seq => {
+      const ai = seq.map((l, i) => anchors.includes(l) ? i : -1).filter(i => i >= 0);
+      if (!ai.length) return;
+      for (let i = 0; i < ai[0]; i++) rowOf.get(seq[ai[0]]).parts.push(seq[i]); // di atas baris bernomor pertama
+      for (let k = 0; k < ai.length; k++) {
+        const i0 = ai[k], i1 = k + 1 < ai.length ? ai[k + 1] : -1;
+        if (i1 < 0) { // setelah baris bernomor terakhir: ambil selama masih rapat & belum masuk blok tanda tangan/keterangan di bawah tabel
+          for (let i = i0 + 1; i < seq.length; i++) {
+            const txt = seq[i].items.map(x => x.s).join(" ");
+            if (FOOT.test(txt) || seq[i - 1].y - seq[i].y > leading * 1.3) break;
+            rowOf.get(seq[i0]).parts.push(seq[i]);
+          }
+          continue;
+        }
+        if (i1 - i0 < 2) continue;
+        const g = []; for (let i = i0; i < i1; i++) g.push(seq[i].y - seq[i + 1].y);
+        const mx = Math.max(...g), mn = Math.min(...g);
+        let cut; // lanjutan di indeks <= cut milik peserta atas, sisanya milik peserta bawah
+        if (mx - mn < mx * 0.15) { // celah sama rata: bagi menurut jarak terdekat
+          cut = i0; for (let i = i0 + 1; i < i1; i++) if (seq[i0].y - seq[i].y <= seq[i].y - seq[i1].y) cut = i;
+        } else cut = i0 + g.indexOf(mx);
+        for (let i = i0 + 1; i < i1; i++) rowOf.get(i <= cut ? seq[i0] : seq[i1]).parts.push(seq[i]);
+      }
+    });
   }
   const out = [];
   for (const r of rows) {
@@ -2093,19 +2171,23 @@ const Word = (() => {
 
   /* Dokumentasi: foto tiap peserta (4 per halaman) */
   function dokumentasi(ev, ctx) {
-    const D = Doc(), a = ev.acara, list = ev.peserta.filter(p => ((p.nama || "").trim() || p.instansi || p.foto) && !p.batal), PER = 4;
-    const widths = [tw(10), tw(58), tw(CONT_W - 68)];
+    const D = Doc(), a = ev.acara, list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto || p.foto2), PER = 4, dkOn = !!a.damkar;
+    const fk = dkOn ? ["foto", "foto2"] : ["foto"];
+    const wmm = dkOn ? [9, 32, 32, ...fk.map(() => (CONT_W - 73) / 2)] : [10, 45, 44, CONT_W - 99], widths = wmm.map(tw);
+    const RED = "FF6B6B", YEL = "FFF200", pw = dkOn ? 46 : 60, ph = dkOn ? 30.7 : 40; // warna sama dengan daftar hadir
     let xml = "";
     for (let j = 0, pi = 0; j < Math.max(list.length, 1); j += PER, pi++) {
       const c = list.slice(j, j + PER);
       const th = (w, t) => D.cell(w, D.par(D.run(t, { b: 1, color: "FFFFFF", sz: 20 }), { jc: "center", before: 40, after: 40 }), { fill: "F58220" });
-      const rows = c.map((p, k) => D.row(
-        D.cell(widths[0], D.par(D.run(j + k + 1), { jc: "center" })) + D.cell(widths[1], D.par(D.run(p.nama || ""))) +
-        D.cell(widths[2], p.foto ? D.par(D.inline(p.foto, 60, 40), { jc: "center", before: 40, after: 40 }) : D.par(D.run("Belum ada foto", { color: "999999", sz: 18 }), { jc: "center" })), { h: tw(46) })).join("")
-        || D.row(D.cell(widths.reduce((s, w) => s + w, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: 3 }), { h: tw(12.5) });
+      const rows = c.map((p, k) => {
+        const bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : rem ? { fill: YEL } : {}, tc = bt || rem ? { color: "000000" } : {};
+        const fotos = fk.map((key, fi) => D.cell(widths[3 + fi], bt ? D.par("") : p[key] ? D.par(D.inline(p[key], pw, ph), { jc: "center", before: 40, after: 40 }) : D.par(D.run("Belum ada foto", { color: "999999", sz: 18 }), { jc: "center" }), bt ? { fill: RED } : {})).join("");
+        return D.row(D.cell(widths[0], D.par(D.run(j + k + 1, tc), { jc: "center" }), F) + D.cell(widths[1], D.par(D.run(p.nama || "", tc)), F) + D.cell(widths[2], D.par(D.run(p.instansi || "", { ...tc, sz: dkOn ? 18 : 19 })), F) + fotos, { h: tw(46) });
+      }).join("")
+        || D.row(D.cell(widths.reduce((s, w) => s + w, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: widths.length }), { h: tw(12.5) });
       if (pi) xml += `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
       xml += title(D, "DOKUMENTASI PESERTA", pi) + infoTable(D, [["Nama Kegiatan", a.kegiatan]]) + gap(D)
-        + D.table(widths, D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Foto"), { head: 1 }) + rows);
+        + D.table(widths, D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Instansi / Perusahaan") + (dkOn ? th(widths[3], "Foto 1") + th(widths[4], "Foto 2") : th(widths[3], "Foto")), { head: 1 }) + rows);
     }
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }
@@ -2133,9 +2215,9 @@ const Word = (() => {
     if (!hasP && !(ev.acara.kegiatan || "").trim()) return out;
     const add = async (key, name, bytes) => { const data = await toDataUrl(bytes); out.push({ key, path: [], name, data, hash: fnv(name + "|" + data.length + "|" + data.slice(-64) + "|" + crc32(bytes)) }); };
     await add("doc:dh", `Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx));
-    if (ev.peserta.some(p => p.foto)) {
+    if (ev.peserta.some(p => p.foto || p.foto2)) {
       const ev2 = { ...ev, peserta: [] };
-      for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "" });
+      for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "", foto2: p.foto2 ? await kecil(p.foto2) : "" });
       await add("doc:dk", `Dokumentasi Peserta - ${nm}.docx`, dokumentasi(ev2, ctx));
     }
     return out;
@@ -2246,7 +2328,8 @@ const Cloud = {
     const out = [], add = (key, path, name, data) => out.push({ key, path, name, data, hash: fnv(name + "|" + data) });
     ev.peserta.filter(p => (p.nama || "").trim() && !p.batal).forEach(p => {
       const tag = ` [${p.id.slice(0, 5)}]`;
-      if (p.foto) add("foto:" + p.id, ["Foto Dokumentasi"], safeName(p.nama) + tag + ".jpg", p.foto);
+      if (p.foto) add("foto:" + p.id, ["Foto Dokumentasi"], safeName(p.nama) + tag + (ev.acara.damkar ? " (1)" : "") + ".jpg", p.foto);
+      if (p.foto2 && ev.acara.damkar) add("foto2:" + p.id, ["Foto Dokumentasi"], safeName(p.nama) + tag + " (2).jpg", p.foto2);
       Object.keys(p.ttd || {}).forEach(k => { if (p.ttd[k]) add(`ttd:${p.id}:${k}`, ["Tanda Tangan Peserta", `${k} (${toD(k) ? new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(toD(k)) : ""})`], safeName(p.nama) + tag + ".png", p.ttd[k]); });
     });
     if (ev.acara.ttd) add("ttd-org", ["Tanda Tangan Penyelenggara"], safeName(ev.acara.namaTtd || ev.acara.jabatanTtd || "Penyelenggara") + ".png", ev.acara.ttd);
@@ -2262,7 +2345,7 @@ const Cloud = {
     return {
       id: ev.id, created: ev.created, acara: a, wm: ev.wm, days,
       hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara),
-      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: !!p.foto, batal: !!p.batal, remedial: !!p.remedial, ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
+      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: !!p.foto, foto2: !!p.foto2, batal: !!p.batal, remedial: !!p.remedial, ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
     };
   },
   async sync(manual, evArg) {
@@ -2390,7 +2473,7 @@ const Cloud = {
       const ev = normalize({
         id: d.id, created: d.created, wm: d.wm,
         acara: { ...d.acara, ttd: "" },
-        peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: "", ttd: {} }))
+        peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: "", foto2: "", ttd: {}, batal: !!p.batal, remedial: !!p.remedial }))
       });
       const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); let i = 0; // berkas Word tidak perlu diunduh
       for (const k of keys) {
@@ -2398,6 +2481,7 @@ const Cloud = {
         const f = await this.api("getFile", { id: files[k].id });
         const [kind, pid, day] = k.split(":"), p = ev.peserta.find(x => x.id === pid);
         if (kind === "foto" && p) p.foto = f.dataUrl;
+        else if (kind === "foto2" && p) p.foto2 = f.dataUrl;
         else if (kind === "ttd" && p) p.ttd[day] = f.dataUrl;
         else if (kind === "ttd-org") ev.acara.ttd = f.dataUrl;
       }
@@ -2492,7 +2576,7 @@ const Pic = {
   node(ev) {
     const a = ev.acara, hari = hariList(a).filter(Boolean);
     return {
-      nama: (a.kegiatan || "").trim(), tgl: hari, tempat: a.tempat || "", kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
+      nama: (a.kegiatan || "").trim(), tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
       peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", batal: !!p.batal, remedial: !!p.remedial && !p.batal })), dibuat: ev.created
     };
   },
@@ -2571,6 +2655,7 @@ const Pic = {
       }
       Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) return; Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
       Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (p && u && p.foto !== u) { p.foto = u; n++; } });
+      Object.keys(h.foto2 || {}).forEach(pid => { const p = by.get(pid), u = media["f2_" + pid]; if (p && u && p.foto2 !== u) { p.foto2 = u; n++; } });
       if (h.ttdPic) last = h;
     }
     if (last && media.pic && a.ttd !== media.pic) { a.ttd = media.pic; a.namaTtd = last.ttdPicNama || last.picNama || a.namaTtd; a.jabatanTtd = "PIC Kegiatan"; if (hari.length) a.tglTtd = hari[hari.length - 1]; n++; }
