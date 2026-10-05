@@ -48,7 +48,7 @@ button{cursor:pointer}
 .tabs button.on .badge{background:#ffedd5;color:#9a3412}
 .tabs [data-t="preview"]{display:none}
 [data-pane]{display:none}
-body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],body[data-tab="foto"] [data-pane="foto"],body[data-tab="preview"] [data-pane="data"]{display:block}
+body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],body[data-tab="foto"] [data-pane="foto"],body[data-tab="lap"] [data-pane="lap"],body[data-tab="preview"] [data-pane="data"]{display:block}
 .layout{display:grid;grid-template-columns:minmax(380px,560px) 1fr;gap:16px;padding:16px;align-items:start}
 .form-col{display:flex;flex-direction:column;gap:16px;min-width:0}
 .preview-col{position:sticky;top:calc(var(--tb,52px) + 60px);height:calc(100vh - var(--tb,52px) - 76px);display:flex;flex-direction:column;background:#d9dbe0;border-radius:12px;overflow:hidden;min-width:0}
@@ -305,7 +305,72 @@ table.doku td.nama{font-weight:600;padding-left:3mm}
 table.doku td.foto{text-align:center}
 .ph{height:40mm;width:60mm;margin:0 auto;border-radius:1.5mm;background:repeating-linear-gradient(45deg,#f3f4f6 0 10px,#eceef1 10px 20px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:9pt}
 .ph-img{width:60mm;height:40mm;display:block;margin:0 auto;border-radius:1mm;object-fit:cover}
-#pages.hide-dh .pg-dh,#pages.hide-dk .pg-dk{display:none}
+#pages.hide-dh .pg-dh,#pages.hide-dk .pg-dk,#pages.hide-nl .pg-nl,#pages.hide-ln .pg-ln,#pages.hide-dy .pg-dy{display:none}
+/* laporan: daftar nilai, daftar nama (keterangan), dokumentasi harian */
+.pg-lap{font-family:Calibri,Carlito,"Liberation Sans Narrow","Arial Narrow",Arial,sans-serif;color:#000;font-size:11pt}
+.pg-lap .lp-h{text-align:center;font-weight:700;font-size:14pt;line-height:1.3}
+.pg-lap .lp-h.s3{font-size:13pt}
+.pg-lap .lp-h small{font-size:10pt;font-weight:400}
+.pg-lap .lp-h.d{font-size:14pt}
+.pg-lap .lp-gap{height:2.5mm}
+table.lap{width:190mm;margin-left:-8mm;border-collapse:collapse;table-layout:fixed}
+table.lap th{background:#ffff54;color:#000;font-size:11pt;font-weight:700;border:1px solid #000;padding:.2mm 1.5mm;text-align:center;line-height:1.15}
+table.lap.nl th{background:#ffd84a}
+table.lap td{border:1px solid #000;padding:.1mm 1.5mm;font-size:11pt;line-height:1.15;height:4.8mm;vertical-align:middle;word-wrap:break-word}
+table.lap td.c{text-align:center}
+table.lap td.k{text-align:center;color:#3b3b3b}
+table.lap tr.merah td{background:#da2f20;color:#000}
+.pg-lap .lp-dt{width:87mm;margin:4mm 0 0 auto;text-align:center}
+.pg-lap .lp-sgs{display:flex;margin-top:1mm}
+.pg-lap .lp-sg{width:87mm;text-align:center}
+.pg-lap .lp-sg .jab{min-height:11mm;line-height:1.3}
+.pg-lap .lp-sg .sp{height:19mm;display:flex;align-items:center;justify-content:center}
+.pg-lap .lp-sg .sp img{max-height:18mm;max-width:60mm}
+.pg-lap .lp-sg .nm{font-weight:700;text-decoration:underline;min-height:5mm}
+.pg-lap .lp-sg .nip{font-size:10.5pt}
+.pg-lap .lp-pn{margin-top:5mm;line-height:1.35}
+.pg-lap .lp-pn .e{padding-left:1.5mm}.pg-lap .lp-pn .e i{display:inline-block;width:6mm;font-style:normal}
+.pg-lap .lp-pn .t{padding-left:7.6mm}
+.pg-lap .lp-dir{width:88mm;margin:3mm 0 0 93mm;text-align:center;line-height:1.35}
+.pg-lap .lp-dir img{display:block;width:22mm;height:22mm;margin:1mm auto}
+.pg-lap .lp-dir .n{font-weight:700;text-decoration:underline}
+.pg-lap .lp-fo{height:94mm;display:flex;align-items:center;justify-content:center}
+.pg-lap .lp-fo img{width:141mm;height:94mm;object-fit:contain;display:block}
+.pg-lap .lp-fo .none{width:141mm;height:94mm;border:1px dashed #b8bcc4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:10pt;background:repeating-linear-gradient(45deg,#f6f7f8 0 10px,#eff0f2 10px 20px)}
+/* tab laporan */
+.lap-chk{display:flex;flex-direction:column;gap:7px;margin:10px 0 12px}
+.lap-chk label{display:flex;gap:8px;align-items:center;font-weight:600;cursor:pointer}
+.lap-box{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px;background:#fff}
+.lap-box[hidden]{display:none}
+.lap-box h3{font-size:14px;margin-bottom:8px}
+.lap-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lap-sig{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.lap-sig .thumb{width:96px;height:46px;border:1px dashed #cbd5e1;border-radius:6px;background:#fff center/contain no-repeat;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)}
+.lap-dl{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.lp-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.lp-r{display:grid;grid-template-columns:var(--cols,24px 1fr 64px 64px auto);gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
+.lp-r .no{color:var(--muted);font-size:12px;text-align:center}
+.lp-r .nm{min-width:0}
+.lp-r .nm b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-r .nm small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-r input[type=text]{width:100%;min-width:0;border:1px solid #d1d5db;border-radius:7px;padding:6px;font-size:13px;text-align:center}
+.lp-r .ck{display:flex;gap:10px;font-size:12px;font-weight:600}
+.lp-r .ck label{display:flex;gap:4px;align-items:center;cursor:pointer;white-space:nowrap}
+.lp-r.cx{background:#fef2f2}
+.lp-r .cxl{font-size:11px;font-weight:700;color:#b91c1c;text-align:right}
+.lp-day{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;margin-top:10px}
+.lp-day .h{font-weight:700;margin-bottom:6px;font-size:13px}
+.lp-day input[type=text]{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px}
+.lp-ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:8px 0}
+.lp-ph .t{position:relative;aspect-ratio:3/2;border-radius:6px;overflow:hidden;background:#eee}
+.lp-ph .t img{width:100%;height:100%;object-fit:cover;display:block}
+.lp-ph .t button{position:absolute;top:4px;right:4px;border:0;border-radius:999px;width:24px;height:24px;background:rgba(0,0,0,.62);color:#fff;font-size:12px}
+.lp-ph .t i{position:absolute;left:4px;bottom:4px;font-style:normal;font-size:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:4px;padding:0 5px}
+@media screen and (max-width:560px){
+  .lp-r{grid-template-columns:1fr 1fr!important}
+  .lp-r .no{display:none}.lp-r .nm,.lp-r .ck,.lp-r .cxl{grid-column:1/-1}
+  .lap-2{grid-template-columns:1fr}
+}
 .page,.page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 
 #measure{position:absolute;left:-10000px;top:0;visibility:hidden;pointer-events:none}
@@ -327,10 +392,12 @@ table.doku td.foto{text-align:center}
   .layout{grid-template-columns:1fr;padding:12px}
   .topbar{position:static}
   .tabs{top:0;padding:0}
-  .tabs button{flex:1;justify-content:center;padding:11px 4px;font-size:13px}
+  .tabs{overflow-x:auto}
+  .tabs button{flex:1 1 auto;min-width:0;justify-content:center;padding:10px 3px;font-size:12px;gap:3px;flex-wrap:wrap}
+  .tabs .badge{font-size:10px;padding:0 5px}
   .tabs [data-t="preview"]{display:inline-flex}
   .tabs .lg{display:none}
-  body[data-tab="data"] .preview-col,body[data-tab="ttd"] .preview-col,body[data-tab="foto"] .preview-col{display:none}
+  body[data-tab="data"] .preview-col,body[data-tab="ttd"] .preview-col,body[data-tab="foto"] .preview-col,body[data-tab="lap"] .preview-col{display:none}
   .f-grid{grid-template-columns:repeat(2,1fr)}
   body[data-tab="preview"] .form-col{display:none}
   .preview-col{position:static;height:auto;min-height:60vh}
@@ -365,6 +432,7 @@ table.doku td.foto{text-align:center}
   <button data-t="ttd">2. <span class="lg">Tanda Tangan Peserta</span><span class="sm-only">TTD</span> <span class="badge" id="tbTtd">0/0</span></button>
   <button data-t="foto">3. Foto<span class="lg"> Dokumentasi</span> <span class="badge" id="tbFoto">0/0</span></button>
   <button data-t="preview">4. Pratinjau</button>
+  <button data-t="lap">5. <span class="lg">Laporan Nilai</span><span class="sm-only">Laporan</span></button>
 </nav>
 
 <main class="layout">
@@ -475,6 +543,51 @@ table.doku td.foto{text-align:center}
       <div class="f-grid" id="fList"></div>
       <p class="hint" style="margin-top:12px">Ketuk kotak peserta untuk membuka kamera. Foto otomatis diberi watermark di pojok kanan bawah: <b>nama peserta, hari/tanggal &amp; jam, alamat</b> (dan koordinat GPS bila tersedia). <b>Mulai Foto Berurutan</b> memotret peserta yang belum ada foto satu per satu.</p>
     </section>
+    <section class="card" data-pane="lap" id="lapBox">
+      <h2><span class="n">📝</span> Laporan Nilai &amp; Dokumentasi Harian</h2>
+      <p class="hint">Centang lembar yang ingin dibuat. Lembar yang dicentang muncul di Pratinjau, Cetak/PDF, berkas Word, dan ikut tersimpan ke Google Drive. Data peserta (nama &amp; instansi) diambil otomatis dari tab 1.</p>
+      <div class="lap-chk">
+        <label><input type="checkbox" data-lpc="nilai"> Daftar Nilai Peserta (nilai UT &amp; UP, tanda tangan pengawas &amp; ahli)</label>
+        <label><input type="checkbox" data-lpc="hasil"> Daftar Nama Peserta (keterangan Lulus / Tidak Lulus / Cancel + penutup direktur)</label>
+        <label><input type="checkbox" data-lpc="harian"> Dokumentasi Harian (foto Day 1, Day 2, …)</label>
+      </div>
+      <div class="field"><label for="lpBatch">Batch (opsional, mis. A)</label><input id="lpBatch" data-lp="batch" placeholder="Kosongkan bila tidak ada batch" autocomplete="off"></div>
+      <div class="lap-dl" id="lpDl"></div>
+
+      <div class="lap-box" id="lpSecSign" hidden>
+        <h3>Penandatangan Daftar Nilai</h3>
+        <div class="lap-2">
+          <div class="field"><label for="lpKota">Kota</label><input id="lpKota" data-lp="nKota" placeholder="Contoh: Morowali" autocomplete="off"></div>
+          <div class="field"><label for="lpTgl">Tanggal tanda tangan</label><input id="lpTgl" data-lp="nTgl" type="date"><span class="hint">Kosong = hari terakhir kegiatan</span></div>
+        </div>
+        <div class="lap-2">
+          <div>
+            <div class="field"><label for="lpJ1">Jabatan kiri</label><textarea id="lpJ1" data-lp="s1.jab" rows="2"></textarea></div>
+            <div class="field"><label for="lpN1">Nama</label><input id="lpN1" data-lp="s1.nama" placeholder="Contoh: REPY, ST" autocomplete="off"></div>
+            <div class="field"><label for="lpP1">NIP</label><input id="lpP1" data-lp="s1.nip" placeholder="Contoh: 198512192015041009" autocomplete="off"></div>
+            <div class="lap-sig"><div class="thumb" id="lpT1"></div><button class="btn sm" data-act="sig1">✍️ Tanda tangan</button></div>
+          </div>
+          <div>
+            <div class="field"><label for="lpJ2">Jabatan kanan</label><textarea id="lpJ2" data-lp="s2.jab" rows="2"></textarea></div>
+            <div class="field"><label for="lpN2">Nama</label><input id="lpN2" data-lp="s2.nama" placeholder="Contoh: ADRIAH ANUGERAH, SE" autocomplete="off"></div>
+            <div class="lap-sig"><div class="thumb" id="lpT2"></div><button class="btn sm" data-act="sig2">✍️ Tanda tangan</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lap-box" id="lpSecPes" hidden>
+        <h3>Nilai &amp; Kelulusan Peserta</h3>
+        <div class="hint" id="lpPesHint"></div>
+        <div style="margin-top:8px"><button class="btn sm" id="lpAllLulus" type="button">✔ Tandai semua Lulus</button></div>
+        <div class="lp-list" id="lpList"></div>
+      </div>
+
+      <div class="lap-box" id="lpSecHari" hidden>
+        <h3>Dokumentasi Harian</h3>
+        <div class="hint">Isi materi tiap hari lalu ambil foto dengan kamera aplikasi. Foto diberi watermark (hari, tanggal, jam, alamat) tanpa nama peserta. Tiap halaman memuat 2 foto.</div>
+        <div id="lpDays"></div>
+      </div>
+    </section>
   </div>
 
   <!-- ================= PREVIEW ================= -->
@@ -483,6 +596,9 @@ table.doku td.foto{text-align:center}
       <b>Pratinjau</b>
       <label><input type="checkbox" id="cDh" checked> Daftar Hadir</label>
       <label><input type="checkbox" id="cDk" checked> Dokumentasi</label>
+      <label hidden><input type="checkbox" id="cNl" checked> Daftar Nilai</label>
+      <label hidden><input type="checkbox" id="cLn" checked> Daftar Nama</label>
+      <label hidden><input type="checkbox" id="cDy" checked> Dok. Harian</label>
       <span class="grow"></span>
       <span class="hint" id="pgInfo"></span>
       <button class="btn sm" id="btnSig2">✍️ TTD Penyelenggara</button>
@@ -591,12 +707,27 @@ const DB_NAME = "lpmi-daftar-hadir", STORE = "kv", OLD_KEY = "state-v1", IDX = "
 
 /* ---------- state ---------- */
 const today = (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date());
+/* ---------- laporan: nilai, kelulusan, dokumentasi harian ---------- */
+const lapDefault = () => ({
+  nilai: false, hasil: false, harian: false, batch: "", nKota: "", nTgl: "",
+  s1: { jab: "PENGAWAS KETENAGAKERJAAN\nSULAWESI TENGAH", nama: "", nip: "", ttd: "" },
+  s2: { jab: "AHLI PENANGGULANGAN KEBAKARAN", nama: "", ttd: "" },
+  hari: {}
+});
+const lapNorm = l => {
+  const b = lapDefault(); l = l && typeof l === "object" ? l : {};
+  const hari = {};
+  Object.keys(l.hari || {}).forEach(k => { const h = l.hari[k] || {}; hari[k] = { materi: String(h.materi || ""), fotos: (Array.isArray(h.fotos) ? h.fotos : []).filter(x => typeof x === "string" && x) }; });
+  const s = (x, d) => { const o = { ...d, ...(x && typeof x === "object" ? x : {}) }; Object.keys(d).forEach(k => { o[k] = String(o[k] == null ? "" : o[k]); }); return o; };
+  return { nilai: !!l.nilai, hasil: !!l.hasil, harian: !!l.harian, batch: String(l.batch || ""), nKota: String(l.nKota || ""), nTgl: String(l.nTgl || ""), s1: s(l.s1, b.s1), s2: s(l.s2, b.s2), hari };
+};
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
   acara: { kegiatan: "", tanggal: today, tanggal2: "", hari: [today], jamMulai: "08:00", jamSelesai: "16:00", zona: "WIB",
            tempat: "", narasumber: "", damkar: false, kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
   peserta: [],
   wm: { alamat: "", auto: true, lat: null, lng: null },
+  lap: lapDefault(),
   sync: { h: {}, v: 0, sv: 0, at: 0 }
 });
 let S = blank();
@@ -641,7 +772,7 @@ function migTtd(d) {
   return (d.peserta || []).map(p => {
     const t = {}, src = p.ttd && typeof p.ttd === "object" ? p.ttd : {};
     Object.keys(src).forEach(k => { const m = /^h(\d+)$/.exec(k); const key = m ? old[+m[1] - 1] : k; if (key && src[k]) t[key] = src[k]; });
-    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, batal: !!p.batal, remedial: !!p.remedial && !p.batal };
+    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: String(p.ut || ""), up: String(p.up || ""), hasil: p.hasil === "lulus" || p.hasil === "tidak" ? p.hasil : "" };
   });
 }
 const normalize = d => {
@@ -650,7 +781,7 @@ const normalize = d => {
     id: d.id || b.id, created: d.created || Date.now(),
     acara: migAcara({ ...b.acara, ...(d.acara || {}) }, !!(d.acara && Array.isArray(d.acara.hari))),
     peserta: migTtd(d),
-    wm: { ...b.wm, ...(d.wm || {}) }, pic: d.pic || null,
+    wm: { ...b.wm, ...(d.wm || {}) }, lap: lapNorm(d.lap), pic: d.pic || null,
     sync: { ...b.sync, ...(d.sync || {}), h: { ...((d.sync && d.sync.h) || {}) } }
   };
 };
@@ -757,6 +888,29 @@ function hariList(a) {
   return out;
 }
 const hariPendek = iso => { const d = toD(iso); return d ? d.getDate() + "/" + (d.getMonth() + 1) + "/" + String(d.getFullYear()).slice(2) : ""; };
+// teks judul & tanggal lembar laporan (dipakai pratinjau dan Word)
+const BLN_UP = i => BULAN[i].toUpperCase();
+function rentangUp(days) { // "20 – 22 AGUSTUS 2026"
+  const ds = days.map(toD).filter(Boolean); if (!ds.length) return "";
+  const s = ds[0], e = ds[ds.length - 1];
+  if (+s === +e) return `${s.getDate()} ${BLN_UP(s.getMonth())} ${s.getFullYear()}`;
+  if (s.getFullYear() !== e.getFullYear()) return `${s.getDate()} ${BLN_UP(s.getMonth())} ${s.getFullYear()} – ${e.getDate()} ${BLN_UP(e.getMonth())} ${e.getFullYear()}`;
+  if (s.getMonth() !== e.getMonth()) return `${s.getDate()} ${BLN_UP(s.getMonth())} – ${e.getDate()} ${BLN_UP(e.getMonth())} ${e.getFullYear()}`;
+  return `${s.getDate()} – ${e.getDate()} ${BLN_UP(e.getMonth())} ${e.getFullYear()}`;
+}
+function lapTexts(ev) {
+  const a = ev.acara, L = ev.lap || lapDefault(), days = hariList(a).filter(Boolean);
+  const kota = (L.nKota || a.kota || "").trim(), iso = L.nTgl || days[days.length - 1] || "", d = toD(iso);
+  const tglTtd = d ? `${new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(d).toLowerCase()} ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}` : "";
+  const batch = (L.batch || "").trim().toUpperCase();
+  return {
+    keg: (a.kegiatan || "").trim().toUpperCase(),
+    tgl1: (days.length ? hariTanggal(a, days).toUpperCase().replace(/ – /g, "-") + ` (${days.length} HARI)` : "") + (batch ? ` (${batch})` : ""),
+    rentang: rentangUp(days), batch,
+    ttd: `${kota}${kota && tglTtd ? ", " : ""}${tglTtd}`,
+    days: days.map((iso, i) => { const x = toD(iso); return { iso, title: `DAY ${i + 1} (${x.getDate()} ${BLN_UP(x.getMonth())} ${x.getFullYear()})` }; })
+  };
+}
 
 function renderPages() {
   const a = S.acara;
@@ -795,8 +949,8 @@ function renderPages() {
       ${c.length ? tbl(c.map((p, k) => rowHtml(p, start + k + 1)).join("")) : (pi ? "" : tbl(`<tr><td colspan="${nCol}" style="text-align:center;color:#999">Belum ada peserta</td></tr>`))}
       ${withSign ? sign : ""}`;
   const meas = measurer();
-  const fits = body => {
-    meas.innerHTML = `<section class="page"><div class="content">${body}</div></section>`;
+  const fits = (body, cls) => {
+    meas.innerHTML = `<section class="page ${cls || ""}"><div class="content">${body}</div></section>`;
     const c = meas.querySelector(".content"), last = c.lastElementChild;
     return !last || last.getBoundingClientRect().bottom <= c.getBoundingClientRect().bottom + 0.5;
   };
@@ -837,9 +991,62 @@ function renderPages() {
       <table class="grid doku${dkOn ? " dk" : ""}"><thead><tr><th style="width:${wd[0]}mm">No</th><th style="width:${wd[1]}mm">Nama Peserta</th><th style="width:${wd[2]}mm">Instansi / Perusahaan</th>${dkOn ? "<th>Foto 1</th><th>Foto 2</th>" : "<th>Foto</th>"}</tr></thead><tbody>${tr}</tbody></table>`, "pg-dk");
   });
 
+
+  // --- lembar laporan: Daftar Nilai, Daftar Nama (keterangan), Dokumentasi Harian
+  const L = S.lap, LT = lapTexts(S), lpPeserta = S.peserta.filter(p => (p.nama || "").trim());
+  const up = s => esc(String(s || "").toUpperCase());
+  const lapChunk = (rows, bodyFn) => {
+    const chs = []; let cur = [], st = 0;
+    for (const r of rows) {
+      cur.push(r);
+      if (cur.length > 1 && !fits(bodyFn(cur, chs.length, st, false), "pg-lap")) { cur.pop(); chs.push(cur); st += cur.length; cur = [r]; }
+    }
+    chs.push(cur);
+    const li = chs.length - 1, ls = rows.length - chs[li].length, moved = [];
+    while (chs[li].length > 1 && !fits(bodyFn(chs[li], li, ls, true), "pg-lap")) moved.unshift(chs[li].pop());
+    if (moved.length) chs.push(moved);
+    return chs;
+  };
+  const colg = W => `<colgroup>${W.map(w => `<col style="width:${w}mm">`).join("")}</colgroup>`;
+  const empty = n => `<tr><td colspan="${n}" class="c" style="color:#999">Belum ada peserta</td></tr>`;
+  let nNl = 0, nLn = 0, nDy = 0;
+  if (L.nilai) {
+    const rows = lpPeserta.filter(p => !p.batal);
+    const tbl = (c, st) => `<table class="lap nl">${colg([10, 51, 86, 21.5, 21.5])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UT</th><th>NILAI UP</th></tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td></tr>`).join("") || empty(5)}</tbody></table>`;
+    const sg = s => `<div class="lp-sg"><div class="jab">${esc(s.jab || "").replace(/\n/g, "<br>")}</div><div class="sp">${s.ttd ? `<img src="${s.ttd}" alt="">` : ""}</div><div class="nm">${esc(s.nama || "") || "&nbsp;"}</div>${s.nip ? `<div class="nip">NIP. ${esc(s.nip)}</div>` : ""}</div>`;
+    const head = pi => pi ? `<div class="lp-h">DAFTAR NILAI PESERTA <small>(lanjutan)</small></div><div class="lp-gap"></div>`
+      : `<div class="lp-h">DAFTAR NILAI PESERTA</div><div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.tgl1)}</div><div class="lp-gap"></div>`;
+    const bodyN = (c, pi, st, tail) => head(pi) + tbl(c, st) + (tail ? `<div class="lp-dt">${esc(LT.ttd) || "&nbsp;"}</div><div class="lp-sgs">${sg(L.s1)}${sg(L.s2)}</div>` : "");
+    const chs = lapChunk(rows, bodyN); let n0 = 0;
+    chs.forEach((c, pi) => { html += page(bodyN(c, pi, n0, pi === chs.length - 1), "pg-lap pg-nl"); n0 += c.length; });
+    nNl = chs.length;
+  }
+  if (L.hasil) {
+    const ket = p => p.batal ? ["CANCEL", 1] : p.hasil === "tidak" ? ["TIDAK LULUS", 1] : p.hasil === "lulus" ? ["LULUS", 0] : ["", 0];
+    const tbl = (c, st) => `<table class="lap">${colg([10.5, 64, 89, 26.5])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>KETERANGAN</th></tr></thead><tbody>${c.map((p, k) => { const [t, red] = ket(p); return `<tr${red ? ' class="merah"' : ""}><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td class="c">${up(p.instansi)}</td><td class="k">${t}</td></tr>`; }).join("") || empty(4)}</tbody></table>`;
+    const tail = `<div class="lp-pn"><div class="e"><i>E.</i>PENUTUP</div><div class="t">Demikian Laporan ini kami sampaikan dengan data yang sebenar benarnya</div></div><div class="lp-dir"><div>HORMAT KAMI,</div><div>LINTAS PENGEMBANGAN MANAJEMEN INDONESIA</div><img src="${LAP_QR}" alt=""><div class="n">CHRISTIEN CHANDRA PANCA</div><div>DIREKTUR UTAMA</div></div>`;
+    const head = pi => `<div class="lp-h">DAFTAR NAMA PESERTA ${esc(LT.keg)}${pi ? " <small>(lanjutan)</small>" : ""}</div>${pi ? "" : `<div class="lp-h">${esc((LT.batch ? `(BATCH ${LT.batch}) ` : "") + LT.rentang)}</div>`}<div class="lp-gap"></div>`;
+    const bodyL = (c, pi, st, t) => head(pi) + tbl(c, st) + (t ? tail : "");
+    const chs = lapChunk(lpPeserta, bodyL); let n0 = 0;
+    chs.forEach((c, pi) => { html += page(bodyL(c, pi, n0, pi === chs.length - 1), "pg-lap pg-ln"); n0 += c.length; });
+    nLn = chs.length;
+  }
+  if (L.harian) {
+    LT.days.forEach(({ iso, title }) => {
+      const h = L.hari[iso] || { materi: "", fotos: [] }, fs = h.fotos || [], np = Math.max(1, Math.ceil(fs.length / 2));
+      for (let pg = 0; pg < np; pg++) {
+        const slot = k => { const u = fs[pg * 2 + k]; return `<div class="lp-fo">${u ? `<img src="${u}" alt="">` : (!fs.length ? `<div class="none">${CAM}<span>Belum ada foto</span></div>` : "")}</div>`; };
+        html += page(`<div class="lp-h">DOKUMENTASI ${esc(LT.keg)}</div><div class="lp-h">${esc(LT.rentang)}${LT.batch ? ` (BATCH ${esc(LT.batch)})` : ""}</div><div class="lp-gap"></div><div class="lp-h d">${esc(title)}</div><div class="lp-h d">MATERI${h.materi ? "&nbsp; " + up(h.materi) : ""}</div><div class="lp-gap"></div>${slot(0)}${slot(1)}`, "pg-lap pg-dy");
+        nDy++;
+      }
+    });
+  }
+  meas.innerHTML = "";
+  [["Nl", nNl], ["Ln", nLn], ["Dy", nDy]].forEach(([k, n]) => { const lb = $("#c" + k).closest("label"); if (lb) lb.hidden = !n; });
+
   $("#pages").innerHTML = html;
   const nd = ch.length, nk = dch.length, noFoto = dk.filter(p => !p.batal && !fotoOk(p, dkOn)).length;
-  $("#pgInfo").textContent = `${nd} hal. daftar hadir · ${nk} hal. dokumentasi${dk.length && noFoto ? ` · ${noFoto} peserta belum ada foto` : ""}`;
+  $("#pgInfo").textContent = `${nd} hal. daftar hadir · ${nk} hal. dokumentasi${dk.length && noFoto ? ` · ${noFoto} peserta belum ada foto` : ""}${nNl + nLn + nDy ? ` · ${nNl + nLn + nDy} hal. laporan` : ""}`;
   fitPreview();
 }
 let rT = null;
@@ -857,6 +1064,7 @@ window.addEventListener("resize", fitPreview);
 function renderList() {
   const el = $("#pList");
   $("#pCount").textContent = S.peserta.length ? `(${S.peserta.length})` : "";
+  renderLap();
   if (!S.peserta.length) { el.innerHTML = `<div class="empty">Belum ada peserta. Klik <b>+ Tambah Peserta</b> atau <b>Tempel dari Excel</b>.</div>`; return; }
   el.innerHTML = S.peserta.map((p, i) => `
     <div class="p-row" data-id="${p.id}">
@@ -996,7 +1204,7 @@ function drawWM(ctx, W, H, info) {
   const spec = [];
   const add = (t, size, bold, color) => spec.push({ t, size: Math.round(fs * size), bold, color });
   ctx.font = `700 ${Math.round(fs * 1.15)}px ${FONT}`;
-  wrapText(ctx, info.nama || "-", maxW).forEach(t => add(t, 1.15, true, "#ffffff"));
+  if (!info.noNama) wrapText(ctx, info.nama || "-", maxW).forEach(t => add(t, 1.15, true, "#ffffff"));
   add(teksWaktu(info.waktu), 0.9, false, "#ffd8a8");
   ctx.font = `400 ${Math.round(fs * 0.85)}px ${FONT}`;
   wrapText(ctx, info.alamat, maxW).slice(0, 4).forEach(t => add(t, 0.85, false, "#ffffff"));
@@ -1022,15 +1230,25 @@ function drawWM(ctx, W, H, info) {
 
 /* ---------- kamera ---------- */
 const Cam = {
-  id: null, slot: "foto", queue: false, stream: null, facing: "environment", shot: null, tick: null,
+  id: null, slot: "foto", queue: false, mode: "peserta", day: "", stream: null, facing: "environment", shot: null, tick: null,
   person() { return S.peserta.find(p => p.id === this.id); },
   nextEmpty() { // foto berikutnya yang masih kosong (peserta berikutnya; pada mode Damkar: foto 1 lalu foto 2)
     const all = fotoList(), seq = []; all.forEach(p => fotoKeys().forEach(k => seq.push({ id: p.id, k })));
     const i = seq.findIndex(t => t.id === this.id && t.k === this.slot), need = t => !S.peserta.find(p => p.id === t.id)[t.k];
     return seq.slice(i + 1).find(need) || seq.slice(0, Math.max(0, i)).find(need);
   },
+  async openHari(day) { // foto dokumentasi harian: watermark sama, tanpa nama peserta
+    this.mode = "hari"; this.day = day; this.id = null; this.queue = false; this.slot = "foto";
+    const n = hariList(S.acara).filter(Boolean).indexOf(day) + 1;
+    $("#cam").hidden = false; document.body.style.overflow = "hidden";
+    $("#camWho").textContent = `Dokumentasi Day ${n} · ${fmtTglPendek(day)}`;
+    $("#camLoc").textContent = "📍 " + wmAlamat();
+    this.live();
+    if (!S.wm.alamat && !Loc.busy) Loc.detect(true);
+    if (!this.stream) await this.start(); else this.drawLive();
+  },
   async open(id, queue, slot) {
-    this.id = id; this.queue = queue; this.slot = slot || "foto";
+    this.mode = "peserta"; this.id = id; this.queue = queue; this.slot = slot || "foto";
     const p = this.person(); if (!p) return;
     const all = fotoList();
     $("#cam").hidden = false; document.body.style.overflow = "hidden";
@@ -1066,13 +1284,14 @@ const Cam = {
     msg.innerHTML = `${text}<br><button class="btn primary" id="camNative">📷 Buka Aplikasi Kamera</button>`;
     $("#camNative").onclick = () => { $("#fileCam").value = ""; $("#fileCam").click(); };
   },
+  open_again(d) { this.openHari(d); },
   stopStream() { if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; } },
   close() {
     this.stopStream(); clearInterval(this.tick);
     $("#cam").hidden = true; document.body.style.overflow = "";
     $("#camVideo").srcObject = null; this.shot = null;
   },
-  info() { const p = this.person() || {}; return { nama: p.nama, waktu: new Date(), alamat: wmAlamat(), lat: S.wm.lat, lng: S.wm.lng }; },
+  info() { if (this.mode === "hari") return { nama: "", noNama: true, waktu: new Date(), alamat: wmAlamat(), lat: S.wm.lat, lng: S.wm.lng }; const p = this.person() || {}; return { nama: p.nama, waktu: new Date(), alamat: wmAlamat(), lat: S.wm.lat, lng: S.wm.lng }; },
   live() {
     this.shot = null;
     $("#camShot").hidden = true; $("#camVideo").hidden = false; $("#camWm").hidden = false;
@@ -1112,11 +1331,18 @@ const Cam = {
     $("#camFrame").hidden = false; $("#camMsg").hidden = true;
     $("#camVideo").hidden = true; $("#camWm").hidden = true;
     $("#camBarLive").hidden = true; $("#camBarReview").hidden = false;
-    const nxt = this.nextEmpty();
-    $("#camSaveNext").hidden = !nxt;
-    $("#camSave").textContent = nxt ? "Simpan & Tutup" : "Simpan";
+    const hari = this.mode === "hari", nxt = hari ? null : this.nextEmpty();
+    $("#camSaveNext").hidden = hari ? false : !nxt;
+    $("#camSaveNext").innerHTML = hari ? "Simpan &amp; Foto Lagi →" : "Simpan &amp; Berikutnya →";
+    $("#camSave").textContent = hari ? "Simpan & Tutup" : nxt ? "Simpan & Tutup" : "Simpan";
   },
   save(goNext) {
+    if (this.mode === "hari") {
+      if (!this.shot) return;
+      const d = this.day; lapHari(d).fotos.push(this.shot); renderLap(); changed();
+      if (goNext) this.open_again(d); else { this.close(); toast("Foto dokumentasi harian tersimpan."); }
+      return;
+    }
     const p = this.person(); if (!p || !this.shot) return;
     p[this.slot] = this.shot; renderFoto(); changed();
     const nxt = goNext && this.nextEmpty();
@@ -1336,12 +1562,14 @@ $("#btnPaste").onclick = () => {
 /* ---------- preview toggles, tabs, print ---------- */
 $("#cDh").onchange = e => $("#pages").classList.toggle("hide-dh", !e.target.checked);
 $("#cDk").onchange = e => $("#pages").classList.toggle("hide-dk", !e.target.checked);
+[["Nl", "nl"], ["Ln", "ln"], ["Dy", "dy"]].forEach(([k, c]) => { $("#c" + k).onchange = e => $("#pages").classList.toggle("hide-" + c, !e.target.checked); });
 function setTab(t) {
   document.body.dataset.tab = t;
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.t === t));
   if (t === "preview") renderPages();
   if (t === "foto") renderFoto();
   if (t === "ttd") renderTtdTab();
+  if (t === "lap") renderLap();
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => setTab(b.dataset.t));
@@ -1349,7 +1577,7 @@ $("#btnToFoto").onclick = () => setTab("ttd");
 const setTb = () => document.documentElement.style.setProperty("--tb", $(".topbar").offsetHeight + "px");
 window.addEventListener("resize", () => { setTb(); renderSoon(); }); setTb();
 $("#btnPrint").onclick = () => {
-  if (!$("#cDh").checked && !$("#cDk").checked) { toast("Centang minimal satu: Daftar Hadir atau Dokumentasi."); return; }
+  if (![...document.querySelectorAll(".preview-head input[type=checkbox]")].some(c => c.checked && !c.closest("label").hidden)) { toast("Centang minimal satu lembar di Pratinjau."); return; }
   clearTimeout(rT); renderPages();
   const prevTitle = document.title;
   document.title = ("Daftar Hadir & Dokumentasi - " + (S.acara.kegiatan || "Kegiatan")).replace(/[\\/:*?"<>|]/g, "-");
@@ -1388,7 +1616,7 @@ $("#fileImport").addEventListener("change", async e => {
 /* ---------- terapkan state ke tampilan ---------- */
 function applyState() {
   T_DAY = null;
-  fillForm(); renderList(); renderPages(); renderTtd(); renderTtdTab();
+  fillForm(); renderList(); fillLap(); renderPages(); renderTtd(); renderTtdTab();
   $("#wmAlamat").value = S.wm.alamat || "";
   Loc.status(S.wm.alamat ? (S.wm.auto ? "Alamat dari GPS terakhir. Tekan 📍 untuk memperbarui." : "Alamat diisi manual.") : "Alamat belum diisi – akan dideteksi otomatis saat kamera dibuka.", "");
   $("#curName").textContent = S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
@@ -1612,6 +1840,91 @@ function openOrgSig() {
 }
 $("#btnSig1").onclick = $("#btnSig2").onclick = openOrgSig;
 $("#pages").addEventListener("click", e => { if (e.target.closest(".sign-block")) openOrgSig(); });
+
+/* ---------- tab 5: Laporan (Daftar Nilai, Daftar Nama, Dokumentasi Harian) ---------- */
+const lapHariOf = (ev, d) => (ev.lap.hari[d] = ev.lap.hari[d] || { materi: "", fotos: [] });
+const lapHari = d => lapHariOf(S, d);
+const lpGet = path => path.split(".").reduce((o, k) => (o || {})[k], S.lap);
+const lpSet = (path, val) => { const k = path.split("."); let o = S.lap; while (k.length > 1) o = o[k.shift()]; o[k[0]] = val; };
+function fillLap() {
+  document.querySelectorAll("#lapBox [data-lp]").forEach(el => { el.value = lpGet(el.dataset.lp) || ""; });
+  document.querySelectorAll("#lapBox [data-lpc]").forEach(el => { el.checked = !!S.lap[el.dataset.lpc]; });
+  renderLap();
+}
+function renderLap() {
+  if (!$("#lpList")) return;
+  const L = S.lap, days = hariList(S.acara).filter(Boolean), nilai = L.nilai, hasil = L.hasil;
+  $("#lpSecSign").hidden = !nilai; $("#lpSecPes").hidden = !(nilai || hasil); $("#lpSecHari").hidden = !L.harian;
+  [["#lpT1", L.s1.ttd], ["#lpT2", L.s2.ttd]].forEach(([s, u]) => { const t = $(s); t.style.backgroundImage = u ? `url('${u}')` : ""; t.textContent = u ? "" : "Belum ada"; });
+  $("#lpDl").innerHTML = [["nl", "Daftar Nilai", nilai], ["ln", "Daftar Nama", hasil], ["dy", "Dok. Harian", L.harian]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
+  const ps = S.peserta.filter(p => (p.nama || "").trim());
+  const list = $("#lpList");
+  list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["64px", "64px"] : []), ...(hasil ? ["auto"] : [])].join(" "));
+  $("#lpPesHint").textContent = nilai && hasil ? "Isi nilai UT & UP (bebas, mis. 83.3 atau X), lalu centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah)."
+    : nilai ? "Isi nilai UT & UP (bebas, mis. 83.3 atau X). Peserta Cancel tidak ikut di Daftar Nilai." : "Centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah). Kosong = keterangan dikosongkan.";
+  $("#lpAllLulus").hidden = !hasil;
+  list.innerHTML = ps.length ? ps.map((p, i) => {
+    const nm = `<div class="no">${i + 1}</div><div class="nm"><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small></div>`;
+    if (p.batal) return `<div class="lp-r cx" data-id="${p.id}">${nm}<div class="cxl" style="grid-column:3/-1">CANCEL</div></div>`;
+    return `<div class="lp-r" data-id="${p.id}">${nm}${nilai ? `<input type="text" data-f="ut" inputmode="decimal" placeholder="UT" value="${esc(p.ut)}" aria-label="Nilai UT ${esc(p.nama)}" autocomplete="off"><input type="text" data-f="up" inputmode="decimal" placeholder="UP" value="${esc(p.up)}" aria-label="Nilai UP ${esc(p.nama)}" autocomplete="off">` : ""}${hasil ? `<div class="ck"><label><input type="checkbox" data-f="lulus" ${p.hasil === "lulus" ? "checked" : ""}>Lulus</label><label><input type="checkbox" data-f="tidak" ${p.hasil === "tidak" ? "checked" : ""}>Tidak lulus</label></div>` : ""}</div>`;
+  }).join("") : `<div class="empty">Belum ada peserta. Isi dulu di tab 1.</div>`;
+  $("#lpDays").innerHTML = days.length ? days.map((d, i) => {
+    const h = L.hari[d] || { materi: "", fotos: [] };
+    return `<div class="lp-day" data-day="${d}"><div class="h">DAY ${i + 1} · ${esc(fmtTgl(d))}</div>
+      <input type="text" data-f="materi" placeholder="Materi hari ini (mis. Regulasi Online)" value="${esc(h.materi)}" autocomplete="off">
+      <div class="lp-ph">${(h.fotos || []).map((u, k) => `<div class="t"><img src="${u}" alt=""><i>${k + 1}</i><button type="button" data-act="hdel" data-i="${k}" title="Hapus foto">✕</button></div>`).join("")}</div>
+      <button class="btn sm primary" type="button" data-act="hfoto">📷 Tambah foto</button></div>`;
+  }).join("") : `<div class="empty">Isi tanggal kegiatan di tab 1 dulu.</div>`;
+}
+function lapSig(which) {
+  const s = S.lap[which];
+  Sig.open({
+    title: "✍️ Tanda Tangan", help: "Goreskan tanda tangan dengan jari, stylus, atau mouse. Hasilnya muncul di atas nama pada Daftar Nilai.",
+    who: s.nama || (s.jab || "").replace(/\n/g, " "), existing: s.ttd,
+    onSave: url => { s.ttd = url; renderLap(); toast("Tanda tangan tersimpan."); },
+    onRemove: () => { s.ttd = ""; renderLap(); toast("Tanda tangan dihapus."); }
+  });
+}
+async function unduhLap(kind) {
+  try {
+    toast("Menyusun berkas Word…");
+    const r = await Word.lapFile(kind, JSON.parse(JSON.stringify(S)), Cloud.docCtx(S));
+    const blob = new Blob([r.bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = r.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000); toast("Berkas Word siap: " + r.name);
+  } catch (e) { toast("Gagal menyusun Word: " + e.message); }
+}
+$("#lapBox").addEventListener("input", e => {
+  const el = e.target;
+  if (el.dataset.lp) { lpSet(el.dataset.lp, el.value); changed(); return; }
+  const row = el.closest(".lp-r"), day = el.closest(".lp-day");
+  if (row && (el.dataset.f === "ut" || el.dataset.f === "up")) { const p = S.peserta[idx(row.dataset.id)]; if (p) { p[el.dataset.f] = el.value.trim(); changed(); } }
+  else if (day && el.dataset.f === "materi") { lapHari(day.dataset.day).materi = el.value; changed(); }
+});
+$("#lapBox").addEventListener("change", e => {
+  const el = e.target;
+  if (el.dataset.lpc) { S.lap[el.dataset.lpc] = el.checked; renderLap(); changed(); return; }
+  const row = el.closest(".lp-r");
+  if (row && (el.dataset.f === "lulus" || el.dataset.f === "tidak")) {
+    const p = S.peserta[idx(row.dataset.id)]; if (!p) return;
+    p.hasil = el.checked ? (el.dataset.f === "lulus" ? "lulus" : "tidak") : "";
+    row.querySelectorAll("[data-f=lulus],[data-f=tidak]").forEach(c => { c.checked = c.dataset.f === "lulus" ? p.hasil === "lulus" : p.hasil === "tidak"; });
+    changed();
+  }
+});
+$("#lapBox").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "lpAllLulus") {
+    let n = 0; S.peserta.forEach(p => { if ((p.nama || "").trim() && !p.batal && !p.hasil) { p.hasil = "lulus"; n++; } });
+    renderLap(); changed(); toast(n ? `${n} peserta ditandai Lulus.` : "Semua peserta sudah punya keterangan."); return;
+  }
+  if (b.dataset.dl) { unduhLap(b.dataset.dl); return; }
+  const day = b.closest(".lp-day");
+  if (b.dataset.act === "sig1") lapSig("s1");
+  else if (b.dataset.act === "sig2") lapSig("s2");
+  else if (b.dataset.act === "hfoto" && day) Cam.openHari(day.dataset.day);
+  else if (b.dataset.act === "hdel" && day) { lapHari(day.dataset.day).fotos.splice(+b.dataset.i, 1); renderLap(); changed(); }
+});
 
 /* ---------- tanda tangan peserta (per hari) ---------- */
 let T_DAY = null; // indeks hari yang dipilih (0 = Hari 1)
@@ -2014,6 +2327,7 @@ const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g,
 const hhmm = d => `${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}`;
 
 /* ---------- Word (.docx) tanpa pustaka: Daftar Hadir + tanda tangan, Dokumentasi + foto ---------- */
+const LAP_QR = "data:image/png;base64,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"; // QR tanda tangan direktur (dipotong dari template, tetap)
 const Word = (() => {
   const enc = new TextEncoder();
   const MM = 36000, TW = 56.6929;               // EMU per mm, twips per mm
@@ -2088,11 +2402,11 @@ const Word = (() => {
       const y = bottom ? PAGE_H * MM - cy : 0;
       return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${y}</wp:posOffset></wp:positionV><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Kop ${id}"/><wp:cNvGraphicFramePr/>${gfx(rel(rels, im.name), cx, cy, id)}</wp:anchor></w:drawing></w:r>`;
     };
-    const run = (t, o = {}) => `<w:r><w:rPr>${o.b ? "<w:b/>" : ""}${o.strike ? "<w:strike/>" : ""}${o.color ? `<w:color w:val="${o.color}"/>` : ""}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ""}${o.u ? '<w:u w:val="single"/>' : ""}</w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
-    const par = (inner, o = {}) => `<w:p><w:pPr>${o.keep ? "<w:keepNext/>" : ""}<w:spacing w:before="${o.before || 0}" w:after="${o.after || 0}" w:line="${o.line || 240}" w:lineRule="auto"/>${o.ind ? `<w:ind w:left="${o.ind}"/>` : ""}<w:jc w:val="${o.jc || "left"}"/></w:pPr>${inner}</w:p>`;
+    const run = (t, o = {}) => `<w:r><w:rPr>${o.font ? `<w:rFonts w:ascii="${o.font}" w:hAnsi="${o.font}" w:cs="${o.font}"/>` : ""}${o.b ? "<w:b/>" : ""}${o.strike ? "<w:strike/>" : ""}${o.color ? `<w:color w:val="${o.color}"/>` : ""}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ""}${o.u ? '<w:u w:val="single"/>' : ""}</w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
+    const par = (inner, o = {}) => `<w:p><w:pPr>${o.keep ? "<w:keepNext/>" : ""}${o.pbb ? "<w:pageBreakBefore/>" : ""}<w:spacing w:before="${o.before || 0}" w:after="${o.after || 0}" w:line="${o.line || 240}" w:lineRule="auto"/>${o.ind || o.indR != null || o.hang ? `<w:ind w:left="${o.ind || 0}"${o.indR != null ? ` w:right="${o.indR}"` : ""}${o.hang ? ` w:hanging="${o.hang}"` : ""}/>` : ""}<w:jc w:val="${o.jc || "left"}"/></w:pPr>${inner}</w:p>`;
     const cell = (w, inner, o = {}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ""}${o.vm ? `<w:vMerge${o.vm === "restart" ? ' w:val="restart"' : ""}/>` : ""}${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ""}<w:vAlign w:val="center"/></w:tcPr>${inner || par("")}</w:tc>`;
     const row = (cells, o = {}) => `<w:tr><w:trPr><w:cantSplit/>${o.head ? "<w:tblHeader/>" : ""}${o.h ? `<w:trHeight w:val="${o.h}" w:hRule="atLeast"/>` : ""}</w:trPr>${cells}</w:tr>`;
-    const table = (widths, rows, o = {}) => `<w:tbl><w:tblPr><w:tblW w:w="${widths.reduce((a, b) => a + b, 0)}" w:type="dxa"/>${o.border === false ? "" : '<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:left w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:right w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="888888"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="888888"/></w:tblBorders>'}<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="${o.border === false ? 0 : 113}" w:type="dxa"/><w:right w:w="${o.border === false ? 0 : 113}" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>${rows}</w:tbl>`;
+    const table = (widths, rows, o = {}) => `<w:tbl><w:tblPr><w:tblW w:w="${widths.reduce((a, b) => a + b, 0)}" w:type="dxa"/>${o.ind ? `<w:tblInd w:w="${o.ind}" w:type="dxa"/>` : ""}${o.border === false ? "" : `<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:left w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:right w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/></w:tblBorders>`}<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="${o.border === false ? 0 : 113}" w:type="dxa"/><w:right w:w="${o.border === false ? 0 : 113}" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>${rows}</w:tbl>`;
 
     function build(body, headUrl, footUrl) {
       const hdr = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr ${NS}><w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>${kop(headUrl, false, relHead)}</w:p></w:hdr>`;
@@ -2192,6 +2506,85 @@ const Word = (() => {
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }
 
+
+  /* ---------- Laporan: Daftar Nilai, Daftar Nama (keterangan), Dokumentasi Harian ---------- */
+  const CAL = "Calibri", BLACK = "000000";
+  const lr = (D, t, o = {}) => D.run(t, { font: CAL, ...o });
+  const upc = s => String(s || "").toUpperCase();
+  const lapTitle = (D, t, o = {}) => D.par(lr(D, t, { b: 1, sz: o.sz || 28 }), { jc: "center", after: tw(o.after == null ? 1.5 : o.after), keep: 1 });
+  const lapTable = (D, Wm, rows) => D.table(Wm.map(tw), rows, { bc: BLACK, ind: -tw(8) });
+  const lapHead = (D, Wm, labels, fill) => D.row(labels.map((t, i) => D.cell(tw(Wm[i]), D.par(lr(D, t, { b: 1, sz: 22 }), { jc: "center" }), { fill })).join(""), { head: 1, h: tw(4.8) });
+  const lapEmpty = (D, Wm) => D.row(D.cell(tw(Wm.reduce((a, b) => a + b, 0)), D.par(lr(D, "Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: Wm.length }), { h: tw(4.8) });
+
+  function nilai(ev, ctx) {
+    const D = Doc(), L = ev.lap || {}, T = ctx.lap, Wm = [10, 51, 86, 21.5, 21.5], W = Wm.map(tw);
+    const rows = ev.peserta.filter(p => (p.nama || "").trim() && !p.batal);
+    const body = rows.map((p, i) => D.row(
+      D.cell(W[0], D.par(lr(D, i + 1), { jc: "center" })) + D.cell(W[1], D.par(lr(D, upc(p.nama)))) + D.cell(W[2], D.par(lr(D, upc(p.instansi))))
+      + D.cell(W[3], D.par(lr(D, p.ut || ""), { jc: "center" })) + D.cell(W[4], D.par(lr(D, p.up || ""), { jc: "center" })), { h: tw(4.8) })).join("") || lapEmpty(D, Wm);
+    const blk = s => {
+      const lines = String(s.jab || "").split("\n"); while (lines.length < 2) lines.push("");
+      return lines.map(l => D.par(l ? lr(D, l) : "", { jc: "center" })).join("")
+        + D.par(s.ttd ? D.inline(s.ttd, 56, 17) : "", { jc: "center", before: s.ttd ? 40 : tw(18), after: s.ttd ? 40 : 0 })
+        + D.par(s.nama ? lr(D, s.nama, { b: 1, u: 1 }) : "", { jc: "center" })
+        + (s.nip ? D.par(lr(D, "NIP. " + s.nip, { sz: 21 }), { jc: "center" }) : "");
+    };
+    const sign = D.table([tw(87), tw(87)], D.row(D.cell(tw(87), blk(L.s1 || {})) + D.cell(tw(87), blk(L.s2 || {}))), { border: false });
+    const xml = lapTitle(D, "DAFTAR NILAI PESERTA") + lapTitle(D, T.keg) + lapTitle(D, "TANGGAL : " + T.tgl1, { sz: 26, after: 3 })
+      + lapTable(D, Wm, lapHead(D, Wm, ["NO", "NAMA", "INSTANSI", "NILAI UT", "NILAI UP"], "FFD84A") + body)
+      + D.par(lr(D, T.ttd), { jc: "center", ind: tw(87), before: tw(4), keep: 1 }) + sign;
+    return D.build(xml, ctx.kopHead, ctx.kopFoot);
+  }
+
+  function hasil(ev, ctx) {
+    const D = Doc(), T = ctx.lap, Wm = [10.5, 64, 89, 26.5], W = Wm.map(tw), RED = "DA2F20";
+    const rows = ev.peserta.filter(p => (p.nama || "").trim());
+    const body = rows.map((p, i) => {
+      const red = p.batal || p.hasil === "tidak", t = p.batal ? "CANCEL" : p.hasil === "tidak" ? "TIDAK LULUS" : p.hasil === "lulus" ? "LULUS" : "", F = red ? { fill: RED } : {}, k = { color: red ? BLACK : "404040" };
+      return D.row(D.cell(W[0], D.par(lr(D, i + 1, { color: BLACK }), { jc: "center" }), F) + D.cell(W[1], D.par(lr(D, upc(p.nama), { color: BLACK })), F)
+        + D.cell(W[2], D.par(lr(D, upc(p.instansi), { color: BLACK }), { jc: "center" }), F) + D.cell(W[3], D.par(t ? lr(D, t, k) : "", { jc: "center" }), F), { h: tw(4.8) });
+    }).join("") || lapEmpty(D, Wm);
+    const fo = (inner, o = {}) => D.par(inner, { keep: 1, ...o });
+    const IND = tw(93), INDR = -tw(7), r = (t, o) => lr(D, t, o);
+    const xml = lapTitle(D, "DAFTAR NAMA PESERTA " + T.keg) + lapTitle(D, (T.batch ? `(BATCH ${T.batch}) ` : "") + T.rentang, { after: 3 })
+      + lapTable(D, Wm, lapHead(D, Wm, ["NO", "NAMA", "INSTANSI", "KETERANGAN"], "FFFF54") + body)
+      + fo(r("E.") + "<w:r><w:tab/></w:r>" + r("PENUTUP"), { before: tw(5), ind: tw(8.7), hang: tw(6.9) })
+      + fo(r("Demikian Laporan ini kami sampaikan dengan data yang sebenar benarnya"), { ind: tw(8.7) })
+      + fo(r("HORMAT KAMI,"), { jc: "center", ind: IND, indR: INDR, before: tw(3) })
+      + fo(r("LINTAS PENGEMBANGAN MANAJEMEN INDONESIA"), { jc: "center", ind: IND, indR: INDR })
+      + fo(ctx.qr ? D.inline(ctx.qr, 22, 22) : "", { jc: "center", ind: IND, indR: INDR, before: 30, after: 30 })
+      + fo(r("CHRISTIEN CHANDRA PANCA", { b: 1, u: 1 }), { jc: "center", ind: IND, indR: INDR })
+      + D.par(r("DIREKTUR UTAMA"), { jc: "center", ind: IND, indR: INDR });
+    return D.build(xml, ctx.kopHead, ctx.kopFoot);
+  }
+
+  function harian(ev, ctx) {
+    const D = Doc(), L = ev.lap || {}, T = ctx.lap; let xml = "", first = true;
+    T.days.forEach(({ iso, title }) => {
+      const h = (L.hari || {})[iso] || { materi: "", fotos: [] }, fs = h.fotos || [], np = Math.max(1, Math.ceil(fs.length / 2));
+      for (let pg = 0; pg < np; pg++) {
+        const t1 = D.par(lr(D, "DOKUMENTASI " + T.keg, { b: 1, sz: 28 }), { jc: "center", keep: 1, pbb: !first });
+        first = false;
+        xml += t1 + lapTitle(D, T.rentang + (T.batch ? ` (BATCH ${T.batch})` : ""), { after: 3 })
+          + lapTitle(D, title, { after: 0 }) + lapTitle(D, "MATERI" + (h.materi ? "  " + upc(h.materi) : ""), { after: 2 });
+        for (let k = 0; k < 2; k++) {
+          const u = fs[pg * 2 + k];
+          if (u) xml += D.par(D.inline(u, 141, 94), { jc: "center", before: 20, keep: k === 0 ? 1 : 0 });
+          else if (!fs.length && k === 0) xml += D.par(lr(D, "(Belum ada foto)", { color: "999999" }), { jc: "center", before: tw(40), after: tw(40) });
+        }
+      }
+    });
+    return D.build(xml || D.par(""), ctx.kopHead, ctx.kopFoot);
+  }
+  async function lapFile(kind, ev, ctx) {
+    const nm = safeName(ev.acara.kegiatan || "Kegiatan");
+    if (kind === "nl") return { name: `Daftar Nilai Peserta - ${nm}.docx`, bytes: nilai(ev, ctx) };
+    if (kind === "ln") return { name: `Daftar Nama Peserta - ${nm}.docx`, bytes: hasil(ev, ctx) };
+    const hari = {};
+    for (const d of Object.keys((ev.lap || {}).hari || {})) hari[d] = { ...ev.lap.hari[d], fotos: await Promise.all((ev.lap.hari[d].fotos || []).map(u => kecil(u, 960))) };
+    return { name: `Dokumentasi Harian - ${nm}.docx`, bytes: harian({ ...ev, lap: { ...ev.lap, hari } }, ctx) };
+  }
+
   /* kecilkan foto agar berkas Word ringan (±70 KB/foto); foto asli tetap utuh di folder "Foto Dokumentasi" */
   async function kecil(url, maxSide = 720) {
     try {
@@ -2215,6 +2608,11 @@ const Word = (() => {
     if (!hasP && !(ev.acara.kegiatan || "").trim()) return out;
     const add = async (key, name, bytes) => { const data = await toDataUrl(bytes); out.push({ key, path: [], name, data, hash: fnv(name + "|" + data.length + "|" + data.slice(-64) + "|" + crc32(bytes)) }); };
     await add("doc:dh", `Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx));
+    const LP = ev.lap || {};
+    for (const [flag, kind] of [[LP.nilai, "nl"], [LP.hasil, "ln"], [LP.harian, "dy"]]) {
+      if (!flag) continue;
+      const r = await lapFile(kind, ev, ctx); await add("doc:" + kind, r.name, r.bytes);
+    }
     if (ev.peserta.some(p => p.foto || p.foto2)) {
       const ev2 = { ...ev, peserta: [] };
       for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "", foto2: p.foto2 ? await kecil(p.foto2) : "" });
@@ -2222,7 +2620,7 @@ const Word = (() => {
     }
     return out;
   }
-  return { berkas, daftarHadir, dokumentasi, zip, crc32 };
+  return { berkas, daftarHadir, dokumentasi, nilai, hasil, harian, lapFile, kecil, zip, crc32 };
 })();
 
 const Cloud = {
@@ -2333,19 +2731,24 @@ const Cloud = {
       Object.keys(p.ttd || {}).forEach(k => { if (p.ttd[k]) add(`ttd:${p.id}:${k}`, ["Tanda Tangan Peserta", `${k} (${toD(k) ? new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(toD(k)) : ""})`], safeName(p.nama) + tag + ".png", p.ttd[k]); });
     });
     if (ev.acara.ttd) add("ttd-org", ["Tanda Tangan Penyelenggara"], safeName(ev.acara.namaTtd || ev.acara.jabatanTtd || "Penyelenggara") + ".png", ev.acara.ttd);
+    const LP = ev.lap || {};
+    if (LP.s1 && LP.s1.ttd) add("ttd-s1", ["Tanda Tangan Penyelenggara"], safeName("Pengawas - " + (LP.s1.nama || "TTD")) + ".png", LP.s1.ttd);
+    if (LP.s2 && LP.s2.ttd) add("ttd-s2", ["Tanda Tangan Penyelenggara"], safeName("Ahli - " + (LP.s2.nama || "TTD")) + ".png", LP.s2.ttd);
+    Object.keys(LP.hari || {}).sort().forEach(d => (LP.hari[d].fotos || []).forEach((u, i) => add(`hari:${d}:${i}`, ["Dokumentasi Harian", d], `Foto ${i + 1}.jpg`, u)));
     return out;
   },
   docCtx(ev) {
     const days = hariList(ev.acara);
-    return { days, pendek: hariPendek, tglTtd: fmtTglPendek(ev.acara.tglTtd), hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara), kopHead: KOP_HEAD, kopFoot: KOP_FOOT };
+    return { days, pendek: hariPendek, tglTtd: fmtTglPendek(ev.acara.tglTtd), hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara), kopHead: KOP_HEAD, kopFoot: KOP_FOOT, lap: lapTexts(ev), qr: LAP_QR };
   },
   payload(ev) {
     const a = { ...ev.acara, ttd: ev.acara.ttd ? "(file)" : "" };
-    const days = hariList(ev.acara);
+    const days = hariList(ev.acara), LP = ev.lap || lapDefault();
+    const lap = { ...LP, s1: { ...LP.s1, ttd: LP.s1.ttd ? "(file)" : "" }, s2: { ...LP.s2, ttd: LP.s2.ttd ? "(file)" : "" }, hari: Object.fromEntries(Object.entries(LP.hari || {}).map(([d, h]) => [d, { materi: h.materi || "", n: (h.fotos || []).length }])) };
     return {
-      id: ev.id, created: ev.created, acara: a, wm: ev.wm, days,
+      id: ev.id, created: ev.created, acara: a, wm: ev.wm, days, lap,
       hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara),
-      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: !!p.foto, foto2: !!p.foto2, batal: !!p.batal, remedial: !!p.remedial, ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
+      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: !!p.foto, foto2: !!p.foto2, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "", ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
     };
   },
   async sync(manual, evArg) {
@@ -2473,7 +2876,8 @@ const Cloud = {
       const ev = normalize({
         id: d.id, created: d.created, wm: d.wm,
         acara: { ...d.acara, ttd: "" },
-        peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: "", foto2: "", ttd: {}, batal: !!p.batal, remedial: !!p.remedial }))
+        lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [] }])) }))(d.lap || {}),
+        peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: "", foto2: "", ttd: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, hasil: p.hasil }))
       });
       const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); let i = 0; // berkas Word tidak perlu diunduh
       for (const k of keys) {
@@ -2484,7 +2888,11 @@ const Cloud = {
         else if (kind === "foto2" && p) p.foto2 = f.dataUrl;
         else if (kind === "ttd" && p) p.ttd[day] = f.dataUrl;
         else if (kind === "ttd-org") ev.acara.ttd = f.dataUrl;
+        else if (kind === "ttd-s1") ev.lap.s1.ttd = f.dataUrl;
+        else if (kind === "ttd-s2") ev.lap.s2.ttd = f.dataUrl;
+        else if (kind === "hari") { const h = (ev.lap.hari[pid] = ev.lap.hari[pid] || { materi: "", fotos: [] }); h.fotos[+day] = f.dataUrl; }
       }
+      Object.values(ev.lap.hari).forEach(h => { h.fotos = h.fotos.filter(Boolean); });
       ev.sync = { h: {}, v: 0, sv: 0, at: Date.now(), folderUrl: r.folderUrl || "" };
       this.files(ev).forEach(f => ev.sync.h[f.key] = f.hash);
       await flush();
@@ -2577,7 +2985,8 @@ const Pic = {
     const a = ev.acara, hari = hariList(a).filter(Boolean);
     return {
       nama: (a.kegiatan || "").trim(), tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
-      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", batal: !!p.batal, remedial: !!p.remedial && !p.batal })), dibuat: ev.created
+      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" })), dibuat: ev.created,
+      lap: { nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
     };
   },
   async flush() {
@@ -2624,7 +3033,7 @@ const Pic = {
         const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid));
         const n = this.merge(ev, all[kid], media, upd);
         total += n;
-        if (kid === S.id) { if (n) changed(); else save(); renderTtdTab(); renderFoto(); renderTtd(); }
+        if (kid === S.id) { if (n) changed(); else save(); renderTtdTab(); renderFoto(); renderTtd(); if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest("#lapBox")) fillLap(); }
         else {
           if (n) ev.sync.v = (ev.sync.v || 0) + 1;
           await idbPut("event:" + kid, JSON.parse(JSON.stringify(ev)));
@@ -2653,13 +3062,36 @@ const Pic = {
           if (!!p.batal !== b) { p.batal = b; n++; } if (!!p.remedial !== nr) { p.remedial = nr; n++; }
         });
       }
+      { // nilai UT/UP & keterangan lulus dari PIC (nilai kosong yang ditulis PIC ikut menimpa)
+        Object.entries(h.nilai || {}).forEach(([pid, x]) => { const p = by.get(pid); if (!p || !x) return; ["ut", "up"].forEach(k => { if (k in x && String(x[k] || "") !== (p[k] || "")) { p[k] = String(x[k] || ""); n++; } }); });
+        Object.entries(h.kel || {}).forEach(([pid, x]) => { const p = by.get(pid); if (!p) return; const nv = x === "lulus" || x === "tidak" ? x : ""; if ((p.hasil || "") !== nv) { p.hasil = nv; n++; } });
+        const x = h.lap || {}, LP = ev.lap;
+        const set = (o, k, val) => { if (val != null && String(val) !== (o[k] || "")) { o[k] = String(val); n++; } };
+        if (x.nKota != null) set(LP, "nKota", x.nKota);
+        ["s1", "s2"].forEach(w => { const y = x[w] || {}; ["nama", "nip"].forEach(k => { if (k in y && (w === "s1" || k === "nama")) set(LP[w], k, y[k]); }); });
+        Object.entries(x.hari || {}).forEach(([d, hh]) => { if (hari.includes(d) && hh && hh.materi != null) set(lapHariOf(ev, d), "materi", hh.materi); });
+      }
       Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) return; Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
       Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (p && u && p.foto !== u) { p.foto = u; n++; } });
       Object.keys(h.foto2 || {}).forEach(pid => { const p = by.get(pid), u = media["f2_" + pid]; if (p && u && p.foto2 !== u) { p.foto2 = u; n++; } });
       if (h.ttdPic) last = h;
     }
+    { // tanda tangan pengawas/ahli & foto dokumentasi harian dari PIC
+      const LP = ev.lap;
+      if (media.n1 && LP.s1.ttd !== media.n1) { LP.s1.ttd = media.n1; n++; }
+      if (media.n2 && LP.s2.ttd !== media.n2) { LP.s2.ttd = media.n2; n++; }
+      const hf = { ...(((ev.pic || {}).hf) || {}) };
+      hari.forEach(d => {
+        const keys = Object.keys(media).filter(k => k.startsWith(`d_${d}_`)).sort(), urls = keys.map(k => media[k]).filter(Boolean);
+        const prev = new Set(hf[d] || []), t = lapHariOf(ev, d), keep = (t.fotos || []).filter(u => !prev.has(fnv(u)));
+        const nf = keep.concat(urls.filter(u => !keep.includes(u)));
+        if (nf.length !== (t.fotos || []).length || nf.some((u, i) => u !== t.fotos[i])) { t.fotos = nf; n++; }
+        hf[d] = urls.map(fnv);
+      });
+      ev.pic = { merged: upd, hf };
+    }
     if (last && media.pic && a.ttd !== media.pic) { a.ttd = media.pic; a.namaTtd = last.ttdPicNama || last.picNama || a.namaTtd; a.jabatanTtd = "PIC Kegiatan"; if (hari.length) a.tglTtd = hari[hari.length - 1]; n++; }
-    ev.pic = { merged: upd };
+    ev.pic = { merged: upd, hf: (ev.pic || {}).hf || {} };
     return n;
   },
   async manual() {
