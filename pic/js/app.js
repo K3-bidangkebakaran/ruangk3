@@ -63,7 +63,7 @@ const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v15';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v16';
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrKeys = (h, k, d) => [d, ...[...new Set([...Object.keys(LAPK(k).nr || {}), ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { const m = NR_KEY.exec(x); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_')[1] - +q.split('_')[1])];
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
@@ -396,7 +396,7 @@ function render() {
       <div class="field"><input id="nilQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
       ${ln.hasil ? `<button type="button" class="btn" data-act="allulus">✔ Tandai semua Lulus</button>` : ''}
       <div class="nlist" id="nilList"></div>
-      <p class="hint">${ln.nilai ? 'Isi nilai UT & UP (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
+      <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
   } else if (P.screen === 'ttn') {
     const hh = hOf(kid), ln = LAPK(k), sg = (w, n, jab, nip) => `<div class="card2"><b>${esc(jab || '')}</b>
       <div class="field"><label for="in_${w}nama">Nama</label><input id="in_${w}nama" data-lap="${w}.nama" value="${esc(lapNama(hh, k, w, 'nama'))}" autocomplete="off" placeholder="Contoh: REPY, ST"></div>
@@ -446,7 +446,7 @@ function renderNil() {
   $('#nilList').innerHTML = rows.length ? rows.map((p, i) => {
     const cx = isBatal(h, p), kv = kelOf(h, p);
     return `<div class="nrow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><div class="who"><b>${esc(p.nama)}</b><small>${esc(p.instansi || '')}</small></div>${cx ? '<span class="pill bad">CANCEL</span>'
-      : `${ln.nilai ? `<div class="nin"><input inputmode="decimal" data-nf="ut" placeholder="UT" value="${esc(nilaiOf(h, p, 'ut'))}" aria-label="Nilai UT ${esc(p.nama)}" autocomplete="off"><input inputmode="decimal" data-nf="up" placeholder="UP" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai UP ${esc(p.nama)}" autocomplete="off"></div>` : ''}
+      : `${ln.nilai ? `<div class="nin"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'ut'))}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label></div>` : ''}
       ${ln.hasil ? `<div class="kel"><button type="button" class="ckb${kv === 'lulus' ? ' on' : ''}" data-act="kel" data-v="lulus" aria-pressed="${kv === 'lulus'}">${kv === 'lulus' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${kv === 'tidak' ? ' on' : ''}" data-act="kel" data-v="tidak" aria-pressed="${kv === 'tidak'}">${kv === 'tidak' ? '☑' : '☐'} Tidak lulus</button></div>` : ''}`}</div>`;
   }).join('') : `<div class="empty">${ps.length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
 }
@@ -514,12 +514,20 @@ function stamp(x, w, h, lines) {
   rows.forEach(([t, fs, b]) => { x.font = (b ? '700 ' : '') + fs + 'px Arial, sans-serif'; x.fillText(t, pad, y, maxW); y += fs + gap; });
 }
 const tidyPos = p => ({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() });
-function toJpeg(src, sw, sh, k, nama, pos, crop) { // src: video/image/bitmap; crop: potong tengah ke rasio 3:2 (foto dokumentasi harian)
-  let cx = 0, cy = 0, cw = sw, ch = sh;
-  if (crop) { if (sw / sh > 1.5) { cw = sh * 1.5; cx = (sw - cw) / 2; } else { ch = sw / 1.5; cy = (sh - ch) / 2; } }
+function toJpeg(src, sw, sh, k, nama, pos, crop, rot) { // src: video/image/bitmap; crop: potong tengah ke rasio 3:2; rot: putaran searah jarum jam (0/90/180/270) agar gambar tegak
+  rot = rot || 0;
+  const q = rot === 90 || rot === 270, uw = q ? sh : sw, uh = q ? sw : sh; // ukuran gambar setelah ditegakkan
+  let cx = 0, cy = 0, cw = uw, ch = uh;
+  if (crop) { if (uw / uh > 1.5) { cw = uh * 1.5; cx = (uw - cw) / 2; } else { ch = uw / 1.5; cy = (uh - ch) / 2; } }
   const s = Math.min(1, 1280 / Math.max(cw, ch)), w = Math.round(cw * s), h = Math.round(ch * s);
-  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(src, cx, cy, cw, ch, 0, 0, w, h);
-  stamp(x, w, h, wmLines(k, nama, pos, new Date()));
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  // (sx,sy) pada sumber -> (ux,uy) pada gambar tegak -> kanvas = s*(u - c)
+  if (rot === 90) x.setTransform(0, s, -s, 0, s * (sh - cx), -s * cy);
+  else if (rot === 270) x.setTransform(0, -s, s, 0, -s * cx, s * (sw - cy));
+  else if (rot === 180) x.setTransform(-s, 0, 0, -s, s * (sw - cx), s * (sh - cy));
+  else x.setTransform(s, 0, 0, s, -s * cx, -s * cy);
+  x.drawImage(src, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0);
+  stamp(x, w, h, wmLines(k, nama, pos, new Date())); // watermark selalu di tepi bawah gambar yang sudah tegak
   return c.toDataURL('image/jpeg', .72);
 }
 async function prosesFoto(file, k, nama, pos, crop) { // cadangan bila kamera langsung tidak bisa dipakai: kamera bawaan HP
@@ -536,11 +544,41 @@ async function prosesFoto(file, k, nama, pos, crop) { // cadangan bila kamera la
 }
 
 let CAM = null;
+/* Orientasi HP. Aplikasi terkunci tegak (portrait), jadi bila HP dipegang miring (landscape) gambar kamera ikut miring.
+   Sensor gerak dipakai untuk tahu arah "atas" sebenarnya; foto & pratinjau diputar supaya tegak dan watermark ada di tepi bawah gambar. */
+const MOT = { ax: 0, ay: 9.8, n: 0, rot: 0 };
+function motHandler(e) {
+  const g = e && e.accelerationIncludingGravity; if (!g || g.x == null || g.y == null) return;
+  MOT.ax = MOT.ax * .6 + g.x * .4; MOT.ay = MOT.ay * .6 + g.y * .4; MOT.n++;
+  const ax = MOT.ax, ay = MOT.ay;
+  if (Math.max(Math.abs(ax), Math.abs(ay)) < 5.5) return; // HP rebah/menghadap bawah: pertahankan arah terakhir
+  const r = Math.abs(ax) > Math.abs(ay) + 1.5 ? (ax > 0 ? 270 : 90) : (Math.abs(ay) > Math.abs(ax) + 1.5 ? 0 : MOT.rot);
+  if (r !== MOT.rot) { MOT.rot = r; if (CAM) camLayout(); }
+}
+function motStart() { try { window.addEventListener('devicemotion', motHandler); } catch (e) { } }
+function motStop() { try { window.removeEventListener('devicemotion', motHandler); } catch (e) { } }
+function uiLandscape() { return window.innerWidth > window.innerHeight; } // tampilan aplikasi sendiri (bukan orientasi layar fisik)
+function camRot() { // putaran yang perlu dikenakan pada bingkai video agar gambar tegak
+  if (!CAM) return 0; const v = $('#camV', CAM.el);
+  if (!v || !v.videoWidth || v.videoWidth >= v.videoHeight) return 0; // bingkai sudah landscape: sudah mengikuti HP
+  if (uiLandscape()) return 0; // layar aplikasi ikut berputar: bingkai sudah sesuai
+  return MOT.rot;
+}
+function camLayout() { // pratinjau langsung: putar video & letakkan watermark di tepi bawah gambar yang tegak
+  if (!CAM) return; const st = $('.camstage', CAM.el), v = $('#camV', CAM.el), wm = $('#camWm', CAM.el); if (!st || !v || !wm) return;
+  const rot = camRot(); CAM.rot = rot;
+  if (!rot || !v.videoWidth) { v.style.cssText = ''; wm.style.cssText = ''; return; }
+  const W = st.clientWidth, H = st.clientHeight, vw = v.videoWidth, vh = v.videoHeight;
+  const sc = Math.min(W / vh, H / vw), dw = vh * sc, dh = vw * sc; // ukuran gambar tegak di layar
+  v.style.cssText = `position:absolute;left:50%;top:50%;width:${dh}px;height:${dw}px;max-width:none;object-fit:fill;transform:translate(-50%,-50%) rotate(${rot === 90 ? 90 : rot === 270 ? -90 : 180}deg)${v.classList.contains('mirror') ? ' scaleX(-1)' : ''}`;
+  wm.style.cssText = `left:${(W - dw) / 2}px;right:auto;width:${dw}px;bottom:${(H - dh) / 2}px;font-size:${Math.max(10, Math.round(dw / 34))}px`;
+}
+window.addEventListener('resize', () => { if (CAM) camLayout(); });
 function camClose() {
   if (!CAM) return;
   try { CAM.stream && CAM.stream.getTracks().forEach(t => t.stop()); } catch (e) { }
   try { if (CAM.watch != null) navigator.geolocation.clearWatch(CAM.watch); } catch (e) { }
-  clearInterval(CAM.tick); clearTimeout(CAM.wait);
+  clearInterval(CAM.tick); clearTimeout(CAM.wait); motStop();
   CAM.el.remove(); CAM = null;
 }
 function camStatus() {
@@ -569,7 +607,8 @@ async function camStart() {
   try {
     CAM.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: CAM.facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
     v.srcObject = CAM.stream; v.classList.toggle('mirror', CAM.facing === 'user');
-    await v.play(); CAM.live = true; camStatus();
+    v.onloadedmetadata = camLayout; v.onresize = camLayout;
+    await v.play(); CAM.live = true; camStatus(); camLayout();
   } catch (e) {
     const n = (e && e.name) || '';
     camFallback(/NotAllowed|Security/.test(n) ? 'Izin kamera ditolak. Aktifkan izin Kamera untuk Portal PIC di pengaturan HP, lalu coba lagi.' : /NotFound|Overconstrained/.test(n) ? 'Kamera tidak ditemukan di perangkat ini.' : 'Kamera tidak bisa dibuka (' + (n || 'kesalahan') + '). Tutup aplikasi lain yang memakai kamera lalu coba lagi.');
@@ -593,7 +632,7 @@ function openCam(kid, pid, slot, hari) {
   document.body.appendChild(el);
   CAM = { el, kid, pid, k, hari: hari || '', slot: slot === 'foto2' ? 'foto2' : 'foto', nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
   camLocStart();
-  CAM.tick = setInterval(camWm, 1000); camWm(); camStatus(); camStart();
+  CAM.tick = setInterval(() => { camWm(); camLayout(); }, 1000); camWm(); camStatus(); motStart(); camStart();
 }
 function camLocStart() { // dua jalur: lokasi cepat (jaringan/Wi-Fi, berfungsi di dalam ruangan) + GPS akurat yang menyusul
   if (!CAM) return;
@@ -611,7 +650,7 @@ function camLocStart() { // dua jalur: lokasi cepat (jaringan/Wi-Fi, berfungsi d
 }
 function camShot() {
   const v = $('#camV', CAM.el); if (!v.videoWidth) return;
-  const url = toJpeg(v, v.videoWidth, v.videoHeight, CAM.k, CAM.nama, CAM.pos, !!CAM.hari);
+  const url = toJpeg(v, v.videoWidth, v.videoHeight, CAM.k, CAM.nama, CAM.pos, !!CAM.hari, camRot());
   if (!CAM.pos) toast('Foto ini belum memuat lokasi. Tekan Ulangi setelah lokasi terkunci.');
   CAM.review = url; v.pause();
   const im = $('#camImg', CAM.el); im.src = url; im.hidden = false; v.hidden = true; $('#camWm', CAM.el).hidden = true;
@@ -619,7 +658,7 @@ function camShot() {
 }
 function camRetake() {
   CAM.review = null; const v = $('#camV', CAM.el); v.hidden = false; v.play().catch(() => { });
-  $('#camImg', CAM.el).hidden = true; $('#camWm', CAM.el).hidden = false; $('#camLive', CAM.el).hidden = false; $('#camRev', CAM.el).hidden = true; camStatus();
+  $('#camImg', CAM.el).hidden = true; $('#camWm', CAM.el).hidden = false; $('#camLive', CAM.el).hidden = false; $('#camRev', CAM.el).hidden = true; camStatus(); camLayout();
 }
 function camSave(url) {
   const { kid, pid, slot, hari } = CAM, h = hOf(kid);

@@ -144,6 +144,7 @@ small{color:var(--muted)}
 .camstage [hidden]{display:none!important}
 .camwm{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);padding:8px 12px;font-size:12px;line-height:1.35;display:flex;flex-direction:column;pointer-events:none}
 .camwm b{font-size:15px}
+@media (orientation:landscape) and (max-height:520px){.cam{flex-direction:row}.camtop{flex-direction:column;justify-content:space-between;align-items:stretch;width:150px;flex:none;padding:calc(10px + env(safe-area-inset-top,0px)) 10px 10px}.camtop .camsel{text-align:center;font-size:12px}.cambar{flex:none;width:112px;min-height:0;padding:10px calc(10px + env(safe-area-inset-right,0px))}.camwm{font-size:11px;padding:6px 10px}.camwm b{font-size:13px}}
 .camfb{position:absolute;inset:0;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
 .camfb .btn{background:#222;color:#fff;border-color:#555}.camfb .btn.pri{background:var(--brand,#f6c800);color:#1e1a00;border-color:transparent}
 .cambar{display:flex;align-items:center;justify-content:center;padding:14px 12px calc(14px + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,.7);min-height:96px}
@@ -161,6 +162,7 @@ small{color:var(--muted)}
 .nrow .who{min-width:0}.nrow .who b{display:block;font-weight:600;overflow-wrap:anywhere}.nrow .who small{font-size:12px;color:var(--muted)}
 .nrow.cx .who small{color:#3b3b3b}
 .nin{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nin label{display:flex;flex-direction:column;gap:4px;min-width:0}.nin label span{font-size:12px;font-weight:600;color:var(--muted);line-height:1.2}
 .nin input{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;min-height:46px;width:100%;text-align:center;font-weight:700;font-size:16px}
 .kel{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ckb{min-height:46px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;font-size:14px}

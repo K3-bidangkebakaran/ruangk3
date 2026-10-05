@@ -358,6 +358,7 @@ table.lap tr.merah td{background:#da2f20;color:#000}
 .lp-r{display:grid;grid-template-columns:var(--cols,24px 1fr 64px 64px auto);gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
 .lp-r .no{color:var(--muted);font-size:12px;text-align:center}
 .lp-r .nm{min-width:0}
+.lp-r .lpn{display:flex;flex-direction:column;gap:2px;min-width:0}.lp-r .lpn span{font-size:10.5px;font-weight:600;color:var(--muted);line-height:1.15;text-align:center}
 .lp-r .nm b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp-r .nm small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp-r input[type=text]{width:100%;min-width:0;border:1px solid #d1d5db;border-radius:7px;padding:6px;font-size:13px;text-align:center}
@@ -558,7 +559,7 @@ table.lap tr.merah td{background:#da2f20;color:#000}
       <h2><span class="n">📝</span> Laporan Nilai &amp; Dokumentasi Harian</h2>
       <p class="hint">Centang lembar yang ingin dibuat. Lembar yang dicentang muncul di Pratinjau, Cetak/PDF, berkas Word, dan ikut tersimpan ke Google Drive. Data peserta (nama &amp; instansi) diambil otomatis dari tab 1.</p>
       <div class="lap-chk">
-        <label><input type="checkbox" data-lpc="nilai"> Daftar Nilai Peserta (nilai UT &amp; UP, tanda tangan pengawas &amp; ahli)</label>
+        <label><input type="checkbox" data-lpc="nilai"> Daftar Nilai Peserta (Nilai Ujian Teori &amp; Nilai Ujian Praktek, tanda tangan pengawas &amp; ahli)</label>
         <label><input type="checkbox" data-lpc="hasil"> Daftar Nama Peserta (keterangan Lulus / Tidak Lulus / Cancel + penutup direktur)</label>
         <label><input type="checkbox" data-lpc="harian"> Dokumentasi Harian (foto Day 1, Day 2, …)</label>
         <label><input type="checkbox" data-lpc="nara"> Absensi Narasumber (pilih narasumber, instansi &amp; materi otomatis, tanda tangan per hari)</label>
@@ -1066,7 +1067,7 @@ function renderPages() {
   let nNl = 0, nLn = 0, nDy = 0, nNr = 0;
   if (L.nilai) {
     const rows = lpPeserta.filter(p => !p.batal);
-    const tbl = (c, st) => `<table class="lap nl">${colg([10, 51, 86, 21.5, 21.5])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UT</th><th>NILAI UP</th></tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td></tr>`).join("") || empty(5)}</tbody></table>`;
+    const tbl = (c, st) => `<table class="lap nl">${colg([10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th></tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td></tr>`).join("") || empty(5)}</tbody></table>`;
     const sg = s => `<div class="lp-sg"><div class="jab">${esc(s.jab || "").replace(/\n/g, "<br>")}</div><div class="sp">${s.ttd ? `<img src="${s.ttd}" alt="">` : ""}</div><div class="nm">${esc(s.nama || "") || "&nbsp;"}</div>${s.nip ? `<div class="nip">NIP. ${esc(s.nip)}</div>` : ""}</div>`;
     const head = pi => pi ? `<div class="lp-h">DAFTAR NILAI PESERTA <small>(lanjutan)</small></div><div class="lp-gap"></div>`
       : `<div class="lp-h">DAFTAR NILAI PESERTA</div><div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.tgl1)}</div><div class="lp-gap"></div>`;
@@ -1927,14 +1928,14 @@ function renderLap() {
   $("#lpDl").innerHTML = [["nl", "Daftar Nilai", nilai], ["ln", "Daftar Nama", hasil], ["dy", "Dok. Harian", L.harian], ["nr", "Absensi Narasumber", L.nara]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
   const ps = S.peserta.filter(p => (p.nama || "").trim());
   const list = $("#lpList");
-  list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["64px", "64px"] : []), ...(hasil ? ["auto"] : [])].join(" "));
-  $("#lpPesHint").textContent = nilai && hasil ? "Isi nilai UT & UP (bebas, mis. 83.3 atau X), lalu centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah)."
-    : nilai ? "Isi nilai UT & UP (bebas, mis. 83.3 atau X). Peserta Cancel tidak ikut di Daftar Nilai." : "Centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah). Kosong = keterangan dikosongkan.";
+  list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["80px", "80px"] : []), ...(hasil ? ["auto"] : [])].join(" "));
+  $("#lpPesHint").textContent = nilai && hasil ? "Isi Nilai Ujian Teori & Nilai Ujian Praktek (bebas, mis. 83.3 atau X), lalu centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah)."
+    : nilai ? "Isi Nilai Ujian Teori & Nilai Ujian Praktek (bebas, mis. 83.3 atau X). Peserta Cancel tidak ikut di Daftar Nilai." : "Centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah). Kosong = keterangan dikosongkan.";
   $("#lpAllLulus").hidden = !hasil;
   list.innerHTML = ps.length ? ps.map((p, i) => {
     const nm = `<div class="no">${i + 1}</div><div class="nm"><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small></div>`;
     if (p.batal) return `<div class="lp-r cx" data-id="${p.id}">${nm}<div class="cxl" style="grid-column:3/-1">CANCEL</div></div>`;
-    return `<div class="lp-r" data-id="${p.id}">${nm}${nilai ? `<input type="text" data-f="ut" inputmode="decimal" placeholder="UT" value="${esc(p.ut)}" aria-label="Nilai UT ${esc(p.nama)}" autocomplete="off"><input type="text" data-f="up" inputmode="decimal" placeholder="UP" value="${esc(p.up)}" aria-label="Nilai UP ${esc(p.nama)}" autocomplete="off">` : ""}${hasil ? `<div class="ck"><label><input type="checkbox" data-f="lulus" ${p.hasil === "lulus" ? "checked" : ""}>Lulus</label><label><input type="checkbox" data-f="tidak" ${p.hasil === "tidak" ? "checked" : ""}>Tidak lulus</label></div>` : ""}</div>`;
+    return `<div class="lp-r" data-id="${p.id}">${nm}${nilai ? `<label class="lpn"><span>Nilai Ujian Teori</span><input type="text" data-f="ut" inputmode="decimal" placeholder="Nilai" value="${esc(p.ut)}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label class="lpn"><span>Nilai Ujian Praktek</span><input type="text" data-f="up" inputmode="decimal" placeholder="Nilai" value="${esc(p.up)}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label>` : ""}${hasil ? `<div class="ck"><label><input type="checkbox" data-f="lulus" ${p.hasil === "lulus" ? "checked" : ""}>Lulus</label><label><input type="checkbox" data-f="tidak" ${p.hasil === "tidak" ? "checked" : ""}>Tidak lulus</label></div>` : ""}</div>`;
   }).join("") : `<div class="empty">Belum ada peserta. Isi dulu di tab 1.</div>`;
   const nrCard = (d, i, key, n) => {
     const r = L.nr[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`;
@@ -2621,7 +2622,7 @@ const Word = (() => {
   const lapEmpty = (D, Wm) => D.row(D.cell(tw(Wm.reduce((a, b) => a + b, 0)), D.par(lr(D, "Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: Wm.length }), { h: tw(4.8) });
 
   function nilai(ev, ctx) {
-    const D = Doc(), L = ev.lap || {}, T = ctx.lap, Wm = [10, 51, 86, 21.5, 21.5], W = Wm.map(tw);
+    const D = Doc(), L = ev.lap || {}, T = ctx.lap, Wm = [10, 46, 64, 35, 35], W = Wm.map(tw);
     const rows = ev.peserta.filter(p => (p.nama || "").trim() && !p.batal);
     const body = rows.map((p, i) => D.row(
       D.cell(W[0], D.par(lr(D, i + 1), { jc: "center" })) + D.cell(W[1], D.par(lr(D, upc(p.nama)))) + D.cell(W[2], D.par(lr(D, upc(p.instansi))))
@@ -2635,7 +2636,7 @@ const Word = (() => {
     };
     const sign = D.table([tw(87), tw(87)], D.row(D.cell(tw(87), blk(L.s1 || {})) + D.cell(tw(87), blk(L.s2 || {}))), { border: false });
     const xml = lapTitle(D, "DAFTAR NILAI PESERTA") + lapTitle(D, T.keg) + lapTitle(D, "TANGGAL : " + T.tgl1, { sz: 26, after: 3 })
-      + lapTable(D, Wm, lapHead(D, Wm, ["NO", "NAMA", "INSTANSI", "NILAI UT", "NILAI UP"], "FFD84A") + body)
+      + lapTable(D, Wm, lapHead(D, Wm, ["NO", "NAMA", "INSTANSI", "NILAI UJIAN TEORI", "NILAI UJIAN PRAKTEK"], "FFD84A") + body)
       + D.par(lr(D, T.ttd), { jc: "center", ind: tw(87), before: tw(4), keep: 1 }) + sign;
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }
