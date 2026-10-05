@@ -304,7 +304,7 @@ table.doku td.inst{font-size:9.5pt}
 table.doku td.nama{font-weight:600;padding-left:3mm}
 table.doku td.foto{text-align:center}
 .ph{height:40mm;width:60mm;margin:0 auto;border-radius:1.5mm;background:repeating-linear-gradient(45deg,#f3f4f6 0 10px,#eceef1 10px 20px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:9pt}
-.ph-img{width:60mm;height:40mm;display:block;margin:0 auto;border-radius:1mm;object-fit:cover}
+.ph-img{width:60mm;height:40mm;display:block;margin:0 auto;border-radius:1mm;object-fit:contain}
 #pages.hide-dh .pg-dh,#pages.hide-dk .pg-dk,#pages.hide-nl .pg-nl,#pages.hide-ln .pg-ln,#pages.hide-dy .pg-dy,#pages.hide-nr .pg-nr{display:none}
 /* laporan: daftar nilai, daftar nama (keterangan), dokumentasi harian */
 .pg-lap{font-family:Calibri,Carlito,"Liberation Sans Narrow","Arial Narrow",Arial,sans-serif;color:#000;font-size:11pt}
@@ -342,7 +342,7 @@ table.lap tr.merah td{background:#da2f20;color:#000}
 .pg-lap .lp-dir img{display:block;width:22mm;height:22mm;margin:1mm auto}
 .pg-lap .lp-dir .n{font-weight:700;text-decoration:underline}
 .pg-lap .lp-fo{height:94mm;display:flex;align-items:center;justify-content:center}
-.pg-lap .lp-fo img{width:141mm;height:94mm;object-fit:contain;display:block}
+.pg-lap .lp-fo img{height:94mm;width:auto;max-width:160mm;object-fit:contain;display:block} /* 3:2 -> 141x94 mm, 16:9 (foto landscape) -> 160x90 mm, rasio asli terjaga */
 .pg-lap .lp-fo .none{width:141mm;height:94mm;border:1px dashed #b8bcc4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:10pt;background:repeating-linear-gradient(45deg,#f6f7f8 0 10px,#eff0f2 10px 20px)}
 /* tab laporan */
 .lap-chk{display:flex;flex-direction:column;gap:7px;margin:10px 0 12px}
@@ -2698,7 +2698,7 @@ const Word = (() => {
           + lapTitle(D, title, { after: 0 }) + lapTitle(D, "MATERI" + (h.materi ? "  " + upc(h.materi) : ""), { after: 2 });
         for (let k = 0; k < 2; k++) {
           const u = fs[pg * 2 + k];
-          if (u) xml += D.par(D.inline(u, 141, 94), { jc: "center", before: 20, keep: k === 0 ? 1 : 0 });
+          if (u) xml += D.par(D.inline(u, 160, 94), { jc: "center", before: 20, keep: k === 0 ? 1 : 0 });
           else if (!fs.length && k === 0) xml += D.par(lr(D, "(Belum ada foto)", { color: "999999" }), { jc: "center", before: tw(40), after: tw(40) });
         }
       }
