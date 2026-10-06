@@ -1,7 +1,8 @@
 # Aplikasi Riksa Uji Kebakaran (ruangk3.com/riksa/)
 
-Aplikasi lapangan untuk petugas riksa uji **APAR** (PER.04/MEN/1980) dan **instalasi hidran**
-(INS.11/M/BW/1997 butir IV.8). Satu berkas = satu perusahaan, berisi laporan APAR dan/atau hidran.
+Aplikasi lapangan untuk petugas riksa uji **APAR** (PER.04/MEN/1980), **instalasi hidran**
+(INS.11/M/BW/1997 butir IV.8) dan **Fire Alarm** (PER.02/MEN/1983, SNI 03-3985-2000).
+Satu berkas = satu perusahaan, berisi laporan APAR, hidran dan/atau Fire Alarm.
 Hasilnya file Word sesuai format laporan PJK3.
 
 ## Alur data
@@ -16,7 +17,7 @@ IndexedDB "riksa-uji-apar"   --Kirim-->   artifacts/k3-kebakaran-app-v5/public/d
                                            riksa_log/{pushId}        jejak aktivitas
 ```
 
-- `{id}` laporan = `<idBerkas>-apar` atau `<idBerkas>-hyd`. Kirim ulang menimpa laporan yang sama (revisi +1).
+- `{id}` laporan = `<idBerkas>-apar`, `<idBerkas>-hyd` atau `<idBerkas>-fa`. Kirim ulang menimpa laporan yang sama (revisi +1).
 - Tanpa sinyal, tombol **Kirim** memasukkan laporan ke antrean. Antrean terkirim otomatis saat sinyal
   kembali, saat aplikasi dibuka, dan setiap 5 menit.
 - Foto yang sudah terkirim dicatat per laporan, jadi tidak dikirim ulang.
@@ -39,6 +40,7 @@ IndexedDB "riksa-uji-apar"   --Kirim-->   artifacts/k3-kebakaran-app-v5/public/d
 | `js/panduan.js` | Teks petunjuk cara mengisi/memeriksa/menghitung tiap kolom & butir (tombol "Petunjuk" di editor) |
 | `js/report.js` | Generator Word laporan APAR (dipakai juga oleh panel admin) |
 | `js/hydrant-report.js` | Generator Word laporan hidran (dipakai juga oleh panel admin) |
+| `js/fire-alarm-report.js` | Generator Word laporan Fire Alarm + aturan penilaian otomatis zona, hitung baterai (dipakai juga oleh panel admin) |
 | `vendor/docx.iife.js` | Pustaka `docx` 9.7.1 (disimpan lokal supaya Word bisa dibuat offline) |
 | `sw.js`, `manifest.webmanifest`, `icons/` | PWA: bisa di-install & dibuka tanpa sinyal |
 

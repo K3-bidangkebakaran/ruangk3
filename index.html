@@ -2013,17 +2013,18 @@
                                 <button type="button" id="btn-riksa-salin-link" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Salin link aplikasi</button>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total laporan</p><p id="riksa-stat-total" class="text-2xl font-bold text-slate-900">0</p></div>
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">APAR</p><p id="riksa-stat-apar" class="text-2xl font-bold text-slate-900">0</p></div>
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hidran</p><p id="riksa-stat-hyd" class="text-2xl font-bold text-slate-900">0</p></div>
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Fire Alarm</p><p id="riksa-stat-fa" class="text-2xl font-bold text-slate-900">0</p></div>
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Masuk 7 hari terakhir</p><p id="riksa-stat-baru" class="text-2xl font-bold text-safety-600">0</p></div>
                         </div>
                     </div>
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                         <div class="flex flex-col md:flex-row gap-3 mb-4">
                             <input type="text" id="riksa-filter-cari" placeholder="Cari perusahaan, nomor laporan atau petugas…" class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
-                            <select id="riksa-filter-jenis" class="px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-white"><option value="">Semua jenis</option><option value="apar">APAR</option><option value="hyd">Hidran</option></select>
+                            <select id="riksa-filter-jenis" class="px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-white"><option value="">Semua jenis</option><option value="apar">APAR</option><option value="hyd">Hidran</option><option value="fa">Fire Alarm</option></select>
                             <select id="riksa-filter-petugas" class="px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-white"><option value="">Semua petugas</option></select>
                         </div>
                         <div class="overflow-x-auto admin-scroll">
@@ -8815,6 +8816,7 @@
             setTxt('riksa-stat-total', riksaLaporanAll.length);
             setTxt('riksa-stat-apar', riksaLaporanAll.filter(r => r.jenis === 'apar').length);
             setTxt('riksa-stat-hyd', riksaLaporanAll.filter(r => r.jenis === 'hyd').length);
+            setTxt('riksa-stat-fa', riksaLaporanAll.filter(r => r.jenis === 'fa').length);
             const baru = riksaLaporanAll.filter(r => (r.diperbarui || 0) > minggu).length;
             setTxt('riksa-stat-baru', baru);
             const badge = document.getElementById('badge-riksa');
@@ -8826,7 +8828,7 @@
             tb.innerHTML = list.map(r => `
                 <tr class="hover:bg-slate-50">
                     <td class="px-3 py-2 text-xs text-slate-500">${riksaWaktu(r.diperbarui)}${r.rev > 1 ? `<br><span class="text-[10px]">revisi ${r.rev}</span>` : ''}</td>
-                    <td class="px-3 py-2"><span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${r.jenis === 'apar' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}">${r.jenis === 'apar' ? 'APAR' : 'Hidran'}</span></td>
+                    <td class="px-3 py-2"><span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${r.jenis === 'apar' ? 'bg-red-50 text-red-600' : r.jenis === 'fa' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-600'}">${riksaJenisNama(r.jenis)}</span></td>
                     <td class="px-3 py-2 font-mono text-xs">${riksaEsc(r.nomor || '–')}</td>
                     <td class="px-3 py-2 font-semibold text-slate-800">${riksaEsc(r.perusahaan || '–')}<br><span class="text-[11px] font-normal text-slate-500">${riksaEsc(r.alamat || '')}</span></td>
                     <td class="px-3 py-2 text-xs">${riksaEsc(r.tanggal || '–')}</td>
@@ -8849,6 +8851,7 @@
         });
 
         // muat pustaka Word & generator laporan dari folder aplikasi (sekali saja)
+        const riksaJenisNama = (j) => j === 'apar' ? 'APAR' : j === 'fa' ? 'Fire Alarm' : 'Hidran';
         let riksaLibPromise = null;
         function riksaMuatScript(src) {
             return new Promise((resolve, reject) => {
@@ -8861,6 +8864,7 @@
                     if (!window.docx) await riksaMuatScript('/riksa/vendor/docx.iife.js');
                     if (typeof RU === 'undefined') await riksaMuatScript('/riksa/js/report.js');
                     if (typeof RH === 'undefined') await riksaMuatScript('/riksa/js/hydrant-report.js');
+                    if (typeof RF === 'undefined') await riksaMuatScript('/riksa/js/fire-alarm-report.js');
                 })().catch(e => { riksaLibPromise = null; throw e; });
             }
             return riksaLibPromise;
@@ -8890,6 +8894,11 @@
                     (modul.units || []).forEach(u => { u.photos = (u.photos || []).filter(p => p.data); });
                     if (modul.denah && !modul.denah.data) modul.denah = null;
                     doc = RU.buildReport({ ...modul, pjk3, klien: rep.klien || {} }, window.docx);
+                } else if (r.jenis === 'fa') {
+                    modul.photos = (modul.photos || []).filter(p => p.data);
+                    (modul.zones || []).forEach(z => { z.photos = (z.photos || []).filter(x => x.data); });
+                    if (modul.gambar && !modul.gambar.data) modul.gambar = null;
+                    doc = RF.buildFireAlarm({ ...modul, pjk3, klien: rep.klien || {} }, window.docx);
                 } else {
                     modul.photos = (modul.photos || []).filter(p => p.data);
                     (modul.points || []).forEach(p => { p.photos = (p.photos || []).filter(x => x.data); });
@@ -8897,7 +8906,7 @@
                     doc = RH.buildHydrant({ ...modul, pjk3, klien: rep.klien || {} }, window.docx);
                 }
                 const blob = await window.docx.Packer.toBlob(doc);
-                const nama = `Laporan_Riksa_Uji_${r.jenis === 'apar' ? 'APAR' : 'Hidran'}_${String(r.nomor || r.perusahaan || id).replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '_').slice(0, 80)}.docx`;
+                const nama = `Laporan_Riksa_Uji_${r.jenis === 'fa' ? 'FireAlarm' : riksaJenisNama(r.jenis)}_${String(r.nomor || r.perusahaan || id).replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '_').slice(0, 80)}.docx`;
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nama;
                 document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
                 window.showToast('Laporan Word dibuat: ' + nama, 'success');
@@ -8910,7 +8919,7 @@
         window.riksaHapusLaporan = async function(id) {
             if (!riksaIsAdmin()) return;
             const r = riksaLaporanAll.find(x => x.id === id); if (!r) return;
-            if (!confirm(`Hapus laporan ${r.jenis === 'apar' ? 'APAR' : 'Hidran'} ${r.nomor || ''} – ${r.perusahaan || ''} beserta fotonya dari ruangk3.com?\n\nData di HP petugas tidak ikut terhapus.`)) return;
+            if (!confirm(`Hapus laporan ${riksaJenisNama(r.jenis)} ${r.nomor || ''} – ${r.perusahaan || ''} beserta fotonya dari ruangk3.com?\n\nData di HP petugas tidak ikut terhapus.`)) return;
             try {
                 await window.withTimeout(Promise.all([remove(ref(db, `${pathRiksaLaporan}/${id}`)), remove(ref(db, `${pathRiksaLaporanData}/${id}`)), remove(ref(db, `${pathRiksaFoto}/${id}`))]), 60000);
                 push(ref(db, pathRiksaLog), { waktu: Date.now(), uid: currentUser.uid, nama: currentUser.nama, aksi: 'hapus laporan (admin)', reportId: id, ket: `${r.nomor || ''} – ${r.perusahaan || ''}` }).catch(() => {});

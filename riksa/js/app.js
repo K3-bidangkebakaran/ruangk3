@@ -6,15 +6,16 @@
   const MEDIA = ['Powder ABC', 'CO₂', 'Foam AFFF', 'Clean Agent', 'Air (Water)', 'Lainnya'];
   const HYDRO_DEFAULT = { done: false, kerja: '14 bar', coba: '21 bar (1,5×)', durasi: '30 detik', bocor: 'Tidak ada', deformasi: 'Tidak ada', hasil: 'Lulus' };
   const H_LABEL = { M: 'Memenuhi', C: 'Catatan', T: 'Tidak memenuhi' };
-  const TABS = { apar: ['a-data', 'a-units', 'a-concl', 'a-dl'], hyd: ['h-data', 'h-pump', 'h-points', 'h-concl', 'h-dl'] };
+  const TABS = { apar: ['a-data', 'a-units', 'a-concl', 'a-dl'], hyd: ['h-data', 'h-pump', 'h-points', 'h-concl', 'h-dl'], fa: ['f-data', 'f-sys', 'f-zones', 'f-test', 'f-concl', 'f-dl'] };
+  const PFX = { apar: 'a', hyd: 'h', fa: 'f' };
 
   let S = null;
   const photoData = new Map();
   let mod = 'apar';
-  const lastTab = { apar: 'a-data', hyd: 'h-data' };
+  const lastTab = { apar: 'a-data', hyd: 'h-data', fa: 'f-data' };
   let edit = null; // {mod, i}
   let stampOn = true;
-  const filt = { apar: { q: '', s: '' }, hyd: { q: '', s: '' } };
+  const filt = { apar: { q: '', s: '' }, hyd: { q: '', s: '' }, fa: { q: '', s: '' } };
 
   // ---------- storage ----------
   // Struktur IndexedDB: kv['g'] = data global (PJK3, sesi, alamat server)
@@ -52,17 +53,20 @@
 
   const berkasForDisk = (b) => ({ ...b, shared: { ...b.shared, pjk3: undefined } });
   function summarize(b) {
-    const a = b.apar, h = b.hyd, K = b.shared.klien;
+    const a = b.apar, h = b.hyd, f = b.fa || RF.blankModule(), K = b.shared.klien;
     return {
       id: b.id, klien: K.nama || '', alamat: K.alamatSingkat || K.alamat || '',
-      tgl: a.meta.tglMulai || h.meta.tglMulai || '', updatedAt: b.updatedAt || 0, createdBy: b.createdBy || null, createdByName: b.createdByName || '',
+      tgl: a.meta.tglMulai || h.meta.tglMulai || f.meta.tglMulai || '', updatedAt: b.updatedAt || 0, createdBy: b.createdBy || null, createdByName: b.createdByName || '',
       sample: !!(a.meta.isSample || h.meta.isSample),
       apar: { n: a.units.length, nomor: a.meta.nomor || '', sentAt: (a.sync && a.sync.sentAt) || 0, editedAt: a.editedAt || 0, pending: !!(a.sync && a.sync.pending), has: hasData('apar', b) },
       hyd: { n: h.points.length, nomor: h.meta.nomor || '', sentAt: (h.sync && h.sync.sentAt) || 0, editedAt: h.editedAt || 0, pending: !!(h.sync && h.sync.pending), has: hasData('hyd', b) },
+      fa: { n: f.zones.length, nomor: f.meta.nomor || '', sentAt: (f.sync && f.sync.sentAt) || 0, editedAt: f.editedAt || 0, pending: !!(f.sync && f.sync.pending), has: hasData('fa', b) },
     };
   }
   function hasData(m, b = S) {
     const x = b[m];
+    if (!x) return false;
+    if (m === 'fa') return x.zones.length > 0 || (x.panel || []).some(r => r.hasil) || (x.uji || []).some(r => r.hasil);
     return m === 'apar' ? x.units.length > 0 : (x.points.length > 0 || (x.ujiPompa || []).some(r => (r.tekanan || '').trim()));
   }
   let saveTimer = null, savePending = false;
@@ -71,7 +75,7 @@
     if (!S) return;
     if (touch) {
       const t = Date.now(); S.updatedAt = t;
-      if (scope === 'shared') { S.apar.editedAt = t; S.hyd.editedAt = t; } else if (S[scope]) S[scope].editedAt = t;
+      if (scope === 'shared') { S.apar.editedAt = t; S.hyd.editedAt = t; S.fa.editedAt = t; } else if (S[scope]) S[scope].editedAt = t;
     }
     savePending = true;
     clearTimeout(saveTimer); $('#savestate').textContent = 'Menyimpan…';
@@ -94,17 +98,17 @@
   function sampleBerkas() {
     const a = RU.sampleState();
     return { id: uidLong(), version: 3, createdBy: null, createdByName: '', createdAt: Date.now(), updatedAt: Date.now(), mod: 'apar',
-      shared: { klien: a.klien }, apar: { meta: a.meta, alat: a.alat, keteranganTabel: a.keteranganTabel, units: a.units, rekomendasi: null, denah: null, sync: {} }, hyd: { ...RH.sampleModule(), sync: {} } };
+      shared: { klien: a.klien }, apar: { meta: a.meta, alat: a.alat, keteranganTabel: a.keteranganTabel, units: a.units, rekomendasi: null, denah: null, sync: {} }, hyd: { ...RH.sampleModule(), sync: {} }, fa: { ...RF.sampleModule(), sync: {} } };
   }
   // ubah berbagai format lama (v1: satu laporan APAR, v2: APAR + hidran) menjadi berkas v3
   function toBerkas(d) {
     if (!d) return null;
-    if (d.version === 3 && d.apar && d.hyd) return d;
+    if (d.version === 3 && d.apar && d.hyd) { d.fa ??= RF.blankModule(); d.fa.sync ??= {}; return d; }
     let b = null;
     if (d.version === 2 && d.apar) b = { shared: { klien: d.shared.klien || {}, pjk3: d.shared.pjk3 }, apar: d.apar, hyd: d.hyd || RH.sampleModule(), mod: d.mod };
     else if (Array.isArray(d.units)) b = { shared: { klien: d.klien || {}, pjk3: d.pjk3 }, apar: { meta: d.meta, alat: d.alat || [], keteranganTabel: d.keteranganTabel || '', units: d.units, rekomendasi: d.rekomendasi || null, denah: d.denah || null }, hyd: RH.blankModule(), mod: 'apar' };
     if (!b) return null;
-    b.apar.sync ??= {}; b.hyd.sync ??= {};
+    b.apar.sync ??= {}; b.hyd.sync ??= {}; b.fa ??= RF.blankModule(); b.fa.sync ??= {};
     return { id: d.id || uidLong(), version: 3, createdBy: null, createdByName: '', createdAt: Date.now(), updatedAt: Date.now(), mod: b.mod || 'apar', ...b };
   }
   function blankPjk3() { return { nama: '', sk: '', alamat: '', telp: '', email: '', ahli: '', lisensi: '', teknisi: '', direktur: '', jabatanDirektur: 'Direktur', logo: null }; }
@@ -182,7 +186,8 @@
     $('#backup-sec').hidden = !bs; $('#sync-sec').hidden = !bs;
     if (bs) renderSync();
     renderHeader();
-    ({ 'a-units': renderUnits, 'a-concl': renderAConcl, 'a-dl': renderADl, 'h-data': renderPompa, 'h-pump': renderPump, 'h-points': renderPoints, 'h-concl': renderHConcl, 'h-dl': renderHDl }[name] || (() => {}))();
+    ({ 'a-units': renderUnits, 'a-concl': renderAConcl, 'a-dl': renderADl, 'h-data': renderPompa, 'h-pump': renderPump, 'h-points': renderPoints, 'h-concl': renderHConcl, 'h-dl': renderHDl,
+      'f-data': renderFaData, 'f-sys': renderFaSys, 'f-zones': renderZones, 'f-test': renderFaTest, 'f-concl': renderFConcl, 'f-dl': renderFDl }[name] || (() => {}))();
     try { localStorage.setItem('riksa-nav', JSON.stringify({ mod, lastTab })); } catch (e) {}
     window.scrollTo({ top: 0 });
   }
@@ -191,11 +196,12 @@
 
   function renderHeader() {
     const m = M();
-    $('#hdr-sub').textContent = [mod === 'apar' ? 'APAR' : 'Instalasi hidran', m.meta.nomor ? 'No. ' + m.meta.nomor : 'Nomor belum diisi', S.shared.klien.nama].filter(Boolean).join(' · ');
+    $('#hdr-sub').textContent = [({ apar: 'APAR', hyd: 'Instalasi hidran', fa: 'Alarm kebakaran (Fire Alarm)' })[mod], m.meta.nomor ? 'No. ' + m.meta.nomor : 'Nomor belum diisi', S.shared.klien.nama].filter(Boolean).join(' · ');
     $('#cnt-apar').textContent = S.apar.units.length;
     $('#cnt-hyd').textContent = S.hyd.points.length;
+    $('#cnt-fa').textContent = S.fa.zones.length;
     $('#sample-banner').hidden = !m.meta.isSample;
-    $('#banner-text').textContent = `Isian ${mod === 'apar' ? 'APAR' : 'hidran'} ini fiktif, sama dengan laporan contoh. Mulai laporan baru untuk mengosongkannya; data PJK3 dan perusahaan tetap.`;
+    $('#banner-text').textContent = `Isian ${({ apar: 'APAR', hyd: 'hidran', fa: 'Fire Alarm' })[mod]} ini fiktif, sama dengan laporan contoh. Mulai laporan baru untuk mengosongkannya; data PJK3 dan perusahaan tetap.`;
   }
   function inlineConfirm(slot, label, question, onYes, cls = 'btn sm') {
     const draw = () => {
@@ -214,6 +220,9 @@
     if (mod === 'apar') {
       S.apar.units.forEach(u => dropPhotos(u.photos)); if (S.apar.denah) dropPhotos([S.apar.denah]);
       S.apar = { meta: { isSample: false, nomor: '', periode: '', tglMulai: today, tglSelesai: today, tglLaporan: today, kota: '', jenis: $('#a-jenis').options[0].value, sebelumnya: '' }, alat: S.apar.alat, keteranganTabel: S.apar.keteranganTabel, units: [], rekomendasi: null, denah: null };
+    } else if (mod === 'fa') {
+      S.fa.zones.forEach(z => dropPhotos(z.photos)); dropPhotos(S.fa.photos); if (S.fa.gambar) dropPhotos([S.fa.gambar]);
+      const alat = S.fa.alat; S.fa = RF.blankModule(); S.fa.alat = alat;
     } else {
       S.hyd.points.forEach(p => dropPhotos(p.photos)); dropPhotos(S.hyd.photos); if (S.hyd.gambar) dropPhotos([S.hyd.gambar]);
       const alat = S.hyd.alat; S.hyd = RH.blankModule(); S.hyd.alat = alat;
@@ -231,7 +240,7 @@
   }
   document.addEventListener('input', (e) => {
     const el = e.target;
-    if (el.dataset && el.dataset.path) { setPath(S, el.dataset.path, el.value); save(true, el.dataset.path.split('.')[0]); renderHeader(); if (/^hyd\.teknis\.(reservoirM3|debitLpm)/.test(el.dataset.path)) renderWater(); }
+    if (el.dataset && el.dataset.path) { setPath(S, el.dataset.path, el.value); save(true, el.dataset.path.split('.')[0]); renderHeader(); if (/^hyd\.teknis\.(reservoirM3|debitLpm)/.test(el.dataset.path)) renderWater(); if (/^fa\.baterai\./.test(el.dataset.path)) renderBat(); }
   });
   document.addEventListener('change', (e) => { const el = e.target; if (el.tagName === 'SELECT' && el.dataset.path) { setPath(S, el.dataset.path, el.value); save(true, el.dataset.path.split('.')[0]); } });
 
@@ -441,21 +450,162 @@
       [H.alat.every(a => !a.nama || a.sert), 'Nomor sertifikat kalibrasi peralatan']]);
   }
 
+  // ================= FIRE ALARM =================
+  const FA_FIELDS = {
+    dokumen: [['ket', 'Keterangan']], panel: [['ket', 'Keterangan']],
+    sumber: [['ket', 'Hasil ukur / temuan'], ['kriteria', 'Kriteria']],
+    mcp: [['ket', 'Hasil ukur / temuan'], ['kriteria', 'Kriteria']],
+    kabel: [['ket', 'Hasil ukur / temuan'], ['kriteria', 'Kriteria']],
+    uji: [['ket', 'Hasil pengamatan']],
+    interface: [['terpasang', 'Terpasang? (Ya / Tidak ada)'], ['ket', 'Keterangan']],
+  };
+  function faRowHtml(sec, r, i) {
+    const bad = r.hasil === 'C' || r.hasil === 'T';
+    const fld = (k, l) => `<label class="field"><span>${l}</span><input type="text" id="fr-${sec}-${i}-${k}" data-fsec="${sec}" data-ri="${i}" data-k="${k}" value="${esc(r[k])}"></label>`;
+    return `<div class="crow ${bad ? 'is' + r.hasil : ''}" data-frow="${sec}-${i}">
+      <div class="crow-top"><span class="no">${i + 1}</span><span class="lbl">${esc(r.label)}${PD.crow('fa_' + sec, i)}</span>
+        <span class="seg mct" role="group" aria-label="Penilaian butir ${i + 1}">${['M', 'C', 'T'].map(v => `<button data-fsec="${sec}" data-ri="${i}" data-fhv="${v}" data-v="${v}" aria-pressed="${r.hasil === v}" title="${H_LABEL[v]}">${v === 'M' ? 'Memenuhi' : v === 'C' ? 'Catatan' : 'Tidak'}</button>`).join('')}</span></div>
+      <div class="grid">${FA_FIELDS[sec].map(([k, l]) => fld(k, l)).join('')}</div>
+      <div class="grid" ${bad ? '' : 'hidden'}>${[['rek', 'Rekomendasi'], ['batas', 'Batas waktu']].map(([k, l]) => fld(k, l)).join('')}</div>
+    </div>`;
+  }
+  const renderFaCrows = () => $$('.fcrows').forEach(box => { const sec = box.dataset.fsec; box.innerHTML = (S.fa[sec] || []).map((r, i) => faRowHtml(sec, r, i)).join(''); });
+  const fPhotoGrid = (list) => list.map((p, k) => `<div class="photo"><img src="${photoData.get(p.id) || ''}" alt="Dokumentasi ${k + 1}">
+      <input type="text" id="fcap-${p.id}" data-fcap="${k}" value="${esc(p.caption)}" placeholder="Keterangan foto" aria-label="Keterangan foto">
+      <button class="x" data-fphdel="${k}">Hapus foto</button></div>`).join('');
+  const renderFGenPhotos = () => { $('#f-gen-photos').innerHTML = fPhotoGrid(S.fa.photos); };
+  [$('#tab-f-sys'), $('#tab-f-test')].forEach(panel => {
+    panel.addEventListener('input', (e) => {
+      const el = e.target;
+      if (el.dataset.fsec && el.dataset.k) { S.fa[el.dataset.fsec][+el.dataset.ri][el.dataset.k] = el.value; save(); }
+      else if (el.dataset.fcap != null) { S.fa.photos[+el.dataset.fcap].caption = el.value; save(); }
+    });
+    panel.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-fhv]');
+      if (b) { const sec = b.dataset.fsec, i = +b.dataset.ri; const r = S.fa[sec][i]; r.hasil = r.hasil === b.dataset.fhv ? '' : b.dataset.fhv; save(); $(`[data-frow="${sec}-${i}"]`).outerHTML = faRowHtml(sec, r, i); return; }
+      const d = e.target.closest('[data-fphdel]');
+      if (d) { const p = S.fa.photos.splice(+d.dataset.fphdel, 1)[0]; dropPhotos([p]); save(); renderFGenPhotos(); }
+    });
+    panel.addEventListener('change', async (e) => {
+      const el = e.target;
+      if (el.classList.contains('fgen-ph')) { const files = [...el.files]; el.value = ''; await addPhotos(files, S.fa.photos, `Riksa uji Fire Alarm · ${S.shared.klien.nama || ''} · ${now()}`); save(); renderFGenPhotos(); }
+    });
+  });
+
+  // data laporan: rekap perangkat
+  function renderFaData() {
+    const auto = RF.perangkat(S.fa);
+    $('#f-perangkat').innerHTML = RF.PERANGKAT.map((nm, i) => {
+      const x = S.fa.perangkat[i] || (S.fa.perangkat[i] = { jumlah: '', merk: '' });
+      const ph = !String(x.jumlah).trim() && auto[i].jumlah ? auto[i].jumlah + ' (otomatis dari zona)' : 'Jumlah';
+      return `<div class="fp-row"><span class="fplbl">${esc(nm)}</span>
+        <input type="text" inputmode="numeric" id="fp-j-${i}" data-fp="${i}" data-k="jumlah" value="${esc(x.jumlah)}" placeholder="${esc(ph)}" aria-label="Jumlah ${esc(nm)}">
+        <input type="text" id="fp-m-${i}" data-fp="${i}" data-k="merk" value="${esc(x.merk)}" placeholder="Merk / tipe" aria-label="Merk ${esc(nm)}"></div>`;
+    }).join('');
+  }
+  $('#f-perangkat').addEventListener('input', (e) => { const el = e.target; if (el.dataset.fp != null) { S.fa.perangkat[+el.dataset.fp][el.dataset.k] = el.value; save(); } });
+
+  // sistem & sumber daya
+  function renderBat() {
+    const el = $('#f-bat'); if (!el) return;
+    const b = RF.battery(S.fa);
+    el.innerHTML = b
+      ? `<b>Minimum ± ${RF.fmtNum(b.min, 1)} Ah</b><span>1,25 × (${RF.fmtNum(b.iS, 2)} A × ${RF.fmtNum(b.jam)} jam + ${RF.fmtNum(b.iA, 2)} A × ${RF.fmtNum(b.mnt)} menit ÷ 60)</span>${b.cap != null ? `<span class="pill s-${b.ok ? 'M' : 'T'}">${b.ok ? 'Terpasang ' + RF.fmtNum(b.cap, 1) + ' Ah, memenuhi' : 'Terpasang ' + RF.fmtNum(b.cap, 1) + ' Ah, kurang'}</span>` : '<span>Isi kapasitas baterai terpasang.</span>'}`
+      : '<span>Isi arus siaga dan arus alarm untuk menghitung kapasitas baterai minimum.</span>';
+  }
+  function renderFaSys() { renderFaCrows(); renderBat(); }
+  function renderFaTest() { renderFaCrows(); renderFGenPhotos(); }
+
+  // zona detektor
+  const fCounts = () => { const c = { M: 0, C: 0, T: 0 }; S.fa.zones.forEach(z => c[RF.statusOf(z)]++); return c; };
+  const fTiles = (cl) => { const c = fCounts(); return tiles([['', 'Total zona', S.fa.zones.length], ['M', 'Memenuhi', c.M], ['C', 'Catatan', c.C], ['T', 'Tidak memenuhi', c.T]], cl, filt.fa); };
+  function recapText() {
+    const t = RF.totals(S.fa);
+    return t.du ? `Detektor: ${RF.fmtNum(t.tp)} terpasang · ${RF.fmtNum(t.du)} diuji · ${RF.fmtNum(t.bf)} berfungsi (${RF.fmtNum(t.pct, 1)}%) · ${RF.fmtNum(t.tidak)} tidak berfungsi` : '';
+  }
+  function renderZones() {
+    $('#f-stats').innerHTML = fTiles(true);
+    $('#f-recap').textContent = recapText();
+    const f = filt.fa, q = f.q.trim().toLowerCase(), Z = S.fa.zones;
+    const list = Z.map((u, i) => ({ u, i })).filter(({ u }) => (!q || (u.kode + ' ' + u.lokasi).toLowerCase().includes(q)) && (!f.s || RF.statusOf(u) === f.s));
+    if (!Z.length) { $('#f-list').innerHTML = `<div class="empty">Belum ada zona. Tekan <b>+ Tambah zona</b> untuk mencatat zona detektor pertama.</div>`; return; }
+    if (!list.length) { $('#f-list').innerHTML = `<div class="empty">Tidak ada zona yang cocok dengan filter.</div>`; return; }
+    $('#f-list').innerHTML = list.map(({ u, i }) => {
+      const s = RF.statusOf(u), nf = RF.failedChecks(u).length + (RF.badDet(u) ? 1 : 0), np = (u.photos || []).length;
+      return `<button class="unit" data-i="${i}"><span class="stripe ${s}"></span>
+        <span class="body"><span class="top"><span class="code">${esc(u.kode)}</span><span class="loc">${esc(u.lokasi || 'Lokasi belum diisi')}</span></span>
+        <span class="meta"><span class="kind">${esc(u.jenis || '–')}</span><span class="mono">${esc(u.berfungsi || '–')} / ${esc(u.diuji || '–')} berfungsi</span>${np ? `<span>${np} foto</span>` : ''}</span></span>
+        <span class="side"><span class="pill s-${s}">${H_LABEL[s]}</span>${nf ? `<span class="fails">${nf} masalah</span>` : ''}</span></button>`;
+    }).join('');
+  }
+  $('#f-stats').addEventListener('click', (e) => { const b = e.target.closest('[data-sf]'); if (!b) return; filt.fa.s = filt.fa.s === b.dataset.sf ? '' : b.dataset.sf; renderZones(); });
+  $('#f-search').addEventListener('input', (e) => { filt.fa.q = e.target.value; renderZones(); });
+  $('#f-list').addEventListener('click', (e) => { const b = e.target.closest('.unit'); if (b) openEditor('fa', +b.dataset.i); });
+  function newZone(from) {
+    return { id: uid(), kode: nextKode(S.fa.zones, 'Z-'), lokasi: '', jenis: from ? from.jenis : RF.JENIS_OPT[0], terpasang: '', diuji: '', berfungsi: '', tinggi: from ? from.tinggi : '', jarak: from ? from.jarak : '', checks: Array(RF.PLC_ITEMS.length).fill('v'), statusOverride: '', temuan: '', rekomendasi: '', batas: '', photos: [] };
+  }
+  $('#f-add').onclick = () => { S.fa.zones.push(newZone(S.fa.zones[S.fa.zones.length - 1])); save(); renderHeader(); renderZones(); openEditor('fa', S.fa.zones.length - 1); };
+  function faEditorHtml(u) {
+    const nfld = (k, label) => `<label class="field"><span>${label}</span><input type="text" inputmode="numeric" id="u-${k}" data-u="${k}" value="${esc(u[k])}">${PD.e(k)}</label>`;
+    return `<div class="section"><h2>Identitas zona</h2><div class="grid">
+        ${fld(u, 'kode', 'Kode zona', 'Z-01')}${fld(u, 'lokasi', 'Lokasi / ruang', 'Gudang Barang Jadi')}
+        <label class="field"><span>Jenis detektor</span><select id="u-fjenis" data-u="jenis">${RF.JENIS_OPT.map(j => `<option${j === u.jenis ? ' selected' : ''}>${j}</option>`).join('')}</select>${PD.e('fjenis')}</label>
+        ${fld(u, 'tinggi', 'Tinggi plafon (m)', '3,0')}${fld(u, 'jarak', 'Jarak antar / luas pantau', '8 m / 64 m²')}
+      </div></div>
+      <div class="section"><h2>Hasil uji detektor</h2>
+        <div class="grid">${nfld('terpasang', 'Jumlah terpasang')}${nfld('diuji', 'Jumlah diuji')}${nfld('berfungsi', 'Jumlah berfungsi')}</div>
+        <div class="row" style="margin-top:10px"><button class="btn sm" id="f-allok">Semua diuji dan berfungsi</button><span class="savestate">Mengisi diuji dan berfungsi sama dengan jumlah terpasang</span></div></div>
+      ${photoSection('Masuk ke Lampiran A setelah foto dokumentasi umum.', `<div class="how-block">${PD.block('fa-foto')}</div>`)}
+      <div class="section"><h2>Pemeriksaan penempatan detektor</h2>
+        <div class="how-block">${PD.block('ck-fa')}</div>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="ck-all">Semua ✓</button><span class="savestate">Tekan ✗ pada butir yang tidak memenuhi</span></div>
+        <div class="checks">${RF.PLC_ITEMS.map((it, k) => checkRow(k, it, '', u.checks[k], OPT2, PD.faItem(k))).join('')}</div></div>
+      <div class="section"><h2>Penilaian & temuan</h2><div class="grid">
+        <label class="field"><span>Penilaian</span><select id="u-statusOverride" data-u="statusOverride"><option value="">Otomatis dari hasil uji & checklist</option><option value="M">Memenuhi</option><option value="C">Catatan</option><option value="T">Tidak memenuhi</option></select><small class="savestate" id="ed-auto"></small>${PD.e('statusOverride_fa')}</label>
+        <label class="field"><span>Batas waktu tindak lanjut</span><input type="text" id="u-batas" data-u="batas" value="${esc(u.batas)}" placeholder="Otomatis: ≤ 7 hari (Tidak) / ≤ 30 hari (Catatan)">${PD.e('batas')}</label>
+        <label class="field wide"><span>Temuan</span><textarea id="u-temuan" data-u="temuan" rows="2">${esc(u.temuan)}</textarea>${PD.e('temuan')}</label>
+        <label class="field wide"><span>Rekomendasi</span><textarea id="u-rekomendasi" data-u="rekomendasi" rows="2" placeholder="Otomatis bila dikosongkan">${esc(u.rekomendasi)}</textarea>${PD.e('rekomendasi')}</label>
+      </div></div>
+      <div class="row"><button class="btn sm" id="u-dup">Duplikat zona ini</button></div>`;
+  }
+
+  // kesimpulan & unduh
+  function renderFConcl() {
+    $('#f-concl-list').innerHTML = RF.conclusions(S.fa).map(x => `<li>${esc(x)}</li>`).join('');
+    const F = RF.findings(S.fa);
+    $('#f-find-list').innerHTML = F.length ? F.map(f => `<li><span class="pill s-${f.s}">${f.s === 'T' ? 'Tidak' : 'Catatan'}</span> <b>${esc(f.bagian.replace('\n', ' · '))}</b> — ${esc(f.temuan)}</li>`).join('') : '<li>Tidak ada temuan.</li>';
+    renderRekom('fa'); renderImgs();
+  }
+  function renderFDl() {
+    $('#f-stats-dl').innerHTML = fTiles(false);
+    const A = S.fa, t = RF.totals(A);
+    const nPh = A.photos.length + A.zones.reduce((a, z) => a + (z.photos || []).length, 0);
+    $('#f-ready').innerHTML = readyList([...commonReady(A),
+      [A.zones.length, `Zona detektor (${A.zones.length})`],
+      [t.du > 0 && A.zones.every(z => z.diuji && z.berfungsi), 'Jumlah diuji dan berfungsi di setiap zona'],
+      [[...A.dokumen, ...A.panel, ...A.sumber].every(r => r.hasil), 'Penilaian dokumen, panel dan sumber daya'],
+      [RF.battery(A) && RF.battery(A).cap != null, 'Perhitungan kapasitas baterai'],
+      [[...A.mcp, ...A.kabel].every(r => r.hasil), 'Penilaian MCP, alarm, pengkabelan dan pentanahan'],
+      [A.uji.every(r => r.hasil), 'Uji fungsi sistem (simulasi)'],
+      [nPh, `Foto dokumentasi (${nPh})`],
+      [A.alat.every(a => !a.nama || a.sert), 'Nomor sertifikat kalibrasi peralatan']]);
+  }
+
   // ---------- rekomendasi ----------
   function renderRekom(m) {
     const st = S[m], auto = !(st.rekomendasi && st.rekomendasi.some(x => x.trim()));
-    const lines = auto ? (m === 'apar' ? RU.autoRecommendations(flatApar()) : RH.autoRecommendations(S.hyd)) : st.rekomendasi;
-    const ta = $(m === 'apar' ? '#a-rekom' : '#h-rekom'); ta.value = lines.join('\n');
-    $(m === 'apar' ? '#a-rekom-mode' : '#h-rekom-mode').textContent = auto ? 'Mode otomatis' : 'Diubah manual';
+    const lines = auto ? (m === 'apar' ? RU.autoRecommendations(flatApar()) : m === 'fa' ? RF.autoRecommendations(S.fa) : RH.autoRecommendations(S.hyd)) : st.rekomendasi;
+    const ta = $(`#${PFX[m]}-rekom`); ta.value = lines.join('\n');
+    $(`#${PFX[m]}-rekom-mode`).textContent = auto ? 'Mode otomatis' : 'Diubah manual';
   }
-  $$('.rekom').forEach(ta => ta.addEventListener('input', () => { S[ta.dataset.mod].rekomendasi = ta.value.split('\n'); $(ta.dataset.mod === 'apar' ? '#a-rekom-mode' : '#h-rekom-mode').textContent = 'Diubah manual'; save(); }));
+  $$('.rekom').forEach(ta => ta.addEventListener('input', () => { S[ta.dataset.mod].rekomendasi = ta.value.split('\n'); $(`#${PFX[ta.dataset.mod]}-rekom-mode`).textContent = 'Diubah manual'; save(); }));
   $$('.rekom-reset').forEach(b => b.onclick = () => { S[b.dataset.mod].rekomendasi = null; save(); renderRekom(b.dataset.mod); });
 
   // ================= EDITOR (APAR & titik hidran) =================
-  const edList = () => edit.mod === 'apar' ? S.apar.units : S.hyd.points;
+  const edList = () => edit.mod === 'apar' ? S.apar.units : edit.mod === 'fa' ? S.fa.zones : S.hyd.points;
   const edItem = () => edList()[edit.i];
   function openEditor(m, i) { edit = { mod: m, i }; $('#sheet').hidden = false; document.body.style.overflow = 'hidden'; renderEditor(); $('#ed-body').scrollTop = 0; }
-  function closeEditor() { $('#sheet').hidden = true; document.body.style.overflow = ''; const m = edit && edit.mod; edit = null; if (m === 'apar') renderUnits(); else renderPoints(); renderHeader(); }
+  function closeEditor() { $('#sheet').hidden = true; document.body.style.overflow = ''; const m = edit && edit.mod; edit = null; if (m === 'apar') renderUnits(); else if (m === 'fa') renderZones(); else renderPoints(); renderHeader(); }
   $('#ed-close').onclick = closeEditor;
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeEditor(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#sheet').hidden) closeEditor(); });
@@ -464,17 +614,18 @@
     const L = edList();
     if (edit.i < L.length - 1) return openEditor(edit.mod, edit.i + 1);
     if (edit.mod === 'apar') { L.push(newUnit(L[edit.i])); save(); renderHeader(); openEditor('apar', L.length - 1); }
+    else if (edit.mod === 'fa') { L.push(newZone(L[edit.i])); save(); renderHeader(); openEditor('fa', L.length - 1); }
     else { const i = insertPoint(newPoint(edItem().jenis)); save(); renderHeader(); openEditor('hyd', i); }
   };
   function updateEdStatus() {
     const u = edItem(); if (!u) return;
-    const isA = edit.mod === 'apar';
-    const s = isA ? RU.statusOf(u) : RH.statusOf(u);
+    const isA = edit.mod === 'apar', isF = edit.mod === 'fa';
+    const s = isA ? RU.statusOf(u) : isF ? RF.statusOf(u) : RH.statusOf(u);
     const pill = $('#ed-status'); pill.className = 'pill s-' + s; pill.textContent = isA ? RU.STATUS_LABEL[s] : H_LABEL[s];
-    $('#ed-title').textContent = u.kode || (isA ? 'APAR' : 'Hidran');
-    const auto = $('#ed-auto'); if (auto) auto.textContent = 'Otomatis: ' + (isA ? RU.STATUS_LABEL[RU.autoStatus(u)] : H_LABEL[RH.autoStatus(u)]);
+    $('#ed-title').textContent = u.kode || (isA ? 'APAR' : isF ? 'Zona' : 'Hidran');
+    const auto = $('#ed-auto'); if (auto) auto.textContent = 'Otomatis: ' + (isA ? RU.STATUS_LABEL[RU.autoStatus(u)] : H_LABEL[(isF ? RF : RH).autoStatus(u)]);
     $$('.ck').forEach((row, k) => row.classList.toggle('isx', u.checks[k] === 'x'));
-    const tp = $('#u-temuan'); if (tp) tp.placeholder = (isA ? RU.autoTemuan(u) : RH.autoTemuan(u)) || 'Tidak ada temuan';
+    const tp = $('#u-temuan'); if (tp) tp.placeholder = (isA ? RU.autoTemuan(u) : isF ? RF.autoTemuan(u) : RH.autoTemuan(u)) || 'Tidak ada temuan';
   }
   const fld = (u, k, label, ph = '') => `<label class="field"><span>${label}</span><input type="text" id="u-${k}" data-u="${k}" value="${esc(u[k])}" placeholder="${esc(ph)}">${PD.e(k)}</label>`;
   const photoSection = (hint, how = '') => `<div class="section"><h2>Foto dokumentasi</h2><p class="hint">${hint}</p>${how}
@@ -490,7 +641,7 @@
   function renderEditor() {
     const u = edItem(), isA = edit.mod === 'apar', L = edList();
     $('#ed-prev').disabled = edit.i === 0;
-    $('#ed-next').textContent = edit.i === L.length - 1 ? (isA ? '+ Unit berikutnya' : '+ Titik berikutnya') : 'Berikutnya →';
+    $('#ed-next').textContent = edit.i === L.length - 1 ? (isA ? '+ Unit berikutnya' : edit.mod === 'fa' ? '+ Zona berikutnya' : '+ Titik berikutnya') : 'Berikutnya →';
     let html;
     if (isA) {
       const hy = u.hydro || (u.hydro = { ...HYDRO_DEFAULT });
@@ -518,6 +669,8 @@
             <label class="field"><span>Hasil</span><select id="h-hasil" data-h="hasil"><option${hy.hasil !== 'Gagal' ? ' selected' : ''}>Lulus</option><option${hy.hasil === 'Gagal' ? ' selected' : ''}>Gagal</option></select>${PD.e('hasil')}</label>
           </div></div>
         <div class="row"><button class="btn sm" id="u-dup">Duplikat unit ini</button></div>`;
+    } else if (edit.mod === 'fa') {
+      html = faEditorHtml(u);
     } else {
       const items = RH.itemsOf(u);
       html = `<div class="section"><h2>Identitas titik</h2><div class="grid">
@@ -540,7 +693,7 @@
     $('#ed-body').innerHTML = html;
     $('#u-statusOverride').value = u.statusOverride || '';
     renderEdPhotos(); updateEdStatus();
-    inlineConfirm($('#ed-del-slot'), isA ? 'Hapus unit' : 'Hapus titik', `Hapus ${u.kode}?`, () => { dropPhotos(u.photos); edList().splice(edit.i, 1); save(); closeEditor(); }, 'btn sm ghost danger');
+    inlineConfirm($('#ed-del-slot'), isA ? 'Hapus unit' : edit.mod === 'fa' ? 'Hapus zona' : 'Hapus titik', `Hapus ${u.kode}?`, () => { dropPhotos(u.photos); edList().splice(edit.i, 1); save(); closeEditor(); }, 'btn sm ghost danger');
   }
   const renderEdPhotos = () => { const u = edItem(); $('#ph-list').innerHTML = photoGrid(u.photos || [], 'Foto ' + u.kode); };
   const edBody = $('#ed-body');
@@ -558,7 +711,8 @@
       $$('[data-ck="12"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === u.checks[12]))); updateEdStatus(); save();
     } else if (el.id === 'u-jenis') {
       u.jenis = el.value; u.checks = Array(u.jenis === 'halaman' ? 5 : 7).fill('v'); save(); renderEditor();
-    } else if (el.id === 'u-statusOverride') { u.statusOverride = el.value; updateEdStatus(); save(); }
+    } else if (el.id === 'u-fjenis') { u.jenis = el.value; save(); }
+    else if (el.id === 'u-statusOverride') { u.statusOverride = el.value; updateEdStatus(); save(); }
     else if (el.id === 'h-hasil') { u.hydro.hasil = el.value; save(); }
     else if (el.id === 'h-done') { u.hydro.done = el.checked; $('#h-fields').hidden = !el.checked; save(); }
     else if (el.id === 'ph-stamp') stampOn = el.checked;
@@ -578,9 +732,11 @@
     }
     const del = e.target.closest('[data-phdel]');
     if (del) { const p = u.photos.splice(+del.dataset.phdel, 1)[0]; dropPhotos([p]); save(); renderEdPhotos(); return; }
+    if (e.target.id === 'f-allok') { u.diuji = u.terpasang; u.berfungsi = u.terpasang; save(); $('#u-diuji').value = u.diuji; $('#u-berfungsi').value = u.berfungsi; updateEdStatus(); return; }
     if (e.target.id === 'u-dup') {
       const c = JSON.parse(JSON.stringify(u)); c.id = uid(); c.photos = []; c.lokasi = '';
-      if (edit.mod === 'apar') { c.kode = nextKode(S.apar.units, 'APAR-'); S.apar.units.splice(edit.i + 1, 0, c); save(); renderHeader(); openEditor('apar', edit.i + 1); }
+      if (edit.mod === 'fa') { c.kode = nextKode(S.fa.zones, 'Z-'); S.fa.zones.splice(edit.i + 1, 0, c); save(); renderHeader(); openEditor('fa', edit.i + 1); }
+      else if (edit.mod === 'apar') { c.kode = nextKode(S.apar.units, 'APAR-'); S.apar.units.splice(edit.i + 1, 0, c); save(); renderHeader(); openEditor('apar', edit.i + 1); }
       else { c.kode = nextKode(S.hyd.points, c.jenis === 'halaman' ? 'HP-' : 'H-'); S.hyd.points.splice(edit.i + 1, 0, c); save(); renderHeader(); openEditor('hyd', edit.i + 1); }
     }
   });
@@ -623,7 +779,7 @@
   const safeName = (s) => (s || 'tanpa-nomor').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '_').slice(0, 80);
   const sizeTxt = (n) => n > 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
   $$('.dl-docx').forEach(btn => btn.onclick = async () => {
-    const m = btn.dataset.mod, msg = $(m === 'apar' ? '#a-dl-msg' : '#h-dl-msg');
+    const m = btn.dataset.mod, msg = $(`#${PFX[m]}-dl-msg`);
     btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Menyiapkan dokumen…';
     try {
       const D = await ensureDocx();
@@ -633,6 +789,10 @@
         const a = withData(S.apar); a.units.forEach(u => { u.photos = cleanPhotos(u.photos); });
         if (a.rekomendasi && !a.rekomendasi.some(x => x.trim())) a.rekomendasi = null;
         doc = RU.buildReport({ ...a, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_APAR_${safeName(S.apar.meta.nomor)}.docx`;
+      } else if (m === 'fa') {
+        const f = withData(S.fa); f.photos = cleanPhotos(f.photos); f.zones.forEach(z => { z.photos = cleanPhotos(z.photos); });
+        if (f.rekomendasi && !f.rekomendasi.some(x => x.trim())) f.rekomendasi = null;
+        doc = RF.buildFireAlarm({ ...f, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_FireAlarm_${safeName(S.fa.meta.nomor)}.docx`;
       } else {
         const h = withData(S.hyd); h.photos = cleanPhotos(h.photos); h.points.forEach(p => { p.photos = cleanPhotos(p.photos); });
         doc = RH.buildHydrant({ ...h, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_Hidran_${safeName(S.hyd.meta.nomor)}.docx`;
@@ -754,7 +914,7 @@
     renderAcct();
     const q = listQ.trim().toLowerCase();
     const all = visibleBerkas().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-    const list = all.filter(b => !q || `${b.klien} ${b.alamat} ${b.apar.nomor} ${b.hyd.nomor}`.toLowerCase().includes(q));
+    const list = all.filter(b => !q || `${b.klien} ${b.alamat} ${b.apar.nomor} ${b.hyd.nomor} ${(b.fa && b.fa.nomor) || ''}`.toLowerCase().includes(q));
     $('#list-count').textContent = `${all.length} berkas di perangkat ini`;
     if (!all.length) { $('#berkas-list').innerHTML = `<div class="empty">Belum ada berkas. Tekan <b>+ Berkas baru</b> untuk memulai riksa uji di satu perusahaan.</div>`; return; }
     if (!list.length) { $('#berkas-list').innerHTML = `<div class="empty">Tidak ada berkas yang cocok dengan pencarian.</div>`; return; }
@@ -762,6 +922,7 @@
       const mods = [];
       if (b.apar.has || b.apar.nomor) mods.push(`<div class="bmod"><span class="kind">APAR</span><span>${b.apar.n} unit${b.apar.nomor ? ' · <span class="mono">' + esc(b.apar.nomor) + '</span>' : ''}</span>${syncPill(b.apar, b.apar.editedAt || 0)}</div>`);
       if (b.hyd.has || b.hyd.nomor) mods.push(`<div class="bmod"><span class="kind">Hidran</span><span>${b.hyd.n} titik${b.hyd.nomor ? ' · <span class="mono">' + esc(b.hyd.nomor) + '</span>' : ''}</span>${syncPill(b.hyd, b.hyd.editedAt || 0)}</div>`);
+      if (b.fa && (b.fa.has || b.fa.nomor)) mods.push(`<div class="bmod"><span class="kind">Fire Alarm</span><span>${b.fa.n} zona${b.fa.nomor ? ' · <span class="mono">' + esc(b.fa.nomor) + '</span>' : ''}</span>${syncPill(b.fa, b.fa.editedAt || 0)}</div>`);
       return `<div class="berkas" data-id="${b.id}">
         <button class="berkas-open" data-open="${b.id}">
           <span class="berkas-title">${esc(b.klien || 'Perusahaan belum diisi')}${b.sample ? ' <span class="kind">Contoh</span>' : ''}</span>
@@ -788,11 +949,11 @@
     S = b;
     for (const k of [...photoData.keys()]) if (!G.pjk3.logo || k !== G.pjk3.logo.id) photoData.delete(k);
     await loadPhotosFor(S);
-    edit = null; filt.apar = { q: '', s: '' }; filt.hyd = { q: '', s: '' };
-    $('#a-search').value = ''; $('#h-search').value = '';
+    edit = null; filt.apar = { q: '', s: '' }; filt.hyd = { q: '', s: '' }; filt.fa = { q: '', s: '' };
+    $('#a-search').value = ''; $('#h-search').value = ''; $('#f-search').value = '';
     fillForm();
     showScreen('edit');
-    setMod(S.mod === 'hyd' ? 'hyd' : 'apar');
+    setMod(S.mod === 'hyd' || S.mod === 'fa' ? S.mod : 'apar');
     $('#savestate').textContent = 'Berkas dibuka';
   }
   const alertList = (t) => { const m = $('#list-msg'); m.className = 'msg err'; m.textContent = t; };
@@ -807,13 +968,14 @@
     const u = me(), today = new Date().toISOString().slice(0, 10);
     const last = IDX[0] ? await loadBerkas(IDX.slice().sort((a, b) => b.updatedAt - a.updatedAt)[0].id) : null;
     const hyd = RH.blankModule(); if (last) hyd.alat = last.hyd.alat.map(a => ({ ...a }));
+    const fa = RF.blankModule(); if (last && last.fa) fa.alat = last.fa.alat.map(a => ({ ...a }));
     const sa = RU.sampleState();
     const b = {
       id: uidLong(), version: 3, createdBy: u && !isDemo() ? u.username : null, createdByName: u && !isDemo() ? u.nama : '', createdAt: Date.now(), updatedAt: Date.now(), mod: 'apar',
       shared: { klien: { nama: '', alamat: '', alamatSingkat: '', cakupanArea: '', bidang: '', pengurus: '', jabatanPengurus: '', petugas: '', jumlahTK: '', klasifikasi: '' } },
       apar: { meta: { isSample: false, nomor: '', periode: '', tglMulai: today, tglSelesai: today, tglLaporan: today, kota: '', jenis: $('#a-jenis').options[0].value, sebelumnya: '' },
         alat: (last ? last.apar.alat : sa.alat).map(a => ({ ...a, sert: last ? a.sert : '' })), keteranganTabel: last ? last.apar.keteranganTabel : sa.keteranganTabel, units: [], rekomendasi: null, denah: null, sync: {} },
-      hyd: { ...hyd, sync: {} },
+      hyd: { ...hyd, sync: {} }, fa: { ...fa, sync: {} },
     };
     await kvPut('b:' + b.id, berkasForDisk(b)).catch(() => { memBerkas[b.id] = b; });
     IDX.unshift(summarize(b)); await kvPut('index', IDX).catch(() => {});
@@ -829,7 +991,7 @@
     try {
       const raw = JSON.parse(await f.text());
       const b = toBerkas(raw); if (!b) throw new Error();
-      if (IDX.some(x => x.id === b.id)) { b.id = uidLong(); b.apar.sync = {}; b.hyd.sync = {}; }
+      if (IDX.some(x => x.id === b.id)) { b.id = uidLong(); b.apar.sync = {}; b.hyd.sync = {}; b.fa.sync = {}; }
       const pj = b.shared.pjk3;
       if (pj && !G.pjk3.nama) { if (pj.logo && pj.logo.data) { photoData.set(pj.logo.id, pj.logo.data); await putPhoto(pj.logo.id, pj.logo.data); delete pj.logo.data; } G.pjk3 = { ...blankPjk3(), ...pj }; await saveG(); }
       delete b.shared.pjk3; delete b.app;
@@ -845,17 +1007,18 @@
   // Tombol "Kirim" menandai laporan sebagai antrean (sync.pending). Antrean dikirim langsung bila
   // online, atau otomatis begitu sinyal kembali / aplikasi dibuka lagi. Foto yang sudah terkirim
   // dicatat di sync.photos supaya tidak dikirim ulang.
-  const MOD_NAME = { apar: 'APAR', hyd: 'Hidran' };
+  const MOD_NAME = { apar: 'APAR', hyd: 'Hidran', fa: 'Fire Alarm' };
+  const modCount = (m, x) => m === 'apar' ? x.units.length + ' unit' : m === 'fa' ? x.zones.length + ' zona' : x.points.length + ' titik';
   function renderSync() {
     if (!S) return;
     const demo = isDemo();
-    $('#sync-rows').innerHTML = ['apar', 'hyd'].map(m => {
+    $('#sync-rows').innerHTML = ['apar', 'hyd', 'fa'].map(m => {
       const x = S[m], has = hasData(m), sy = x.sync || {};
       const st = !has ? '<span class="pill s-none">Belum ada data</span>' : syncPill({ sentAt: sy.sentAt || 0, pending: sy.pending }, x.editedAt || 0);
-      return `<div class="bmod"><span class="kind">${MOD_NAME[m]}</span><span>${m === 'apar' ? x.units.length + ' unit' : x.points.length + ' titik'}${x.meta.nomor ? ' · <span class="mono">' + esc(x.meta.nomor) + '</span>' : ''}</span>${st}${sy.rev ? `<span class="savestate">revisi ${sy.rev}</span>` : ''}</div>`;
+      return `<div class="bmod"><span class="kind">${MOD_NAME[m]}</span><span>${modCount(m, x)}${x.meta.nomor ? ' · <span class="mono">' + esc(x.meta.nomor) + '</span>' : ''}</span>${st}${sy.rev ? `<span class="savestate">revisi ${sy.rev}</span>` : ''}</div>`;
     }).join('');
     $('#sync-who').textContent = demo ? 'Mode demo: masuk dengan akun petugas untuk mengirim laporan ke ruangk3.com.' : `Dikirim ke ruangk3.com atas nama ${me() ? me().nama : '–'}. Tanpa sinyal, laporan masuk antrean dan terkirim otomatis saat online.`;
-    $('#sync-go').disabled = demo || !(hasData('apar') || hasData('hyd'));
+    $('#sync-go').disabled = demo || !(hasData('apar') || hasData('hyd') || hasData('fa'));
   }
   function summaryFor(b, m) {
     const x = b[m], K = b.shared.klien;
@@ -863,6 +1026,10 @@
     if (m === 'apar') {
       const c = { L: 0, LC: 0, TL: 0 }; x.units.forEach(u => c[RU.statusOf(u)]++);
       return { nomor: x.meta.nomor || '', perusahaan: K.nama || '', alamat: K.alamatSingkat || K.alamat || '', tanggal, tglMulai: x.meta.tglMulai || '', jumlah: `${x.units.length} unit`, ringkasan: `Layak ${c.L} · Dgn catatan ${c.LC} · Tidak layak ${c.TL}` };
+    }
+    if (m === 'fa') {
+      const c = { M: 0, C: 0, T: 0 }; x.zones.forEach(z => c[RF.statusOf(z)]++); const tt = RF.totals(x);
+      return { nomor: x.meta.nomor || '', perusahaan: K.nama || '', alamat: K.alamatSingkat || K.alamat || '', tanggal, tglMulai: x.meta.tglMulai || '', jumlah: `${x.zones.length} zona`, ringkasan: `Zona: memenuhi ${c.M} · catatan ${c.C} · tidak ${c.T}${tt.du ? ` · detektor berfungsi ${tt.bf}/${tt.du}` : ''}` };
     }
     const last = RH.conclusions(x).slice(-1)[0] || '';
     return { nomor: x.meta.nomor || '', perusahaan: K.nama || '', alamat: K.alamatSingkat || K.alamat || '', tanggal, tglMulai: x.meta.tglMulai || '', jumlah: `${x.points.length} titik`, ringkasan: last.split('. ')[0] };
@@ -877,7 +1044,7 @@
     await fb.ready;
     if (!fb.isSignedIn() || fb.currentUid() !== (me() && me().uid)) throw Object.assign(new Error('Sesi berakhir. Masuk lagi untuk mengirim.'), { code: 'session' });
     const dataOf = async (id) => photoData.get(id) || await getPhoto(id);
-    for (const m of ['apar', 'hyd']) {
+    for (const m of ['apar', 'hyd', 'fa']) {
       const sy = b[m].sync || (b[m].sync = {});
       if (!hasData(m, b) || !sy.pending) continue;
       const reportId = `${b.id}-${m}`;
@@ -902,7 +1069,7 @@
     : err.message;
   $('#sync-go').onclick = async () => {
     const btn = $('#sync-go');
-    ['apar', 'hyd'].forEach(m => { if (hasData(m)) { S[m].sync ??= {}; S[m].sync.pending = true; } });
+    ['apar', 'hyd', 'fa'].forEach(m => { if (hasData(m)) { S[m].sync ??= {}; S[m].sync.pending = true; } });
     save(false); await flush(); renderSync();
     if (navigator.onLine === false) { setMsg('#sync-msg', 'Tidak ada sinyal. Laporan masuk antrean dan akan terkirim otomatis saat online.'); return; }
     btn.disabled = true; setMsg('#sync-msg', 'Menyiapkan pengiriman…');
@@ -918,7 +1085,7 @@
   let queueBusy = false;
   async function processQueue() {
     if (queueBusy || isDemo() || !me() || navigator.onLine === false) return;
-    const mine = IDX.filter(x => (x.apar.pending || x.hyd.pending) && (!x.createdBy || x.createdBy === me().uid));
+    const mine = IDX.filter(x => (x.apar.pending || x.hyd.pending || (x.fa && x.fa.pending)) && (!x.createdBy || x.createdBy === me().uid));
     if (!mine.length) return;
     queueBusy = true;
     const show = (t, err) => setMsg(!$('#screen-edit').hidden ? '#sync-msg' : '#list-msg', t, err);

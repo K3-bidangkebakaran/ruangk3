@@ -124,7 +124,7 @@ window.RiksaFB = {
       petugasUid: u.uid, petugasNama: p.nama || '', petugasEmail: u.email || '',
       pertama: (old && old.pertama) || now, diperbarui: now, rev,
     })), 20000);
-    await log(u.uid, p.nama, old ? 'perbarui laporan' : 'kirim laporan', reportId, `${jenis === 'apar' ? 'APAR' : 'Hidran'} ${summary.nomor || ''} – ${summary.perusahaan || ''} (rev ${rev})`);
+    await log(u.uid, p.nama, old ? 'perbarui laporan' : 'kirim laporan', reportId, `${jenis === 'apar' ? 'APAR' : jenis === 'fa' ? 'Fire Alarm' : 'Hidran'} ${summary.nomor || ''} – ${summary.perusahaan || ''} (rev ${rev})`);
     return { rev };
   },
 };
