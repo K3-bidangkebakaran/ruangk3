@@ -73,6 +73,19 @@ main { max-width: 1080px; margin: 0 auto; padding-inline: 16px; padding-block: 1
 .banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: var(--warn-bg); color: var(--ink); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: var(--r); padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
 .banner p { margin: 0; flex: 1; min-width: 200px; }
 
+
+/* petunjuk pengisian (panduan.js) */
+.how { display: block; font-style: normal; font-size: .76rem; line-height: 1.4; color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; margin-top: 2px; }
+.how::before { content: "\24d8  "; color: var(--accent); font-weight: 700; }
+.ck .lbl .how, .crow-top .lbl .how { margin-top: 4px; }
+.how-block { background: var(--sunken); border-left: 3px solid var(--accent); border-radius: 6px; padding: 9px 12px; margin: 0 0 14px; font-size: .82rem; line-height: 1.45; color: var(--ink); }
+.how-block b { display: block; margin-bottom: 3px; }
+.how-block ul { margin: 0; padding-left: 18px; }
+.how-block li { margin: 2px 0; }
+.no-how .how, .no-how .how-block { display: none !important; }
+@media (max-width: 520px) { .ck { grid-template-columns: 26px 1fr; } .ck .seg { grid-column: 2; justify-self: start; } }
+.how-btn { margin-right: auto; }
+
 /* sections & fields */
 .section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; margin-bottom: 16px; }
 .section > h2 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: 1.1rem; margin: 0 0 4px; text-wrap: balance; }
@@ -332,7 +345,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
     <p><b>Data contoh.</b> <span id="banner-text"></span></p>
     <span id="newrep-slot"></span>
   </div>
-  <div class="row" style="justify-content:flex-end;margin:-6px 0 10px"><span class="savestate" id="savestate">Memuat…</span></div>
+  <div class="row" style="justify-content:flex-end;margin:-6px 0 10px"><button class="btn sm ghost how-btn" id="how-toggle" type="button" aria-pressed="true" title="Tampilkan atau sembunyikan petunjuk cara mengisi">ⓘ Petunjuk: Tampil</button><span class="savestate" id="savestate">Memuat…</span></div>
 
   <!-- ===================== APAR ===================== -->
   <section id="tab-a-data" class="tabpanel" hidden>
@@ -360,6 +373,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
     <div class="section">
       <h2>Peralatan uji APAR</h2>
       <p class="hint">Tabel 3.2. Kosongkan nomor sertifikat bila tidak ada.</p>
+      <div data-howblk="alat-apar"></div>
       <div class="alat-list" data-mod="apar"></div>
       <button class="btn sm alat-add" data-mod="apar">+ Tambah peralatan</button>
     </div>
@@ -370,6 +384,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
   </section>
 
   <section id="tab-a-units" class="tabpanel" hidden>
+    <div data-howblk="unit-apar"></div>
     <div class="stats" id="a-stats"></div>
     <div class="toolbar">
       <input type="text" id="a-search" placeholder="Cari kode atau lokasi…" aria-label="Cari unit APAR">
@@ -382,6 +397,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
     <div class="section">
       <h2>Kesimpulan (otomatis)</h2>
       <p class="hint">Disusun dari status setiap unit.</p>
+      <div data-howblk="kesimpulan"></div>
       <ol class="list" id="a-concl-list" type="a"></ol>
     </div>
     <div class="section">
@@ -393,6 +409,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
     <div class="section">
       <h2>Denah penempatan APAR</h2>
       <p class="hint">Lampiran B.</p>
+      <div data-howblk="denah-apar"></div>
       <div class="row">
         <label class="btn sm filebtn">Ambil / pilih gambar<input type="file" class="img-in" data-target="apar.denah" accept="image/*"></label>
         <button class="btn sm ghost danger img-del" data-target="apar.denah" hidden>Hapus gambar</button>
@@ -450,34 +467,40 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
     </div>
     <div class="section">
       <h2>Data pompa (nameplate)</h2>
+      <div data-howblk="pompa"></div>
       <div id="h-pompa"></div>
       <button class="btn sm" id="h-pompa-add">+ Tambah pompa</button>
     </div>
     <div class="section">
       <h2>Peralatan uji hidran</h2>
+      <div data-howblk="alat-hyd"></div>
       <div class="alat-list" data-mod="hyd"></div>
       <button class="btn sm alat-add" data-mod="hyd">+ Tambah peralatan</button>
     </div>
   </section>
 
   <section id="tab-h-pump" class="tabpanel" hidden>
-    <div class="section"><h2>4.1 Pemeriksaan dokumen</h2><div class="crows" data-sec="dokumen"></div></div>
-    <div class="section"><h2>4.2 Rumah pompa, pompa dan persediaan air</h2><div class="crows" data-sec="rumah"></div></div>
+    <div data-howblk="nilai"></div>
+    <div class="section"><h2>4.1 Pemeriksaan dokumen</h2><div data-howblk="crow-dokumen"></div><div class="crows" data-sec="dokumen"></div></div>
+    <div class="section"><h2>4.2 Rumah pompa, pompa dan persediaan air</h2><div data-howblk="crow-rumah"></div><div class="crows" data-sec="rumah"></div></div>
     <div class="section"><h2>4.3 Uji fungsi pompa (7 langkah)</h2>
       <p class="hint">Jalankan pompa melalui katup uji. Catat tekanan pada setiap langkah sesuai INS.11/M/BW/1997 butir IV.8.</p>
+      <div data-howblk="crow-ujiPompa"></div>
       <div class="crows" data-sec="ujiPompa"></div>
       <label class="field" style="margin-top:12px"><span>Catatan uji pompa (debit flow meter, start manual, dll.)</span><textarea id="h-upnote" data-path="hyd.ujiPompaNote" rows="3"></textarea></label>
     </div>
-    <div class="section"><h2>4.4 Instalasi listrik pompa</h2><div class="crows" data-sec="listrik"></div></div>
+    <div class="section"><h2>4.4 Instalasi listrik pompa</h2><div data-howblk="crow-listrik"></div><div class="crows" data-sec="listrik"></div></div>
     <div class="section"><h2>4.5 Uji operasi hidran 3 titik</h2>
       <p class="hint">Buka bertahap: terdekat → terjauh → tengah, titik sebelumnya tetap terbuka. Kriteria: maks. 7 kg/cm²; titik terjauh min. 4,5 kg/cm². Hasil dinilai otomatis.</p>
+      <div data-howblk="uji3"></div>
       <div class="crows" id="h-uji3"></div>
       <p class="hint" id="h-uji3-eval" style="margin:8px 0 0"></p>
     </div>
-    <div class="section"><h2>Sambungan Damkar</h2><div class="crows" data-sec="siamese"></div></div>
-    <div class="section"><h2>4.7 Persediaan air</h2><div class="calc" id="h-water"></div><p class="hint" style="margin-top:6px">Ubah volume reservoir dan laju aliran di tab Data Laporan.</p></div>
+    <div class="section"><h2>Sambungan Damkar</h2><div data-howblk="crow-siamese"></div><div class="crows" data-sec="siamese"></div></div>
+    <div class="section"><h2>4.7 Persediaan air</h2><div data-howblk="air"></div><div class="calc" id="h-water"></div><p class="hint" style="margin-top:6px">Ubah volume reservoir dan laju aliran di tab Data Laporan.</p></div>
     <div class="section"><h2>Foto dokumentasi umum</h2>
       <p class="hint">Panel pompa, manometer saat uji, pitot gauge, dan lainnya. Masuk ke Lampiran A sebelum foto titik hidran.</p>
+      <div data-howblk="gen-foto"></div>
       <div class="row">
         <label class="btn primary filebtn">Ambil foto<input type="file" class="gen-ph" accept="image/*" capture="environment"></label>
         <label class="btn filebtn">Pilih dari galeri<input type="file" class="gen-ph" accept="image/*" multiple></label>
@@ -487,6 +510,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
   </section>
 
   <section id="tab-h-points" class="tabpanel" hidden>
+    <div data-howblk="unit-hyd"></div>
     <div class="stats" id="h-stats"></div>
     <div class="toolbar">
       <input type="text" id="h-search" placeholder="Cari kode atau lokasi…" aria-label="Cari titik hidran">
@@ -515,6 +539,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
     <div class="section">
       <h2>Gambar instalasi</h2>
       <p class="hint">Lampiran B: denah / skema jaringan hidran.</p>
+      <div data-howblk="denah-hyd"></div>
       <div class="row">
         <label class="btn sm filebtn">Ambil / pilih gambar<input type="file" class="img-in" data-target="hyd.gambar" accept="image/*"></label>
         <button class="btn sm ghost danger img-del" data-target="hyd.gambar" hidden>Hapus gambar</button>
@@ -610,6 +635,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
   </div>
 </div>
 
+<script src="js/panduan.js"></script>
 <script src="js/report.js"></script>
 <script src="js/hydrant-report.js"></script>
 <script type="module" src="js/firebase.js"></script>
@@ -625,7 +651,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
    aplikasi dibandingkan dengan server; kalau berbeda -> muat ulang sendiri bila sedang tidak dipakai (editor
    tertutup, tidak mengetik, tidak sedang menyimpan), kalau tidak -> tombol "Perbarui". Data tersimpan di perangkat. */
 (function () {
-  var FILES = ['./index.html', './js/app.js', './js/report.js', './js/hydrant-report.js', './js/firebase.js', './sw.js'];
+  var FILES = ['./index.html', './js/app.js', './js/panduan.js', './js/report.js', './js/hydrant-report.js', './js/firebase.js', './sw.js'];
   var base = null, shown = false, checking = false;
   function hash(t) { var h = 2166136261; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + t.length; }
   async function sig() {

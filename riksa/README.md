@@ -36,6 +36,7 @@ IndexedDB "riksa-uji-apar"   --Kirim-->   artifacts/k3-kebakaran-app-v5/public/d
 | `index.html` | Tampilan aplikasi |
 | `js/app.js` | Logika aplikasi (berkas, editor, foto, unduh Word, antrean kirim) |
 | `js/firebase.js` | Login petugas & pengiriman ke Firebase (modul ES) |
+| `js/panduan.js` | Teks petunjuk cara mengisi/memeriksa/menghitung tiap kolom & butir (tombol "Petunjuk" di editor) |
 | `js/report.js` | Generator Word laporan APAR (dipakai juga oleh panel admin) |
 | `js/hydrant-report.js` | Generator Word laporan hidran (dipakai juga oleh panel admin) |
 | `vendor/docx.iife.js` | Pustaka `docx` 9.7.1 (disimpan lokal supaya Word bisa dibuat offline) |

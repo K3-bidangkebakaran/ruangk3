@@ -344,7 +344,7 @@
     const fld = (k, l) => `<label class="field"><span>${l}</span><input type="text" id="cr-${sec}-${i}-${k}" data-sec="${sec}" data-ri="${i}" data-k="${k}" value="${esc(r[k])}"></label>`;
     const extra = [sec === 'ujiPompa' ? ['ket', 'Temuan'] : null, ['rek', 'Rekomendasi'], ['batas', 'Batas waktu']].filter(Boolean);
     return `<div class="crow ${bad ? 'is' + r.hasil : ''}" data-row="${sec}-${i}">
-      <div class="crow-top"><span class="no">${i + 1}</span><span class="lbl">${esc(r.label)}</span>
+      <div class="crow-top"><span class="no">${i + 1}</span><span class="lbl">${esc(r.label)}${PD.crow(sec, i)}</span>
         <span class="seg mct" role="group" aria-label="Penilaian butir ${i + 1}">${['M', 'C', 'T'].map(v => `<button data-sec="${sec}" data-ri="${i}" data-hv="${v}" data-v="${v}" aria-pressed="${r.hasil === v}" title="${H_LABEL[v]}">${v === 'M' ? 'Memenuhi' : v === 'C' ? 'Catatan' : 'Tidak'}</button>`).join('')}</span></div>
       <div class="grid">${SEC_FIELDS[sec].map(([k, l]) => fld(k, l)).join('')}</div>
       <div class="grid" ${bad ? '' : 'hidden'}>${extra.map(([k, l]) => fld(k, l)).join('')}</div>
@@ -476,14 +476,14 @@
     $$('.ck').forEach((row, k) => row.classList.toggle('isx', u.checks[k] === 'x'));
     const tp = $('#u-temuan'); if (tp) tp.placeholder = (isA ? RU.autoTemuan(u) : RH.autoTemuan(u)) || 'Tidak ada temuan';
   }
-  const fld = (u, k, label, ph = '') => `<label class="field"><span>${label}</span><input type="text" id="u-${k}" data-u="${k}" value="${esc(u[k])}" placeholder="${esc(ph)}"></label>`;
-  const photoSection = (hint) => `<div class="section"><h2>Foto dokumentasi</h2><p class="hint">${hint}</p>
+  const fld = (u, k, label, ph = '') => `<label class="field"><span>${label}</span><input type="text" id="u-${k}" data-u="${k}" value="${esc(u[k])}" placeholder="${esc(ph)}">${PD.e(k)}</label>`;
+  const photoSection = (hint, how = '') => `<div class="section"><h2>Foto dokumentasi</h2><p class="hint">${hint}</p>${how}
       <div class="row">
         <label class="btn primary filebtn">Ambil foto<input type="file" id="ph-cam" accept="image/*" capture="environment"></label>
         <label class="btn filebtn">Pilih dari galeri<input type="file" id="ph-gal" accept="image/*" multiple></label>
         <label class="check-inline"><input type="checkbox" id="ph-stamp" ${stampOn ? 'checked' : ''}> Cap waktu</label>
       </div><div class="photos" id="ph-list"></div></div>`;
-  const checkRow = (k, label, sub, val, opts) => `<div class="ck"><span class="no">${k + 1}</span><span class="lbl">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}</span>
+  const checkRow = (k, label, sub, val, opts, hw = '') => `<div class="ck"><span class="no">${k + 1}</span><span class="lbl">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}${hw}</span>
       <span class="seg" role="group" aria-label="Butir ${k + 1}">${opts.map(([v, s, t]) => `<button data-ck="${k}" data-v="${v}" aria-pressed="${val === v}" title="${t}" aria-label="${t}">${s}</button>`).join('')}</span></div>`;
   const OPT3 = [['v', '✓', 'Memenuhi'], ['x', '✗', 'Tidak memenuhi'], ['na', '–', 'Tidak berlaku']];
   const OPT2 = OPT3.slice(0, 2);
@@ -494,44 +494,46 @@
     let html;
     if (isA) {
       const hy = u.hydro || (u.hydro = { ...HYDRO_DEFAULT });
-      const hf = (k, label) => `<label class="field"><span>${label}</span><input type="text" id="h-${k}" data-h="${k}" value="${esc(hy[k])}"></label>`;
+      const hf = (k, label) => `<label class="field"><span>${label}</span><input type="text" id="h-${k}" data-h="${k}" value="${esc(hy[k])}">${PD.e(k)}</label>`;
       html = `<div class="section"><h2>Identitas unit</h2><div class="grid">
           ${fld(u, 'kode', 'Kode', 'APAR-01')}${fld(u, 'lokasi', 'Lokasi', 'Gudang Bahan Baku A')}
-          <label class="field"><span>Media</span><select id="u-media" data-u="media">${MEDIA.map(m => `<option${m === u.media ? ' selected' : ''}>${m}</option>`).join('')}</select></label>
+          <label class="field"><span>Media</span><select id="u-media" data-u="media">${MEDIA.map(m => `<option${m === u.media ? ' selected' : ''}>${m}</option>`).join('')}</select>${PD.e('media')}</label>
           ${fld(u, 'kap', 'Kapasitas', '6 kg')}${fld(u, 'merk', 'Merk')}${fld(u, 'thn', 'Tahun produksi', '2023')}${fld(u, 'isiUlang', 'Isi ulang terakhir', 'MM/YYYY')}${fld(u, 'bacaan', 'Tekanan / berat isi', '14 bar (hijau)')}
         </div></div>
-        ${photoSection('Masuk ke Lampiran A. Foto dikompres dan diberi cap kode, lokasi serta waktu.')}
+        ${photoSection('Masuk ke Lampiran A. Foto dikompres dan diberi cap kode, lokasi serta waktu.', `<div class="how-block">${PD.block('apar-foto')}</div>`)}
         <div class="section"><h2>Checklist PER.04/MEN/1980</h2>
+          <div class="how-block">${PD.block('ck-apar')}</div>
           <div class="row" style="margin-bottom:10px"><button class="btn sm" id="ck-all">Semua ✓</button><span class="savestate">Tekan ✗ pada butir yang tidak memenuhi</span></div>
-          <div class="checks">${RU.ITEMS.map((it, k) => checkRow(k, it[0], it[1], u.checks[k], OPT3)).join('')}</div></div>
+          <div class="checks">${RU.ITEMS.map((it, k) => checkRow(k, it[0], it[1], u.checks[k], OPT3, PD.aparItem(k))).join('')}</div></div>
         <div class="section"><h2>Status & temuan</h2><div class="grid">
-          <label class="field"><span>Status</span><select id="u-statusOverride" data-u="statusOverride"><option value="">Otomatis dari checklist</option><option value="L">Layak</option><option value="LC">Layak dengan catatan</option><option value="TL">Tidak Layak</option></select><small class="savestate" id="ed-auto"></small></label>
-          <label class="field"><span>Batas waktu tindak lanjut</span><input type="text" id="u-batas" data-u="batas" value="${esc(u.batas)}" placeholder="Otomatis: ≤ 7 hari (TL) / ≤ 30 hari (LC)"></label>
-          <label class="field wide"><span>Temuan</span><textarea id="u-temuan" data-u="temuan" rows="2">${esc(u.temuan)}</textarea></label>
-          <label class="field wide"><span>Rekomendasi</span><textarea id="u-rekomendasi" data-u="rekomendasi" rows="2" placeholder="Otomatis bila dikosongkan">${esc(u.rekomendasi)}</textarea></label>
+          <label class="field"><span>Status</span><select id="u-statusOverride" data-u="statusOverride"><option value="">Otomatis dari checklist</option><option value="L">Layak</option><option value="LC">Layak dengan catatan</option><option value="TL">Tidak Layak</option></select><small class="savestate" id="ed-auto"></small>${PD.e('statusOverride_apar')}</label>
+          <label class="field"><span>Batas waktu tindak lanjut</span><input type="text" id="u-batas" data-u="batas" value="${esc(u.batas)}" placeholder="Otomatis: ≤ 7 hari (TL) / ≤ 30 hari (LC)">${PD.e('batas')}</label>
+          <label class="field wide"><span>Temuan</span><textarea id="u-temuan" data-u="temuan" rows="2">${esc(u.temuan)}</textarea>${PD.e('temuan')}</label>
+          <label class="field wide"><span>Rekomendasi</span><textarea id="u-rekomendasi" data-u="rekomendasi" rows="2" placeholder="Otomatis bila dikosongkan">${esc(u.rekomendasi)}</textarea>${PD.e('rekomendasi')}</label>
         </div></div>
         <div class="section"><h2>Percobaan tekan (hidrostatik)</h2>
-          <label class="check-inline"><input type="checkbox" id="h-done" ${hy.done ? 'checked' : ''}> Unit ini diuji hidrostatik pada riksa uji ini (jatuh tempo 5 tahun, Pasal 15)</label>
+          <label class="check-inline"><input type="checkbox" id="h-done" ${hy.done ? 'checked' : ''}> Unit ini diuji hidrostatik pada riksa uji ini (jatuh tempo 5 tahun, Pasal 15)</label>${PD.e('h-done') ? `<div style="margin-top:4px">${PD.e('h-done')}</div>` : ''}
           <div class="grid" id="h-fields" style="margin-top:12px" ${hy.done ? '' : 'hidden'}>
             ${hf('kerja', 'Tekanan kerja')}${hf('coba', 'Tekanan coba')}${hf('durasi', 'Durasi')}${hf('bocor', 'Kebocoran')}${hf('deformasi', 'Deformasi')}
-            <label class="field"><span>Hasil</span><select id="h-hasil" data-h="hasil"><option${hy.hasil !== 'Gagal' ? ' selected' : ''}>Lulus</option><option${hy.hasil === 'Gagal' ? ' selected' : ''}>Gagal</option></select></label>
+            <label class="field"><span>Hasil</span><select id="h-hasil" data-h="hasil"><option${hy.hasil !== 'Gagal' ? ' selected' : ''}>Lulus</option><option${hy.hasil === 'Gagal' ? ' selected' : ''}>Gagal</option></select>${PD.e('hasil')}</label>
           </div></div>
         <div class="row"><button class="btn sm" id="u-dup">Duplikat unit ini</button></div>`;
     } else {
       const items = RH.itemsOf(u);
       html = `<div class="section"><h2>Identitas titik</h2><div class="grid">
           ${fld(u, 'kode', 'Kode', u.jenis === 'halaman' ? 'HP-01' : 'H-01')}${fld(u, 'lokasi', 'Lokasi', 'Gudang Bahan Baku A')}
-          <label class="field"><span>Jenis</span><select id="u-jenis" data-u="jenis"><option value="gedung"${u.jenis !== 'halaman' ? ' selected' : ''}>Hidran gedung (kotak hidran)</option><option value="halaman"${u.jenis === 'halaman' ? ' selected' : ''}>Hidran halaman (pilar)</option></select></label>
+          <label class="field"><span>Jenis</span><select id="u-jenis" data-u="jenis"><option value="gedung"${u.jenis !== 'halaman' ? ' selected' : ''}>Hidran gedung (kotak hidran)</option><option value="halaman"${u.jenis === 'halaman' ? ' selected' : ''}>Hidran halaman (pilar)</option></select>${PD.e('jenis')}</label>
         </div></div>
-        ${photoSection('Masuk ke Lampiran A setelah foto dokumentasi umum.')}
+        ${photoSection('Masuk ke Lampiran A setelah foto dokumentasi umum.', `<div class="how-block">${PD.block('hyd-foto')}</div>`)}
         <div class="section"><h2>Checklist ${u.jenis === 'halaman' ? 'hidran halaman' : 'kotak hidran'}</h2>
+          <div class="how-block">${PD.block('ck-hyd')}</div>
           <div class="row" style="margin-bottom:10px"><button class="btn sm" id="ck-all">Semua ✓</button><span class="savestate">Tekan ✗ pada butir yang tidak memenuhi</span></div>
-          <div class="checks">${items.map((it, k) => checkRow(k, it, '', u.checks[k], OPT2)).join('')}</div></div>
+          <div class="checks">${items.map((it, k) => checkRow(k, it, '', u.checks[k], OPT2, PD.hydItem(u.jenis, k))).join('')}</div></div>
         <div class="section"><h2>Penilaian & temuan</h2><div class="grid">
-          <label class="field"><span>Penilaian</span><select id="u-statusOverride" data-u="statusOverride"><option value="">Otomatis dari checklist</option><option value="M">Memenuhi</option><option value="C">Catatan</option><option value="T">Tidak memenuhi</option></select><small class="savestate" id="ed-auto"></small></label>
-          <label class="field"><span>Batas waktu tindak lanjut</span><input type="text" id="u-batas" data-u="batas" value="${esc(u.batas)}" placeholder="Otomatis: ≤ 7 hari (Tidak) / ≤ 30 hari (Catatan)"></label>
-          <label class="field wide"><span>Temuan</span><textarea id="u-temuan" data-u="temuan" rows="2">${esc(u.temuan)}</textarea></label>
-          <label class="field wide"><span>Rekomendasi</span><textarea id="u-rekomendasi" data-u="rekomendasi" rows="2" placeholder="Otomatis bila dikosongkan">${esc(u.rekomendasi)}</textarea></label>
+          <label class="field"><span>Penilaian</span><select id="u-statusOverride" data-u="statusOverride"><option value="">Otomatis dari checklist</option><option value="M">Memenuhi</option><option value="C">Catatan</option><option value="T">Tidak memenuhi</option></select><small class="savestate" id="ed-auto"></small>${PD.e('statusOverride_hyd')}</label>
+          <label class="field"><span>Batas waktu tindak lanjut</span><input type="text" id="u-batas" data-u="batas" value="${esc(u.batas)}" placeholder="Otomatis: ≤ 7 hari (Tidak) / ≤ 30 hari (Catatan)">${PD.e('batas')}</label>
+          <label class="field wide"><span>Temuan</span><textarea id="u-temuan" data-u="temuan" rows="2">${esc(u.temuan)}</textarea>${PD.e('temuan')}</label>
+          <label class="field wide"><span>Rekomendasi</span><textarea id="u-rekomendasi" data-u="rekomendasi" rows="2" placeholder="Otomatis bila dikosongkan">${esc(u.rekomendasi)}</textarea>${PD.e('rekomendasi')}</label>
         </div></div>
         <div class="row"><button class="btn sm" id="u-dup">Duplikat titik ini</button></div>`;
     }
@@ -940,6 +942,7 @@
   setInterval(processQueue, 5 * 60 * 1000);
 
   // ---------- start ----------
+  PD.decorate(); PD.apply(); const howBtn = $('#how-toggle'); if (howBtn) howBtn.onclick = PD.toggle;
   bootStorage().then(() => {
     if (me()) { renderList(); showScreen('list'); } else openLogin('');
     ensureDocx().catch(() => {});
