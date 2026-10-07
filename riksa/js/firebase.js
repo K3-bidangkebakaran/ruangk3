@@ -7,11 +7,13 @@
 //   riksa_petugas/{uid}          profil petugas {nama, email, aktif, dibuat}      (dikelola Admin Pusat)
 //   riksa_laporan/{reportId}     ringkasan laporan untuk daftar di panel admin
 //   riksa_laporan_data/{reportId} isi lengkap laporan {json, disimpan, petugasUid}
-//   riksa_foto/{reportId}/{photoId}  foto (dataURL JPEG/PNG)
+//   riksa_foto/{reportId}/{photoId}  foto (dataURL JPEG/PNG) – HANYA laporan lama / bila Drive belum diatur
+//   riksa_pengaturan/drive       {url, ts} alamat Web App Google Drive Riksa Uji (diisi Admin Pusat di panel admin)
+//   Bila Drive aktif, foto & isi laporan disimpan di Google Drive; riksa_laporan hanya berisi ringkasan + field `drive`.
 //   riksa_log/{pushId}           jejak aktivitas {waktu, uid, nama, aksi, reportId, ket}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getDatabase, ref, get, set, push } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+import { getDatabase, ref, get, set, push, remove } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg',
@@ -73,6 +75,17 @@ onAuthStateChanged(auth, (u) => {
 window.RiksaFB = {
   ready,
   isSignedIn: () => !!auth.currentUser,
+  // token login untuk Apps Script Google Drive (diperbarui otomatis oleh Firebase)
+  async idToken() {
+    if (!auth.currentUser) throw fail('session', 'Sesi berakhir. Silakan masuk lagi.');
+    try { return await withTimeout(auth.currentUser.getIdToken(), 20000); }
+    catch (e) { throw e && e.code === 'network' ? e : fail('session', 'Sesi berakhir. Silakan masuk lagi.'); }
+  },
+  // alamat Web App Google Drive. null = belum diatur (aplikasi memakai penyimpanan Firebase lama)
+  async driveCfg() {
+    const snap = await withTimeout(get(ref(db, `${ROOT}/riksa_pengaturan/drive`)), 20000);
+    return snap.val();
+  },
   currentUid: () => (auth.currentUser ? auth.currentUser.uid : null),
   async login(email, password) {
     let cred;
@@ -111,20 +124,25 @@ window.RiksaFB = {
     await withTimeout(set(ref(db, `${ROOT}/riksa_foto/${reportId}/${photoId}`), dataUrl), 90000);
     return photoId;
   },
-  async saveReport({ reportId, berkasId, jenis, summary, report, jumlahFoto }) {
+  async saveReport({ reportId, berkasId, jenis, summary, report, jumlahFoto, drive }) {
     const { u, p } = await requireActive();
     const sumRef = ref(db, `${ROOT}/riksa_laporan/${reportId}`);
     const old = (await withTimeout(get(sumRef), 20000)).val();
     if (old && old.petugasUid && old.petugasUid !== u.uid) throw fail('forbidden', 'Laporan ini sudah dikirim oleh petugas lain.');
     const now = Date.now();
-    await withTimeout(set(ref(db, `${ROOT}/riksa_laporan_data/${reportId}`), { json: JSON.stringify(report), disimpan: now, petugasUid: u.uid }), 60000);
+    if (!drive) await withTimeout(set(ref(db, `${ROOT}/riksa_laporan_data/${reportId}`), { json: JSON.stringify(report), disimpan: now, petugasUid: u.uid }), 60000);
     const rev = ((old && old.rev) || 0) + 1;
     await withTimeout(set(sumRef, clean({
       ...summary, jenis, berkasId, jumlahFoto: jumlahFoto || 0,
       petugasUid: u.uid, petugasNama: p.nama || '', petugasEmail: u.email || '',
+      drive: drive || null,
       pertama: (old && old.pertama) || now, diperbarui: now, rev,
     })), 20000);
-    await log(u.uid, p.nama, old ? 'perbarui laporan' : 'kirim laporan', reportId, `${jenis === 'apar' ? 'APAR' : jenis === 'fa' ? 'Fire Alarm' : 'Hidran'} ${summary.nomor || ''} – ${summary.perusahaan || ''} (rev ${rev})`);
+    // laporan lama yang masih di Firebase dipindah ke Drive: bersihkan salinan lama (hemat kuota Firebase)
+    if (drive && old && !old.drive) {
+      Promise.all([remove(ref(db, `${ROOT}/riksa_laporan_data/${reportId}`)), remove(ref(db, `${ROOT}/riksa_foto/${reportId}`))]).catch(() => {});
+    }
+    await log(u.uid, p.nama, old ? 'perbarui laporan' : 'kirim laporan', reportId, `${jenis === 'apar' ? 'APAR' : jenis === 'fa' ? 'Fire Alarm' : 'Hidran'} ${summary.nomor || ''} – ${summary.perusahaan || ''} (rev ${rev})${drive ? ' → Google Drive' : ''}`);
     return { rev };
   },
 };

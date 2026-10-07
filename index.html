@@ -2013,6 +2013,14 @@
                                 <button type="button" id="btn-riksa-salin-link" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Salin link aplikasi</button>
                             </div>
                         </div>
+                        <div id="riksa-drive-box" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                            <p id="riksa-drive-status" class="text-xs text-slate-600">Memeriksa penyimpanan Google Drive…</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <a id="riksa-drive-folder" href="#" target="_blank" rel="noopener" class="hidden px-3 py-1.5 bg-safety-500 text-white rounded-md text-xs font-bold">Buka folder Drive ↗</a>
+                                <button type="button" id="btn-riksa-drive-hubung" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-md text-xs font-bold">Hubungkan Drive Riksa Uji</button>
+                                <button type="button" id="btn-riksa-drive-putus" class="hidden px-3 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold">Putuskan</button>
+                            </div>
+                        </div>
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total laporan</p><p id="riksa-stat-total" class="text-2xl font-bold text-slate-900">0</p></div>
                             <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">APAR</p><p id="riksa-stat-apar" class="text-2xl font-bold text-slate-900">0</p></div>
@@ -8768,6 +8776,8 @@
         const pathRiksaLaporanData = `artifacts/${cleanAppId}/public/data/riksa_laporan_data`;
         const pathRiksaFoto = `artifacts/${cleanAppId}/public/data/riksa_foto`;
         const pathRiksaLog = `artifacts/${cleanAppId}/public/data/riksa_log`;
+        const pathRiksaDrive = `artifacts/${cleanAppId}/public/data/riksa_pengaturan/drive`;
+        let riksaDrive = null, riksaDriveListener = null, riksaDriveRoot = '';
         let riksaLaporanAll = [];
         let riksaPetugasAll = [];
         let riksaListenerLaporan = null, riksaListenerPetugas = null;
@@ -8783,6 +8793,10 @@
                     riksaLaporanAll = Object.entries(v).map(([id, r]) => ({ id, ...r })).sort((a, b) => (b.diperbarui || 0) - (a.diperbarui || 0));
                     window.riksaRenderLaporan();
                 }, () => { const tb = document.getElementById('riksa-tbody'); if (tb) tb.innerHTML = '<tr><td colspan="9" class="px-3 py-6 text-center text-xs text-red-500">Gagal memuat laporan. Periksa koneksi.</td></tr>'; });
+            }
+            if (!riksaDriveListener) {
+                riksaDriveListener = onValue(ref(db, pathRiksaDrive), (snap) => { riksaDrive = snap.val(); window.riksaRenderDrive(); },
+                    () => { riksaDrive = null; window.riksaRenderDrive(); });
             }
             if (!riksaListenerPetugas) {
                 riksaListenerPetugas = onValue(ref(db, pathRiksaPetugas), (snap) => {
@@ -8836,6 +8850,7 @@
                     <td class="px-3 py-2 text-xs text-slate-600 whitespace-normal min-w-[220px]">${riksaEsc(r.ringkasan || '')}</td>
                     <td class="px-3 py-2 text-xs">${riksaEsc(r.petugasNama || '–')}<br><span class="text-[10px] text-slate-500">${riksaEsc(r.petugasEmail || '')}</span></td>
                     <td class="px-3 py-2 text-right space-x-1">
+                        ${r.drive && dhLinkDrive(r.drive.url) ? `<a href="${riksaEsc(dhLinkDrive(r.drive.url))}" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold inline-block">Drive ↗</a>` : ''}
                         <button type="button" onclick="window.riksaUnduhWord('${riksaEsc(r.id)}', this)" class="px-2.5 py-1.5 bg-safety-500 text-white rounded-md text-xs font-bold">Unduh Word</button>
                         <button type="button" onclick="window.riksaHapusLaporan('${riksaEsc(r.id)}')" class="px-2.5 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold">Hapus</button>
                     </td>
@@ -8848,6 +8863,51 @@
             const link = location.origin + '/riksa/';
             try { await navigator.clipboard.writeText(link); window.showToast('Link aplikasi petugas disalin: ' + link, 'success'); }
             catch (e) { window.showToast('Link aplikasi petugas: ' + link, 'info'); }
+        });
+
+        // ---------- Google Drive Riksa Uji ----------
+        // Memakai Apps Script yang SAMA dengan Daftar Hadir: URL + Kode Akses diambil dari koneksi Drive menu Daftar Hadir
+        // (localStorage 'rk3_dh_cfg'). Alamat Web App disimpan di Firebase (riksa_pengaturan/drive) supaya aplikasi petugas
+        // tahu harus mengirim foto & laporan ke mana. Kode akses TIDAK pernah disimpan di Firebase.
+        async function riksaDriveApi(action, payload) {
+            const cfg = dhCfg() || await dhCfgDariAplikasi();
+            if (!cfg) throw new Error('Drive belum dihubungkan. Hubungkan dulu di menu Daftar Hadir & Dokumentasi (URL Web App + Kode Akses yang sama dipakai Riksa Uji).');
+            const url = (riksaDrive && DH_URL_OK.test(riksaDrive.url || '') ? riksaDrive.url : cfg.url);
+            return dhApi(action, { app: 'riksa', kode: cfg.token, ...(payload || {}) }, { url, token: '' });
+        }
+        window.riksaRenderDrive = function() {
+            const st = document.getElementById('riksa-drive-status'); if (!st) return;
+            const aktif = !!(riksaDrive && DH_URL_OK.test(riksaDrive.url || ''));
+            st.textContent = aktif
+                ? 'Penyimpanan: Google Drive. Foto, data dan file Word laporan baru dari petugas disimpan di Drive (folder per perusahaan); Firebase hanya memegang ringkasan. Laporan lama tetap di Firebase.'
+                : 'Penyimpanan: Firebase (cara lama). Klik "Hubungkan Drive Riksa Uji" supaya foto & data laporan baru disimpan di Google Drive.';
+            st.className = 'text-xs ' + (aktif ? 'text-emerald-700' : 'text-amber-700');
+            const a = document.getElementById('riksa-drive-folder');
+            if (a) { const u = dhLinkDrive(riksaDriveRoot); a.classList.toggle('hidden', !(aktif && u)); if (u) a.href = u; }
+            document.getElementById('btn-riksa-drive-putus')?.classList.toggle('hidden', !aktif);
+            const h = document.getElementById('btn-riksa-drive-hubung'); if (h) h.textContent = aktif ? 'Periksa koneksi Drive' : 'Hubungkan Drive Riksa Uji';
+            if (aktif && !riksaDriveRoot && dhCfg()) riksaDriveApi('ping').then(j => { riksaDriveRoot = j.rootUrl || ''; window.riksaRenderDrive(); }).catch(() => {});
+        };
+        document.getElementById('btn-riksa-drive-hubung')?.addEventListener('click', async (e) => {
+            if (!riksaIsAdmin()) return;
+            const btn = e.currentTarget, ori = btn.textContent; btn.disabled = true; btn.textContent = 'Memeriksa…';
+            try {
+                const cfg = dhCfg() || await dhCfgDariAplikasi();
+                if (!cfg) throw new Error('Hubungkan dulu Drive di menu Daftar Hadir & Dokumentasi (URL Web App + Kode Akses). Riksa Uji memakai koneksi yang sama.');
+                const j = await dhApi('ping', { app: 'riksa', kode: cfg.token }, { url: cfg.url, token: cfg.token });
+                if (j.role !== 'admin') throw new Error('Apps Script belum versi terbaru (belum ada fitur Riksa Uji). Tempel Code.gs terbaru di Apps Script, jalankan riksaSetup sekali, lalu Deploy versi baru.');
+                riksaDriveRoot = j.rootUrl || '';
+                await set(ref(db, pathRiksaDrive), { url: cfg.url, ts: Date.now() });
+                window.showToast('Drive Riksa Uji terhubung. Laporan baru disimpan di Google Drive.', 'success');
+            } catch (err) {
+                window.showToast('Gagal menghubungkan Drive: ' + (err.message || err), 'error');
+            } finally { btn.disabled = false; btn.textContent = ori; window.riksaRenderDrive(); }
+        });
+        document.getElementById('btn-riksa-drive-putus')?.addEventListener('click', async () => {
+            if (!riksaIsAdmin()) return;
+            if (!confirm('Putuskan Drive Riksa Uji?\n\nLaporan baru dari petugas akan disimpan di Firebase lagi. Laporan yang sudah ada di Drive tetap aman di Drive.')) return;
+            try { await remove(ref(db, pathRiksaDrive)); riksaDriveRoot = ''; window.showToast('Drive Riksa Uji diputuskan.', 'success'); }
+            catch (err) { window.showToast('Gagal memutuskan: ' + (err.message || err), 'error'); }
         });
 
         // muat pustaka Word & generator laporan dari folder aplikasi (sekali saja)
@@ -8876,11 +8936,35 @@
             if (btn) { btn.disabled = true; btn.innerText = 'Menyiapkan…'; }
             try {
                 await riksaMuatLib();
-                const [dataSnap, fotoSnap] = await window.withTimeout(Promise.all([get(ref(db, `${pathRiksaLaporanData}/${id}`)), get(ref(db, `${pathRiksaFoto}/${id}`))]), 60000);
-                const d = dataSnap.val();
+                let d, foto;
+                if (r.drive) {
+                    // laporan di Google Drive: pakai file Word yang sudah dibuat petugas; kalau belum ada, bangun dari data + foto di Drive
+                    const dx = r.drive.docx ? await riksaDriveApi('getDocx', { reportId: id }) : null;
+                    if (dx && dx.b64) {
+                        const bin = atob(dx.b64), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                        const blobW = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+                        const aw = document.createElement('a'); aw.href = URL.createObjectURL(blobW); aw.download = dx.name || 'Laporan_Riksa_Uji.docx';
+                        document.body.appendChild(aw); aw.click(); aw.remove(); setTimeout(() => URL.revokeObjectURL(aw.href), 5000);
+                        window.showToast('Laporan Word diunduh dari Google Drive: ' + aw.download, 'success');
+                        return;
+                    }
+                    const gd = await riksaDriveApi('getData', { reportId: id });
+                    d = { json: gd.json }; foto = {};
+                    const antre = (gd.photos || []).slice();
+                    let selesai = 0;
+                    await Promise.all(Array.from({ length: 4 }, async () => {
+                        while (antre.length) {
+                            const p = antre.shift();
+                            try { foto[p.id] = (await riksaDriveApi('getPhoto', { reportId: id, fid: p.fid })).dataUrl; } catch (e2) { /* foto gagal diambil: dilewati */ }
+                            selesai++; if (btn) btn.innerText = `Foto ${selesai}/${gd.photos.length}…`;
+                        }
+                    }));
+                } else {
+                    const [dataSnap, fotoSnap] = await window.withTimeout(Promise.all([get(ref(db, `${pathRiksaLaporanData}/${id}`)), get(ref(db, `${pathRiksaFoto}/${id}`))]), 60000);
+                    d = dataSnap.val(); foto = fotoSnap.val() || {};
+                }
                 if (!d || !d.json) throw new Error('Isi laporan tidak ditemukan di database.');
                 const rep = JSON.parse(d.json);
-                const foto = fotoSnap.val() || {};
                 // tempelkan data foto ke setiap objek foto ({id, w, h}) di laporan
                 const tempel = (o) => {
                     if (Array.isArray(o)) { o.forEach(tempel); return; }
@@ -8919,8 +9003,9 @@
         window.riksaHapusLaporan = async function(id) {
             if (!riksaIsAdmin()) return;
             const r = riksaLaporanAll.find(x => x.id === id); if (!r) return;
-            if (!confirm(`Hapus laporan ${riksaJenisNama(r.jenis)} ${r.nomor || ''} – ${r.perusahaan || ''} beserta fotonya dari ruangk3.com?\n\nData di HP petugas tidak ikut terhapus.`)) return;
+            if (!confirm(`Hapus laporan ${riksaJenisNama(r.jenis)} ${r.nomor || ''} – ${r.perusahaan || ''} beserta fotonya dari ruangk3.com?\n\n` + (r.drive ? 'Folder laporan di Google Drive dipindah ke Sampah Drive (bisa dipulihkan ±30 hari). ' : '') + 'Data di HP petugas tidak ikut terhapus.')) return;
             try {
+                if (r.drive) await riksaDriveApi('deleteReport', { reportId: id });
                 await window.withTimeout(Promise.all([remove(ref(db, `${pathRiksaLaporan}/${id}`)), remove(ref(db, `${pathRiksaLaporanData}/${id}`)), remove(ref(db, `${pathRiksaFoto}/${id}`))]), 60000);
                 push(ref(db, pathRiksaLog), { waktu: Date.now(), uid: currentUser.uid, nama: currentUser.nama, aksi: 'hapus laporan (admin)', reportId: id, ket: `${r.nomor || ''} – ${r.perusahaan || ''}` }).catch(() => {});
                 window.showToast('Laporan dihapus.', 'success');

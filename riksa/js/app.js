@@ -778,26 +778,32 @@
   }
   const safeName = (s) => (s || 'tanpa-nomor').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '_').slice(0, 80);
   const sizeTxt = (n) => n > 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+  // membuat file Word satu modul dari berkas b (dipakai tombol Unduh dan pengiriman ke Google Drive)
+  async function makeDocx(m, b) {
+    await loadPhotosFor(b[m]); await loadPhotosFor(b.shared); if (G.pjk3) await loadPhotosFor(G.pjk3);
+      const D = await ensureDocx();
+      const shared = withData(b.shared);
+      let doc, name;
+      if (m === 'apar') {
+        const a = withData(b.apar); a.units.forEach(u => { u.photos = cleanPhotos(u.photos); });
+        if (a.rekomendasi && !a.rekomendasi.some(x => x.trim())) a.rekomendasi = null;
+        doc = RU.buildReport({ ...a, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_APAR_${safeName(b.apar.meta.nomor)}.docx`;
+      } else if (m === 'fa') {
+        const f = withData(b.fa); f.photos = cleanPhotos(f.photos); f.zones.forEach(z => { z.photos = cleanPhotos(z.photos); });
+        if (f.rekomendasi && !f.rekomendasi.some(x => x.trim())) f.rekomendasi = null;
+        doc = RF.buildFireAlarm({ ...f, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_FireAlarm_${safeName(b.fa.meta.nomor)}.docx`;
+      } else {
+        const h = withData(b.hyd); h.photos = cleanPhotos(h.photos); h.points.forEach(p => { p.photos = cleanPhotos(p.photos); });
+        doc = RH.buildHydrant({ ...h, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_Hidran_${safeName(b.hyd.meta.nomor)}.docx`;
+      }
+    const blob = await D.Packer.toBlob(doc);
+    return { blob, name };
+  }
   $$('.dl-docx').forEach(btn => btn.onclick = async () => {
     const m = btn.dataset.mod, msg = $(`#${PFX[m]}-dl-msg`);
     btn.disabled = true; msg.className = 'msg'; msg.textContent = 'Menyiapkan dokumen…';
     try {
-      const D = await ensureDocx();
-      const shared = withData(S.shared);
-      let doc, name;
-      if (m === 'apar') {
-        const a = withData(S.apar); a.units.forEach(u => { u.photos = cleanPhotos(u.photos); });
-        if (a.rekomendasi && !a.rekomendasi.some(x => x.trim())) a.rekomendasi = null;
-        doc = RU.buildReport({ ...a, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_APAR_${safeName(S.apar.meta.nomor)}.docx`;
-      } else if (m === 'fa') {
-        const f = withData(S.fa); f.photos = cleanPhotos(f.photos); f.zones.forEach(z => { z.photos = cleanPhotos(z.photos); });
-        if (f.rekomendasi && !f.rekomendasi.some(x => x.trim())) f.rekomendasi = null;
-        doc = RF.buildFireAlarm({ ...f, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_FireAlarm_${safeName(S.fa.meta.nomor)}.docx`;
-      } else {
-        const h = withData(S.hyd); h.photos = cleanPhotos(h.photos); h.points.forEach(p => { p.photos = cleanPhotos(p.photos); });
-        doc = RH.buildHydrant({ ...h, pjk3: shared.pjk3, klien: shared.klien }, D); name = `Laporan_Riksa_Uji_Hidran_${safeName(S.hyd.meta.nomor)}.docx`;
-      }
-      const blob = await D.Packer.toBlob(doc);
+      const { blob, name } = await makeDocx(m, S);
       const r = await saveFile(name, blob);
       msg.textContent = r === 'declined' ? 'Unduhan dibatalkan.' : `Laporan dibuat (${sizeTxt(blob.size)}).`;
     } catch (e) { msg.className = 'msg err'; msg.textContent = e.message || 'Gagal membuat dokumen.'; }
@@ -1039,28 +1045,106 @@
     await kvPut('b:' + b.id, berkasForDisk(b));
     const sm = summarize(b); const k = IDX.findIndex(x => x.id === b.id); if (k >= 0) IDX[k] = sm; await kvPut('index', IDX);
   }
+  // ---- penyimpanan Google Drive ----
+  // Admin Pusat mengisi alamat Web App Apps Script di panel admin (disimpan di Firebase: riksa_pengaturan/drive).
+  // Bila terisi, foto + isi laporan + file Word disimpan di Google Drive RuangK3 (folder per perusahaan & laporan);
+  // Firebase hanya memegang ringkasan. Bila belum terisi, pengiriman memakai Firebase seperti sebelumnya.
+  const DRIVE_URL_OK = /^https:\/\/script\.google\.com\/(a\/[^/]+\/)?macros\/s\/[\w-]+\/exec$/;
+  async function getDriveUrl(fb) {
+    try {
+      const c = await fb.driveCfg();
+      const url = c && DRIVE_URL_OK.test(c.url || '') ? c.url : '';
+      await kvPut('driveCfg', { url }).catch(() => {});
+      return url;
+    } catch (e) {
+      const c = await kvGet('driveCfg'); // tanpa sinyal: pakai yang terakhir diketahui
+      return c && DRIVE_URL_OK.test(c.url || '') ? c.url : '';
+    }
+  }
+  // tanggal berkas dibuat (yyyy-mm-dd, waktu perangkat): dipakai untuk nama folder Drive supaya tidak berubah-ubah
+  const berkasTgl = (b) => { const d = new Date(b.createdAt || Date.now()); const z = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  async function driveApi(url, fb, action, payload, timeout = 90000) {
+    let last;
+    for (let t = 0; t < 3; t++) {
+      const token = await fb.idToken();
+      const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), timeout);
+      try {
+        const r = await fetch(url, { method: 'POST', redirect: 'follow', signal: ctl.signal, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ app: 'riksa', token, action, ...(payload || {}) }) });
+        const j = await r.json().catch(() => { throw Object.assign(new Error('Jawaban Google Drive tidak terbaca. Minta admin memeriksa pengaturan Drive Riksa Uji.'), { code: 'drive' }); });
+        if (!j.ok) throw Object.assign(new Error(j.error || 'Gagal menyimpan ke Google Drive.'), { code: 'drive' });
+        return j;
+      } catch (e) {
+        if (e.name === 'AbortError') last = Object.assign(new Error('Koneksi ke Google Drive lambat atau terputus.'), { code: 'network' });
+        else if (e instanceof TypeError) last = Object.assign(new Error('Tidak bisa terhubung ke Google Drive. Periksa sinyal.'), { code: 'network' });
+        else if (e.code === 'drive' && /Lock|terlalu banyak|Service invoked/i.test(e.message)) last = e;
+        else throw e;
+      } finally { clearTimeout(tm); }
+      await sleep(1500 * (t + 1));
+    }
+    throw last;
+  }
+  const blobToB64 = (blob) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+  // nama foto di Drive: "<unit/zona/titik> <urutan>__<id>.jpg"
+  function photoLabels(b, m) {
+    const map = {}, x = b[m];
+    const put = (o, label) => { const a = photoRefs(o); a.forEach((p, i) => { if (!map[p.id]) map[p.id] = a.length > 1 ? `${label} ${i + 1}` : label; }); };
+    const arr = m === 'apar' ? x.units : m === 'fa' ? x.zones : x.points;
+    const pre = m === 'apar' ? 'APAR' : m === 'fa' ? 'Zona' : 'Hidran';
+    (arr || []).forEach((it, k) => { const c = String(it.kode || it.no || it.nama || (k + 1)).slice(0, 20); put(it, c.toLowerCase().startsWith(pre.toLowerCase()) ? c : `${pre} ${c}`); });
+    put(x, 'Umum');
+    if (G.pjk3 && G.pjk3.logo) map[G.pjk3.logo.id] = 'Logo PJK3';
+    return map;
+  }
   async function sendBerkas(b, progress) {
     const fb = await whenFB();
     await fb.ready;
     if (!fb.isSignedIn() || fb.currentUid() !== (me() && me().uid)) throw Object.assign(new Error('Sesi berakhir. Masuk lagi untuk mengirim.'), { code: 'session' });
     const dataOf = async (id) => photoData.get(id) || await getPhoto(id);
+    const driveUrl = await getDriveUrl(fb);
+    const dest = driveUrl ? 'drive' : 'firebase';
     for (const m of ['apar', 'hyd', 'fa']) {
       const sy = b[m].sync || (b[m].sync = {});
       if (!hasData(m, b) || !sy.pending) continue;
       const reportId = `${b.id}-${m}`;
+      const who = `${MOD_NAME[m]} ${b.shared.klien.nama || ''}`;
+      if ((sy.dest || 'firebase') !== dest) sy.photos = {}; // foto lama ada di tempat penyimpanan yang berbeda: kirim ulang
       const done = sy.photos || (sy.photos = {});
       const refs = [...photoRefs(b[m]), ...(G.pjk3.logo ? [G.pjk3.logo] : [])];
       const todo = refs.filter(p => !done[p.id]);
-      for (let k = 0; k < todo.length; k++) {
-        const d = await dataOf(todo[k].id);
-        if (d) { progress(`${MOD_NAME[m]} ${b.shared.klien.nama || ''}: mengunggah foto ${k + 1} dari ${todo.length}…`); await fb.uploadPhoto(reportId, todo[k].id, d); }
-        done[todo[k].id] = true; await persistBerkas(b);
-      }
-      progress(`${MOD_NAME[m]} ${b.shared.klien.nama || ''}: mengirim data laporan…`);
       const modul = JSON.parse(JSON.stringify(b[m])); delete modul.sync;
       const report = { berkasId: b.id, jenis: m, modul, klien: b.shared.klien, pjk3: JSON.parse(JSON.stringify(G.pjk3)), versiAplikasi: 1 };
-      const r = await fb.saveReport({ reportId, berkasId: b.id, jenis: m, summary: summaryFor(b, m), report, jumlahFoto: refs.length });
-      b[m].sync = { sentAt: Date.now(), rev: r.rev, photos: done, pending: false };
+      let drive = null;
+      if (driveUrl) {
+        progress(`${who}: menyiapkan folder Google Drive…`);
+        const pr = await driveApi(driveUrl, fb, 'prepare', { meta: { reportId, berkasId: b.id, perusahaan: b.shared.klien.nama || '', jenis: m, nomor: b[m].meta.nomor || '', tgl: berkasTgl(b) } });
+        const labels = photoLabels(b, m);
+        for (let k = 0; k < todo.length; k++) {
+          const d = await dataOf(todo[k].id);
+          if (d) { progress(`${who}: mengunggah foto ${k + 1} dari ${todo.length} ke Google Drive…`); await driveApi(driveUrl, fb, 'uploadPhoto', { reportId, photoId: todo[k].id, label: labels[todo[k].id] || '', dataUrl: d }); }
+          done[todo[k].id] = true; sy.dest = dest; await persistBerkas(b);
+        }
+        progress(`${who}: menyimpan data laporan ke Google Drive…`);
+        await driveApi(driveUrl, fb, 'saveData', { reportId, json: JSON.stringify(report) });
+        let docx = false;
+        try {
+          progress(`${who}: membuat file Word…`);
+          const { blob, name } = await makeDocx(m, b);
+          progress(`${who}: mengunggah file Word (${sizeTxt(blob.size)})…`);
+          await driveApi(driveUrl, fb, 'uploadDocx', { reportId, name, b64: await blobToB64(blob) }, 180000);
+          docx = true;
+        } catch (e) { if (e.code === 'network' || e.code === 'session') throw e; /* Word gagal dibuat: data & foto tetap aman, admin bisa membuatnya dari panel */ }
+        drive = { folderId: pr.folderId, url: pr.url, docx };
+      } else {
+        for (let k = 0; k < todo.length; k++) {
+          const d = await dataOf(todo[k].id);
+          if (d) { progress(`${who}: mengunggah foto ${k + 1} dari ${todo.length}…`); await fb.uploadPhoto(reportId, todo[k].id, d); }
+          done[todo[k].id] = true; sy.dest = dest; await persistBerkas(b);
+        }
+        progress(`${who}: mengirim data laporan…`);
+      }
+      const r = await fb.saveReport({ reportId, berkasId: b.id, jenis: m, summary: summaryFor(b, m), report, jumlahFoto: refs.length, drive });
+      b[m].sync = { sentAt: Date.now(), rev: r.rev, photos: done, pending: false, dest };
       await persistBerkas(b);
     }
   }
@@ -1073,7 +1157,7 @@
     save(false); await flush(); renderSync();
     if (navigator.onLine === false) { setMsg('#sync-msg', 'Tidak ada sinyal. Laporan masuk antrean dan akan terkirim otomatis saat online.'); return; }
     btn.disabled = true; setMsg('#sync-msg', 'Menyiapkan pengiriman…');
-    try { await sendBerkas(S, (t) => setMsg('#sync-msg', t)); setMsg('#sync-msg', 'Laporan terkirim ke ruangk3.com.'); }
+    try { await sendBerkas(S, (t) => setMsg('#sync-msg', t)); setMsg('#sync-msg', ['apar', 'hyd', 'fa'].some(m => S[m].sync && S[m].sync.dest === 'drive' && Date.now() - (S[m].sync.sentAt || 0) < 120000) ? 'Laporan terkirim dan tersimpan di Google Drive RuangK3.' : 'Laporan terkirim ke ruangk3.com.'); }
     catch (err) {
       if (err.code === 'session') { setMsg('#sync-msg', ''); btn.disabled = false; return openLogin('Sesi berakhir. Masuk lagi untuk melanjutkan pengiriman.', 'edit'); }
       setMsg('#sync-msg', sendErrorText(err), true);

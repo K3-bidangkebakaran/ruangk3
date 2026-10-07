@@ -22,6 +22,15 @@ IndexedDB "riksa-uji-apar"   --Kirim-->   artifacts/k3-kebakaran-app-v5/public/d
   kembali, saat aplikasi dibuka, dan setiap 5 menit.
 - Foto yang sudah terkirim dicatat per laporan, jadi tidak dikirim ulang.
 
+## Penyimpanan Google Drive
+
+Bila Admin Pusat menekan **Hubungkan Drive Riksa Uji** di panel admin, alamat Web App tersimpan di Firebase
+(`riksa_pengaturan/drive`) dan aplikasi petugas mengirim **foto, `data.json` dan file Word** ke Google Drive lewat
+Apps Script yang sama dengan Daftar Hadir (`daftar-hadir/apps-script/Code.gs`, bagian "RIKSA UJI"). Firebase hanya
+menyimpan ringkasan di `riksa_laporan/{id}` (+ field `drive: {folderId, url, docx}`). Belum terhubung = cara lama (semua di Firebase).
+Folder: `<folder Riksa Uji>/<Perusahaan> - <tgl berkas>/<APAR|Hidran|Fire Alarm>/{data.json, *.docx, Foto/}`.
+Pemasangan & keamanan: lihat `daftar-hadir/apps-script/PANDUAN-GOOGLE-DRIVE.md` (bagian Riksa Uji).
+
 ## Akun petugas
 
 - Dibuat Admin Pusat di panel admin ruangk3.com → **Petugas Riksa Uji** (Firebase Auth email/password).

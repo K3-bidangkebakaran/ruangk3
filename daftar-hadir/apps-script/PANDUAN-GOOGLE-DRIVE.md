@@ -68,6 +68,36 @@ Bila folder penyimpanan ingin diganti (misalnya ke folder baru yang sudah dibagi
 
 Syarat: akun yang men-deploy script harus punya akses **Editor** ke folder tujuan.
 
+## Riksa Uji di Google Drive (skrip yang sama)
+
+Skrip ini juga menjadi backend aplikasi **Riksa Uji** (`ruangk3.com/riksa/`). Foto dokumentasi, data laporan (`data.json`) dan file Word laporan APAR, Hidran dan Fire Alarm disimpan di Drive, bukan di Firebase. Firebase hanya memegang baris ringkasan (perusahaan, nomor, status, link folder) supaya daftar di panel admin cepat.
+
+```
+📂 (folder Riksa Uji yang Anda tentukan)
+ └─ 📁 PT Maju Jaya - 2026-10-07            (1 folder per berkas = perusahaan + tanggal berkas dibuat)
+     ├─ 📁 APAR        ├─ data.json   ├─ Laporan_Riksa_Uji_APAR_….docx   └─ 📁 Foto  (APAR-01__<id>.jpg …)
+     ├─ 📁 Hidran      (isi sama)
+     └─ 📁 Fire Alarm  (isi sama)
+```
+
+Pemasangan (sekali saja, ±5 menit, di proyek Apps Script Daftar Hadir yang sudah ada):
+
+1. Tempel `Code.gs` terbaru (hapus isi lama, tempel yang baru), **Simpan**.
+2. Di fungsi `riksaSetup` ganti `TEMPEL_LINK_FOLDER_RIKSA_DI_SINI` dengan link folder Drive tujuan Riksa Uji (langsung di editor Apps Script; **jangan** di-commit ke repo supaya link Drive tetap privat). Akun pemilik script harus punya akses **Editor** ke folder itu.
+3. Pilih fungsi **`riksaSetup`** → **Run**. Izinkan akses tambahan (koneksi ke layanan eksternal, dipakai memeriksa login petugas). Di Execution log harus muncul nama folder dan `HTTP 400` (itu normal).
+4. **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. URL Web App tetap sama.
+5. Di panel admin ruangk3.com → **Laporan Riksa Uji** → klik **Hubungkan Drive Riksa Uji**. Syarat: di browser itu Drive Daftar Hadir sudah terhubung (URL + Kode Akses sama, tidak perlu kode baru).
+6. Selesai. HP petugas memuat versi baru otomatis. Laporan yang dikirim sesudahnya masuk ke Drive.
+
+Siapa boleh apa: **petugas** hanya bisa mengirim foto & laporan, dibuktikan dengan login Firebase petugas (akun harus aktif); **admin** bisa mengunduh dan menghapus, dibuktikan dengan Kode Akses yang sama dengan Daftar Hadir. Jangan bagikan folder Riksa Uji ke "Siapa saja yang memiliki link".
+
+Catatan:
+- Laporan lama yang sudah ada di Firebase tetap di sana dan tetap bisa diunduh admin. Bila petugas menekan **Kirim** lagi pada berkas lama, laporannya pindah ke Drive dan salinan di Firebase dibersihkan.
+- Tombol **Putuskan** di panel admin mengembalikan pengiriman baru ke Firebase. Isi Drive tidak diubah.
+- **Hapus** laporan di panel admin memindahkan folder jenis laporan itu ke Sampah Drive (±30 hari bisa dipulihkan); folder perusahaan ikut ke Sampah bila sudah kosong.
+- Unduh Word di panel admin memakai file Word yang dibuat HP petugas saat mengirim. Bila file itu tidak ada, Word dibuat ulang dari `data.json` dan foto di Drive.
+- Kuota: tiap foto dikirim satu per satu (±100–200 KB). Satu laporan 100 foto ±beberapa menit; masih jauh di bawah kuota harian Apps Script.
+
 ## Jika mengubah Code.gs
 
 Setelah mengedit script (termasuk saat menempel `Code.gs` versi baru): jalankan fungsi `setup` sekali, lalu **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. URL tetap sama, jadi aplikasi tidak perlu diubah.
