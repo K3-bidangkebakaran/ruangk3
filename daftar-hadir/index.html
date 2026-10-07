@@ -2449,7 +2449,7 @@ $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("P
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 3; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 4; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
 const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
@@ -2919,7 +2919,7 @@ const Cloud = {
       this.outdated = (r.ver || 0) < API_VER;
       this.cfg.rootUrl = r.rootUrl || this.cfg.rootUrl; this.cfg.sheetUrl = r.sheetUrl || this.cfg.sheetUrl;
       this.status(); this.heal();
-      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama, jadi hapus kegiatan di Drive belum jalan. Tempel Code.gs terbaru lalu Deploy versi baru."); }
+      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama (upload ke Drive lebih lambat, hapus kegiatan di Drive mungkin belum jalan). Tempel Code.gs terbaru lalu Deploy versi baru."); }
     } catch (e) { this.status(); } finally { this.vBusy = false; }
   },
   /* Pemulihan otomatis: saat aplikasi dibuka kembali / sinyal kembali / tiap 2 menit, coba lagi bila ada yang tertunda atau gagal. */
@@ -3019,12 +3019,31 @@ const Cloud = {
       try { this.status("☁️ Menyusun berkas Word…", "busy"); docs = await Word.berkas(ev, this.docCtx(ev)); } catch (e) { docOk = false; console.warn("Berkas Word gagal disusun", e); }
       const fl = fl0.concat(docs), todo = fl.filter(f => ev.sync.h[f.key] !== f.hash);
       const evInfo = { id: ev.id, acara: { kegiatan: ev.acara.kegiatan, tanggal: ev.acara.tanggal } };
+      // dikirim per paket (±12 file / ±1,8 MB per permintaan): tiap permintaan ke Apps Script punya biaya tetap beberapa detik
+      // (buka spreadsheet, folder & peta file), jadi mengirim satu per satu sangat lambat. Apps Script lama (tanpa uploadFiles) → satu per satu.
+      const batches = []; let cur = [], sz = 0;
+      todo.forEach(f => {
+        const n = (f.data || "").length + 400;
+        if (cur.length && (cur.length >= 12 || sz + n > 1800000)) { batches.push(cur); cur = []; sz = 0; }
+        cur.push(f); sz += n;
+      });
+      if (cur.length) batches.push(cur);
       let i = 0;
-      for (const f of todo) {
+      for (const bt of batches) {
         if (this.gone.has(ev.id)) throw new Error("GONE");
-        this.status(`☁️ Upload ${++i}/${todo.length}…`, "busy");
-        await this.api("uploadFile", { eventId: ev.id, event: evInfo, key: f.key, path: f.path, name: f.name, dataUrl: f.data });
-        ev.sync.h[f.key] = f.hash;
+        this.status(`☁️ Upload ${i}/${todo.length}…`, "busy");
+        let sent = false;
+        if (!this.noBatch && bt.length > 1) {
+          try { await this.api("uploadFiles", { eventId: ev.id, event: evInfo, files: bt.map(f => ({ key: f.key, path: f.path, name: f.name, dataUrl: f.data })) }); sent = true; }
+          catch (e) { if (/Aksi tidak dikenal/i.test((e && e.message) || "")) this.noBatch = true; else throw e; }
+        }
+        if (!sent) for (const f of bt) {
+          if (this.gone.has(ev.id)) throw new Error("GONE");
+          this.status(`☁️ Upload ${i}/${todo.length}…`, "busy");
+          await this.api("uploadFile", { eventId: ev.id, event: evInfo, key: f.key, path: f.path, name: f.name, dataUrl: f.data });
+          ev.sync.h[f.key] = f.hash; i++;
+        }
+        else { bt.forEach(f => { ev.sync.h[f.key] = f.hash; }); i += bt.length; }
       }
       if (this.gone.has(ev.id)) throw new Error("GONE");
       const keys = new Set(fl.map(f => f.key));

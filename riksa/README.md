@@ -24,12 +24,13 @@ IndexedDB "riksa-uji-apar"   --Kirim-->   artifacts/k3-kebakaran-app-v5/public/d
 
 ## Penyimpanan Google Drive
 
-Bila Admin Pusat menekan **Hubungkan Drive Riksa Uji** di panel admin, alamat Web App tersimpan di Firebase
-(`riksa_pengaturan/drive`) dan aplikasi petugas mengirim **foto, `data.json` dan file Word** ke Google Drive lewat
-Apps Script yang sama dengan Daftar Hadir (`daftar-hadir/apps-script/Code.gs`, bagian "RIKSA UJI"). Firebase hanya
-menyimpan ringkasan di `riksa_laporan/{id}` (+ field `drive: {folderId, url, docx}`). Belum terhubung = cara lama (semua di Firebase).
+Bila Admin Pusat mengisi **URL Web App + Kode Akses** Apps Script Riksa Uji dan menekan **Hubungkan Drive Riksa Uji** di panel admin,
+alamat Web App tersimpan di Firebase (`riksa_pengaturan/drive`) dan aplikasi petugas mengirim **foto, `data.json` dan file Word**
+ke Google Drive lewat Apps Script **khusus Riksa Uji** (`riksa/apps-script/Code.gs`, terpisah dari Daftar Hadir: proyek, URL,
+kode akses dan folder sendiri). Firebase hanya menyimpan ringkasan di `riksa_laporan/{id}` (+ field `drive: {folderId, url, docx}`).
+Belum terhubung = cara lama (semua di Firebase).
 Folder: `<folder Riksa Uji>/<Perusahaan> - <tgl berkas>/<APAR|Hidran|Fire Alarm>/{data.json, *.docx, Foto/}`.
-Pemasangan & keamanan: lihat `daftar-hadir/apps-script/PANDUAN-GOOGLE-DRIVE.md` (bagian Riksa Uji).
+Pemasangan & keamanan: `riksa/apps-script/PANDUAN-GOOGLE-DRIVE.md`.
 
 ## Akun petugas
 
@@ -45,6 +46,7 @@ Pemasangan & keamanan: lihat `daftar-hadir/apps-script/PANDUAN-GOOGLE-DRIVE.md` 
 |---|---|
 | `index.html` | Tampilan aplikasi |
 | `js/app.js` | Logika aplikasi (berkas, editor, foto, unduh Word, antrean kirim) |
+| `apps-script/Code.gs` | Backend Google Drive Riksa Uji (ditempel di script.google.com, bukan dijalankan di web) |
 | `js/firebase.js` | Login petugas & pengiriman ke Firebase (modul ES) |
 | `js/panduan.js` | Teks petunjuk cara mengisi/memeriksa/menghitung tiap kolom & butir (tombol "Petunjuk" di editor) |
 | `js/report.js` | Generator Word laporan APAR (dipakai juga oleh panel admin) |
