@@ -42,7 +42,7 @@ Folder induk **Ruangk3.com** dicari lewat namanya di Drive akun pemilik script (
 - **Berkas Word dibuat otomatis oleh aplikasi** (bukan oleh Apps Script) setiap sinkron, dan hanya diunggah ulang bila isinya berubah. Untuk kegiatan tanpa foto, berkas Dokumentasi tidak dibuat. Foto dalam berkas Word diperkecil agar ringan; foto asli tetap utuh di folder *Foto Dokumentasi*.
 
 - **Otomatis:** setiap perubahan dikirim kira-kira 4 detik kemudian. Status terlihat di tombol ☁️ (hijau = tersinkron, kuning = sedang/menunggu, merah = gagal, dicoba ulang otomatis tiap 1 menit dan saat internet kembali).
-- **Upload per paket:** foto, tanda tangan dan berkas Word dikirim ±12 file sekali kirim (aksi `uploadFiles`, `Code.gs` versi 4), bukan satu per satu, jadi jauh lebih cepat. Dengan `Code.gs` lama aplikasi otomatis kembali ke satu per satu (lambat) dan tombol ☁️ menampilkan ⚠️ Perbarui Apps Script.
+- **Upload per paket:** foto, tanda tangan dan berkas Word dikirim ±12 file sekali kirim (aksi `uploadFiles`, `Code.gs` versi 4 ke atas), bukan satu per satu, jadi jauh lebih cepat. Dengan `Code.gs` lama aplikasi otomatis kembali ke satu per satu (lambat) dan tombol ☁️ menampilkan ⚠️ Perbarui Apps Script.
 - **Hemat kuota:** hanya file yang berubah yang diunggah ulang. Foto atau tanda tangan yang diganti akan menggantikan file lama, dan file lama masuk *Sampah* Drive.
 - **Data lokal tetap ada:** aplikasi tetap bisa dipakai offline, lalu data dikirim begitu online lagi.
 - **Perangkat lain:** menu **📁 Kegiatan → ☁️ Di Google Drive → Muat daftar → Unduh & Buka** mengambil kegiatan, termasuk foto & tanda tangan, yang dibuat di perangkat lain.
@@ -68,6 +68,22 @@ Bila folder penyimpanan ingin diganti (misalnya ke folder baru yang sudah dibagi
 4. Seluruh folder "Daftar Hadir & Dokumentasi - LPMI" (spreadsheet, folder tiap kegiatan, foto, TTD) pindah ke dalam folder tujuan. ID file tidak berubah, jadi data lama utuh dan simpanan berikutnya otomatis masuk ke folder baru. Tidak perlu deploy ulang dan URL aplikasi tidak berubah.
 
 Syarat: akun yang men-deploy script harus punya akses **Editor** ke folder tujuan.
+
+## Hasil APK Portal PIC tersimpan otomatis (walau web tidak dibuka)
+
+Hasil kerja PIC di APK (TTD peserta, foto, peserta batal, TTD PIC, TTD narasumber, foto dokumentasi harian) diambil **sendiri oleh Apps Script tiap 5 menit** dan disimpan ke folder kegiatan di Google Drive. Web ruangk3.com tidak perlu dibuka atau login. Saat web dibuka, hasilnya sudah ada di Drive dan tidak jadi file ganda (key, folder, dan nama file sama dengan yang dibuat web).
+
+Menyalakan (sekali saja, butuh `Code.gs` versi 5):
+
+1. Tempel `Code.gs` terbaru di Apps Script, simpan, lalu **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**.
+2. Pilih fungsi **`picOtomatisAktifkan`** → **Run** → klik **Review permissions / Izinkan** (ada izin baru: membuat pemicu waktu). Log menampilkan "AKTIF" dan hasil putaran pertama.
+3. Selesai. Pemeriksaan: fungsi `picOtomatisStatus` (lihat Log), atau tombol ☁️ di web memberi tahu bila belum dinyalakan. Mematikan: `picOtomatisMatikan`. Memeriksa ulang semua kegiatan: `picOtomatisPeriksaUlang`.
+
+Catatan:
+- Yang disimpan otomatis: foto, tanda tangan, dan hitungan di spreadsheet. **data.json dan berkas Word tetap dibuat web** saat dibuka.
+- Hanya kegiatan yang PIC-nya aktif dalam 60 hari terakhir yang diperiksa. Peserta yang ditandai batal oleh PIC otomatis dibuang file-nya dari Drive, sama seperti di web.
+- Pemicu memakai login anonim Firebase (seperti aplikasi PIC). Butuh aturan Firebase `dh_*` dari `pic/README.md` dan *Authentication → Anonymous* aktif.
+- Waktu eksekusi: putaran tanpa perubahan hanya beberapa detik; tiap kegiatan yang berubah diperiksa sekali per perubahan.
 
 ## Jika mengubah Code.gs
 

@@ -126,3 +126,7 @@ dengan watermark yang sama. Nama tempat di watermark diambil dari kolom Tempat (
 
 Foto ±100–250 KB (maks 1280 px), TTD ±10–20 KB. Satu kegiatan 30 peserta × 2 hari ≈ 8–10 MB di Realtime Database
 (paket gratis 1 GB). Kegiatan lama dapat dihapus dari tab Input Kegiatan (ikut membersihkan Firebase dan, bila terhubung, folder Drive-nya).
+
+## Penyimpanan otomatis ke Google Drive (tanpa web dibuka)
+
+Hasil PIC (`dh_hasil` + `dh_media`) juga diambil oleh Apps Script Daftar Hadir tiap 5 menit dan disimpan ke Drive. Pasang sekali: lihat bagian "Hasil APK Portal PIC tersimpan otomatis" di `daftar-hadir/apps-script/PANDUAN-GOOGLE-DRIVE.md` (fungsi `picOtomatisAktifkan`). Apps Script login anonim, jadi aturan `dh_*` di atas harus mengizinkan baca untuk `auth != null`.

@@ -20,7 +20,7 @@
  */
 
 const ROOT_NAME = 'Daftar Hadir & Dokumentasi - LPMI';
-const API_VER = 4; // dibaca aplikasi lewat aksi 'ping' untuk memastikan Code.gs sudah versi terbaru
+const API_VER = 5; // dibaca aplikasi lewat aksi 'ping' untuk memastikan Code.gs sudah versi terbaru
 const PARENT_NAME = 'Ruangk3.com'; // folder induk di Google Drive (dicari lewat nama, ID tidak disimpan di repo)
 const SHEET_NAME = 'Database Induk - Daftar Hadir LPMI';
 const MAX_DAYS = 7;
@@ -123,7 +123,7 @@ function doPost(e) {
   try {
     if (req.action !== 'getFile' && req.action !== 'ping') lock.waitLock(30000);
     switch (req.action) {
-      case 'ping': return out_({ ok: true, ver: API_VER, rootUrl: getRoot_().getUrl(), sheetUrl: getSheet_().getUrl() });
+      case 'ping': return out_({ ok: true, ver: API_VER, rootUrl: getRoot_().getUrl(), sheetUrl: getSheet_().getUrl(), pic: picOtomatisInfo_() });
       case 'uploadFile': return out_(uploadFile_(req));
       case 'uploadFiles': return out_(uploadFiles_(req));
       case 'saveEvent': return out_(saveEvent_(req));
@@ -464,4 +464,289 @@ function getFile_(req) {
   if (String(f.getDescription() || '').indexOf('lpmi-key=') !== 0) throw new Error('File tidak diizinkan');
   const b = f.getBlob();
   return { ok: true, dataUrl: 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) };
+}
+
+/* =========================== OTOMATIS: HASIL APK PORTAL PIC → GOOGLE DRIVE ===========================
+ * Hasil kerja PIC di APK (TTD peserta, foto, peserta batal, TTD PIC, TTD narasumber, foto dokumentasi harian)
+ * dikirim APK ke Firebase. Bagian ini mengambilnya SENDIRI tiap 5 menit (pemicu waktu Apps Script) lalu
+ * menyimpannya ke folder kegiatan di Google Drive – walau web ruangk3.com tidak sedang dibuka / login.
+ * File memakai key, folder & nama yang sama dengan aplikasi Daftar Hadir, jadi saat web dibuka semuanya sudah ada
+ * dan tidak ada file ganda. data.json & berkas Word TIDAK diubah di sini (itu tetap dibuat oleh web saat dibuka).
+ *
+ * Cara menyalakan: jalankan fungsi picOtomatisAktifkan() SEKALI di editor Apps Script (izinkan akses bila diminta).
+ * Mematikan: picOtomatisMatikan(). Memeriksa: picOtomatisStatus().
+ */
+const FB_API_KEY = 'AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg'; // kunci web Firebase (publik, sama dengan yang ada di aplikasi)
+const FB_DB = 'https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app';
+const FB_ROOT = 'artifacts/k3-kebakaran-app-v5/public/data';
+const FB_HDR = { Referer: 'https://ruangk3.com/' }; // bila kunci API dibatasi ke situs ruangk3.com
+const PIC_HANDLER = 'picOtomatisJalan';
+const PIC_BATAS_HARI = 60;      // kegiatan yang sudah >60 hari tidak ada aktivitas PIC tidak diperiksa lagi
+const PIC_ANGGARAN_MS = 270000; // 4,5 menit per putaran; sisanya dilanjutkan di putaran berikutnya
+const HARI_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+/** Jalankan SEKALI: pasang pemicu tiap 5 menit, lalu langsung coba satu putaran. */
+function picOtomatisAktifkan() {
+  setup();
+  picOtomatisMatikan();
+  ScriptApp.newTrigger(PIC_HANDLER).timeBased().everyMinutes(5).create();
+  Logger.log('Pengambilan hasil APK otomatis AKTIF (dicek tiap 5 menit).');
+  const r = picOtomatisJalan();
+  Logger.log('Putaran pertama: ' + JSON.stringify(r));
+  return r;
+}
+
+function picOtomatisMatikan() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === PIC_HANDLER) ScriptApp.deleteTrigger(t); });
+  Logger.log('Pengambilan hasil APK otomatis dimatikan.');
+}
+
+/** Paksa semua kegiatan diperiksa ulang pada putaran berikutnya. */
+function picOtomatisPeriksaUlang() {
+  const props = PropertiesService.getScriptProperties(), all = props.getProperties();
+  Object.keys(all).forEach(function (k) { if (k.indexOf('PS:') === 0) props.deleteProperty(k); });
+  Logger.log('Siap: semua kegiatan akan diperiksa ulang.');
+}
+
+function picOtomatisStatus() {
+  const on = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === PIC_HANDLER; });
+  const t = PropertiesService.getScriptProperties().getProperty('PIC_LAST');
+  const s = { aktif: on, terakhir: t ? JSON.parse(t) : null };
+  Logger.log(JSON.stringify(s));
+  return s;
+}
+
+function picLock_(fn) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(25000)) throw new Error('Script sedang sibuk, dicoba lagi di putaran berikutnya');
+  try { return fn(); } finally { try { lock.releaseLock(); } catch (e) { } }
+}
+
+function safeName_(s) { return String(s || '').replace(/[\\/:*?"<>|#%]+/g, '-').replace(/\s+/g, ' ').trim() || 'Tanpa nama'; }
+function hariNama_(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+  return m ? HARI_ID[new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()] : '';
+}
+function md5_(s) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, s).map(function (b) { return ('0' + (b & 0xff).toString(16)).slice(-2); }).join('');
+}
+
+/* ---- Firebase (REST, login anonim – sama seperti aplikasi PIC) ---- */
+function fbToken_(force) {
+  const cache = CacheService.getScriptCache(), props = PropertiesService.getScriptProperties();
+  if (!force) { const c = cache.get('FB_IDT'); if (c) return c; }
+  let r = null;
+  const rt = props.getProperty('FB_RT');
+  if (rt) {
+    const resp = UrlFetchApp.fetch('https://securetoken.googleapis.com/v1/token?key=' + FB_API_KEY, {
+      method: 'post', contentType: 'application/x-www-form-urlencoded', headers: FB_HDR, muteHttpExceptions: true,
+      payload: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(rt)
+    });
+    if (resp.getResponseCode() === 200) { const j = JSON.parse(resp.getContentText()); r = { idToken: j.id_token, refreshToken: j.refresh_token, expiresIn: j.expires_in }; }
+  }
+  if (!r) {
+    const resp = UrlFetchApp.fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + FB_API_KEY, {
+      method: 'post', contentType: 'application/json', headers: FB_HDR, muteHttpExceptions: true, payload: JSON.stringify({ returnSecureToken: true })
+    });
+    if (resp.getResponseCode() !== 200) throw new Error('Login anonim Firebase gagal (' + resp.getResponseCode() + '). Pastikan Authentication → Anonymous aktif. ' + String(resp.getContentText()).slice(0, 150));
+    const j = JSON.parse(resp.getContentText()); r = { idToken: j.idToken, refreshToken: j.refreshToken, expiresIn: j.expiresIn };
+  }
+  props.setProperty('FB_RT', r.refreshToken);
+  cache.put('FB_IDT', r.idToken, Math.max(60, Math.min(3000, (+r.expiresIn || 3600) - 300)));
+  return r.idToken;
+}
+
+function fbUrl_(path, extra) {
+  return FB_DB + '/' + FB_ROOT + '/' + path + '.json?auth=' + encodeURIComponent(fbToken_(false)) + (extra ? '&' + extra : '');
+}
+
+function fbGet_(path, extra) {
+  for (let i = 0; i < 2; i++) {
+    const r = UrlFetchApp.fetch(fbUrl_(path, extra), { muteHttpExceptions: true, headers: FB_HDR });
+    const c = r.getResponseCode();
+    if (c === 200) return JSON.parse(r.getContentText());
+    if (c === 401 && i === 0) { fbToken_(true); continue; }
+    if (c === 401) throw new Error('Firebase menolak akses ke ' + path + ' (periksa aturan Firebase untuk dh_*, lihat pic/README.md)');
+    throw new Error('Firebase ' + c + ' pada ' + path);
+  }
+}
+
+/* ---- putaran utama ---- */
+function picOtomatisJalan() {
+  const t0 = Date.now(), props = PropertiesService.getScriptProperties();
+  const res = { at: new Date().toISOString(), kegiatan: 0, file: 0, sisa: 0, error: '' };
+  try {
+    if (!props.getProperty('TOKEN')) throw new Error('setup() belum dijalankan');
+    const hasil = fbGet_('dh_hasil') || {}, cands = [];
+    Object.keys(hasil).forEach(function (kid) {
+      const nodes = Object.keys(hasil[kid] || {}).map(function (u) { return hasil[kid][u]; }).filter(function (x) { return x && typeof x === 'object'; });
+      const upd = nodes.reduce(function (m, x) { return Math.max(m, +x.upd || 0); }, 0);
+      if (upd) cands.push({ kid: kid, nodes: nodes, upd: upd, sig: upd + ':' + nodes.length });
+    });
+    cands.sort(function (a, b) { return b.upd - a.upd; });
+    const errs = [];
+    cands.forEach(function (c) {
+      const ps = props.getProperty('PS:' + c.kid);
+      if (ps === c.sig) return;
+      if (!ps && c.upd < t0 - PIC_BATAS_HARI * 864e5) return;
+      if (Date.now() - t0 > PIC_ANGGARAN_MS) { res.sisa++; return; }
+      try {
+        const k = fbGet_('dh_kegiatan/' + c.kid);
+        if (!k || !k.nama) return; // kegiatan sudah dihapus dari aplikasi PIC
+        const r = picKid_(c.kid, k, c.nodes, t0);
+        res.file += r.file;
+        if (r.selesai) { props.setProperty('PS:' + c.kid, c.sig); res.kegiatan++; } else res.sisa++;
+      } catch (e) { res.sisa++; if (errs.length < 3) errs.push(c.kid.slice(0, 6) + ': ' + String((e && e.message) || e)); }
+    });
+    res.error = errs.join(' | ');
+  } catch (e) { res.error = String((e && e.message) || e); }
+  res.detik = Math.round((Date.now() - t0) / 100) / 10;
+  props.setProperty('PIC_LAST', JSON.stringify(res));
+  return res;
+}
+
+/** Simpan hasil PIC satu kegiatan ke Drive. Mengembalikan {file: jumlah file baru/berubah, selesai: bool}. */
+function picKid_(kid, k, nodes, t0) {
+  const hari = (k.tgl || []).filter(String);
+  const peserta = (k.peserta || []).filter(function (p) { return p && String(p.nama || '').trim(); });
+  const lp0 = k.lap || {};
+  const batal = {}; peserta.forEach(function (p) { batal[p.id] = !!p.batal; });
+  const foto = {}, foto2 = {}, hadir = {}, nrNama = {};
+  let s1n = lp0.s1nama || '', s2n = lp0.s2nama || '', last = null;
+  Object.keys(lp0.nr || {}).forEach(function (d) { nrNama[d] = (lp0.nr[d] || {}).nama || ''; });
+  nodes.slice().sort(function (a, b) { return (a.upd || 0) - (b.upd || 0); }).forEach(function (h) {
+    const hb = h.batal || {};
+    Object.keys(hb).forEach(function (pid) { batal[pid] = !!hb[pid]; });
+    Object.keys(h.hadir || {}).forEach(function (pid) { Object.keys(h.hadir[pid] || {}).forEach(function (d) { hadir[pid + '|' + d] = 1; }); });
+    Object.keys(h.foto || {}).forEach(function (pid) { foto[pid] = 1; });
+    Object.keys(h.foto2 || {}).forEach(function (pid) { foto2[pid] = 1; });
+    const lp = h.lap || {};
+    if (lp.s1 && 'nama' in lp.s1) s1n = lp.s1.nama || '';
+    if (lp.s2 && 'nama' in lp.s2) s2n = lp.s2.nama || '';
+    Object.keys(lp.nr || {}).forEach(function (d) { if (lp.nr[d] && 'nama' in lp.nr[d]) nrNama[d] = lp.nr[d].nama || ''; });
+    if (h.ttdPic) last = h;
+  });
+
+  const mk = fbGet_('dh_media/' + kid, 'shallow=true') || {}, mkeys = Object.keys(mk);
+  const want = [];
+  peserta.forEach(function (p) {
+    if (batal[p.id]) return;
+    const tag = ' [' + String(p.id).slice(0, 5) + ']', nm = safeName_(p.nama);
+    if (foto[p.id]) want.push({ key: 'foto:' + p.id, mk: 'f_' + p.id, path: ['Foto Dokumentasi'], name: nm + tag + (k.damkar ? ' (1)' : '') + '.jpg' });
+    if (foto2[p.id] && k.damkar) want.push({ key: 'foto2:' + p.id, mk: 'f2_' + p.id, path: ['Foto Dokumentasi'], name: nm + tag + ' (2).jpg' });
+    hari.forEach(function (d) {
+      if (hadir[p.id + '|' + d]) want.push({ key: 'ttd:' + p.id + ':' + d, mk: 's_' + p.id + '_' + d, path: ['Tanda Tangan Peserta', d + ' (' + hariNama_(d) + ')'], name: nm + tag + '.png' });
+    });
+  });
+  if (last) want.push({ key: 'ttd-org', mk: 'pic', path: ['Tanda Tangan Penyelenggara'], name: safeName_(last.ttdPicNama || last.picNama || 'PIC Kegiatan') + '.png' });
+  want.push({ key: 'ttd-s1', mk: 'n1', path: ['Tanda Tangan Penyelenggara'], name: safeName_('Pengawas - ' + (s1n || 'TTD')) + '.png' });
+  want.push({ key: 'ttd-s2', mk: 'n2', path: ['Tanda Tangan Penyelenggara'], name: safeName_('Ahli - ' + (s2n || 'TTD')) + '.png' });
+  mkeys.filter(function (m) { return m.indexOf('nr_') === 0; }).sort().forEach(function (m) {
+    const d = m.slice(3), mm = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/.exec(d);
+    if (mm && hari.indexOf(mm[1]) >= 0) want.push({ key: 'nr:' + d, mk: m, path: ['Tanda Tangan Narasumber'], name: safeName_('Narasumber ' + d + ' - ' + (nrNama[d] || 'TTD')) + '.png' });
+  });
+  hari.forEach(function (d) {
+    mkeys.filter(function (m) { return m.indexOf('d_' + d + '_') === 0; }).sort().forEach(function (m, i) {
+      want.push({ key: 'hari:' + d + ':' + i, mk: m, path: ['Dokumentasi Harian', d], name: 'Foto ' + (i + 1) + '.jpg' });
+    });
+  });
+  const todoAll = want.filter(function (w) { return mk[w.mk]; });
+
+  const folder = picLock_(function () {
+    return findEventFolder_(kid) || eventFolder_(kid, { acara: { tanggal: hari[0] || '', kegiatan: k.nama } });
+  });
+
+  let nFile = 0, selesai = true;
+  for (let i = 0; i < todoAll.length; i += 6) {
+    if (Date.now() - t0 > PIC_ANGGARAN_MS) { selesai = false; break; }
+    const chunk = todoAll.slice(i, i + 6), map0 = readMap_(folder);
+    const resp = UrlFetchApp.fetchAll(chunk.map(function (w) {
+      const en = map0[w.key], hd = { 'X-Firebase-ETag': 'true', Referer: FB_HDR.Referer };
+      if (en && en.e && en.h && en.name === w.name) hd['If-None-Match'] = en.e;
+      return { url: fbUrl_('dh_media/' + kid + '/' + encodeURIComponent(w.mk)), method: 'get', headers: hd, muteHttpExceptions: true };
+    }));
+    const baru = [];
+    resp.forEach(function (r, j) {
+      const c = r.getResponseCode();
+      if (c === 304) return;
+      if (c !== 200) throw new Error('Firebase ' + c + ' saat mengambil gambar ' + chunk[j].mk);
+      let du = null; try { du = JSON.parse(r.getContentText()); } catch (e) { }
+      if (typeof du !== 'string' || !/^data:[^;]+;base64,/.test(du)) return;
+      const hd = r.getHeaders() || {};
+      baru.push({ w: chunk[j], du: du, e: hd.ETag || hd.Etag || hd.etag || '', h: md5_(chunk[j].name + '|' + du) });
+    });
+    if (!baru.length) continue;
+    picLock_(function () {
+      const map = readMap_(folder), subs = {};
+      try {
+        baru.forEach(function (t) {
+          const en = map[t.w.key], m = /^data:([^;]+);base64,(.*)$/.exec(t.du);
+          if (!m) return;
+          const bytes = Utilities.base64Decode(m[2]);
+          let sama = false;
+          if (en && en.name === t.w.name) {
+            if (en.h) sama = en.h === t.h;
+            else { try { const f0 = DriveApp.getFileById(en.id); sama = !f0.isTrashed() && f0.getSize() === bytes.length; } catch (e) { } } // diunggah web: samakan lewat ukuran
+          }
+          if (sama) { map[t.w.key] = { id: en.id, name: en.name, h: t.h, e: t.e }; return; }
+          if (en) { try { DriveApp.getFileById(en.id).setTrashed(true); } catch (e) { } }
+          const pk = t.w.path.join('/');
+          const dir = subs[pk] || (subs[pk] = sub_(folder, t.w.path));
+          const file = dir.createFile(Utilities.newBlob(bytes, m[1], t.w.name));
+          file.setDescription('lpmi-key=' + t.w.key);
+          map[t.w.key] = { id: file.getId(), name: t.w.name, h: t.h, e: t.e };
+          nFile++;
+        });
+      } finally { writeMap_(folder, map); }
+    });
+  }
+  if (selesai) {
+    picLock_(function () {
+      const map = readMap_(folder);
+      let ubah = nFile > 0;
+      peserta.forEach(function (p) { // peserta yang kemudian ditandai batal: file-nya dibuang, sama seperti di web
+        if (!batal[p.id]) return;
+        Object.keys(map).forEach(function (key) {
+          if (key === 'foto:' + p.id || key === 'foto2:' + p.id || key.indexOf('ttd:' + p.id + ':') === 0) {
+            try { DriveApp.getFileById(map[key].id).setTrashed(true); } catch (e) { }
+            delete map[key]; ubah = true;
+          }
+        });
+      });
+      if (ubah) { writeMap_(folder, map); picSheet_(kid, folder, map, hari, peserta); }
+    });
+  }
+  return { file: nFile, selesai: selesai };
+}
+
+/** Perbarui hitungan di spreadsheet (kolom Foto/TTD terisi + tautan foto) tanpa menyentuh data.json. */
+function picSheet_(kid, folder, map, hari, pes) {
+  const ss = getSheet_(), ks = ss.getSheetByName('Kegiatan'), row = findEventRow_(ks, kid), now = new Date();
+  if (row < 0) return;
+  const fotoN = pes.filter(function (p) { return map['foto:' + p.id]; }).length;
+  let ttdN = 0;
+  pes.forEach(function (p) { hari.forEach(function (d) { if (map['ttd:' + p.id + ':' + d]) ttdN++; }); });
+  ks.getRange(row, KI('Foto Terisi') + 1, 1, 3).setValues([[fotoN + '/' + pes.length, ttdN + '/' + (pes.length * hari.length), map['ttd-org'] ? 'Sudah' : 'Belum']]);
+  ks.getRange(row, KI('Diperbarui') + 1).setValue(now);
+  const ps = ss.getSheetByName('Peserta'), last = ps.getLastRow();
+  if (last < 2) return;
+  const rng = ps.getRange(2, 1, last - 1, PES_HEAD.length), vals = rng.getValues(), idCol = PES_HEAD.length - 1;
+  let chg = false;
+  vals.forEach(function (r) {
+    if (String(r[0]) !== String(kid)) return;
+    const pid = String(r[idCol]); if (!pid) return;
+    r[6] = map['foto:' + pid] ? fileUrl_(map['foto:' + pid].id) : '';
+    for (let i = 0; i < MAX_DAYS; i++) r[7 + i] = i < hari.length ? (map['ttd:' + pid + ':' + hari[i]] ? '✓ ' + hari[i] : '– ' + hari[i]) : '';
+    r[idCol - 1] = now; chg = true;
+  });
+  if (chg) rng.setValues(vals);
+}
+
+/** Ringkasan untuk aksi ping: apakah pengambilan otomatis aktif + hasil putaran terakhir. */
+function picOtomatisInfo_() {
+  try {
+    const on = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === PIC_HANDLER; });
+    const t = PropertiesService.getScriptProperties().getProperty('PIC_LAST');
+    return { aktif: on, terakhir: t ? JSON.parse(t) : null };
+  } catch (e) { return { aktif: false, terakhir: null, error: String((e && e.message) || e) }; }
 }

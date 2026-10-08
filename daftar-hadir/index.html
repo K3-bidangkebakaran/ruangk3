@@ -2449,7 +2449,7 @@ $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("P
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 4; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 5; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
 const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
@@ -2784,7 +2784,7 @@ const Word = (() => {
 const Cloud = {
   cfg: { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" },
   busy: false, again: false, t: null, gone: new Set(), delBusy: false, delT: null, delErr: "", outdated: false,
-  lastErr: null, fail: 0, nextAt: 0, lost: false, persisted: null, lastVerify: 0, lastHeal: 0, vBusy: false, toldOld: false,
+  lastErr: null, fail: 0, nextAt: 0, lost: false, persisted: null, lastVerify: 0, lastHeal: 0, vBusy: false, toldOld: false, toldPic: false,
   ready() { return !!(this.cfg.url && this.cfg.token); },
   /* Pengaturan Drive disimpan BERLAPIS: IndexedDB + localStorage (kunci sama dengan panel admin) + satu salinan cadangan di masing-masing.
      Saat dibuka, salinan TERBARU (cap waktu ts) yang dipakai, lalu semua salinan disamakan lagi. Error jaringan / Apps Script TIDAK PERNAH
@@ -2919,7 +2919,8 @@ const Cloud = {
       this.outdated = (r.ver || 0) < API_VER;
       this.cfg.rootUrl = r.rootUrl || this.cfg.rootUrl; this.cfg.sheetUrl = r.sheetUrl || this.cfg.sheetUrl;
       this.status(); this.heal();
-      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama (upload ke Drive lebih lambat, hapus kegiatan di Drive mungkin belum jalan). Tempel Code.gs terbaru lalu Deploy versi baru."); }
+      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama (hasil APK belum tersimpan otomatis ke Drive, upload lebih lambat). Tempel Code.gs terbaru lalu Deploy versi baru."); }
+      else if (!this.outdated && r.pic && r.pic.aktif === false && !this.toldPic) { this.toldPic = true; toast("Penyimpanan otomatis hasil APK ke Drive belum dinyalakan: jalankan fungsi picOtomatisAktifkan di Apps Script (lihat PANDUAN-GOOGLE-DRIVE.md)."); }
     } catch (e) { this.status(); } finally { this.vBusy = false; }
   },
   /* Pemulihan otomatis: saat aplikasi dibuka kembali / sinyal kembali / tiap 2 menit, coba lagi bila ada yang tertunda atau gagal. */
@@ -3098,7 +3099,7 @@ const Cloud = {
       const r = await this.api("ping", {}, url, token);
       this.cfg.rootUrl = r.rootUrl || ""; this.cfg.sheetUrl = r.sheetUrl || "";
       this.outdated = (r.ver || 0) < API_VER;
-      this.info(this.outdated ? "Terhubung, tetapi Code.gs di Apps Script masih versi lama (hapus kegiatan di Drive belum jalan). Tempel Code.gs terbaru lalu Deploy versi baru." : "Koneksi berhasil ✓", this.outdated ? "err" : "ok"); return true;
+      this.info(this.outdated ? "Terhubung, tetapi Code.gs di Apps Script masih versi lama (hasil APK belum tersimpan otomatis, hapus kegiatan di Drive mungkin belum jalan). Tempel Code.gs terbaru lalu Deploy versi baru." : "Koneksi berhasil ✓", this.outdated ? "err" : "ok"); return true;
     } catch (e) { this.info("Gagal: " + e.message, "err"); return false; }
   },
   async saveSettings() {
