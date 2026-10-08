@@ -3099,7 +3099,7 @@ const Cloud = {
       const r = await this.api("ping", {}, url, token);
       this.cfg.rootUrl = r.rootUrl || ""; this.cfg.sheetUrl = r.sheetUrl || "";
       this.outdated = (r.ver || 0) < API_VER;
-      this.info(this.outdated ? "Terhubung, tetapi Code.gs di Apps Script masih versi lama (hasil APK belum tersimpan otomatis, hapus kegiatan di Drive mungkin belum jalan). Tempel Code.gs terbaru lalu Deploy versi baru." : "Koneksi berhasil ✓", this.outdated ? "err" : "ok"); return true;
+      this.info(this.outdated ? `Terhubung, tetapi URL ini masih menjalankan Code.gs versi ${r.ver || 1} (aplikasi butuh versi ${API_VER}). Tempel Code.gs terbaru, lalu Terapkan → Kelola deployment → ✏️ → Versi baru → Terapkan.` : "Koneksi berhasil ✓ (Code.gs versi " + r.ver + (r.pic && r.pic.aktif ? ", simpan otomatis hasil APK AKTIF" : r.pic ? ", simpan otomatis hasil APK belum dinyalakan: jalankan picOtomatisAktifkan" : "") + ")", this.outdated ? "err" : "ok"); this.status(); return true;
     } catch (e) { this.info("Gagal: " + e.message, "err"); return false; }
   },
   async saveSettings() {
