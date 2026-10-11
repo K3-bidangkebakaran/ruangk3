@@ -90,6 +90,14 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .f-grid.dk{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
 .f-phs{display:grid;grid-template-columns:1fr 1fr}.f-phs .f-ph:first-child{border-right:1px solid var(--line)}
 .f-meta .rms{display:flex;gap:6px}
+.pv-kelas{font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--line,#d6d9de);border-radius:8px;background:#fff;max-width:200px}
+.kelas-box{margin-top:8px;padding:10px;border:1px dashed #fdba74;border-radius:10px;background:#fffaf3}
+.kelas-box textarea{width:100%;margin-top:4px}
+.kelas-bulk{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.kelas-bulk select{padding:5px 8px;border:1px solid #d1d5db;border-radius:7px;font:inherit;font-size:13px;min-width:140px}
+.p-row select.kls-sel{border:1px solid #d1d5db;border-radius:7px;padding:6px 8px;width:100%;min-width:0;font-size:13px;background:#fff}
+.p-row select.kls-sel.kosong{border-color:#f59e0b;background:#fffbeb}
+small.kls{display:inline-block;margin-left:6px;padding:0 6px;border-radius:99px;background:#ffedd5;color:#9a3412;font-size:10.5px;font-weight:600}
 .dk-chk{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13.5px;cursor:pointer}
 .dk-chk input{width:18px;height:18px;accent-color:var(--accent)}
 .f-tile{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
@@ -305,7 +313,7 @@ table.doku td.nama{font-weight:600;padding-left:3mm}
 table.doku td.foto{text-align:center}
 .ph{height:40mm;width:60mm;margin:0 auto;border-radius:1.5mm;background:repeating-linear-gradient(45deg,#f3f4f6 0 10px,#eceef1 10px 20px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:9pt}
 .ph-img{width:60mm;height:40mm;display:block;margin:0 auto;border-radius:1mm;object-fit:contain}
-#pages.hide-dh .pg-dh,#pages.hide-dk .pg-dk,#pages.hide-nl .pg-nl,#pages.hide-ln .pg-ln,#pages.hide-dy .pg-dy,#pages.hide-nr .pg-nr{display:none}
+#pages.hide-ur .pg-ur,#pages.hide-dh .pg-dh,#pages.hide-dk .pg-dk,#pages.hide-nl .pg-nl,#pages.hide-ln .pg-ln,#pages.hide-dy .pg-dy,#pages.hide-nr .pg-nr{display:none}
 /* laporan: daftar nilai, daftar nama (keterangan), dokumentasi harian */
 .pg-lap{font-family:Calibri,Carlito,"Liberation Sans Narrow","Arial Narrow",Arial,sans-serif;color:#000;font-size:11pt}
 .pg-lap .lp-h{text-align:center;font-weight:700;font-size:14pt;line-height:1.3}
@@ -313,6 +321,7 @@ table.doku td.foto{text-align:center}
 .pg-lap .lp-h small{font-size:10pt;font-weight:400}
 .pg-lap .lp-h.d{font-size:14pt}
 .pg-lap .lp-gap{height:2.5mm}
+.pg-lap .lp-ur{text-align:justify;font-size:12pt;line-height:1.4;margin:0 0 3mm;white-space:pre-wrap}
 table.lap{width:190mm;margin-left:-8mm;border-collapse:collapse;table-layout:fixed}
 table.lap th{background:#ffff54;color:#000;font-size:11pt;font-weight:700;border:1px solid #000;padding:.2mm 1.5mm;text-align:center;line-height:1.15}
 table.lap.nl th{background:#ffd84a}
@@ -454,7 +463,14 @@ table.lap tr.merah td{background:#da2f20;color:#000}
       <h2><span class="n">1</span> Informasi Kegiatan</h2>
       <div class="field"><label for="f-kegiatan">Nama Kegiatan</label>
         <input id="f-kegiatan" data-k="kegiatan" placeholder="cth. Pelatihan K3 Penanggulangan Kebakaran">
-        <label class="dk-chk"><input type="checkbox" id="f-damkar"> <b>Damkar</b> <span class="hint">(dokumentasi 2 foto per peserta)</span></label></div>
+        <label class="dk-chk"><input type="checkbox" id="f-damkar"> <b>Damkar</b> <span class="hint">(dokumentasi 2 foto per peserta)</span></label>
+        <label class="dk-chk"><input type="checkbox" id="f-papa"> <b>PAPA</b> <span class="hint">(laporan dipecah per kelas alat)</span></label>
+        <div class="kelas-box" id="kelasBox" hidden>
+          <label for="f-kelas">Daftar Kelas <span class="hint">(satu baris = satu kelas, mis. Hoist Crane)</span></label>
+          <textarea id="f-kelas" rows="3" placeholder="Hoist Crane&#10;Mobile Crane&#10;Portal Crane"></textarea>
+          <div class="kelas-bulk"><select id="kelasBulk" aria-label="Kelas untuk peserta yang belum punya kelas"></select><button type="button" class="btn sm" id="kelasBulkBtn">Terapkan ke peserta yang belum punya kelas</button></div>
+          <div class="hint" id="kelasInfo"></div>
+        </div></div>
       <div class="row2">
         <div class="field" style="grid-column:1/-1;margin-bottom:4px"><label for="dateField">Tanggal Kegiatan <span class="hint">(klik per tanggal, boleh tidak berurutan, maks. 7 hari)</span></label>
           <div class="dp-wrap" id="dpWrap">
@@ -517,7 +533,7 @@ table.lap tr.merah td{background:#da2f20;color:#000}
       <p class="xl-tip">File Excel atau PDF dibaca otomatis dari kolom <b>Nama Peserta</b> dan <b>Instansi/Perusahaan</b> (urutan kolom bebas), lalu diurutkan sesuai abjad (A–Z). PDF harus berupa PDF asli, bukan foto/scan. <a href="#" id="btnTpl">Unduh template Excel</a></p>
       <details class="paste" id="pasteBox">
         <summary>Tempel dari Excel</summary>
-        <p class="hint" style="margin-top:6px">Salin kolom <b>Nama | Instansi</b> dari Excel lalu tempel di sini (satu baris = satu peserta). Kolom nomor & baris judul otomatis diabaikan; jika ada 3 kolom (Nama | Jabatan | Instansi), kolom jabatan dilewati.</p>
+        <p class="hint" style="margin-top:6px">Salin kolom <b>Nama | Instansi</b> dari Excel lalu tempel di sini (satu baris = satu peserta). Kolom nomor & baris judul otomatis diabaikan; jika ada 3 kolom (Nama | Jabatan | Instansi), kolom jabatan dilewati. <b>Bidang PAPA:</b> pakai 3 kolom <b>Nama | Instansi | Kelas</b> (kelas baru otomatis masuk Daftar Kelas).</p>
         <textarea id="pasteText" placeholder="Ahmad Fauzi&#9;PT Sinar Jaya Abadi&#10;Siti Nurhaliza&#9;PT Mega Konstruksi"></textarea>
         <button class="btn sm primary" id="btnPaste">Tambahkan ke daftar</button>
       </details>
@@ -562,6 +578,7 @@ table.lap tr.merah td{background:#da2f20;color:#000}
         <label><input type="checkbox" data-lpc="nilai"> Daftar Nilai Peserta (Nilai Ujian Teori &amp; Nilai Ujian Praktek, tanda tangan pengawas &amp; ahli)</label>
         <label><input type="checkbox" data-lpc="hasil"> Daftar Nama Peserta (keterangan Lulus / Tidak Lulus / Cancel + penutup direktur)</label>
         <label><input type="checkbox" data-lpc="harian"> Dokumentasi Harian (foto Day 1, Day 2, …)</label>
+        <label id="lpUrLbl" hidden><input type="checkbox" data-lpc="uraianOn"> Uraian Laporan per Kelas (teks isi laporan yang berbeda tiap kelas alat, diketik di bawah)</label>
         <label><input type="checkbox" data-lpc="nara"> Absensi Narasumber (pilih narasumber, instansi &amp; materi otomatis, tanda tangan per hari)</label>
       </div>
       <div class="field"><label for="lpBatch">Batch (opsional, mis. A)</label><input id="lpBatch" data-lp="batch" placeholder="Kosongkan bila tidak ada batch" autocomplete="off"></div>
@@ -601,6 +618,12 @@ table.lap tr.merah td{background:#da2f20;color:#000}
         <div id="lpNr"></div>
       </div>
 
+      <div class="lap-box" id="lpSecUr" hidden>
+        <h3>Uraian Laporan per Kelas</h3>
+        <div class="hint">Ketik isi laporan untuk tiap kelas alat. Satu baris = satu paragraf. Hasilnya menjadi lembar "Uraian Laporan" di bagian depan laporan kelas itu (Pratinjau, Cetak/PDF, Word, dan Google Drive).</div>
+        <div id="lpUr"></div>
+      </div>
+
       <div class="lap-box" id="lpSecHari" hidden>
         <h3>Dokumentasi Harian</h3>
         <div class="hint">Isi materi tiap hari lalu ambil foto dengan kamera aplikasi. Foto diberi watermark (hari, tanggal, jam, alamat) tanpa nama peserta. Tiap halaman memuat 2 foto.</div>
@@ -613,6 +636,8 @@ table.lap tr.merah td{background:#da2f20;color:#000}
   <div class="preview-col">
     <div class="preview-head">
       <b>Pratinjau</b>
+      <select id="pvKelas" class="pv-kelas" hidden aria-label="Kelas yang ditampilkan"></select>
+      <label hidden><input type="checkbox" id="cUr" checked> Uraian Kelas</label>
       <label hidden><input type="checkbox" id="cLn" checked> Keterangan Lulus</label>
       <label><input type="checkbox" id="cDh" checked> Absensi Peserta</label>
       <label hidden><input type="checkbox" id="cNl" checked> Daftar Nilai</label>
@@ -763,7 +788,7 @@ function materiPilih(r, mid) { // pilih materi katalog: isi materi terisi otomat
   if (m) r.mtxt = m.isi.join("\n");
 }
 const lapDefault = () => ({
-  nilai: false, hasil: false, harian: false, nara: false, nr: {}, batch: "", nKota: "", nTgl: "",
+  nilai: false, hasil: false, harian: false, nara: false, uraianOn: false, uraian: {}, nr: {}, batch: "", nKota: "", nTgl: "",
   s1: { jab: "PENGAWAS KETENAGAKERJAAN\nSULAWESI TENGAH", nama: "", nip: "", ttd: "" },
   s2: { jab: "AHLI PENANGGULANGAN KEBAKARAN", nama: "", ttd: "" },
   hari: {}
@@ -774,12 +799,13 @@ const lapNorm = l => {
   Object.keys(l.hari || {}).forEach(k => { const h = l.hari[k] || {}; hari[k] = { materi: String(h.materi || ""), fotos: (Array.isArray(h.fotos) ? h.fotos : []).filter(x => typeof x === "string" && x) }; });
   const s = (x, d) => { const o = { ...d, ...(x && typeof x === "object" ? x : {}) }; Object.keys(d).forEach(k => { o[k] = String(o[k] == null ? "" : o[k]); }); return o; };
   const nr = {}; Object.keys(l.nr || {}).forEach(k => { nr[k] = naraRow(l.nr[k]); });
-  return { nilai: !!l.nilai, hasil: !!l.hasil, harian: !!l.harian, nara: !!l.nara, nr, batch: String(l.batch || ""), nKota: String(l.nKota || ""), nTgl: String(l.nTgl || ""), s1: s(l.s1, b.s1), s2: s(l.s2, b.s2), hari };
+  const uraian = {}; Object.keys(l.uraian && typeof l.uraian === "object" ? l.uraian : {}).forEach(k => { uraian[k] = String(l.uraian[k] || ""); });
+  return { nilai: !!l.nilai, hasil: !!l.hasil, harian: !!l.harian, nara: !!l.nara, uraianOn: !!l.uraianOn, uraian, nr, batch: String(l.batch || ""), nKota: String(l.nKota || ""), nTgl: String(l.nTgl || ""), s1: s(l.s1, b.s1), s2: s(l.s2, b.s2), hari };
 };
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
   acara: { kegiatan: "", tanggal: today, tanggal2: "", hari: [today], jamMulai: "08:00", jamSelesai: "16:00", zona: "WIB",
-           tempat: "", narasumber: "", damkar: false, kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
+           tempat: "", narasumber: "", damkar: false, papa: false, kelas: [], kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
   peserta: [],
   wm: { alamat: "", auto: true, lat: null, lng: null },
   lap: lapDefault(),
@@ -815,11 +841,37 @@ const idbPut = (k, v) => idb("readwrite", st => st.put(v, k));
 const idbDel = k => idb("readwrite", st => st.delete(k)).catch(() => { });
 
 let EV = []; // indeks kegiatan: ringkasan tiap kegiatan
+/* ---------- Bidang PAPA: satu kegiatan, banyak kelas alat ----------
+   Peserta diinput sekali (p.kelas). Laporan (daftar hadir, nilai, keterangan lulus, dokumentasi, uraian) dibuat satu set per kelas
+   dengan menjalankan pembuat laporan yang sama pada "kegiatan turunan" yang hanya berisi peserta kelas itu. */
+function kelasList(a) {
+  const o = [], src = Array.isArray(a && a.kelas) ? a.kelas : String((a && a.kelas) || "").split(/\r?\n/);
+  src.forEach(k => { k = String(k == null ? "" : k).replace(/\s+/g, " ").trim(); if (k && !o.includes(k)) o.push(k); });
+  return o;
+}
+function kelasEv(ev, k) {
+  const ks = kelasList(ev.acara), a = ev.acara, kg = (a.kegiatan || "").trim();
+  return {
+    ...ev, kelasNama: k,
+    peserta: ev.peserta.filter(p => (p.nama || "").trim() && (k ? p.kelas === k : !ks.includes(p.kelas))),
+    acara: { ...a, kegiatan: k ? (kg ? kg + " \u2013 " + k : k) : a.kegiatan },
+    lap: { ...ev.lap, uraianTeks: k ? ((ev.lap.uraian || {})[k] || "") : "" }
+  };
+}
+function kelasGroups(ev) { // [{kelas, ev}] ; bukan PAPA = satu kelompok tanpa nama kelas
+  if (!ev.acara.papa) return [{ kelas: "", ev }];
+  const out = [];
+  [...kelasList(ev.acara), ""].forEach(k => { const e = kelasEv(ev, k); if (e.peserta.length) out.push({ kelas: k, ev: e }); });
+  return out.length ? out : [{ kelas: "", ev: kelasEv(ev, "") }];
+}
+const kelasFolder = k => safeName(k || "Tanpa kelas");
+const kls = p => S.acara.papa && p.kelas ? `<small class="kls">${esc(p.kelas)}</small>` : "";
 // data versi lama: rentang tanggal–tanggal2 & kunci tanda tangan "h1","h2" → daftar tanggal & kunci tanggal
 function migAcara(a, hasHari) {
   if (!hasHari) a.hari = hariList({ tanggal: a.tanggal, tanggal2: a.tanggal2 }).filter(Boolean);
   a.hari = [...new Set((a.hari || []).filter(Boolean))].sort();
   if (a.hari.length) { a.tanggal = a.hari[0]; a.tanggal2 = a.hari[a.hari.length - 1]; }
+  a.papa = !!a.papa; a.kelas = kelasList(a);
   return a;
 }
 function migTtd(d) {
@@ -827,7 +879,7 @@ function migTtd(d) {
   return (d.peserta || []).map(p => {
     const t = {}, src = p.ttd && typeof p.ttd === "object" ? p.ttd : {};
     Object.keys(src).forEach(k => { const m = /^h(\d+)$/.exec(k); const key = m ? old[+m[1] - 1] : k; if (key && src[k]) t[key] = src[k]; });
-    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: String(p.ut || ""), up: String(p.up || ""), hasil: p.hasil === "lulus" || p.hasil === "tidak" ? p.hasil : "" };
+    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, kelas: String(p.kelas || "").trim(), batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: String(p.ut || ""), up: String(p.up || ""), hasil: p.hasil === "lulus" || p.hasil === "tidak" ? p.hasil : "" };
   });
 }
 const normalize = d => {
@@ -967,7 +1019,7 @@ function lapTexts(ev) {
   };
 }
 
-function renderPages() {
+function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menutupi S global
   const a = S.acara;
   const days = hariList(a), multi = days.length > 1;
   const list = S.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
@@ -1065,8 +1117,19 @@ function renderPages() {
   };
   const colg = W => `<colgroup>${W.map(w => `<col style="width:${w}mm">`).join("")}</colgroup>`;
   const empty = n => `<tr><td colspan="${n}" class="c" style="color:#999">Belum ada peserta</td></tr>`;
-  let nNl = 0, nLn = 0, nDy = 0, nNr = 0;
+  let nNl = 0, nLn = 0, nDy = 0, nNr = 0, nUr = 0;
   sec.dk = html; html = "";
+  if (a.papa && L.uraianOn) { // Uraian laporan khusus kelas (diketik per kelas di tab Laporan)
+    const paras = String(L.uraianTeks || "").split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    const urHead = pi => `<div class="lp-h">URAIAN LAPORAN${pi ? " <small>(lanjutan)</small>" : ""}</div>${pi ? "" : `<div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.tgl1)}</div>`}<div class="lp-gap"></div>`;
+    const urBody = (c, pi) => urHead(pi) + (c.length ? c.map(t => `<p class="lp-ur">${esc(t)}</p>`).join("") : `<p class="lp-ur" style="color:#999;text-align:center">Belum ada uraian. Ketik di tab Laporan \u2192 Uraian per kelas.</p>`);
+    const urCh = []; let cu = [];
+    for (const t of paras) { cu.push(t); if (cu.length > 1 && !fits(urBody(cu, urCh.length), "pg-lap")) { cu.pop(); urCh.push(cu); cu = [t]; } }
+    urCh.push(cu);
+    urCh.forEach((c, pi) => { html += page(urBody(c, pi), "pg-lap pg-ur"); });
+    nUr = urCh.length;
+  }
+  sec.ur = html; html = "";
   if (L.nilai) {
     const rows = lpPeserta.filter(p => !p.batal);
     const tbl = (c, st) => `<table class="lap nl">${colg([10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th></tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td></tr>`).join("") || empty(5)}</tbody></table>`;
@@ -1116,13 +1179,29 @@ function renderPages() {
     nNr = chs.length;
   }
   sec.nr = html;
-  html = (sec.ln || "") + (sec.dh || "") + (sec.nl || "") + (sec.nr || "") + (sec.dy || "") + (sec.dk || "");
+  html = (sec.ur || "") + (sec.ln || "") + (sec.dh || "") + (sec.nl || "") + (sec.nr || "") + (sec.dy || "") + (sec.dk || "");
   meas.innerHTML = "";
-  [["Nl", nNl], ["Ln", nLn], ["Dy", nDy], ["Nr", nNr]].forEach(([k, n]) => { const lb = $("#c" + k).closest("label"); if (lb) lb.hidden = !n; });
-
-  $("#pages").innerHTML = html;
-  const nd = ch.length, nk = dch.length, noFoto = dk.filter(p => !p.batal && !fotoOk(p, dkOn)).length;
-  $("#pgInfo").textContent = `${nd} hal. daftar hadir · ${nk} hal. dokumentasi${dk.length && noFoto ? ` · ${noFoto} peserta belum ada foto` : ""}${nNl + nLn + nDy + nNr ? ` · ${nNl + nLn + nDy + nNr} hal. laporan` : ""}`;
+  return { html, nd: ch.length, nk: dch.length, noFoto: dk.filter(p => !p.batal && !fotoOk(p, dkOn)).length, nPes: dk.length, nNl, nLn, nDy, nNr, nUr };
+}
+let PV_KELAS = "*"; // pratinjau: "*" = semua kelas
+function renderPages() {
+  const gs = kelasGroups(S), papa = !!S.acara.papa && gs.length > 0;
+  const sel = $("#pvKelas");
+  if (sel) {
+    sel.hidden = !papa;
+    if (papa) {
+      if (PV_KELAS !== "*" && !gs.some(g => g.kelas === PV_KELAS)) PV_KELAS = "*";
+      sel.innerHTML = `<option value="*">Semua kelas (${gs.length})</option>` + gs.map(g => `<option value="${esc(g.kelas)}"${g.kelas === PV_KELAS ? " selected" : ""}>${esc(g.kelas || "Tanpa kelas")} (${g.ev.peserta.length})</option>`).join("");
+      sel.value = PV_KELAS;
+    }
+  }
+  const use = papa && PV_KELAS !== "*" ? gs.filter(g => g.kelas === PV_KELAS) : gs;
+  const T = { html: "", nd: 0, nk: 0, noFoto: 0, nPes: 0, nNl: 0, nLn: 0, nDy: 0, nNr: 0, nUr: 0 };
+  use.forEach(g => { const r = renderSet(g.ev); T.html += r.html; Object.keys(T).forEach(k => { if (k !== "html") T[k] += r[k]; }); });
+  [["Nl", T.nNl], ["Ln", T.nLn], ["Dy", T.nDy], ["Nr", T.nNr], ["Ur", T.nUr]].forEach(([k, n]) => { const lb = $("#c" + k).closest("label"); if (lb) lb.hidden = !n; });
+  $("#pages").innerHTML = T.html;
+  const lap = T.nNl + T.nLn + T.nDy + T.nNr + T.nUr;
+  $("#pgInfo").textContent = `${papa ? use.length + " kelas · " : ""}${T.nd} hal. daftar hadir · ${T.nk} hal. dokumentasi${T.nPes && T.noFoto ? ` · ${T.noFoto} peserta belum ada foto` : ""}${lap ? ` · ${lap} hal. laporan` : ""}`;
   fitPreview();
 }
 let rT = null;
@@ -1140,7 +1219,7 @@ window.addEventListener("resize", fitPreview);
 function renderList() {
   const el = $("#pList");
   $("#pCount").textContent = S.peserta.length ? `(${S.peserta.length})` : "";
-  renderLap();
+  renderLap(); renderKelasUi();
   if (!S.peserta.length) { el.innerHTML = `<div class="empty">Belum ada peserta. Klik <b>+ Tambah Peserta</b> atau <b>Tempel dari Excel</b>.</div>`; return; }
   el.innerHTML = S.peserta.map((p, i) => `
     <div class="p-row" data-id="${p.id}">
@@ -1148,6 +1227,7 @@ function renderList() {
       <div class="p-fields">
         <input class="nama" data-f="nama" value="${esc(p.nama)}" placeholder="Nama peserta" aria-label="Nama peserta ${i + 1}">
         <input data-f="instansi" value="${esc(p.instansi)}" placeholder="Instansi / Perusahaan" aria-label="Instansi">
+        ${S.acara.papa ? `<select data-f="kelas" class="kls-sel${kelasList(S.acara).includes(p.kelas) ? "" : " kosong"}" aria-label="Kelas peserta ${i + 1}"><option value="">\u2014 Pilih kelas \u2014</option>${kelasList(S.acara).concat(p.kelas && !kelasList(S.acara).includes(p.kelas) ? [p.kelas] : []).map(k => `<option value="${esc(k)}"${k === p.kelas ? " selected" : ""}>${esc(k)}</option>`).join("")}</select>` : ""}
       </div>
       <div class="p-side">
         <div class="p-actions">
@@ -1180,7 +1260,7 @@ function renderFoto() {
   el.innerHTML = shown.map(p => `
     <div class="f-tile" data-id="${p.id}">
       ${dk ? `<div class="f-phs">${slot(p, "foto", "Foto 1")}${slot(p, "foto2", "Foto 2")}</div>` : slot(p, "foto", "Ambil Foto")}
-      <div class="f-meta"><span class="no">${all.indexOf(p) + 1}.</span><span class="nm">${esc(p.nama)}</span>${dk
+      <div class="f-meta"><span class="no">${all.indexOf(p) + 1}.</span><span class="nm">${esc(p.nama)}${kls(p)}</span>${dk
         ? `<span class="rms">${p.foto ? `<button class="rm" data-act="rmfoto" data-slot="foto" title="Hapus foto 1">Hapus 1</button>` : ""}${p.foto2 ? `<button class="rm" data-act="rmfoto" data-slot="foto2" title="Hapus foto 2">Hapus 2</button>` : ""}</span>`
         : (p.foto ? `<button class="rm" data-act="rmfoto" data-slot="foto" title="Hapus foto">Hapus</button>` : "")}</div>
     </div>`).join("");
@@ -1454,6 +1534,16 @@ $("#btnCamStart").onclick = () => {
 };
 
 /* ---------- paste from Excel ---------- */
+// kolom "Kelas" di data tempel / Excel: kelas yang baru otomatis masuk Daftar Kelas dan bidang PAPA diaktifkan. Mengembalikan jumlah kelas baru.
+function kelasDariData(list) {
+  const ada = kelasList(S.acara), baru = [];
+  list.forEach(p => { p.kelas = String(p.kelas || "").replace(/\s+/g, " ").trim(); if (p.kelas && !ada.includes(p.kelas) && !baru.includes(p.kelas)) baru.push(p.kelas); });
+  if (!baru.length) return 0;
+  S.acara.kelas = ada.concat(baru);
+  if (!S.acara.papa) { S.acara.papa = true; S.acara.damkar = false; $("#f-damkar").checked = false; }
+  fillKelas();
+  return baru.length;
+}
 function parsePaste(txt) {
   const out = [];
   txt.split(/\r?\n/).forEach((line, li) => {
@@ -1463,7 +1553,8 @@ function parsePaste(txt) {
     if (li === 0 && cells.some(c => /^nama/i.test(c))) return;
     if (/^(\d+\.?|no\.?)$/i.test(cells[0]) && cells.length > 1) cells.shift();
     if (!cells[0] && !cells[1]) return;
-    out.push({ id: uid(), nama: cells[0] || "", instansi: (cells.length >= 3 ? cells[2] : cells[1]) || "", foto: "" });
+    if (S.acara.papa && cells.length === 3) { out.push({ id: uid(), nama: cells[0] || "", instansi: cells[1] || "", foto: "", kelas: cells[2] || "" }); return; } // bidang PAPA: Nama | Instansi | Kelas
+    out.push({ id: uid(), nama: cells[0] || "", instansi: (cells.length >= 3 ? cells[2] : cells[1]) || "", foto: "", kelas: cells.length >= 4 ? cells[3] : "" });
   });
   return out;
 }
@@ -1569,6 +1660,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && DP.open) {
 function fillForm() {
   document.querySelectorAll("[data-k]").forEach(el => { el.value = S.acara[el.dataset.k] ?? ""; });
   $("#f-damkar").checked = !!S.acara.damkar;
+  fillKelas();
   renderDates();
 }
 document.querySelectorAll("[data-k]").forEach(el => {
@@ -1579,8 +1671,36 @@ document.querySelectorAll("[data-k]").forEach(el => {
   });
 });
 
+function fillKelas() {
+  const A = S.acara; $("#f-papa").checked = !!A.papa; $("#kelasBox").hidden = !A.papa;
+  if (document.activeElement !== $("#f-kelas")) $("#f-kelas").value = kelasList(A).join("\n");
+  renderKelasUi();
+}
+function renderKelasUi() {
+  const A = S.acara; if (!A.papa) return;
+  const ks = kelasList(A), bulk = $("#kelasBulk"), cur = bulk.value;
+  bulk.innerHTML = ks.map(k => `<option value="${esc(k)}"${k === cur ? " selected" : ""}>${esc(k)}</option>`).join("") || `<option value="">(isi daftar kelas dulu)</option>`;
+  const nm = S.peserta.filter(p => (p.nama || "").trim()), no = nm.filter(p => !ks.includes(p.kelas)).length;
+  $("#kelasInfo").textContent = !ks.length ? "Isi minimal satu kelas." : `${ks.map(k => `${k}: ${nm.filter(p => p.kelas === k).length}`).join(" · ")}${no ? ` · belum ada kelas: ${no}` : ""}`;
+}
+$("#f-kelas").addEventListener("input", e => {
+  S.acara.kelas = kelasList({ kelas: e.target.value.split(/\r?\n/) }); changed(); renderList();
+});
+$("#f-papa").addEventListener("change", e => {
+  S.acara.papa = e.target.checked;
+  if (S.acara.papa && S.acara.damkar) { S.acara.damkar = false; $("#f-damkar").checked = false; renderFoto(); }
+  fillKelas(); renderList(); changed();
+  toast(S.acara.papa ? "Bidang PAPA aktif: pilih kelas tiap peserta, laporan dibuat satu set per kelas." : "Bidang PAPA dimatikan: laporan kembali satu set untuk semua peserta.");
+});
+$("#kelasBulkBtn").onclick = () => {
+  const k = $("#kelasBulk").value, ks = kelasList(S.acara); if (!k) { toast("Isi daftar kelas dulu."); return; }
+  let n = 0; S.peserta.forEach(p => { if ((p.nama || "").trim() && !ks.includes(p.kelas)) { p.kelas = k; n++; } });
+  renderList(); changed(); toast(n ? `${n} peserta dimasukkan ke kelas ${k}.` : "Semua peserta sudah punya kelas.");
+};
 $("#f-damkar").addEventListener("change", e => {
-  S.acara.damkar = e.target.checked; changed(); renderFoto();
+  S.acara.damkar = e.target.checked;
+  if (S.acara.damkar && S.acara.papa) { S.acara.papa = false; fillKelas(); renderList(); toast("Bidang PAPA dimatikan karena Damkar dipilih (Damkar = satu laporan)."); }
+  changed(); renderFoto();
   toast(S.acara.damkar ? "Mode Damkar aktif: dokumentasi tiap peserta memakai 2 kolom foto." : "Mode Damkar dimatikan: dokumentasi kembali 1 foto per peserta.");
 });
 
@@ -1589,6 +1709,7 @@ $("#pList").addEventListener("input", e => {
   const f = e.target.dataset.f; if (!f) return;
   const i = idx(e.target.closest(".p-row").dataset.id);
   S.peserta[i][f] = e.target.value; changed(); renderFotoSoon();
+  if (f === "kelas") { e.target.classList.toggle("kosong", !kelasList(S.acara).includes(e.target.value)); renderKelasUi(); }
 });
 $("#pList").addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.dataset.f) {
@@ -1632,13 +1753,15 @@ $("#btnPaste").onclick = () => {
   // isi baris kosong di akhir dulu
   while (S.peserta.length && !S.peserta[S.peserta.length - 1].nama && !S.peserta[S.peserta.length - 1].foto) S.peserta.pop();
   S.peserta.push(...add); sortPeserta(); $("#pasteText").value = ""; $("#pasteBox").open = false;
-  renderList(); changed(); toast(`${add.length} peserta ditambahkan & diurutkan A–Z.`);
+  const nk = kelasDariData(add);
+  renderList(); changed(); toast(`${add.length} peserta ditambahkan & diurutkan A–Z.${nk ? ` Bidang PAPA diaktifkan (${nk} kelas baru).` : ""}`);
 };
 
 /* ---------- preview toggles, tabs, print ---------- */
 $("#cDh").onchange = e => $("#pages").classList.toggle("hide-dh", !e.target.checked);
 $("#cDk").onchange = e => $("#pages").classList.toggle("hide-dk", !e.target.checked);
-[["Nl", "nl"], ["Ln", "ln"], ["Dy", "dy"], ["Nr", "nr"]].forEach(([k, c]) => { $("#c" + k).onchange = e => $("#pages").classList.toggle("hide-" + c, !e.target.checked); });
+$("#pvKelas").onchange = e => { PV_KELAS = e.target.value; renderPages(); };
+[["Nl", "nl"], ["Ln", "ln"], ["Dy", "dy"], ["Nr", "nr"], ["Ur", "ur"]].forEach(([k, c]) => { $("#c" + k).onchange = e => $("#pages").classList.toggle("hide-" + c, !e.target.checked); });
 function setTab(t) {
   document.body.dataset.tab = t;
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.t === t));
@@ -1757,7 +1880,8 @@ const Ev = {
     const b = blank();
     if (from) {
       b.acara = { ...from.acara, ttd: "", kegiatan: from.acara.kegiatan ? from.acara.kegiatan + " (salinan)" : "" };
-      b.peserta = from.peserta.map(p => ({ id: uid(), nama: p.nama, instansi: p.instansi, foto: "", ttd: {} }));
+      b.peserta = from.peserta.map(p => ({ id: uid(), nama: p.nama, instansi: p.instansi, foto: "", ttd: {}, kelas: p.kelas || "" }));
+      b.lap.uraianOn = !!(from.lap && from.lap.uraianOn); b.lap.uraian = { ...((from.lap && from.lap.uraian) || {}) };
       b.wm = { ...from.wm };
       b.acara.tglTtd = lastDay(b.acara) || b.acara.tglTtd;
     }
@@ -1931,8 +2055,12 @@ function renderLap() {
   if (!$("#lpList")) return;
   const L = S.lap, days = hariList(S.acara).filter(Boolean), nilai = L.nilai, hasil = L.hasil;
   $("#lpSecSign").hidden = !nilai; $("#lpSecPes").hidden = !(nilai || hasil); $("#lpSecHari").hidden = !L.harian; $("#lpSecNr").hidden = !L.nara;
+  { const papa = !!S.acara.papa; $("#lpUrLbl").hidden = !papa; $("#lpSecUr").hidden = !(papa && L.uraianOn);
+    const ks = kelasList(S.acara);
+    if (papa && L.uraianOn && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.ur != null))
+      $("#lpUr").innerHTML = ks.length ? ks.map(k => `<div class="field"><label>${esc(k)} <span class="hint">(${S.peserta.filter(p => p.kelas === k && (p.nama || "").trim()).length} peserta)</span></label><textarea data-ur="${esc(k)}" rows="6" placeholder="Uraian laporan kelas ${esc(k)}">${esc((L.uraian || {})[k] || "")}</textarea></div>`).join("") : `<div class="empty">Isi Daftar Kelas di tab 1 dulu.</div>`; }
   [["#lpT1", L.s1.ttd], ["#lpT2", L.s2.ttd]].forEach(([s, u]) => { const t = $(s); t.style.backgroundImage = u ? `url('${u}')` : ""; t.textContent = u ? "" : "Belum ada"; });
-  $("#lpDl").innerHTML = [["ln", "Daftar Keterangan Lulus", hasil], ["dh", "Absensi Peserta", true], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
+  $("#lpDl").innerHTML = [["ur", "Uraian Kelas", !!S.acara.papa && L.uraianOn], ["ln", "Daftar Keterangan Lulus", hasil], ["dh", "Absensi Peserta", true], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
   const ps = S.peserta.filter(p => (p.nama || "").trim());
   const list = $("#lpList");
   list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["80px", "80px"] : []), ...(hasil ? ["auto"] : [])].join(" "));
@@ -1940,7 +2068,7 @@ function renderLap() {
     : nilai ? "Isi Nilai Ujian Teori & Nilai Ujian Praktek (bebas, mis. 83.3 atau X). Peserta Cancel tidak ikut di Daftar Nilai." : "Centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah). Kosong = keterangan dikosongkan.";
   $("#lpAllLulus").hidden = !hasil;
   list.innerHTML = ps.length ? ps.map((p, i) => {
-    const nm = `<div class="no">${i + 1}</div><div class="nm"><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small></div>`;
+    const nm = `<div class="no">${i + 1}</div><div class="nm"><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small>${kls(p)}</div>`;
     if (p.batal) return `<div class="lp-r cx" data-id="${p.id}">${nm}<div class="cxl" style="grid-column:3/-1">CANCEL</div></div>`;
     return `<div class="lp-r" data-id="${p.id}">${nm}${nilai ? `<label class="lpn"><span>Nilai Ujian Teori</span><input type="text" data-f="ut" inputmode="decimal" placeholder="Nilai" value="${esc(p.ut)}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label class="lpn"><span>Nilai Ujian Praktek</span><input type="text" data-f="up" inputmode="decimal" placeholder="Nilai" value="${esc(p.up)}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label>` : ""}${hasil ? `<div class="ck"><label><input type="checkbox" data-f="lulus" ${p.hasil === "lulus" ? "checked" : ""}>Lulus</label><label><input type="checkbox" data-f="tidak" ${p.hasil === "tidak" ? "checked" : ""}>Tidak lulus</label></div>` : ""}</div>`;
   }).join("") : `<div class="empty">Belum ada peserta. Isi dulu di tab 1.</div>`;
@@ -1978,16 +2106,24 @@ function lapSig(which) {
 async function unduhLap(kind) {
   try {
     toast("Menyusun berkas Word…");
-    const r = await Word.lapFile(kind, JSON.parse(JSON.stringify(S)), Cloud.docCtx(S));
-    const blob = new Blob([r.bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = r.name; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000); toast("Berkas Word siap: " + r.name);
+    const snap = JSON.parse(JSON.stringify(S)), gs = kelasGroups(snap), files = [];
+    for (const g of gs) files.push(await Word.lapFile(kind, g.ev, Cloud.docCtx(g.ev)));
+    let blob, name;
+    if (files.length === 1) { blob = new Blob([files[0].bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }); name = files[0].name; }
+    else { // PAPA: satu berkas per kelas, dikemas dalam ZIP
+      const LBL = { ln: "Daftar Nama Peserta", dh: "Daftar Hadir", nl: "Daftar Nilai Peserta", nr: "Absensi Narasumber", dy: "Dokumentasi Harian", dk: "Dokumentasi Peserta", ur: "Uraian Laporan" };
+      blob = new Blob([Word.zip(files.map(f => ({ name: f.name, data: f.bytes })))], { type: "application/zip" });
+      name = safeName(`${LBL[kind] || "Laporan"} per kelas - ${snap.acara.kegiatan || "Kegiatan"}`) + ".zip";
+    }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000); toast((files.length > 1 ? `${files.length} berkas Word (satu per kelas) siap: ` : "Berkas Word siap: ") + name);
   } catch (e) { toast("Gagal menyusun Word: " + e.message); }
 }
 const lapNr = d => (S.lap.nr[d] = S.lap.nr[d] || naraNew());
 $("#lapBox").addEventListener("input", e => {
   const el = e.target;
   if (el.dataset.lp) { lpSet(el.dataset.lp, el.value); changed(); return; }
+  if (el.dataset.ur != null) { S.lap.uraian = S.lap.uraian || {}; S.lap.uraian[el.dataset.ur] = el.value; changed(); return; }
   if (el.dataset.nf && el.closest(".lp-nr") && !(el.tagName === "SELECT")) { lapNr(el.closest(".lp-nr").dataset.day)[el.dataset.nf] = el.value; changed(); return; }
   const row = el.closest(".lp-r"), day = el.closest(".lp-day");
   if (row && (el.dataset.f === "ut" || el.dataset.f === "up")) { const p = S.peserta[idx(row.dataset.id)]; if (p) { p[el.dataset.f] = el.value.trim(); changed(); } }
@@ -2088,7 +2224,7 @@ function renderTtdTab() {
     <label class="t-rm" title="Centang bila peserta Remedial (baris kuning, tanda tangan hanya hari terakhir)"><input type="checkbox" data-rm="${p.id}" ${p.remedial ? "checked" : ""} aria-label="Remedial: ${esc(p.nama)}"><span></span></label>
     <button class="t-item ${sg ? "done" : ""}" data-id="${p.id}" ${cur.locked || !S.acara.tanggal || p.batal || skip ? "disabled" : ""}>
       <span class="no">${semua.indexOf(p) + 1}.</span>
-      <span class="who"><span class="nm">${esc(p.nama)}</span><br><span class="in">${esc(p.instansi || "-")}</span></span>
+      <span class="who"><span class="nm">${esc(p.nama)}</span><br><span class="in">${esc(p.instansi || "-")}${kls(p)}</span></span>
       <span class="sg" ${sg ? `style="background-image:url('${sg}')"` : ""}>${sg ? "" : (p.batal ? "Cancel" : skip ? "Hari terakhir" : "Belum TTD")}</span>
     </button></div>`;
   }).join("");
@@ -2158,7 +2294,7 @@ function findHeader(rows) {
     const hs = (rows[r] || []).map(c => norm(String(c)));
     const ni = hs.findIndex(isNamaH);
     if (ni < 0) continue;
-    return { r, ni, pi: hs.findIndex((h, i) => i !== ni && isPerusH(h)) };
+    return { r, ni, pi: hs.findIndex((h, i) => i !== ni && isPerusH(h)), ki: hs.findIndex((h, i) => i !== ni && /^(kelas|class|jenis alat)\b/.test(h)) };
   }
   return null;
 }
@@ -2176,7 +2312,7 @@ async function importExcel(file) {
     }
     if (!found) { toast('Kolom "Nama Peserta" tidak ditemukan. Pastikan baris judul berisi "Nama Peserta" dan "Perusahaan".'); return; }
     const { rows, h } = found;
-    masukkanPeserta(rows.slice(h.r + 1).map(r => ({ nama: r[h.ni], inst: h.pi >= 0 ? r[h.pi] : "" })), "Excel", h.pi >= 0);
+    masukkanPeserta(rows.slice(h.r + 1).map(r => ({ nama: r[h.ni], inst: h.pi >= 0 ? r[h.pi] : "", kelas: h.ki >= 0 ? r[h.ki] : "" })), "Excel", h.pi >= 0);
   } catch (e) { toast(e.message || "File Excel tidak bisa dibaca."); }
 }
 /* ---------- upload PDF peserta ---------- */
@@ -2414,20 +2550,22 @@ function masukkanPeserta(list, sumber, adaInst) {
     const nama = cleanTxt(r.nama); if (!nama) continue;
     const inst = cleanTxt(r.inst), k = key(nama, inst);
     if (have.has(k)) { dup++; continue; }
-    have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {} });
+    have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {}, kelas: cleanTxt(r.kelas) });
   }
   if (!add.length) { toast(dup ? `Semua nama (${dup}) sudah ada di daftar peserta.` : `Tidak ada nama peserta di file ${sumber} tersebut.`); return; }
   S.peserta = S.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
   S.peserta.push(...add); sortPeserta();
+  const nkel = kelasDariData(add);
   renderList(); changed();
-  toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
+  if (nkel) toast(`Kolom Kelas terbaca: ${nkel} kelas baru, bidang PAPA diaktifkan.`);
+  else toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
 }
 function importFile(file) { return /\.pdf$/i.test(file.name) || file.type === "application/pdf" ? importPdf(file) : importExcel(file); }
 async function downloadTemplate() {
   try {
     const XLSX = await loadXLSX();
-    const ws = XLSX.utils.aoa_to_sheet([["No", "Nama Peserta", "Perusahaan"], [1, "Ahmad Fauzi", "PT Sinar Jaya Abadi"], [2, "Siti Nurhaliza", "PT Mega Konstruksi"]]);
-    ws["!cols"] = [{ wch: 5 }, { wch: 32 }, { wch: 32 }];
+    const ws = XLSX.utils.aoa_to_sheet([["No", "Nama Peserta", "Perusahaan", "Kelas (khusus bidang PAPA, boleh dikosongkan)"], [1, "Ahmad Fauzi", "PT Sinar Jaya Abadi", ""], [2, "Siti Nurhaliza", "PT Mega Konstruksi", ""]]);
+    ws["!cols"] = [{ wch: 5 }, { wch: 32 }, { wch: 32 }, { wch: 28 }];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Peserta");
     XLSX.writeFile(wb, "template-peserta.xlsx");
   } catch (e) { toast(e.message); }
@@ -2665,6 +2803,13 @@ const Word = (() => {
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }
 
+  function uraian(ev, ctx) { // lembar "Uraian Laporan" khusus kelas (teks diketik di tab Laporan)
+    const D = Doc(), T = ctx.lap, paras = String((ev.lap || {}).uraianTeks || "").split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    const xml = lapTitle(D, "URAIAN LAPORAN") + lapTitle(D, T.keg) + lapTitle(D, "TANGGAL : " + T.tgl1, { sz: 26, after: 3 })
+      + (paras.length ? paras.map(t => D.par(lr(D, t, { sz: 24 }), { jc: "both", after: tw(3), line: 336 })).join("") : D.par(lr(D, "Belum ada uraian.", { color: "999999" }), { jc: "center" }));
+    return D.build(xml, ctx.kopHead, ctx.kopFoot);
+  }
+
   function hasil(ev, ctx) {
     const D = Doc(), T = ctx.lap, Wm = [10.5, 64, 89, 26.5], W = Wm.map(tw), RED = "DA2F20";
     const rows = ev.peserta.filter(p => (p.nama || "").trim());
@@ -2735,6 +2880,7 @@ const Word = (() => {
       for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "", foto2: p.foto2 ? await kecil(p.foto2) : "" });
       return { name: `Dokumentasi Peserta - ${nm}.docx`, bytes: dokumentasi(ev2, ctx) };
     }
+    if (kind === "ur") return { name: `Uraian Laporan - ${nm}.docx`, bytes: uraian(ev, ctx) };
     if (kind === "nl") return { name: `Daftar Nilai Peserta - ${nm}.docx`, bytes: nilai(ev, ctx) };
     if (kind === "ln") return { name: `Daftar Nama Peserta - ${nm}.docx`, bytes: hasil(ev, ctx) };
     if (kind === "nr") return { name: `Absensi Narasumber - ${nm}.docx`, bytes: narasumber(ev, ctx) };
@@ -2766,7 +2912,7 @@ const Word = (() => {
     if (!hasP && !(ev.acara.kegiatan || "").trim()) return out;
     const add = async (key, name, bytes) => { const data = await toDataUrl(bytes); out.push({ key, path: [], name, data, hash: fnv(name + "|" + data.length + "|" + data.slice(-64) + "|" + crc32(bytes)) }); };
     const LP = ev.lap || {}; // urutan: Keterangan Lulus, Absensi Peserta, Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta
-    for (const [flag, kind] of [[LP.hasil, "ln"], [true, "dh"], [LP.nilai, "nl"], [LP.nara, "nr"], [LP.harian, "dy"]]) {
+    for (const [flag, kind] of [[LP.uraianOn && ev.acara.papa, "ur"], [LP.hasil, "ln"], [true, "dh"], [LP.nilai, "nl"], [LP.nara, "nr"], [LP.harian, "dy"]]) {
       if (!flag) continue;
       if (kind === "dh") { await add("doc:dh", `Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx)); continue; }
       const r = await lapFile(kind, ev, ctx); await add("doc:" + kind, r.name, r.bytes);
@@ -2778,7 +2924,7 @@ const Word = (() => {
     }
     return out;
   }
-  return { berkas, daftarHadir, dokumentasi, nilai, hasil, harian, narasumber, lapFile, kecil, zip, crc32 };
+  return { berkas, daftarHadir, dokumentasi, nilai, hasil, uraian, harian, narasumber, lapFile, kecil, zip, crc32 };
 })();
 
 const Cloud = {
@@ -2997,7 +3143,7 @@ const Cloud = {
     return {
       id: ev.id, created: ev.created, acara: a, wm: ev.wm, days, lap,
       hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara),
-      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: !!p.foto, foto2: !!p.foto2, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "", ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
+      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: !!p.foto, foto2: !!p.foto2, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "", ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
     };
   },
   async sync(manual, evArg) {
@@ -3017,7 +3163,15 @@ const Cloud = {
       const fl0 = this.files(ev);
       // berkas Word (daftar hadir + tanda tangan, dokumentasi foto) disusun ulang tiap sinkron; hanya diunggah bila isinya berubah
       let docs = [], docOk = true;
-      try { this.status("☁️ Menyusun berkas Word…", "busy"); docs = await Word.berkas(ev, this.docCtx(ev)); } catch (e) { docOk = false; console.warn("Berkas Word gagal disusun", e); }
+      try {
+        this.status("☁️ Menyusun berkas Word…", "busy");
+        const gs = kelasGroups(ev);
+        if (gs.length === 1 && !gs[0].kelas) docs = await Word.berkas(ev, this.docCtx(ev));
+        else for (const g of gs) { // PAPA: satu set berkas per kelas, masing-masing di subfolder kelasnya
+          const ds = await Word.berkas(g.ev, this.docCtx(g.ev));
+          ds.forEach(d => { d.key += ":" + (g.kelas || "-"); d.path = [kelasFolder(g.kelas)]; docs.push(d); });
+        }
+      } catch (e) { docOk = false; console.warn("Berkas Word gagal disusun", e); }
       const fl = fl0.concat(docs), todo = fl.filter(f => ev.sync.h[f.key] !== f.hash);
       const evInfo = { id: ev.id, acara: { kegiatan: ev.acara.kegiatan, tanggal: ev.acara.tanggal } };
       // dikirim per paket (±12 file / ±1,8 MB per permintaan): tiap permintaan ke Apps Script punya biaya tetap beberapa detik
@@ -3152,7 +3306,7 @@ const Cloud = {
         id: d.id, created: d.created, wm: d.wm,
         acara: { ...d.acara, ttd: "" },
         lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [] }])), nr: Object.fromEntries(Object.entries(lp.nr || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }])) }))(d.lap || {}),
-        peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, foto: "", foto2: "", ttd: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, hasil: p.hasil }))
+        peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: "", foto2: "", ttd: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, hasil: p.hasil }))
       });
       const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); let i = 0; // berkas Word tidak perlu diunduh
       for (const k of keys) {
@@ -3268,8 +3422,8 @@ const Pic = {
   node(ev) {
     const a = ev.acara, hari = hariList(a).filter(Boolean);
     return {
-      nama: (a.kegiatan || "").trim(), tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
-      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" })), dibuat: ev.created,
+      nama: (a.kegiatan || "").trim(), tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, papa: !!a.papa, kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
+      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" })), dibuat: ev.created,
       lap: { nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: Object.fromEntries(Object.entries(ev.lap.nr || {}).map(([d, r]) => [d, { kid: r.kid || "", nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }])), batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
     };
   },

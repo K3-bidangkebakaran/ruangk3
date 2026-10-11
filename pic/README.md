@@ -130,3 +130,8 @@ Foto ±100–250 KB (maks 1280 px), TTD ±10–20 KB. Satu kegiatan 30 peserta �
 ## Penyimpanan otomatis ke Google Drive (tanpa web dibuka)
 
 Hasil PIC (`dh_hasil` + `dh_media`) juga diambil oleh Apps Script Daftar Hadir tiap 5 menit dan disimpan ke Drive. Pasang sekali: lihat bagian "Hasil APK Portal PIC tersimpan otomatis" di `daftar-hadir/apps-script/PANDUAN-GOOGLE-DRIVE.md` (fungsi `picOtomatisAktifkan`). Apps Script login anonim, jadi aturan `dh_*` di atas harus mengizinkan baca untuk `auth != null`.
+
+## Bidang PAPA (kelas alat)
+
+`dh_kegiatan/{kid}` membawa `papa` (bool), `kelas` (daftar nama kelas) dan `peserta[].kelas`. APK hanya menampilkan lencana kelas di daftar peserta dan mengurutkan per kelas; hasil PIC (`dh_hasil`, `dh_media`) tetap per peserta sehingga tidak berubah. Laporan dipecah per kelas di aplikasi Daftar Hadir.
+

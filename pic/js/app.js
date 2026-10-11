@@ -63,7 +63,11 @@ const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v18';
+// Bidang PAPA: tiap peserta punya kelas alat (p.kelas); daftar peserta diurutkan per kelas dan kelasnya ditampilkan
+const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
+const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
+const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v19';
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrKeys = (h, k, d) => [d, ...[...new Set([...Object.keys(LAPK(k).nr || {}), ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { const m = NR_KEY.exec(x); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_')[1] - +q.split('_')[1])];
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
@@ -383,10 +387,10 @@ function render() {
   } else if (P.screen === 'dok') {
     const s = stat(kid), hh = hOf(kid);
     h = appbar('Dokumentasi Peserta', k.nama, true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
-      <div class="photos${k.damkar ? ' dk' : ''}">${(k.peserta || []).map(p => {
+      <div class="photos${k.damkar ? ' dk' : ''}">${urutKelas(k, k.peserta || []).map(p => {
         const cx = isBatal(hh, p), rm = isRem(hh, p), keys = k.damkar ? ['foto', 'foto2'] : ['foto'];
         const slot = (key, i) => { const f = hh[key] && hh[key][p.id], lb = k.damkar ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div>${cx ? '' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button>`}</div>`; };
-        return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi ? `<small>${esc(p.instansi)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
+        return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
       <p class="hint">Foto diambil langsung dari kamera dan otomatis diberi watermark: nama peserta, kegiatan, titik lokasi (koordinat Google Maps), tanggal, dan jam. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
   else if (P.screen === 'nil') {
@@ -442,10 +446,10 @@ function renderNil() {
   const h = hOf(kid), ln = LAPK(k), q = P.q.trim().toLowerCase(), ps = k.peserta || [], aktif = ps.filter(p => !isBatal(h, p));
   const lulus = aktif.filter(p => kelOf(h, p) === 'lulus').length, tdk = aktif.filter(p => kelOf(h, p) === 'tidak').length, kosong = aktif.length - lulus - tdk;
   $('#nilCount').innerHTML = `<div><b>${lulus}</b><small>Lulus</small></div><div><b style="color:${tdk ? 'var(--bad)' : 'inherit'}">${tdk}</b><small>Tidak lulus</small></div><div><b>${ln.hasil ? kosong : aktif.filter(p => nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up')).length}</b><small>${ln.hasil ? 'Belum diisi' : 'Nilai terisi'}</small></div>`;
-  const rows = ps.filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q));
+  const rows = urutKelas(k, ps.filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q) || String(p.kelas || '').toLowerCase().includes(q)));
   $('#nilList').innerHTML = rows.length ? rows.map((p, i) => {
     const cx = isBatal(h, p), kv = kelOf(h, p);
-    return `<div class="nrow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><div class="who"><b>${esc(p.nama)}</b><small>${esc(p.instansi || '')}</small></div>${cx ? '<span class="pill bad">CANCEL</span>'
+    return `<div class="nrow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><div class="who"><b>${esc(p.nama)}</b><small>${instKel(p)}</small></div>${cx ? '<span class="pill bad">CANCEL</span>'
       : `${ln.nilai ? `<div class="nin"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'ut'))}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label></div>` : ''}
       ${ln.hasil ? `<div class="kel"><button type="button" class="ckb${kv === 'lulus' ? ' on' : ''}" data-act="kel" data-v="lulus" aria-pressed="${kv === 'lulus'}">${kv === 'lulus' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${kv === 'tidak' ? ' on' : ''}" data-act="kel" data-v="tidak" aria-pressed="${kv === 'tidak'}">${kv === 'tidak' ? '☑' : '☐'} Tidak lulus</button></div>` : ''}`}</div>`;
   }).join('') : `<div class="empty">${ps.length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
@@ -456,12 +460,12 @@ function renderAbs() {
   const peserta = k.peserta || [], perlu = peserta.filter(p => perluHari(h, p, d, days));
   const sudah = perlu.filter(p => h.hadir[p.id] && h.hadir[p.id][d]).length;
   $('#absCount').innerHTML = `<div><b>${sudah}</b><small>Sudah TTD</small></div><div><b>${perlu.length - sudah}</b><small>Belum TTD</small></div><div><b>${s.remedial}</b><small>Remedial</small></div><div><b style="color:${s.batal ? 'var(--bad)' : 'inherit'}">${s.batal}</b><small>Cancel</small></div>`;
-  const rows = peserta.filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q));
+  const rows = urutKelas(k, peserta.filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q) || String(p.kelas || '').toLowerCase().includes(q)));
   $('#absList').innerHTML = rows.length ? rows.map(p => {
     const cx = isBatal(h, p), rm = isRem(h, p), g = h.hadir[p.id] && h.hadir[p.id][d], lewat = rm && !perluHari(h, p, d, days);
     const st = cx ? 'Cancel' : rm ? 'Remedial' : 'Hadir', cls = cx ? ' cx' : rm ? ' rm' : '';
     return `<div class="arow${cls}" data-pid="${esc(p.id)}"><button type="button" class="stbtn${cx ? ' cx' : rm ? ' rm' : ''}" data-act="status" aria-label="Status ${esc(p.nama)}: ${st}. Ketuk untuk mengganti">${st}</button>
-      <div class="who"><b>${esc(p.nama)}</b><small>${esc(p.instansi || '')}</small></div>
+      <div class="who"><b>${esc(p.nama)}</b><small>${instKel(p)}</small></div>
       <div>${lewat ? `<div class="sigbtn" style="border-style:solid;border-color:var(--line);font-size:11px;text-align:center;opacity:.8">Hanya hari terakhir</div>` : g ? `<button type="button" class="sigbtn done" data-act="sig" aria-label="Ganti tanda tangan ${esc(p.nama)}"><img src="${g}" alt="TTD ${esc(p.nama)}"></button>` : `<button type="button" class="sigbtn" data-act="sig">${I.pensm} Tanda tangan</button>`}</div></div>`;
   }).join('') : `<div class="empty">${peserta.length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
 }
