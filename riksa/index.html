@@ -49,6 +49,32 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* ---- foto per langkah pemeriksaan ---- */
+.pslot { margin-top: 14px; padding: 12px; border: 1px dashed var(--line); border-radius: 10px; background: var(--sunken); }
+.pslot-head { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.pslot-head > div { min-width: 0; flex: 1 1 220px; }
+.pslot-head b { display: block; font-size: .92rem; }
+.pslot-head small { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+.pslot-empty { margin: 8px 0 0; font-size: .82rem; color: var(--muted); }
+.pslot .photos { margin-top: 10px; }
+/* ---- kamera ---- */
+.cam-wrap { position: fixed; inset: 0; z-index: 200; background: #000; display: flex; flex-direction: column; color: #fff; }
+.cam-wrap[hidden] { display: none; }
+.cam-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; background: rgba(0,0,0,.6); }
+.cam-top b { font-size: .95rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cam-video { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+.cam-msg { padding: 6px 14px; font-size: .82rem; background: rgba(0,0,0,.6); min-height: 0; }
+.cam-msg:empty { display: none; }
+.cam-fail { padding: 20px 16px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.cam-fail[hidden] { display: none; }
+.cam-bot { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,.6); }
+.cam-bot > * { flex: 1; }
+.cam-count { font-size: .85rem; }
+.cam-spacer { visibility: hidden; }
+.cam-shutter { flex: 0 0 auto; width: 68px; height: 68px; border-radius: 50%; border: 4px solid #fff; background: #d33; cursor: pointer; box-shadow: 0 0 0 3px rgba(0,0,0,.4) inset; }
+.cam-shutter:active { transform: scale(.93); }
+.cam-shutter:disabled { opacity: .5; }
+
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -493,11 +519,12 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
   <section id="tab-h-pump" class="tabpanel" hidden>
     <div data-howblk="nilai"></div>
     <div class="section"><h2>4.1 Pemeriksaan dokumen</h2><div data-howblk="crow-dokumen"></div><div class="crows" data-sec="dokumen"></div></div>
-    <div class="section"><h2>4.2 Rumah pompa, pompa dan persediaan air</h2><div data-howblk="crow-rumah"></div><div class="crows" data-sec="rumah"></div></div>
+    <div class="section"><h2>4.2 Rumah pompa, pompa dan persediaan air</h2><div data-howblk="crow-rumah"></div><div class="crows" data-sec="rumah"></div><div class="pslot" data-mod="hyd" data-slot="panel"></div><div class="pslot" data-mod="hyd" data-slot="pelat"></div></div>
     <div class="section"><h2>4.3 Uji fungsi pompa (7 langkah)</h2>
       <p class="hint">Jalankan pompa melalui katup uji. Catat tekanan pada setiap langkah sesuai INS.11/M/BW/1997 butir IV.8.</p>
       <div data-howblk="crow-ujiPompa"></div>
       <div class="crows" data-sec="ujiPompa"></div>
+      <div class="pslot" data-mod="hyd" data-slot="mano"></div>
       <label class="field" style="margin-top:12px"><span>Catatan uji pompa (debit flow meter, start manual, dll.)</span><textarea id="h-upnote" data-path="hyd.ujiPompaNote" rows="3"></textarea></label>
     </div>
     <div class="section"><h2>4.4 Instalasi listrik pompa</h2><div data-howblk="crow-listrik"></div><div class="crows" data-sec="listrik"></div></div>
@@ -506,17 +533,14 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
       <div data-howblk="uji3"></div>
       <div class="crows" id="h-uji3"></div>
       <p class="hint" id="h-uji3-eval" style="margin:8px 0 0"></p>
+      <div class="pslot" data-mod="hyd" data-slot="pitot"></div>
     </div>
-    <div class="section"><h2>Sambungan Damkar</h2><div data-howblk="crow-siamese"></div><div class="crows" data-sec="siamese"></div></div>
+    <div class="section"><h2>Sambungan Damkar</h2><div data-howblk="crow-siamese"></div><div class="crows" data-sec="siamese"></div><div class="pslot" data-mod="hyd" data-slot="damkar"></div></div>
     <div class="section"><h2>4.7 Persediaan air</h2><div data-howblk="air"></div><div class="calc" id="h-water"></div><p class="hint" style="margin-top:6px">Ubah volume reservoir dan laju aliran di tab Data Laporan.</p></div>
-    <div class="section"><h2>Foto dokumentasi umum</h2>
-      <p class="hint">Panel pompa, manometer saat uji, pitot gauge, dan lainnya. Masuk ke Lampiran A sebelum foto titik hidran.</p>
+    <div class="section"><h2>Foto temuan penting lainnya</h2>
+      <p class="hint">Foto di tiap langkah pemeriksaan ada pada bagian masing-masing di atas. Di sini hanya untuk temuan lain. Semua foto masuk ke Lampiran A laporan Word.</p>
       <div data-howblk="gen-foto"></div>
-      <div class="row">
-        <label class="btn primary filebtn">Ambil foto<input type="file" class="gen-ph" accept="image/*" capture="environment"></label>
-        <label class="btn filebtn">Pilih dari galeri<input type="file" class="gen-ph" accept="image/*" multiple></label>
-      </div>
-      <div class="photos" id="h-gen-photos"></div>
+      <div class="pslot" data-mod="hyd" data-slot="temuan"></div>
     </div>
   </section>
 
@@ -622,8 +646,9 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
   <section id="tab-f-sys" class="tabpanel" hidden>
     <div data-howblk="f-nilai"></div>
     <div class="section"><h2>4.1 Pemeriksaan dokumen</h2><div data-howblk="crow-fa_dokumen"></div><div class="fcrows" data-fsec="dokumen"></div></div>
-    <div class="section"><h2>4.2 Panel kontrol (MCFA)</h2><div data-howblk="crow-fa_panel"></div><div class="fcrows" data-fsec="panel"></div></div>
+    <div class="section"><h2>4.2 Panel kontrol (MCFA)</h2><div data-howblk="crow-fa_panel"></div><div class="fcrows" data-fsec="panel"></div><div class="pslot" data-mod="fa" data-slot="panel"></div><div class="pslot" data-mod="fa" data-slot="labelpanel"></div></div>
     <div class="section"><h2>4.3 Sumber daya dan baterai cadangan</h2><div data-howblk="crow-fa_sumber"></div><div class="fcrows" data-fsec="sumber"></div>
+      <div class="pslot" data-mod="fa" data-slot="baterai"></div><div class="pslot" data-mod="fa" data-slot="tegangan"></div>
       <h3 style="font-size:.95rem;margin:16px 0 6px">Perhitungan kapasitas baterai minimum</h3>
       <div data-howblk="baterai"></div>
       <div class="grid">
@@ -635,7 +660,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
       </div>
       <div class="calc" id="f-bat" style="margin-top:10px"></div>
     </div>
-    <div class="section"><h2>4.7 Titik panggil manual (MCP) dan alat pemberi tanda alarm</h2><div data-howblk="crow-fa_mcp"></div><div class="fcrows" data-fsec="mcp"></div></div>
+    <div class="section"><h2>4.7 Titik panggil manual (MCP) dan alat pemberi tanda alarm</h2><div data-howblk="crow-fa_mcp"></div><div class="fcrows" data-fsec="mcp"></div><div class="pslot" data-mod="fa" data-slot="mcp"></div><div class="pslot" data-mod="fa" data-slot="suara"></div></div>
     <div class="section"><h2>4.8 Pengkabelan dan pentanahan</h2><div data-howblk="crow-fa_kabel"></div><div class="fcrows" data-fsec="kabel"></div></div>
   </section>
 
@@ -656,6 +681,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
       <p class="hint">Beritahu pengelola gedung dan petugas pemantau sebelum menguji. Isi hasil pengamatan nyata.</p>
       <div data-howblk="crow-fa_uji"></div>
       <div class="fcrows" data-fsec="uji"></div>
+      <div class="pslot" data-mod="fa" data-slot="detektor"></div>
       <label class="field" style="margin-top:12px"><span>Catatan uji (waktu respons, dll.)</span><textarea id="f-ujinote" data-path="fa.ujiNote" rows="3" placeholder="Waktu respons rata-rata detektor asap … detik, detektor panas … detik"></textarea></label>
     </div>
     <div class="section"><h2>4.10 Uji interface dengan sistem lain</h2>
@@ -663,14 +689,10 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
       <div data-howblk="crow-fa_interface"></div>
       <div class="fcrows" data-fsec="interface"></div>
     </div>
-    <div class="section"><h2>Foto dokumentasi umum</h2>
-      <p class="hint">Panel kontrol, pengukuran baterai, uji MCP, pengukuran suara, dan lainnya. Masuk ke Lampiran A sebelum foto zona.</p>
+    <div class="section"><h2>Foto temuan penting lainnya</h2>
+      <p class="hint">Foto di tiap langkah pemeriksaan ada pada bagian masing-masing (panel, sumber daya, MCP, uji fungsi). Di sini hanya untuk temuan lain. Semua foto masuk ke Lampiran A laporan Word.</p>
       <div data-howblk="gen-foto-fa"></div>
-      <div class="row">
-        <label class="btn primary filebtn">Ambil foto<input type="file" class="fgen-ph" accept="image/*" capture="environment"></label>
-        <label class="btn filebtn">Pilih dari galeri<input type="file" class="fgen-ph" accept="image/*" multiple></label>
-      </div>
-      <div class="photos" id="f-gen-photos"></div>
+      <div class="pslot" data-mod="fa" data-slot="temuan"></div>
     </div>
   </section>
 
@@ -789,6 +811,16 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
   </div>
 </div>
 
+<div class="cam-wrap" id="cam" hidden role="dialog" aria-modal="true" aria-label="Kamera">
+  <div class="cam-top"><b id="cam-title"></b><button class="btn sm" id="cam-done" type="button">Selesai</button></div>
+  <video id="cam-video" playsinline muted autoplay></video>
+  <div class="cam-msg" id="cam-msg" role="status"></div>
+  <div class="cam-fail" id="cam-fail" hidden>
+    <p id="cam-fail-txt"></p>
+    <label class="btn primary filebtn">Pakai kamera bawaan HP<input type="file" id="cam-native" accept="image/*" capture="environment"></label>
+  </div>
+  <div class="cam-bot"><span class="cam-count" id="cam-count"></span><button class="cam-shutter" id="cam-shot" type="button" aria-label="Ambil foto"></button><span class="cam-spacer"></span></div>
+</div>
 <script src="js/panduan.js"></script>
 <script src="js/report.js"></script>
 <script src="js/hydrant-report.js"></script>

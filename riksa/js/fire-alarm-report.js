@@ -102,6 +102,17 @@ const RF = (() => {
     ['Pemutus daya (shunt trip) bila ada', 'Sesuai rancangan'],
   ];
   const PERANGKAT = ['Detektor panas (tetap / rate-of-rise)', 'Detektor asap (fotolistrik / ionisasi)', 'Detektor nyala api (UV / IR)', 'Detektor lain (beam, aspirating, gas, dll.)', 'Titik panggil manual (MCP / manual call point)', 'Alarm bell / horn / sirine', 'Lampu strobe / lampu indikator remote', 'Pengeras suara evakuasi (voice alarm), bila ada'];
+  // Foto langkah pemeriksaan: tiap foto punya `slot` (diambil di langkah yang bersangkutan). Urutan di Lampiran A mengikuti daftar ini.
+  const PHOTO_SLOTS = [
+    { key: 'panel', label: 'Panel kontrol (kondisi normal dan saat alarm)', hint: 'Foto tampilan panel saat normal dan, bila diuji, saat alarm aktif. Lampu dan layar terbaca.' },
+    { key: 'labelpanel', label: 'Label panel kontrol', hint: 'Foto dekat label/pelat panel (merk, tipe, nomor seri) sampai terbaca.' },
+    { key: 'baterai', label: 'Label dan baterai cadangan', hint: 'Foto baterai cadangan beserta label kapasitas (Ah) dan tanggal pasang.' },
+    { key: 'tegangan', label: 'Pengukuran tegangan sumber daya', hint: 'Foto alat ukur saat mengukur tegangan baterai atau sumber daya, angka terbaca.' },
+    { key: 'mcp', label: 'Uji titik panggil manual (MCP)', hint: 'Foto saat MCP ditekan/diuji dan respons panel atau alarm yang muncul.' },
+    { key: 'suara', label: 'Pengukuran tingkat suara alarm', hint: 'Foto alat ukur suara (sound level meter) saat alarm berbunyi, angka dB terbaca.' },
+    { key: 'detektor', label: 'Uji detektor dengan tester', hint: 'Foto saat detektor diuji dengan alat uji (tester) dan respons panel.' },
+    { key: 'temuan', label: 'Temuan penting lainnya', hint: 'Foto kerusakan atau ketidaksesuaian lain yang belum tercakup di langkah di atas.' },
+  ];
   const SECTIONS = { dokumen: 'Dokumen', panel: 'Panel kontrol', sumber: 'Sumber daya', mcp: 'MCP dan alarm', kabel: 'Pengkabelan dan pentanahan', uji: 'Uji fungsi sistem', interface: 'Interface' };
 
   /* ---------- util ---------- */
@@ -550,9 +561,14 @@ const RF = (() => {
     ];
 
     // ---------- Lampiran ----------
-    const photos = [];
-    (F.photos || []).forEach(ph => photos.push({ ...ph, label: ph.caption || 'Dokumentasi' }));
-    zones.forEach(z => (z.photos || []).forEach(ph => photos.push({ ...ph, label: `${z.kode}${ph.caption ? ': ' + ph.caption : ''}` })));
+    const slotIdx = (ph) => { const i = PHOTO_SLOTS.findIndex(x => x.key === ph.slot); return i < 0 ? PHOTO_SLOTS.length : i; };
+    const genPh = (F.photos || []).map((ph, n) => ({ ph, n })).sort((a, b) => slotIdx(a.ph) - slotIdx(b.ph) || a.n - b.n).map(({ ph }) => {
+      const sl = PHOTO_SLOTS.find(x => x.key === ph.slot);
+      return { ...ph, label: sl ? sl.label + (ph.caption ? ': ' + ph.caption : '') : (ph.caption || 'Dokumentasi') };
+    });
+    const itemPh = [];
+    zones.forEach(z => (z.photos || []).forEach(ph => itemPh.push({ ...ph, label: `${z.kode}${ph.caption ? ': ' + ph.caption : ''}` })));
+    const photos = [...genPh, ...itemPh];
     const photoCell = (ph) => new TableCell({
       width: { size: 4513, type: WidthType.DXA }, borders, margins: { top: 80, bottom: 80, left: 80, right: 80 }, verticalAlign: VerticalAlign.BOTTOM,
       children: ph ? [
@@ -561,10 +577,15 @@ const RF = (() => {
       ] : [new Paragraph({ children: [] })],
     });
     const lampiran = [h1('LAMPIRAN', true), h2('Lampiran A – Dokumentasi')];
-    if (photos.length) {
+    const photoTable = (arr) => {
       const rows = [];
-      for (let i = 0; i < photos.length; i += 2) rows.push(new TableRow({ cantSplit: true, children: [photoCell(photos[i]), photoCell(photos[i + 1])] }));
-      lampiran.push(new Table({ width: { size: PW, type: WidthType.DXA }, columnWidths: [4513, 4513], rows }));
+      for (let i = 0; i < arr.length; i += 2) rows.push(new TableRow({ cantSplit: true, children: [photoCell(arr[i]), photoCell(arr[i + 1])] }));
+      return new Table({ width: { size: PW, type: WidthType.DXA }, columnWidths: [4513, 4513], rows });
+    };
+    const subHead = (x) => new Paragraph({ spacing: { before: 160, after: 80 }, keepNext: true, children: [new TextRun({ text: x, font: FONT, bold: true })] });
+    if (photos.length) {
+      if (genPh.length) { lampiran.push(subHead('A.1 Dokumentasi Pemeriksaan')); lampiran.push(photoTable(genPh)); }
+      if (itemPh.length) { lampiran.push(subHead('A.2 Dokumentasi Zona Detektor')); lampiran.push(photoTable(itemPh)); }
     } else lampiran.push(p([t('[Belum ada foto dokumentasi]', { italics: true })]));
     lampiran.push(h2('Lampiran B – Gambar Instalasi'));
     if (F.gambar && F.gambar.data) lampiran.push(new Paragraph({ alignment: C, children: [new ImageRun({ type: imgType(F.gambar.data), data: b64ToBytes(F.gambar.data), transformation: fit(F.gambar, 600, 760) })] }));
@@ -665,6 +686,6 @@ const RF = (() => {
     return b;
   }
 
-  return { JENIS_OPT, PLC_ITEMS, PLC_CRIT, PERANGKAT, SECTIONS, grp, statusOf, autoStatus, autoTemuan, failedChecks, badDet, recap, totals, perangkat, battery, findings, conclusions, autoRecommendations, buildFireAlarm, blankModule, sampleModule, fmtNum, fmtRange, num };
+  return { PHOTO_SLOTS, JENIS_OPT, PLC_ITEMS, PLC_CRIT, PERANGKAT, SECTIONS, grp, statusOf, autoStatus, autoTemuan, failedChecks, badDet, recap, totals, perangkat, battery, findings, conclusions, autoRecommendations, buildFireAlarm, blankModule, sampleModule, fmtNum, fmtRange, num };
 })();
 if (typeof module !== 'undefined') module.exports = RF;

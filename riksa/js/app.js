@@ -151,22 +151,95 @@
     if (!png) { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); }
     g.drawImage(im, 0, 0, w, h);
     if (stamp) {
-      const fs = Math.max(14, Math.round(w / 40)); g.font = `600 ${fs}px Barlow, Arial, sans-serif`;
-      const pad = Math.round(fs * .5), bh = fs + pad * 2;
-      g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, h - bh, w, bh); g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(stamp, pad, h - bh / 2);
+      const lines = (Array.isArray(stamp) ? stamp : [stamp]).filter(Boolean);
+      const fs = Math.max(13, Math.round(w / 44)), pad = Math.round(fs * .6), lh = Math.round(fs * 1.28), bh = lines.length * lh + pad * 2;
+      g.font = `600 ${fs}px Barlow, Arial, sans-serif`;
+      g.fillStyle = 'rgba(0,0,0,.62)'; g.fillRect(0, h - bh, w, bh); g.fillStyle = '#fff'; g.textBaseline = 'middle';
+      lines.forEach((ln, i) => { let t = ln; while (t.length > 4 && g.measureText(t).width > w - pad * 2) t = t.slice(0, -2); if (t !== ln) t = t.trimEnd() + '…'; g.fillText(t, pad, h - bh + pad + lh * i + lh / 2); });
     }
     return { data: cv.toDataURL(png ? 'image/png' : 'image/jpeg', .74), w, h };
   }
   const now = () => new Date().toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  async function addPhotos(files, list, stamp) {
+  async function addPhotos(files, list, stamp, extra = {}) {
     for (const f of files) {
-      try { const img = await compress(f, { stamp }); const id = 'ph-' + uid(); photoData.set(id, img.data); await putPhoto(id, img.data); list.push({ id, w: img.w, h: img.h, caption: '' }); }
+      try { const img = await compress(f, { stamp }); const id = 'ph-' + uid(); photoData.set(id, img.data); await putPhoto(id, img.data); list.push({ id, w: img.w, h: img.h, caption: '', ...extra }); }
       catch (e) { /* bukan gambar */ }
     }
   }
   const photoGrid = (list, alt) => list.map((p, k) => `<div class="photo"><img src="${photoData.get(p.id) || ''}" alt="${esc(alt)} ${k + 1}">
       <input type="text" id="cap-${p.id}" data-cap="${k}" value="${esc(p.caption)}" placeholder="Keterangan foto" aria-label="Keterangan foto">
       <button class="x" data-phdel="${k}">Hapus foto</button></div>`).join('');
+
+  // ---------- kamera: foto hanya dari kamera (bukan galeri), selalu diberi cap perusahaan, PJK3, tanggal dan jam ----------
+  const stampTime = () => { const d = new Date(), z = (n) => String(n).padStart(2, '0'); return `${z(d.getDate())}/${z(d.getMonth() + 1)}/${d.getFullYear()} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+  const stampLines = (ctx) => [
+    (S.shared.klien.nama || '').trim() || '(nama perusahaan belum diisi)',
+    'PJK3: ' + ((S.shared.pjk3.nama || '').trim() || '(nama PJK3 belum diisi)'),
+    [ctx, stampTime()].filter(Boolean).join(' · '),
+  ];
+  const cam = { stream: null, ctx: null, shots: 0, busy: false };
+  function camUi() { $('#cam-count').textContent = cam.shots ? `${cam.shots} foto tersimpan` : ''; }
+  async function openCamera(ctx) {
+    cam.ctx = ctx; cam.shots = 0; cam.busy = false;
+    $('#cam-title').textContent = ctx.title; camUi();
+    const miss = []; if (!(S.shared.klien.nama || '').trim()) miss.push('nama perusahaan'); if (!(S.shared.pjk3.nama || '').trim()) miss.push('nama PJK3');
+    $('#cam-msg').textContent = miss.length ? `Isi ${miss.join(' dan ')} di tab Data Laporan agar tercetak pada foto.` : '';
+    $('#cam-fail').hidden = true; $('#cam-video').hidden = false; $('#cam-shot').disabled = false;
+    $('#cam').hidden = false; document.body.style.overflow = 'hidden';
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Peramban ini tidak mendukung kamera di dalam aplikasi.');
+      cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false });
+      const v = $('#cam-video'); v.srcObject = cam.stream; await v.play().catch(() => {});
+    } catch (e) {
+      $('#cam-video').hidden = true; $('#cam-shot').disabled = true; $('#cam-fail').hidden = false;
+      $('#cam-fail-txt').textContent = (e && e.name === 'NotAllowedError') ? 'Kamera tidak diizinkan. Izinkan kamera untuk ruangk3.com di pengaturan peramban, atau pakai kamera bawaan HP.' : 'Kamera di dalam aplikasi tidak bisa dibuka. Pakai kamera bawaan HP.';
+    }
+  }
+  function closeCamera() {
+    if (cam.stream) { cam.stream.getTracks().forEach(t => t.stop()); cam.stream = null; }
+    const v = $('#cam-video'); v.srcObject = null; $('#cam').hidden = true; document.body.style.overflow = cam.ctx && cam.ctx.keepLock ? 'hidden' : ''; cam.ctx = null;
+  }
+  async function camAdd(blob) {
+    const ctx = cam.ctx; if (!ctx || !blob) return;
+    await addPhotos([blob], ctx.list, stampLines(ctx.ctxText()), ctx.extra || {});
+    cam.shots++; save(); ctx.after(); camUi();
+  }
+  $('#cam-shot').addEventListener('click', async () => {
+    const v = $('#cam-video'); if (cam.busy || !cam.stream || !v.videoWidth) return;
+    cam.busy = true;
+    try {
+      const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0);
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .92));
+      await camAdd(blob);
+      v.style.opacity = '.3'; setTimeout(() => { v.style.opacity = ''; }, 120);
+    } finally { cam.busy = false; }
+  });
+  $('#cam-native').addEventListener('change', async (e) => { const files = [...e.target.files]; e.target.value = ''; for (const f of files) await camAdd(f); });
+  $('#cam-done').addEventListener('click', closeCamera);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#cam').hidden) closeCamera(); });
+
+  // foto per langkah pemeriksaan (hidran & Fire Alarm): tiap foto menyimpan `slot`
+  const slotDefs = (m) => (m === 'hyd' ? RH : RF).PHOTO_SLOTS;
+  function renderSlots(m) {
+    $$(`.pslot[data-mod="${m}"]`).forEach(box => {
+      const key = box.dataset.slot, def = slotDefs(m).find(x => x.key === key); if (!def) return;
+      const items = S[m].photos.map((p, i) => [p, i]).filter(([p]) => (p.slot || 'temuan') === key);
+      box.innerHTML = `<div class="pslot-head"><div><b>Foto: ${esc(def.label)}</b><small>${esc(def.hint)}</small></div><button type="button" class="btn sm primary" data-shot="${key}">Ambil foto</button></div>` +
+        (items.length ? `<div class="photos">${items.map(([p, i], n) => `<div class="photo"><img src="${photoData.get(p.id) || ''}" alt="${esc(def.label)} ${n + 1}">
+          <input type="text" id="gcap-${p.id}" data-gcap="${i}" data-gm="${m}" value="${esc(p.caption)}" placeholder="Keterangan (opsional)" aria-label="Keterangan foto">
+          <button class="x" type="button" data-gdel="${i}" data-gm="${m}">Hapus foto</button></div>`).join('')}</div>` : '<p class="pslot-empty">Belum ada foto.</p>');
+    });
+  }
+  document.addEventListener('click', (e) => {
+    const sh = e.target.closest('.pslot [data-shot]');
+    if (sh) {
+      const m = sh.closest('.pslot').dataset.mod, def = slotDefs(m).find(x => x.key === sh.dataset.shot);
+      openCamera({ title: def.label, list: S[m].photos, extra: { slot: def.key }, ctxText: () => def.label, after: () => renderSlots(m) }); return;
+    }
+    const d = e.target.closest('.pslot [data-gdel]');
+    if (d) { const m = d.dataset.gm, p = S[m].photos.splice(+d.dataset.gdel, 1)[0]; dropPhotos([p]); save(true, m); renderSlots(m); }
+  });
+  document.addEventListener('input', (e) => { const el = e.target; if (el.dataset && el.dataset.gcap != null && el.dataset.gm) { S[el.dataset.gm].photos[+el.dataset.gcap].caption = el.value; save(true, el.dataset.gm); } });
 
   // ---------- module & tabs ----------
   function setMod(m) {
@@ -367,17 +440,10 @@
     const el = e.target;
     if (el.dataset.sec && el.dataset.k) { S.hyd[el.dataset.sec][+el.dataset.ri][el.dataset.k] = el.value; save(); }
     else if (el.dataset.u3 != null) { S.hyd.uji3[+el.dataset.u3][el.dataset.k] = el.value; save(); renderU3Eval(); }
-    else if (el.dataset.cap != null) { S.hyd.photos[+el.dataset.cap].caption = el.value; save(); }
   });
   pumpPanel.addEventListener('click', (e) => {
     const b = e.target.closest('[data-hv]');
     if (b) { const sec = b.dataset.sec, i = +b.dataset.ri; const r = S.hyd[sec][i]; r.hasil = r.hasil === b.dataset.hv ? '' : b.dataset.hv; save(); const old = $(`[data-row="${sec}-${i}"]`); old.outerHTML = crowHtml(sec, r, i); return; }
-    const d = e.target.closest('[data-phdel]');
-    if (d) { const p = S.hyd.photos.splice(+d.dataset.phdel, 1)[0]; dropPhotos([p]); save(); renderGenPhotos(); }
-  });
-  pumpPanel.addEventListener('change', async (e) => {
-    const el = e.target;
-    if (el.classList.contains('gen-ph')) { const files = [...el.files]; el.value = ''; await addPhotos(files, S.hyd.photos, `Riksa uji hidran · ${S.shared.klien.nama || ''} · ${now()}`); save(); renderGenPhotos(); }
   });
   function renderU3() {
     $('#h-uji3').innerHTML = S.hyd.uji3.map((r, i) => `<div class="u3"><span class="tt">${i + 1}. ${esc(r.titik)}</span>
@@ -395,8 +461,7 @@
     const w = RH.water(S.hyd);
     el.innerHTML = w ? `<b>± ${RH.fmtNum(w.min)} menit</b><span>${RH.fmtNum(w.m3)} m³ ÷ ${RH.fmtNum(w.q)} L/menit</span><span class="pill s-${w.ok ? 'M' : 'T'}">${w.ok ? 'Memenuhi ≥' : 'Kurang dari'} ${RH.fmtNum(w.need)} menit</span><small class="hint" style="flex-basis:100%">Acuan ${RH.fmtNum(w.need)} menit: ${w.acuan === 'otomatis' ? (w.kelas ? 'otomatis dari klasifikasi bahaya kebakaran "' + w.kelas + '" (ringan 30, sedang 60, berat 90 menit)' : 'acuan dasar, karena klasifikasi bahaya belum diisi') : 'ditetapkan petugas'}. Bisa diubah di kolom "Durasi minimum persediaan air" pada tab Data Laporan.</small>` : '<span>Isi volume reservoir dan laju aliran rancangan di tab Data Laporan.</span>';
   }
-  const renderGenPhotos = () => { $('#h-gen-photos').innerHTML = photoGrid(S.hyd.photos, 'Dokumentasi'); };
-  function renderPump() { renderCrows(); renderU3(); renderWater(); renderGenPhotos(); }
+  function renderPump() { renderCrows(); renderU3(); renderWater(); renderSlots('hyd'); }
 
   // titik hidran
   const hCounts = () => { const c = { M: 0, C: 0, T: 0 }; S.hyd.points.forEach(p => c[RH.statusOf(p)]++); return c; };
@@ -472,25 +537,14 @@
     </div>`;
   }
   const renderFaCrows = () => $$('.fcrows').forEach(box => { const sec = box.dataset.fsec; box.innerHTML = (S.fa[sec] || []).map((r, i) => faRowHtml(sec, r, i)).join(''); });
-  const fPhotoGrid = (list) => list.map((p, k) => `<div class="photo"><img src="${photoData.get(p.id) || ''}" alt="Dokumentasi ${k + 1}">
-      <input type="text" id="fcap-${p.id}" data-fcap="${k}" value="${esc(p.caption)}" placeholder="Keterangan foto" aria-label="Keterangan foto">
-      <button class="x" data-fphdel="${k}">Hapus foto</button></div>`).join('');
-  const renderFGenPhotos = () => { $('#f-gen-photos').innerHTML = fPhotoGrid(S.fa.photos); };
   [$('#tab-f-sys'), $('#tab-f-test')].forEach(panel => {
     panel.addEventListener('input', (e) => {
       const el = e.target;
       if (el.dataset.fsec && el.dataset.k) { S.fa[el.dataset.fsec][+el.dataset.ri][el.dataset.k] = el.value; save(); }
-      else if (el.dataset.fcap != null) { S.fa.photos[+el.dataset.fcap].caption = el.value; save(); }
     });
     panel.addEventListener('click', (e) => {
       const b = e.target.closest('[data-fhv]');
       if (b) { const sec = b.dataset.fsec, i = +b.dataset.ri; const r = S.fa[sec][i]; r.hasil = r.hasil === b.dataset.fhv ? '' : b.dataset.fhv; save(); $(`[data-frow="${sec}-${i}"]`).outerHTML = faRowHtml(sec, r, i); return; }
-      const d = e.target.closest('[data-fphdel]');
-      if (d) { const p = S.fa.photos.splice(+d.dataset.fphdel, 1)[0]; dropPhotos([p]); save(); renderFGenPhotos(); }
-    });
-    panel.addEventListener('change', async (e) => {
-      const el = e.target;
-      if (el.classList.contains('fgen-ph')) { const files = [...el.files]; el.value = ''; await addPhotos(files, S.fa.photos, `Riksa uji Fire Alarm · ${S.shared.klien.nama || ''} · ${now()}`); save(); renderFGenPhotos(); }
     });
   });
 
@@ -515,8 +569,8 @@
       ? `<b>Minimum ± ${RF.fmtNum(b.min, 1)} Ah</b><span>1,25 × (${RF.fmtNum(b.iS, 2)} A × ${RF.fmtNum(b.jam)} jam + ${RF.fmtNum(b.iA, 2)} A × ${RF.fmtNum(b.mnt)} menit ÷ 60)</span>${b.cap != null ? `<span class="pill s-${b.ok ? 'M' : 'T'}">${b.ok ? 'Terpasang ' + RF.fmtNum(b.cap, 1) + ' Ah, memenuhi' : 'Terpasang ' + RF.fmtNum(b.cap, 1) + ' Ah, kurang'}</span>` : '<span>Isi kapasitas baterai terpasang.</span>'}`
       : '<span>Isi arus siaga dan arus alarm untuk menghitung kapasitas baterai minimum.</span>';
   }
-  function renderFaSys() { renderFaCrows(); renderBat(); }
-  function renderFaTest() { renderFaCrows(); renderFGenPhotos(); }
+  function renderFaSys() { renderFaCrows(); renderBat(); renderSlots('fa'); }
+  function renderFaTest() { renderFaCrows(); renderSlots('fa'); }
 
   // zona detektor
   const fCounts = () => { const c = { M: 0, C: 0, T: 0 }; S.fa.zones.forEach(z => c[RF.statusOf(z)]++); return c; };
@@ -632,9 +686,8 @@
   const fld = (u, k, label, ph = '') => `<label class="field"><span>${label}</span><input type="text" id="u-${k}" data-u="${k}" value="${esc(u[k])}" placeholder="${esc(ph)}">${PD.e(k === 'kode' && edit ? 'kode_' + edit.mod : k)}</label>`;
   const photoSection = (hint, how = '') => `<div class="section"><h2>Foto dokumentasi</h2><p class="hint">${hint}</p>${how}
       <div class="row">
-        <label class="btn primary filebtn">Ambil foto<input type="file" id="ph-cam" accept="image/*" capture="environment"></label>
-        <label class="btn filebtn">Pilih dari galeri<input type="file" id="ph-gal" accept="image/*" multiple></label>
-        <label class="check-inline"><input type="checkbox" id="ph-stamp" ${stampOn ? 'checked' : ''}> Cap waktu</label>
+        <button type="button" class="btn primary" id="ph-cam">Ambil foto</button>
+        <small class="hint">Foto langsung dari kamera, otomatis diberi cap perusahaan, PJK3, tanggal dan jam.</small>
       </div><div class="photos" id="ph-list"></div></div>`;
   const checkRow = (k, label, sub, val, opts, hw = '') => `<div class="ck"><span class="no">${k + 1}</span><span class="lbl">${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ''}${hw}</span>
       <span class="seg" role="group" aria-label="Butir ${k + 1}">${opts.map(([v, s, t]) => `<button data-ck="${k}" data-v="${v}" aria-pressed="${val === v}" title="${t}" aria-label="${t}">${s}</button>`).join('')}</span></div>`;
@@ -717,15 +770,12 @@
     else if (el.id === 'u-statusOverride') { u.statusOverride = el.value; updateEdStatus(); save(); }
     else if (el.id === 'h-hasil') { u.hydro.hasil = el.value; save(); }
     else if (el.id === 'h-done') { u.hydro.done = el.checked; $('#h-fields').hidden = !el.checked; save(); }
-    else if (el.id === 'ph-stamp') stampOn = el.checked;
-    else if (el.id === 'ph-cam' || el.id === 'ph-gal') {
-      const files = [...el.files]; el.value = '';
-      await addPhotos(files, u.photos, stampOn ? `${u.kode} · ${u.lokasi || ''} · ${now()}` : null);
-      save(); renderEdPhotos(); const ins = $$('#ph-list input'); if (ins.length) ins[ins.length - 1].focus();
-    }
   });
   edBody.addEventListener('click', (e) => {
     const u = edItem(); if (!u) return;
+    if (e.target.closest('#ph-cam')) {
+      openCamera({ title: 'Foto ' + (u.kode || ''), list: u.photos, keepLock: true, ctxText: () => [u.kode, u.lokasi].filter(Boolean).join(' · '), after: renderEdPhotos }); return;
+    }
     const ck = e.target.closest('[data-ck]');
     if (ck) { const k = +ck.dataset.ck; u.checks[k] = ck.dataset.v; $$(`[data-ck="${k}"]`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === u.checks[k]))); updateEdStatus(); save(); return; }
     if (e.target.id === 'ck-all') {

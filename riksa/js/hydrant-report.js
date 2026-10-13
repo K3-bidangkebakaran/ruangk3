@@ -58,6 +58,15 @@ const RH = (() => {
     return f(n);
   }
 
+  // Foto langkah pemeriksaan: tiap foto punya `slot` (diambil di langkah yang bersangkutan). Urutan di Lampiran A mengikuti daftar ini.
+  const PHOTO_SLOTS = [
+    { key: 'panel', label: 'Panel pompa (posisi AUTO)', hint: 'Foto panel kontrol pompa dengan selector pada posisi AUTO dan lampu indikator terlihat.' },
+    { key: 'pelat', label: 'Pelat nama pompa', hint: 'Foto dekat pelat nama pompa utama (merk, tipe, kapasitas, tekanan) sampai tulisannya terbaca.' },
+    { key: 'mano', label: 'Manometer saat uji pompa', hint: 'Foto manometer pompa saat pompa berjalan, angka jarum terbaca jelas.' },
+    { key: 'pitot', label: 'Pitot gauge saat uji 3 titik', hint: 'Foto pitot gauge saat air mengalir di titik uji; ambil untuk titik terdekat, terjauh dan tengah.' },
+    { key: 'damkar', label: 'Plang / label sambungan Damkar', hint: 'Foto sambungan Damkar beserta plang atau labelnya.' },
+    { key: 'temuan', label: 'Temuan penting lainnya', hint: 'Foto kerusakan atau ketidaksesuaian lain yang belum tercakup di langkah di atas.' },
+  ];
   // ---- evaluasi otomatis ----
   function water(H) {
     const m3 = num(H.teknis.reservoirM3), q = num(H.teknis.debitLpm);
@@ -469,9 +478,14 @@ const RH = (() => {
     ];
 
     // ---------- Lampiran ----------
-    const photos = [];
-    (H.photos || []).forEach(ph => photos.push({ ...ph, label: ph.caption || 'Dokumentasi' }));
-    pts.forEach(x => (x.photos || []).forEach(ph => photos.push({ ...ph, label: `${x.kode}${ph.caption ? ': ' + ph.caption : ''}` })));
+    const slotIdx = (ph) => { const i = PHOTO_SLOTS.findIndex(x => x.key === ph.slot); return i < 0 ? PHOTO_SLOTS.length : i; };
+    const genPh = (H.photos || []).map((ph, n) => ({ ph, n })).sort((a, b) => slotIdx(a.ph) - slotIdx(b.ph) || a.n - b.n).map(({ ph }) => {
+      const sl = PHOTO_SLOTS.find(x => x.key === ph.slot);
+      return { ...ph, label: sl ? sl.label + (ph.caption ? ': ' + ph.caption : '') : (ph.caption || 'Dokumentasi') };
+    });
+    const itemPh = [];
+    pts.forEach(x => (x.photos || []).forEach(ph => itemPh.push({ ...ph, label: `${x.kode}${ph.caption ? ': ' + ph.caption : ''}` })));
+    const photos = [...genPh, ...itemPh];
     const photoCell = (ph) => new TableCell({
       width: { size: 4513, type: WidthType.DXA }, borders, margins: { top: 80, bottom: 80, left: 80, right: 80 }, verticalAlign: VerticalAlign.BOTTOM,
       children: ph ? [
@@ -480,10 +494,15 @@ const RH = (() => {
       ] : [new Paragraph({ children: [] })],
     });
     const lampiran = [h1('LAMPIRAN'), h2('Lampiran A – Dokumentasi')];
-    if (photos.length) {
+    const photoTable = (arr) => {
       const rows = [];
-      for (let i = 0; i < photos.length; i += 2) rows.push(new TableRow({ cantSplit: true, children: [photoCell(photos[i]), photoCell(photos[i + 1])] }));
-      lampiran.push(new Table({ width: { size: 9026, type: WidthType.DXA }, columnWidths: [4513, 4513], rows }));
+      for (let i = 0; i < arr.length; i += 2) rows.push(new TableRow({ cantSplit: true, children: [photoCell(arr[i]), photoCell(arr[i + 1])] }));
+      return new Table({ width: { size: 9026, type: WidthType.DXA }, columnWidths: [4513, 4513], rows });
+    };
+    const subHead = (x) => new Paragraph({ spacing: { before: 160, after: 80 }, keepNext: true, children: [new TextRun({ text: x, font: FONT, bold: true })] });
+    if (photos.length) {
+      if (genPh.length) { lampiran.push(subHead('A.1 Dokumentasi Pemeriksaan')); lampiran.push(photoTable(genPh)); }
+      if (itemPh.length) { lampiran.push(subHead('A.2 Dokumentasi Titik Hidran')); lampiran.push(photoTable(itemPh)); }
     } else lampiran.push(p([t('[Belum ada foto dokumentasi]', { italics: true })]));
     lampiran.push(h2('Lampiran B – Gambar Instalasi'));
     if (H.gambar && H.gambar.data) lampiran.push(new Paragraph({ alignment: C, children: [new ImageRun({ type: imgType(H.gambar.data), data: b64ToBytes(H.gambar.data), transformation: fit(H.gambar, 600, 760) })] }));
@@ -625,6 +644,6 @@ const RH = (() => {
     };
   }
 
-  return { GEDUNG_ITEMS, HALAMAN_ITEMS, LABEL, SECTIONS, itemsOf, autoStatus, statusOf, autoTemuan, failed, water, uji3Eval, findings, conclusions, autoRecommendations, buildHydrant, sampleModule, blankModule, fmtNum };
+  return { PHOTO_SLOTS, GEDUNG_ITEMS, HALAMAN_ITEMS, LABEL, SECTIONS, itemsOf, autoStatus, statusOf, autoTemuan, failed, water, uji3Eval, findings, conclusions, autoRecommendations, buildHydrant, sampleModule, blankModule, fmtNum };
 })();
 if (typeof module !== 'undefined') module.exports = RH;
