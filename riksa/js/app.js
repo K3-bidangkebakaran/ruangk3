@@ -182,6 +182,8 @@
     const panel = $('#tab-' + name);
     const ss = $('.shared-slot', panel); if (ss) ss.appendChild($('#shared-sec'));
     $('#shared-sec').hidden = !ss;
+    // kolom khusus satu modul (mis. area & klasifikasi APAR) hanya tampil di modul itu; hidran & Fire Alarm punya kolom klasifikasi sendiri
+    $$('#shared-sec [data-only]').forEach(el => { el.hidden = el.dataset.only !== mod; });
     const bs = $('.backup-slot', panel); if (bs) { bs.appendChild($('#sync-sec')); bs.appendChild($('#backup-sec')); }
     $('#backup-sec').hidden = !bs; $('#sync-sec').hidden = !bs;
     if (bs) renderSync();
@@ -627,7 +629,7 @@
     $$('.ck').forEach((row, k) => row.classList.toggle('isx', u.checks[k] === 'x'));
     const tp = $('#u-temuan'); if (tp) tp.placeholder = (isA ? RU.autoTemuan(u) : isF ? RF.autoTemuan(u) : RH.autoTemuan(u)) || 'Tidak ada temuan';
   }
-  const fld = (u, k, label, ph = '') => `<label class="field"><span>${label}</span><input type="text" id="u-${k}" data-u="${k}" value="${esc(u[k])}" placeholder="${esc(ph)}">${PD.e(k)}</label>`;
+  const fld = (u, k, label, ph = '') => `<label class="field"><span>${label}</span><input type="text" id="u-${k}" data-u="${k}" value="${esc(u[k])}" placeholder="${esc(ph)}">${PD.e(k === 'kode' && edit ? 'kode_' + edit.mod : k)}</label>`;
   const photoSection = (hint, how = '') => `<div class="section"><h2>Foto dokumentasi</h2><p class="hint">${hint}</p>${how}
       <div class="row">
         <label class="btn primary filebtn">Ambil foto<input type="file" id="ph-cam" accept="image/*" capture="environment"></label>

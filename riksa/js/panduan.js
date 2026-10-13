@@ -145,7 +145,9 @@ const PD = (() => {
 
   /* ---------- editor unit APAR & titik hidran: kunci = data-u / data-h / id ---------- */
   const EDITOR = {
-    kode: 'Nomor urut unik, mis. APAR-01 atau H-01 / HP-01. Samakan dengan nomor di denah/gambar instalasi dan stiker unit. Terisi otomatis berurutan.',
+    kode_apar: 'Nomor urut unik, mis. APAR-01. Samakan dengan nomor di denah dan stiker pada tabung. Terisi otomatis berurutan.',
+    kode_hyd: 'Nomor urut unik, mis. H-01 (hidran gedung) atau HP-01 (hidran halaman). Samakan dengan nomor di gambar instalasi dan penandaan di lokasi. Terisi otomatis berurutan.',
+    kode_fa: 'Nomor urut zona yang unik, mis. Z-01. Samakan dengan nomor zona di panel kontrol dan gambar instalasi. Terisi otomatis berurutan.',
     lokasi: 'Nama ruang/area + patokan supaya mudah ditemukan lagi, mis. "Gudang Bahan Baku A, dekat pintu utara, tiang C3". Wajib diisi.',
     media: 'Pilih sesuai label di badan tabung (Powder ABC, CO₂, Foam AFFF, dst.). Selain Powder, butir 13 (tepung menggumpal) otomatis "–".',
     kap: 'Isi dari label tabung lengkap dengan satuan, mis. "6 kg" (powder/CO₂) atau "9 L" (air/foam).',
@@ -292,7 +294,6 @@ const PD = (() => {
     jarak: 'Jarak antar detektor terbesar dan luas pantau per detektor, mis. "8 m / 64 m²" (jarak × jarak). Bandingkan dengan batas pada tabel standar.',
     statusOverride_fa: 'Biarkan "Otomatis" kecuali ada alasan khusus. Aturan otomatis: ✗ pada butir 1, 4, 6, 8 (jarak/luas, terhalang, jenis tidak sesuai, area tidak terlindungi) → Tidak memenuhi; detektor tidak berfungsi lebih dari 10% dari yang diuji → Tidak memenuhi; detektor rusak ≤ 10%, belum semua diuji, atau ✗ pada butir lain → Catatan.',
   });
-  EDITOR.kode = EDITOR.kode.replace('APAR-01 atau H-01 / HP-01', 'APAR-01, H-01 / HP-01, atau Z-01 untuk zona detektor');
   Object.assign(BLOCK, {
     'alat-fa': ['Cara mengisi peralatan uji',
       'Tulis hanya alat yang benar-benar dipakai saat riksa uji ini, satu baris per alat.',

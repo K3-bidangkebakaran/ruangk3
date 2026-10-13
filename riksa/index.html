@@ -718,7 +718,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
   <div id="shared-sec">
     <div class="section">
       <h2>PJK3 pelaksana</h2>
-      <p class="hint">Dipakai bersama untuk laporan APAR, hidran dan Fire Alarm, dan tetap tersimpan saat memulai laporan baru.</p>
+      <p class="hint">Cukup diisi sekali, dipakai bersama oleh semua jenis laporan di berkas ini, dan tetap tersimpan saat memulai laporan baru.</p>
       <div class="grid">
         <div class="field wide"><span>Logo kop (opsional)</span>
           <div class="row"><img class="img-prev logo-prev" data-target="shared.pjk3.logo" alt="Logo PJK3" hidden>
@@ -738,18 +738,18 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
     </div>
     <div class="section">
       <div class="row" style="margin-bottom:4px"><h2 style="margin:0">Perusahaan pemilik</h2><span class="spacer"></span><span id="klien-clear-slot"></span></div>
-      <p class="hint">Dipakai bersama untuk laporan APAR, hidran dan Fire Alarm.</p>
+      <p class="hint">Cukup diisi sekali, dipakai bersama oleh semua jenis laporan di berkas ini.</p>
       <div class="grid">
         <label class="field"><span>Nama perusahaan</span><input type="text" id="k-nama" data-path="shared.klien.nama"></label>
         <label class="field"><span>Bidang usaha</span><input type="text" id="k-bidang" data-path="shared.klien.bidang"></label>
         <label class="field wide"><span>Alamat lengkap</span><input type="text" id="k-alamat" data-path="shared.klien.alamat"></label>
         <label class="field wide"><span>Lokasi singkat (di sampul)</span><input type="text" id="k-alamatSingkat" data-path="shared.klien.alamatSingkat"></label>
-        <label class="field wide"><span>Area yang dicakup (APAR)</span><input type="text" id="k-cakupan" data-path="shared.klien.cakupanArea"></label>
+        <label class="field wide" data-only="apar"><span>Area yang dicakup (APAR)</span><input type="text" id="k-cakupan" data-path="shared.klien.cakupanArea"></label>
         <label class="field"><span>Pengurus / penanggung jawab</span><input type="text" id="k-pengurus" data-path="shared.klien.pengurus"></label>
         <label class="field"><span>Jabatan pengurus</span><input type="text" id="k-jabatan" data-path="shared.klien.jabatanPengurus"></label>
         <label class="field"><span>Petugas pendamping</span><input type="text" id="k-petugas" data-path="shared.klien.petugas"></label>
         <label class="field"><span>Jumlah tenaga kerja</span><input type="number" id="k-tk" data-path="shared.klien.jumlahTK" min="0"></label>
-        <label class="field wide"><span>Klasifikasi potensi bahaya (APAR)</span><input type="text" id="k-klas" data-path="shared.klien.klasifikasi"></label>
+        <label class="field wide" data-only="apar"><span>Klasifikasi potensi bahaya (APAR)</span><input type="text" id="k-klas" data-path="shared.klien.klasifikasi"></label>
       </div>
     </div>
   </div>
