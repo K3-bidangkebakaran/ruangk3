@@ -25,7 +25,7 @@ const RH = (() => {
   const LABEL = { M: 'Memenuhi', C: 'Catatan', T: 'Tidak' };
   const FILL = { M: 'E2F0D9', C: 'FFF2CC', T: 'F8CBAD' };
   const SECTIONS = {
-    dokumen: 'Dokumen', rumah: 'Rumah pompa', ujiPompa: 'Uji fungsi pompa', listrik: 'Instalasi listrik pompa', siamese: 'Sambungan Damkar',
+    dokumen: 'Dokumen', rumah: 'Rumah pompa', ujiPompa: 'Uji fungsi pompa', listrik: 'Instalasi listrik pompa', siamese: 'Sambungan Damkar (Siamese Connection)',
   };
 
   const failed = (pt) => (pt.checks || []).map((v, i) => v === 'x' ? i : -1).filter(i => i >= 0);
@@ -64,7 +64,7 @@ const RH = (() => {
     { key: 'pelat', label: 'Pelat nama pompa', hint: 'Foto dekat pelat nama pompa utama (merk, tipe, kapasitas, tekanan) sampai tulisannya terbaca.' },
     { key: 'mano', label: 'Manometer saat uji pompa', hint: 'Foto manometer pompa saat pompa berjalan, angka jarum terbaca jelas.' },
     { key: 'pitot', label: 'Pitot gauge saat uji 3 titik', hint: 'Foto pitot gauge saat air mengalir di titik uji; ambil untuk titik terdekat, terjauh dan tengah.' },
-    { key: 'damkar', label: 'Plang / label sambungan Damkar', hint: 'Foto sambungan Damkar beserta plang atau labelnya.' },
+    { key: 'damkar', label: 'Plang / label sambungan Damkar (siamese)', hint: 'Foto sambungan Damkar (siamese connection) beserta plang atau labelnya.' },
     { key: 'temuan', label: 'Temuan penting lainnya', hint: 'Foto kerusakan atau ketidaksesuaian lain yang belum tercakup di langkah di atas.' },
   ];
   // ---- evaluasi otomatis ----
@@ -313,7 +313,7 @@ const RH = (() => {
         ['Jaringan Pipa', v(T.pipa, '[Spesifikasi pipa]')],
         ['Hidran Gedung', `${gedung.length} titik${T.specGedung ? ', ' + T.specGedung : ''}`],
         ['Hidran Halaman', `${halaman.length} titik${T.specHalaman ? ' ' + T.specHalaman : ''}`],
-        ['Sambungan Damkar', nS ? `${nS} unit${T.specSiamese ? ' ' + T.specSiamese : ''}` : 'Tidak ada'],
+        ['Sambungan Damkar (siamese connection)', nS ? `${nS} unit${T.specSiamese ? ' ' + T.specSiamese : ''}` : 'Tidak ada'],
       ]),
       sub('Data pompa (nameplate)'),
       table([1700, 1500, 1500, 1400, 1450, 1476], [
@@ -411,7 +411,7 @@ const RH = (() => {
       }
       return out;
     };
-    bab4.push(h2('4.6 Hidran Gedung, Hidran Halaman dan Sambungan Damkar'), sub('a. Hidran gedung (kotak hidran)'));
+    bab4.push(h2('4.6 Hidran Gedung, Hidran Halaman dan Sambungan Damkar (Siamese Connection)'), sub('a. Hidran gedung (kotak hidran)'));
     if (gedung.length) {
       bab4.push(...matrix(gedung, GEDUNG_ITEMS, 3230, 10));
       bab4.push(note(`Lokasi: ${gedung.map(x => `${x.kode} ${x.lokasi || ''}`.trim()).join('; ')}. ${V} = memenuhi; ${X} = tidak memenuhi. M = Memenuhi, C = Catatan, T = Tidak memenuhi.`));

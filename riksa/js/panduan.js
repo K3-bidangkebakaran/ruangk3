@@ -119,7 +119,7 @@ const PD = (() => {
       'Lama air (menit) = volume efektif (m³) × 1.000 ÷ laju aliran rancangan (L/menit). Memenuhi bila lama air ≥ durasi minimum: otomatis dari klasifikasi bahaya kebakaran (ringan 30, sedang 60, berat 90 menit), atau angka yang Anda isi di kolom "Durasi minimum persediaan air" (tab Data Laporan).',
       'Contoh: 150 m³ × 1.000 ÷ 1.893 L/menit = ± 79 menit (memenuhi). Hitung berjalan otomatis setelah kedua angka diisi di tab Data Laporan.'],
     'gen-foto': ['Cara foto dokumentasi',
-      'Foto panel pompa, pelat nama, manometer, pitot gauge dan plang Damkar diambil di langkah masing-masing (bagian 4.2, 4.3, 4.5 dan Sambungan Damkar). Bagian ini hanya untuk temuan penting lainnya.',
+      'Foto panel pompa, pelat nama, manometer, pitot gauge dan plang Damkar diambil di langkah masing-masing (bagian 4.2, 4.3, 4.5 dan Sambungan Damkar / Siamese Connection). Bagian ini hanya untuk temuan penting lainnya.',
       'Tekan "Ambil foto": kamera terbuka, ambil beberapa foto sekaligus lalu tekan "Selesai". Foto otomatis diberi cap nama perusahaan, nama PJK3, tanggal dan jam; isi dulu nama perusahaan dan PJK3 di tab Data Laporan.',
       'Foto harus jelas dan terbaca. Di laporan Word semua foto masuk Lampiran A, dikelompokkan sesuai langkahnya.'],
     'apar-foto': ['Cara foto dokumentasi',

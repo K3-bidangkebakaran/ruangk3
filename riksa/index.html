@@ -494,8 +494,8 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
         <label class="field wide"><span>Jaringan pipa</span><input type="text" id="h-pipa" data-path="hyd.teknis.pipa"></label>
         <label class="field wide"><span>Spesifikasi hidran gedung</span><input type="text" id="h-specG" data-path="hyd.teknis.specGedung"></label>
         <label class="field wide"><span>Spesifikasi hidran halaman</span><input type="text" id="h-specH" data-path="hyd.teknis.specHalaman"></label>
-        <label class="field"><span>Jumlah sambungan Damkar</span><input type="number" id="h-nS" min="0" data-path="hyd.teknis.jumlahSiamese"></label>
-        <label class="field"><span>Spesifikasi sambungan Damkar</span><input type="text" id="h-specS" data-path="hyd.teknis.specSiamese"></label>
+        <label class="field"><span>Jumlah sambungan Damkar (siamese connection)</span><input type="number" id="h-nS" min="0" data-path="hyd.teknis.jumlahSiamese"></label>
+        <label class="field"><span>Spesifikasi sambungan Damkar (siamese connection)</span><input type="text" id="h-specS" data-path="hyd.teknis.specSiamese"></label>
         <label class="field"><span>Volume efektif reservoir (m³)</span><input type="text" inputmode="decimal" id="h-m3" data-path="hyd.teknis.reservoirM3"></label>
         <label class="field"><span>Laju aliran rancangan (L/menit)</span><input type="text" inputmode="decimal" id="h-q" data-path="hyd.teknis.debitLpm"></label>
         <label class="field"><span>Durasi minimum persediaan air (menit)</span><input type="text" inputmode="numeric" id="h-durasi" data-path="hyd.teknis.durasiMin" placeholder="Kosong = otomatis dari klasifikasi"></label>
@@ -535,7 +535,7 @@ input[type=password] { width: 100%; background: var(--bg); border: 1px solid var
       <p class="hint" id="h-uji3-eval" style="margin:8px 0 0"></p>
       <div class="pslot" data-mod="hyd" data-slot="pitot"></div>
     </div>
-    <div class="section"><h2>Sambungan Damkar</h2><div data-howblk="crow-siamese"></div><div class="crows" data-sec="siamese"></div><div class="pslot" data-mod="hyd" data-slot="damkar"></div></div>
+    <div class="section"><h2>Sambungan Damkar (Siamese Connection)</h2><div data-howblk="crow-siamese"></div><div class="crows" data-sec="siamese"></div><div class="pslot" data-mod="hyd" data-slot="damkar"></div></div>
     <div class="section"><h2>4.7 Persediaan air</h2><div data-howblk="air"></div><div class="calc" id="h-water"></div><p class="hint" style="margin-top:6px">Ubah volume reservoir dan laju aliran di tab Data Laporan.</p></div>
     <div class="section"><h2>Foto temuan penting lainnya</h2>
       <p class="hint">Foto di tiap langkah pemeriksaan ada pada bagian masing-masing di atas. Di sini hanya untuk temuan lain. Semua foto masuk ke Lampiran A laporan Word.</p>
