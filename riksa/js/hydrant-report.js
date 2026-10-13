@@ -63,7 +63,18 @@ const RH = (() => {
     const m3 = num(H.teknis.reservoirM3), q = num(H.teknis.debitLpm);
     if (!m3 || !q) return null;
     const min = m3 * 1000 / q;
-    return { m3, q, min, ok: min >= 30 };
+    const d = durasiAcuan(H);
+    return { m3, q, min, need: d.min, acuan: d.sumber, kelas: d.kelas, ok: min >= d.min };
+  }
+  // Durasi minimum persediaan air (menit). Diisi petugas bila ada; kosong = otomatis dari klasifikasi bahaya kebakaran.
+  function durasiAcuan(H) {
+    const T = H.teknis || {}, set = num(T.durasiMin);
+    if (set && set > 0) return { min: set, sumber: 'ditetapkan petugas', kelas: '' };
+    const k = String(T.klasifikasi || '').toLowerCase();
+    if (/berat/.test(k)) return { min: 90, sumber: 'otomatis', kelas: 'berat' };
+    if (/sedang/.test(k)) return { min: 60, sumber: 'otomatis', kelas: 'sedang' };
+    if (/ringan/.test(k)) return { min: 30, sumber: 'otomatis', kelas: 'ringan' };
+    return { min: 30, sumber: 'otomatis', kelas: '' };
   }
   function uji3Eval(H) {
     const rows = (H.uji3 || []).map((r, i) => {
@@ -92,7 +103,7 @@ const RH = (() => {
     const u3 = uji3Eval(H);
     u3.rows.forEach((r, i) => { if (r.hasil === 'T') out.push({ bagian: `Uji operasi hidran (${r.titik})`, temuan: `Tekanan pitot ${r.pitot || '–'} / manometer ${r.mano || '–'} kg/cm² di luar kriteria (maks. 7; titik terjauh min. 4,5 kg/cm²).`, s: 'T', rek: 'Evaluasi kinerja pompa dan jaringan pipa; lakukan perbaikan lalu uji ulang.', batas: defBatas('T') }); });
     const w = water(H);
-    if (w && !w.ok) out.push({ bagian: 'Persediaan air', temuan: `Persediaan air hanya ± ${fmtNum(w.min)} menit pada laju aliran rancangan.`, s: 'T', rek: 'Tambah kapasitas reservoir hingga ≥ 30 menit operasi.', batas: '≤ 90 hari' });
+    if (w && !w.ok) out.push({ bagian: 'Persediaan air', temuan: `Persediaan air hanya ± ${fmtNum(w.min)} menit pada laju aliran rancangan.`, s: 'T', rek: `Tambah kapasitas reservoir hingga ≥ ${fmtNum(w.need)} menit operasi.`, batas: '≤ 90 hari' });
     return out.sort((a, b) => (a.s === 'T' ? 0 : 1) - (b.s === 'T' ? 0 : 1));
   }
   function autoRecommendations(H) {
@@ -119,7 +130,7 @@ const RH = (() => {
       : 'Uji operasi hidran 3 titik belum memenuhi kriteria INS.11/M/BW/1997 butir IV.8 (lihat butir 4.5).');
     const ls = H.listrik || [], lsBad = ls.filter(r => r.hasil === 'T' || r.hasil === 'C').length;
     const w = water(H);
-    out.push(`Instalasi listrik pompa ${lsBad ? `memiliki ${lsBad} catatan` : 'memenuhi syarat'}; persediaan air ${w ? `± ${fmtNum(w.min)} menit operasi (${w.ok ? 'memenuhi' : 'tidak memenuhi'} ≥ 30 menit)` : 'belum dihitung'}.`);
+    out.push(`Instalasi listrik pompa ${lsBad ? `memiliki ${lsBad} catatan` : 'memenuhi syarat'}; persediaan air ${w ? `± ${fmtNum(w.min)} menit operasi (${w.ok ? 'memenuhi' : 'tidak memenuhi'} acuan ≥ ${fmtNum(w.need)} menit)` : 'belum dihitung'}.`);
     const f = findings(H), nT = f.filter(x => x.s === 'T').length, nC = f.length - nT;
     out.push(f.length ? `Terdapat ${f.length} temuan: ${nT} temuan tidak memenuhi dan ${nC} temuan catatan.` : 'Tidak terdapat temuan ketidaksesuaian.');
     const critical = upBad.some(r => r.hasil === 'T') || !u3.ok || (w && !w.ok) || ls.some(r => r.hasil === 'T');
@@ -329,7 +340,7 @@ const RH = (() => {
         ['Tekanan pada titik terjauh', 'Minimum 4,5 kg/cm²', 'INS.11/1997 IV.8'],
         ['Pengaman rangkaian motor pompa', 'Tahan 125% arus beban penuh terus-menerus; membuka pada 600% arus beban penuh dalam 20 – 50 detik', 'INS.11/1997 IV.8'],
         ['Sumber daya pompa', 'Dari panel utama dengan sakelar tersendiri, tanpa beban lain, kabel tahan api atau dalam conduit', 'INS.11/1997 IV.8'],
-        ['Persediaan air', 'Menjamin kebutuhan air untuk operasi pemadaman sesuai standar; acuan ≥ 30 menit pada laju aliran rancangan', 'INS.11/1997 IV.8; SNI 03-1745-2000'],
+        ['Persediaan air', 'Menjamin kebutuhan air untuk operasi pemadaman sesuai standar; acuan lama operasi sesuai klasifikasi bahaya kebakaran (ringan 30, sedang 60, berat 90 menit) atau yang ditetapkan petugas, pada laju aliran rancangan', 'INS.11/1997 IV.8; SNI 03-1745-2000'],
         ['Tahanan isolasi motor', '≥ 1 MΩ (uji 500 V DC)', 'PUIL 2011'],
       ], { header: true, size: 17 }),
       spacer(60),
@@ -410,7 +421,7 @@ const RH = (() => {
         ['Volume efektif reservoir', `${fmtNum(w.m3)} m³ (${fmtNum(w.m3 * 1000)} liter)`],
         ['Laju aliran rancangan', `${T.debitLabel ? T.debitLabel + ' ≈ ' : ''}${fmtNum(w.q)} liter/menit`],
         ['Waktu operasi tersedia', `${fmtNum(w.m3 * 1000)} ÷ ${fmtNum(w.q)} ≈ ${fmtNum(w.min)} menit`],
-        ['Kriteria acuan', '≥ 30 menit pada laju aliran rancangan (SNI 03-1745-2000)'],
+        ['Kriteria acuan', `≥ ${fmtNum(w.need)} menit pada laju aliran rancangan (${w.acuan === 'otomatis' ? 'klasifikasi bahaya kebakaran' + (w.kelas ? ' ' + w.kelas : ' belum diisi, dipakai acuan dasar') : 'ditetapkan petugas sesuai dokumen pengesahan/standar yang berlaku'})`],
         ['Hasil', w.ok ? 'Memenuhi' : 'Tidak memenuhi'],
       ]) : p([t('[Isi volume reservoir dan laju aliran rancangan]')]),
     );
@@ -519,7 +530,7 @@ const RH = (() => {
     const clear = (rows) => rows.map(r => ({ ...r, hasil: '', ket: '', rek: '', batas: '', tekanan: r.tekanan != null ? '' : undefined }));
     return {
       meta: { isSample: false, nomor: '', periode: '', tglMulai: today, tglSelesai: today, tglLaporan: today, kota: '', jenis: 'Riksa uji berkala', sebelumnya: '', petugas: '' },
-      teknis: { kontraktor: '', pengesahan: '', sumberAir: '', pipa: '', specGedung: s.teknis.specGedung, specHalaman: s.teknis.specHalaman, jumlahSiamese: '1', specSiamese: '', reservoirM3: '', debitLpm: '1893', debitLabel: '500 US GPM', klasifikasi: '' },
+      teknis: { kontraktor: '', pengesahan: '', sumberAir: '', pipa: '', specGedung: s.teknis.specGedung, specHalaman: s.teknis.specHalaman, jumlahSiamese: '1', durasiMin: '', specSiamese: '', reservoirM3: '', debitLpm: '1893', debitLabel: '500 US GPM', klasifikasi: '', durasiMin: '' },
       pompa: s.pompa.map(x => ({ pompa: x.pompa, merk: '', kapasitas: '', head: '', penggerak: x.penggerak, daya: '' })),
       alat: s.alat.map(a => ({ ...a })),
       dokumen: clear(s.dokumen), rumah: clear(s.rumah), siamese: clear(s.siamese),
@@ -535,7 +546,7 @@ const RH = (() => {
     const pt = (kode, jenis, lokasi, fails = [], extra = {}) => { const checks = ok(jenis === 'halaman' ? 5 : 7); fails.forEach(i => { checks[i] = 'x'; }); return { id: kode, kode, jenis, lokasi, checks, statusOverride: '', temuan: '', rekomendasi: '', batas: '', photos: [], ...extra }; };
     return {
       meta: { isSample: true, nomor: '018/LHP-HYD/IX/2026', periode: 'Riksa Uji Berkala Tahun 2026', tglMulai: '2026-09-24', tglSelesai: '2026-09-25', tglLaporan: '2026-09-30', kota: 'Makassar', jenis: 'Riksa uji berkala (instalasi terpasang sejak 2019)', sebelumnya: 'September 2025 – Laporan No. 011/LHP-HYD/IX/2025', petugas: 'Rina Wijaya (HSE Officer); Andi Pratama (Teknisi Utility)' },
-      teknis: { kontraktor: 'PT Contoh Instalindo / 2019', pengesahan: '', sumberAir: 'Ground reservoir beton 150 m³, pengisian dari PDAM dan sumur dalam', pipa: 'Pipa baja (carbon steel) SCH 40, ring main 6", cabang 4" dan 2,5", dicat merah', specGedung: 'kotak hidran berisi selang 1,5" × 30 m, nozzle dan katup 1,5"', specHalaman: 'pilar 2 × 2,5" dengan hose cabinet', jumlahSiamese: '1', specSiamese: 'siamese 2 × 2,5" di sisi gerbang utama', reservoirM3: '150', debitLpm: '1893', debitLabel: '500 US GPM', klasifikasi: 'Bahaya kebakaran sedang (KEP.186/MEN/1999)' },
+      teknis: { kontraktor: 'PT Contoh Instalindo / 2019', pengesahan: '', sumberAir: 'Ground reservoir beton 150 m³, pengisian dari PDAM dan sumur dalam', pipa: 'Pipa baja (carbon steel) SCH 40, ring main 6", cabang 4" dan 2,5", dicat merah', specGedung: 'kotak hidran berisi selang 1,5" × 30 m, nozzle dan katup 1,5"', specHalaman: 'pilar 2 × 2,5" dengan hose cabinet', jumlahSiamese: '1', durasiMin: '', specSiamese: 'siamese 2 × 2,5" di sisi gerbang utama', reservoirM3: '150', debitLpm: '1893', debitLabel: '500 US GPM', klasifikasi: 'Bahaya kebakaran sedang (KEP.186/MEN/1999)' },
       pompa: [
         { pompa: 'Jockey', merk: '', kapasitas: '25 US GPM', head: '90 m (9 kg/cm²)', penggerak: 'Motor listrik', daya: '3 kW / 2.900 rpm' },
         { pompa: 'Utama (elektrik)', merk: '', kapasitas: '500 US GPM', head: '80 m (8 kg/cm²)', penggerak: 'Motor listrik 380 V', daya: '45 kW / 2.950 rpm' },

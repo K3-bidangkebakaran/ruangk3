@@ -39,6 +39,7 @@ const PD = (() => {
     'hyd.teknis.specSiamese': 'Ukuran dan jumlah inlet pada sambungan Damkar, mis. "2 × 2,5″ dengan tutup dan check valve".',
     'hyd.teknis.reservoirM3': 'Volume air EFEKTIF (yang benar-benar bisa dipompa), bukan volume bak penuh. Hitung: panjang × lebar × tinggi air efektif (m). Tinggi efektif = muka air normal dikurangi bagian di bawah lubang hisap pompa. Contoh 10 × 5 × 3 = 150 m³.',
     'hyd.teknis.debitLpm': 'Kapasitas pompa utama dalam liter/menit (nameplate atau dokumen). Dari US GPM: 1 US GPM = 3,785 L/menit, mis. 500 US GPM × 3,785 = 1.893 L/menit. Nilai ini dipakai menghitung lama persediaan air (butir 4.7).',
+    'hyd.teknis.durasiMin': 'Lama minimum air harus tersedia untuk operasi pemadaman. Kosongkan = otomatis dari klasifikasi bahaya kebakaran (ringan 30, sedang 60, berat 90 menit). Isi angka sendiri bila dokumen pengesahan instalasi atau standar yang dipakai perusahaan menetapkan angka lain, mis. 45 untuk hidran halaman.',
     'hyd.teknis.debitLabel': 'Tulisan kapasitas yang muncul di laporan, mis. "500 US GPM".',
     'hyd.ujiPompaNote': 'Tulis hal penting saat uji pompa: debit pada flow meter saat pompa utama berjalan (L/menit; bandingkan dengan kapasitas rancangan di atas), hasil start manual, suara/getaran tidak wajar, pompa yang tidak bisa diuji beserta alasannya.',
     // PJK3
@@ -115,7 +116,7 @@ const PD = (() => {
       'Pitot nozzle: angka pitot gauge saat air mengalir (kg/cm²). Manometer pompa: angka manometer sisi tekan pompa pada saat yang sama (kg/cm²).',
       'Kriteria penilaian (otomatis): angka tidak boleh lebih dari 7 kg/cm²; pitot titik terjauh minimal 4,5 kg/cm².'],
     'air': ['Cara menghitung persediaan air (4.7)',
-      'Lama air (menit) = volume efektif (m³) × 1.000 ÷ laju aliran rancangan (L/menit). Memenuhi bila ≥ 30 menit.',
+      'Lama air (menit) = volume efektif (m³) × 1.000 ÷ laju aliran rancangan (L/menit). Memenuhi bila lama air ≥ durasi minimum: otomatis dari klasifikasi bahaya kebakaran (ringan 30, sedang 60, berat 90 menit), atau angka yang Anda isi di kolom "Durasi minimum persediaan air" (tab Data Laporan).',
       'Contoh: 150 m³ × 1.000 ÷ 1.893 L/menit = ± 79 menit (memenuhi). Hitung berjalan otomatis setelah kedua angka diisi di tab Data Laporan.'],
     'gen-foto': ['Foto yang dibutuhkan',
       'Panel pompa (posisi AUTO), pelat nama pompa, manometer saat uji, pitot gauge saat uji, plang/label sambungan Damkar, dan temuan penting. Foto harus jelas dan terbaca.'],

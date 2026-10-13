@@ -242,7 +242,7 @@
   }
   document.addEventListener('input', (e) => {
     const el = e.target;
-    if (el.dataset && el.dataset.path) { setPath(S, el.dataset.path, el.value); save(true, el.dataset.path.split('.')[0]); renderHeader(); if (/^hyd\.teknis\.(reservoirM3|debitLpm)/.test(el.dataset.path)) renderWater(); if (/^fa\.baterai\./.test(el.dataset.path)) renderBat(); }
+    if (el.dataset && el.dataset.path) { setPath(S, el.dataset.path, el.value); save(true, el.dataset.path.split('.')[0]); renderHeader(); if (/^hyd\.teknis\.(reservoirM3|debitLpm|durasiMin|klasifikasi)/.test(el.dataset.path)) renderWater(); if (/^fa\.baterai\./.test(el.dataset.path)) renderBat(); }
   });
   document.addEventListener('change', (e) => { const el = e.target; if (el.tagName === 'SELECT' && el.dataset.path) { setPath(S, el.dataset.path, el.value); save(true, el.dataset.path.split('.')[0]); } });
 
@@ -393,7 +393,7 @@
   function renderWater() {
     const el = $('#h-water'); if (!el) return;
     const w = RH.water(S.hyd);
-    el.innerHTML = w ? `<b>± ${RH.fmtNum(w.min)} menit</b><span>${RH.fmtNum(w.m3)} m³ ÷ ${RH.fmtNum(w.q)} L/menit</span><span class="pill s-${w.ok ? 'M' : 'T'}">${w.ok ? 'Memenuhi ≥ 30 menit' : 'Kurang dari 30 menit'}</span>` : '<span>Isi volume reservoir dan laju aliran rancangan di tab Data Laporan.</span>';
+    el.innerHTML = w ? `<b>± ${RH.fmtNum(w.min)} menit</b><span>${RH.fmtNum(w.m3)} m³ ÷ ${RH.fmtNum(w.q)} L/menit</span><span class="pill s-${w.ok ? 'M' : 'T'}">${w.ok ? 'Memenuhi ≥' : 'Kurang dari'} ${RH.fmtNum(w.need)} menit</span><small class="hint" style="flex-basis:100%">Acuan ${RH.fmtNum(w.need)} menit: ${w.acuan === 'otomatis' ? (w.kelas ? 'otomatis dari klasifikasi bahaya kebakaran "' + w.kelas + '" (ringan 30, sedang 60, berat 90 menit)' : 'acuan dasar, karena klasifikasi bahaya belum diisi') : 'ditetapkan petugas'}. Bisa diubah di kolom "Durasi minimum persediaan air" pada tab Data Laporan.</small>` : '<span>Isi volume reservoir dan laju aliran rancangan di tab Data Laporan.</span>';
   }
   const renderGenPhotos = () => { $('#h-gen-photos').innerHTML = photoGrid(S.hyd.photos, 'Dokumentasi'); };
   function renderPump() { renderCrows(); renderU3(); renderWater(); renderGenPhotos(); }
