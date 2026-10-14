@@ -68,7 +68,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v20';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v21';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -250,7 +250,7 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
 
 /* Kegiatan dari server. Dua jalur memakai fungsi yang sama: pendengar realtime (perubahan dari web tampil dalam hitungan detik)
    dan pull() (cadangan: dipanggil saat dibuka / kembali online / tiap 1 menit bila pendengar putus). */
-let lastSrv = '', watchOff = null, watchUid = null, watchGot = 0, pendR = false;
+let lastSrvObj = {}, goneT = null, lastSrv = '', watchOff = null, watchUid = null, watchGot = 0, pendR = false;
 const busy = () => { const a = document.activeElement; return !!CAM || !!$('#pad') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
 function renderSoft() { if (busy()) { pendR = true; return; } pendR = false; render(); } // jangan merusak layar yang sedang diketik/dipakai kamera
 setInterval(() => { if (pendR && !busy()) renderSoft(); }, 1200);
@@ -259,11 +259,18 @@ async function applyKegs(srv) {
   const sg = fnv(JSON.stringify(srv)); if (sg === lastSrv) return false; lastSrv = sg;
   const baru = [];
   Object.keys(srv).forEach(kid => { const k = srv[kid]; if (!k || typeof k !== 'object') return; k.id = kid; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {}); if (!KEGS[kid]) baru.push(kid); KEGS[kid] = k; });
-  Object.keys(KEGS).forEach(kid => { // dihapus admin: buang dari HP bila tidak ada data yang belum terkirim
-    if (srv[kid]) return;
-    const h = H[kid]; if (h && (h.dirty || mediaList(h).some(([k, d]) => h.sent[k] !== fnv(d)))) return;
+  lastSrvObj = srv; let tunggu = false;
+  Object.keys(KEGS).forEach(kid => { // dihapus admin: buang dari HP. Bila masih ada data belum terkirim, beri waktu 10 menit lalu tetap dibuang (kegiatannya sudah tidak ada, hasilnya tidak bisa dipakai admin)
+    const h0 = H[kid];
+    if (srv[kid]) { if (h0 && h0.goneAt) { delete h0.goneAt; saveH(kid); } return; }
+    const h = H[kid];
+    if (h && (h.dirty || mediaList(h).some(([k, d]) => h.sent[k] !== fnv(d)))) {
+      if (!h.goneAt) { h.goneAt = Date.now(); saveH(kid); }
+      if (Date.now() - h.goneAt < 600000) { tunggu = true; return; }
+    }
     delete KEGS[kid]; delete H[kid]; iDel('h:' + kid);
   });
+  if (tunggu) { clearTimeout(goneT); goneT = setTimeout(() => { lastSrv = ''; applyKegs(lastSrvObj); }, 610000); }
   await saveK(); pullErr = '';
   baru.forEach(kid => { if (!H[kid]) restore(kid); });
   renderSoft(); return true;

@@ -3867,10 +3867,13 @@ const Pic = {
    *  juga tidak ada di daftar Drive, belum diubah >30 menit (kecuali dicek manual lewat tombol PIC), dan tidak sedang menunggu dikirim. */
   async bersihkan(force) {
     if (!this.ready || !navigator.onLine || this.cleaning) return 0;
-    if (!force && Date.now() - (this.cleanAt || 0) < 600000) return 0;
+    if (!force && Date.now() - (this.cleanAt || 0) < 300000) return 0;
     this.cleaning = true; this.cleanAt = Date.now(); let n = 0;
     try {
       const all = (await this.d.get(this.r("dh_kegiatan"))).val() || {};
+      let ulang = 0; // kegiatan milik perangkat ini yang pernah terkirim tetapi hilang di server (mis. terhapus perangkat admin lain): kirim ulang
+      for (const e of EV) if (this.hash[e.id] && !all[e.id] && e.kegiatan && !TOMBS.has(e.id)) { delete this.hash[e.id]; this.mark(e.id); ulang++; }
+      if (ulang) await idbPut("pic-hash", this.hash).catch(() => { });
       const ids = Object.keys(all).filter(id => !EV.some(e => e.id === id));
       if (ids.length) {
         let ada = null;
