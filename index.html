@@ -8486,7 +8486,15 @@
         // ======================================================================
         const DH_CFG_KEY = 'rk3_dh_cfg', DH_CACHE_KEY = 'rk3_dh_cache';
         const DH_URL_OK = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/;
-        let dhEvents = [], dhBusy = false, dhDiCache = 0;
+        let dhEvents = [], dhBusy = false, dhDiCache = 0, dhAgain = false, dhLoading = false, dhGalat = '', dhOkAt = 0, dhSeq = 0;
+        const dhOpen = {}; // id kegiatan yang barisnya sedang dibuka -> {html, upd, loading, err, seq}
+        const dhHapusProses = new Set();
+        const dhById = (id) => dhEvents.find(x => x.id === id);
+        const dhRapikan = (arr) => { // buang duplikat id (ambil yang terbaru), urutkan terbaru di atas
+            const m = new Map();
+            (arr || []).forEach(x => { if (!x || x.id == null || x.id === '') return; const k = String(x.id), o = m.get(k); if (!o || dhMs(x.updated) >= dhMs(o.updated)) m.set(k, x); });
+            return [...m.values()].sort((a, b) => dhMs(b.updated) - dhMs(a.updated));
+        };
         const dhHidden = {}; // id kegiatan yang baru dihapus: jangan tampil lagi walau daftar Drive belum menyusul
         const dhEsc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const dhIsAdmin = () => currentUser && (currentUser.role === 'admin_utama' || currentUser.role === 'admin_lpmi');
@@ -8564,6 +8572,29 @@
             } finally { clearTimeout(t); }
         }
 
+        const dhDetailHtml = (e, j) => {
+            const ev = j.event || {}, files = j.files || {}, a = ev.acara || {};
+            const hari = (ev.days && ev.days.length) ? ev.days : [a.tanggal || e.tanggal || ''];
+            const pes = (ev.peserta || []).filter(p => String(p.nama || '').trim());
+            const ada = (key, label) => { const f = files[key]; const u = f && dhLinkFile(f.id); return u ? `<a href="${dhEsc(u)}" target="_blank" rel="noopener" class="text-emerald-600 font-bold">${label}</a>` : '<span class="text-slate-400">–</span>'; };
+            const org = ada('ttd-org', 'Sudah ✓');
+            return `
+                <div class="text-xs text-slate-600 mb-2">${a.narasumber ? '<b>Narasumber:</b> ' + dhEsc(a.narasumber) + ' · ' : ''}<b>TTD penyelenggara:</b> ${org} · <b>Berkas Word:</b> ${ada('doc:dh', 'Daftar Hadir (.docx)')} · ${ada('doc:dk', 'Dokumentasi (.docx)')}</div>
+                <div class="overflow-x-auto admin-scroll">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="text-slate-500 text-[10px] uppercase tracking-wider"><tr><th class="px-2 py-1">No</th><th class="px-2 py-1">Nama</th><th class="px-2 py-1">Perusahaan</th><th class="px-2 py-1">Foto</th>${hari.map(d => `<th class="px-2 py-1">TTD ${dhEsc(dhTgl(d))}</th>`).join('')}</tr></thead>
+                    <tbody class="divide-y divide-slate-200">${pes.length ? pes.map((p, n) => `<tr><td class="px-2 py-1">${n + 1}</td><td class="px-2 py-1 font-semibold text-slate-800">${dhEsc(p.nama)}</td><td class="px-2 py-1">${dhEsc(p.instansi || '–')}</td><td class="px-2 py-1">${ada('foto:' + p.id, 'Foto ✓')}</td>${hari.map(d => `<td class="px-2 py-1">${ada('ttd:' + p.id + ':' + d, '✓')}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="' + (4 + hari.length) + '" class="px-2 py-3 text-center text-slate-500 italic">Belum ada peserta.</td></tr>'}</tbody>
+                </table></div>`;
+        };
+        const dhIsiDetail = (id) => { // isi satu baris detail saja (tanpa menggambar ulang seluruh tabel)
+            const st = dhOpen[id]; if (!st) return '';
+            if (st.html) return st.html + (st.loading ? '<p class="text-[10px] text-slate-400 italic mt-1">Memperbarui…</p>' : '') + (st.err ? '<p class="text-[10px] text-amber-600 mt-1">Gagal memperbarui: ' + dhEsc(st.err) + '</p>' : '');
+            if (st.err) return '<p class="text-xs text-red-500">Gagal memuat detail: ' + dhEsc(st.err) + '</p>';
+            return '<p class="text-xs text-slate-500 italic">Memuat detail peserta dari Google Drive…</p>';
+        };
+        const dhBarisDetail = (id) => { const tb = document.getElementById('dh-tbody'); return tb ? [...tb.querySelectorAll('tr[data-detail]')].find(r => r.dataset.detail === id) : null; };
+        const dhSegarkanDetail = (id) => { const r = dhBarisDetail(id); if (r && r.firstElementChild) r.firstElementChild.innerHTML = dhIsiDetail(id); };
+
         window.dhRender = function() {
             const tb = document.getElementById('dh-tbody'); if (!tb) return;
             const q = (document.getElementById('dh-filter-cari')?.value || '').toLowerCase().trim();
@@ -8574,17 +8605,19 @@
             setTxt('dh-stat-peserta', dhEvents.reduce((a, e) => a + (Number(e.n) || 0), 0));
             setTxt('dh-stat-org', dhEvents.filter(e => e.ttdOrg === 'Sudah').length);
             setTxt('dh-stat-baru', dhEvents.filter(e => dhMs(e.updated) > minggu).length);
+            const kosong = (t) => '<tr><td colspan="9" class="px-3 py-6 text-center text-xs text-slate-500 italic">' + t + '</td></tr>';
             if (!dhEvents.length) {
-                tb.innerHTML = '<tr><td colspan="9" class="px-3 py-6 text-center text-xs text-slate-500 italic">' + (dhCfg() ? 'Belum ada kegiatan. Buat kegiatan di aplikasi Daftar Hadir; kegiatan muncul di sini setelah tersimpan ke Google Drive.' : 'Hubungkan Google Drive lewat tombol Pengaturan Drive untuk melihat kegiatan.') + '</td></tr>';
+                tb.innerHTML = kosong(dhLoading ? 'Memuat kegiatan dari Google Drive…' : (dhGalat ? 'Belum bisa memuat kegiatan. Tekan tombol Segarkan untuk mencoba lagi.' : (dhCfg() ? 'Belum ada kegiatan. Buat kegiatan di aplikasi Daftar Hadir; kegiatan muncul di sini setelah tersimpan ke Google Drive.' : 'Hubungkan Google Drive lewat tombol Pengaturan Drive untuk melihat kegiatan.')));
                 return;
             }
-            const rows = dhEvents.map((e, i) => ({ e, i })).filter(({ e }) =>
+            const rows = dhEvents.filter(e =>
                 (!st || (st === 'lengkap') === dhLengkap(e)) &&
                 (!q || `${e.kegiatan} ${e.tempat}`.toLowerCase().includes(q)));
-            if (!rows.length) { tb.innerHTML = '<tr><td colspan="9" class="px-3 py-6 text-center text-xs text-slate-500 italic">Tidak ada kegiatan yang cocok dengan filter.</td></tr>'; return; }
-            tb.innerHTML = rows.map(({ e, i }) => {
+            if (!rows.length) { tb.innerHTML = kosong('Tidak ada kegiatan yang cocok dengan filter.'); return; }
+            tb.innerHTML = rows.map((e) => {
                 const tgl = e.tanggal ? (e.tanggal2 && e.tanggal2 !== e.tanggal ? dhTgl(e.tanggal) + ' – ' + dhTgl(e.tanggal2) : dhTgl(e.tanggal)) : '–';
                 const drive = dhLinkDrive(e.folderUrl);
+                const id = dhEsc(e.id), buka = !!dhOpen[e.id], hapus = dhHapusProses.has(e.id);
                 return `
                 <tr class="hover:bg-slate-50">
                     <td class="px-3 py-2 text-xs text-slate-500">${dhEsc(dhWaktu(e.updated))}</td>
@@ -8596,35 +8629,52 @@
                     <td class="px-3 py-2 text-xs">${dhEsc(e.ttdPeserta || '–')}</td>
                     <td class="px-3 py-2 text-xs">${dhEsc(e.ttdOrg || '–')}</td>
                     <td class="px-3 py-2 text-right space-x-1">
-                        <button type="button" onclick="window.dhDetail(${i}, this)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold">Detail</button>
+                        <button type="button" data-act="detail" data-id="${id}" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold">${buka ? 'Tutup' : 'Detail'}</button>
                         ${drive ? `<a href="${dhEsc(drive)}" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-safety-500 text-white rounded-md text-xs font-bold inline-block">Buka Drive ↗</a>` : ''}
-                        <button type="button" onclick="window.dhHapus(${i}, this)" class="px-2.5 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold">Hapus</button>
+                        <button type="button" data-act="hapus" data-id="${id}" ${hapus ? 'disabled' : ''} class="px-2.5 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold">${hapus ? 'Menghapus…' : 'Hapus'}</button>
                     </td>
                 </tr>
-                <tr id="dh-detail-${i}" class="hidden"><td colspan="9" class="px-3 py-3 bg-slate-50"></td></tr>`;
+                <tr data-detail="${id}" class="${buka ? '' : 'hidden'}"><td colspan="9" class="px-3 py-3 bg-slate-50">${buka ? dhIsiDetail(e.id) : ''}</td></tr>`;
             }).join('');
         };
 
-        window.dhMuat = async function() {
-            if (!dhIsAdmin() || dhBusy) return;
-            if (!dhCfg()) { dhTampilCfg(true); window.dhRender(); return; }
-            dhBusy = true;
+        window.dhMuat = async function(paksa) {
+            if (!dhIsAdmin()) return;
+            if (dhBusy) { dhAgain = true; return; } // sedang memuat: ulangi sekali lagi sesudahnya (jangan dilewatkan)
+            if (paksa !== true && Date.now() - dhOkAt < 4000) return; // pemicu beruntun (buka menu + pindah tab) cukup sekali
+            const cfg = dhCfg();
+            if (!cfg) { dhTampilCfg(true); window.dhRender(); return; }
+            dhBusy = true; dhLoading = true; dhAgain = false;
             const btn = document.getElementById('btn-dh-segarkan'); const ori = btn ? btn.innerText : '';
             if (btn) { btn.disabled = true; btn.innerText = 'Memuat…'; }
             dhStatus(dhEvents.length ? 'Memperbarui dari Google Drive…' : 'Memuat kegiatan dari Google Drive… (bisa beberapa detik)', 'info');
+            if (!dhEvents.length) window.dhRender();
             try {
-                const j = await dhApi('listEvents');
-                dhEvents = (j.events || []).filter(x => !(dhHidden[x.id] > Date.now())).sort((a, b) => dhMs(b.updated) - dhMs(a.updated));
-                dhDiCache = 0;
+                let j = null, err = null;
+                for (let k = 0; k < 2 && !j; k++) { // Apps Script kadang "dingin"/sibuk: coba sekali lagi sebelum menyerah
+                    try { j = await dhApi('listEvents', null, cfg); }
+                    catch (e) { err = e; if (!/terhubung|waktu koneksi|tidak valid|lock|sibuk/i.test(String((e && e.message) || e))) break; await new Promise(r => setTimeout(r, 1500)); }
+                }
+                if (!j) throw err || new Error('Gagal');
+                const sekarang = dhCfg();
+                if (!dhIsAdmin() || !sekarang || sekarang.url !== cfg.url) return; // Drive diputuskan / keluar akun saat memuat: buang hasilnya
+                dhEvents = dhRapikan((j.events || []).filter(x => !(dhHidden[x.id] > Date.now())));
+                dhDiCache = 0; dhGalat = ''; dhOkAt = Date.now();
+                Object.keys(dhOpen).forEach(id => { // baris terbuka: buang yang kegiatannya sudah tidak ada, muat ulang yang isinya berubah
+                    const e = dhById(id);
+                    if (!e) delete dhOpen[id]; else if (dhMs(e.updated) !== dhOpen[id].upd && !dhOpen[id].loading) dhMuatDetail(id);
+                });
                 try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e) {}
                 dhStatus('');
             } catch (e) {
-                dhStatus('Gagal memuat terbaru: ' + (e.message || e) + (dhEvents.length ? ' Menampilkan data tersimpan' + (dhDiCache ? ' (' + dhWaktu(dhDiCache) + ')' : '') + '.' : ''), dhEvents.length ? 'warn' : 'error');
-                if (/kode akses/i.test(e.message || '')) dhTampilCfg(true);
+                dhGalat = String((e && e.message) || e);
+                dhStatus('Gagal memuat terbaru: ' + dhGalat + (dhEvents.length ? ' Menampilkan data tersimpan' + (dhDiCache ? ' (' + dhWaktu(dhDiCache) + ')' : '') + '.' : ''), dhEvents.length ? 'warn' : 'error');
+                if (/kode akses/i.test(dhGalat)) dhTampilCfg(true);
             } finally {
-                dhBusy = false;
+                dhBusy = false; dhLoading = false;
                 if (btn) { btn.disabled = false; btn.innerText = ori; }
                 window.dhRender();
+                if (dhAgain) { dhAgain = false; setTimeout(() => window.dhMuat(true), 300); }
             }
         };
 
@@ -8635,56 +8685,57 @@
             try { const f = document.getElementById('dh-frame'); if (f && !f.getAttribute('src')) { localStorage.setItem('rk3_admin_at', String(Date.now())); f.src = '/daftar-hadir/'; } } catch (e) {} // muat di latar: kirim kegiatan ke PIC + tarik hasil PIC
             { const c = await dhCfgDariAplikasi(), cur = dhCfg(); if (c && (!cur || ((c.ts || 0) > (cur.ts || 0) && (c.url !== cur.url || c.token !== cur.token)))) dhSimpanCfg(c); } // salinan aplikasi Daftar Hadir yang lebih baru ikut dipakai panel
             if (!dhEvents.length) {
-                try { const c = JSON.parse(localStorage.getItem(DH_CACHE_KEY) || 'null'); if (c && Array.isArray(c.events)) { dhEvents = c.events; dhDiCache = c.at || 0; } } catch (e) {}
+                try { const c = JSON.parse(localStorage.getItem(DH_CACHE_KEY) || 'null'); if (c && Array.isArray(c.events)) { dhEvents = dhRapikan(c.events.filter(x => !(dhHidden[x && x.id] > Date.now()))); dhDiCache = c.at || 0; } } catch (e) {}
             }
             window.dhRender();
             if (!dhCfg()) { dhTampilCfg(true); dhStatus('Drive belum dihubungkan. Isi URL Web App dan Kode Akses dari Google Apps Script aplikasi Daftar Hadir.', 'info'); return; }
             window.dhMuat();
         };
 
-        window.dhDetail = async function(i, btn) {
-            const e = dhEvents[i]; const baris = document.getElementById('dh-detail-' + i); if (!e || !baris) return;
-            const sel = baris.firstElementChild;
-            if (!baris.classList.contains('hidden')) { baris.classList.add('hidden'); if (btn) btn.innerText = 'Detail'; return; }
-            baris.classList.remove('hidden'); if (btn) btn.innerText = 'Tutup';
-            sel.innerHTML = '<p class="text-xs text-slate-500 italic">Memuat detail peserta dari Google Drive…</p>';
+        async function dhMuatDetail(id) {
+            const st = dhOpen[id], e = dhById(id); if (!st || !e) return;
+            const seq = st.seq = ++dhSeq; st.loading = true; st.err = '';
+            dhSegarkanDetail(id);
             try {
-                const j = await dhApi('getEvent', { id: e.id });
-                const ev = j.event || {}, files = j.files || {}, a = ev.acara || {};
-                const hari = (ev.days && ev.days.length) ? ev.days : [a.tanggal || e.tanggal || ''];
-                const pes = (ev.peserta || []).filter(p => String(p.nama || '').trim());
-                const ada = (key, label) => { const f = files[key]; const u = f && dhLinkFile(f.id); return u ? `<a href="${dhEsc(u)}" target="_blank" rel="noopener" class="text-emerald-600 font-bold">${label}</a>` : '<span class="text-slate-400">–</span>'; };
-                const org = ada('ttd-org', 'Sudah ✓');
-                sel.innerHTML = `
-                    <div class="text-xs text-slate-600 mb-2">${a.narasumber ? '<b>Narasumber:</b> ' + dhEsc(a.narasumber) + ' · ' : ''}<b>TTD penyelenggara:</b> ${org} · <b>Berkas Word:</b> ${ada('doc:dh', 'Daftar Hadir (.docx)')} · ${ada('doc:dk', 'Dokumentasi (.docx)')}</div>
-                    <div class="overflow-x-auto admin-scroll">
-                    <table class="w-full text-left text-xs whitespace-nowrap">
-                        <thead class="text-slate-500 text-[10px] uppercase tracking-wider"><tr><th class="px-2 py-1">No</th><th class="px-2 py-1">Nama</th><th class="px-2 py-1">Perusahaan</th><th class="px-2 py-1">Foto</th>${hari.map(d => `<th class="px-2 py-1">TTD ${dhEsc(dhTgl(d))}</th>`).join('')}</tr></thead>
-                        <tbody class="divide-y divide-slate-200">${pes.length ? pes.map((p, n) => `<tr><td class="px-2 py-1">${n + 1}</td><td class="px-2 py-1 font-semibold text-slate-800">${dhEsc(p.nama)}</td><td class="px-2 py-1">${dhEsc(p.instansi || '–')}</td><td class="px-2 py-1">${ada('foto:' + p.id, 'Foto ✓')}</td>${hari.map(d => `<td class="px-2 py-1">${ada('ttd:' + p.id + ':' + d, '✓')}</td>`).join('')}</tr>`).join('') : '<tr><td colspan="' + (4 + hari.length) + '" class="px-2 py-3 text-center text-slate-500 italic">Belum ada peserta.</td></tr>'}</tbody>
-                    </table></div>`;
+                const j = await dhApi('getEvent', { id });
+                if (!dhOpen[id] || dhOpen[id].seq !== seq) return; // sudah ditutup / ada permintaan yang lebih baru
+                st.html = dhDetailHtml(e, j); st.upd = dhMs(e.updated);
             } catch (err) {
-                sel.innerHTML = '<p class="text-xs text-red-500">Gagal memuat detail: ' + dhEsc(err.message || err) + '</p>';
+                if (!dhOpen[id] || dhOpen[id].seq !== seq) return;
+                st.err = String((err && err.message) || err);
             }
+            st.loading = false; dhSegarkanDetail(id);
+        }
+
+        window.dhDetail = function(id) {
+            const e = dhById(id); if (!e) return;
+            if (dhOpen[id]) { delete dhOpen[id]; window.dhRender(); return; }
+            dhOpen[id] = { html: '', upd: dhMs(e.updated), loading: false, err: '', seq: 0 };
+            window.dhRender();
+            dhMuatDetail(id);
         };
 
-        window.dhHapus = async function(i, btn) {
-            const e = dhEvents[i]; if (!e || !dhIsAdmin()) return;
+        window.dhHapus = async function(id) {
+            const e = dhById(id); if (!e || !dhIsAdmin() || dhHapusProses.has(id)) return;
             if (!confirm('Hapus kegiatan "' + (e.kegiatan || '(tanpa nama)') + '" dari Google Drive?\n\nFolder kegiatan (daftar hadir Word, foto, tanda tangan) dipindah ke Sampah Drive dan barisnya dibuang dari Database Induk. Masih bisa dipulihkan dari Sampah Drive sekitar 30 hari.\n\nCatatan: jika kegiatan ini masih ada di aplikasi Daftar Hadir pada suatu perangkat, hapus juga di sana agar tidak terkirim ulang.')) return;
-            const ori = btn ? btn.innerText : ''; if (btn) { btn.disabled = true; btn.innerText = 'Menghapus…'; }
+            dhHapusProses.add(id); window.dhRender();
             try {
-                await dhApi('deleteEvent', { id: e.id });
-                dhHidden[e.id] = Date.now() + 600000;
-                try { const fr = document.getElementById('dh-frame'); if (fr && fr.getAttribute('src') && fr.contentWindow) fr.contentWindow.postMessage({ rk3: 'dh-del', id: e.id }, location.origin); } catch (e3) {} // aplikasi Input Kegiatan ikut menghapus salinannya
-                dhEvents.splice(i, 1);
+                await dhApi('deleteEvent', { id });
+                dhHidden[id] = Date.now() + 600000;
+                try { const fr = document.getElementById('dh-frame'); if (fr && fr.getAttribute('src') && fr.contentWindow) fr.contentWindow.postMessage({ rk3: 'dh-del', id }, location.origin); } catch (e3) {} // aplikasi Input Kegiatan ikut menghapus salinannya
+                dhEvents = dhEvents.filter(x => x.id !== id); delete dhOpen[id];
                 try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e2) {}
-                window.dhRender();
                 window.showToast('Kegiatan dihapus dari Google Drive.', 'success');
             } catch (err) {
                 const m = String((err && err.message) || err);
                 window.showToast(/tidak dikenal/i.test(m) ? 'Apps Script belum diperbarui. Tempel Code.gs terbaru lalu Deploy versi baru.' : 'Gagal menghapus: ' + m, 'error');
-                if (btn) { btn.disabled = false; btn.innerText = ori; }
-            }
+            } finally { dhHapusProses.delete(id); window.dhRender(); }
         };
+        document.getElementById('dh-tbody')?.addEventListener('click', (ev) => {
+            const b = ev.target.closest && ev.target.closest('button[data-act]'); if (!b || b.disabled) return;
+            if (b.dataset.act === 'detail') window.dhDetail(b.dataset.id);
+            else if (b.dataset.act === 'hapus') window.dhHapus(b.dataset.id);
+        });
 
         // Tab Rekap / Input: aplikasi Daftar Hadir dimuat di dalam halaman ini (iframe satu origin), bukan tab baru.
         let dhAppDipakai = false;
@@ -8714,7 +8765,7 @@
                 dhAppDipakai = true;
             } else if (dhAppDipakai) {
                 dhAppDipakai = false;
-                setTimeout(() => window.dhMuat && window.dhMuat(), 2500); // beri waktu sinkron ke Drive selesai, lalu segarkan rekap
+                setTimeout(() => window.dhMuat && window.dhMuat(true), 2500); // beri waktu sinkron ke Drive selesai, lalu segarkan rekap
             }
         };
         document.getElementById('dh-tab-rekap')?.addEventListener('click', () => window.dhTampilView('rekap'));
@@ -8725,8 +8776,8 @@
             if (ev.origin !== location.origin) return;
             const m = ev.data; if (!m || m.rk3 !== 'dh-del' || typeof m.id !== 'string') return;
             dhHidden[m.id] = Date.now() + 600000;
-            const k = dhEvents.findIndex(x => x.id === m.id);
-            if (k >= 0) { dhEvents.splice(k, 1); try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e4) {} window.dhRender && window.dhRender(); }
+            delete dhOpen[m.id];
+            if (dhEvents.some(x => x.id === m.id)) { dhEvents = dhEvents.filter(x => x.id !== m.id); try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e4) {} window.dhRender && window.dhRender(); }
         });
         document.getElementById('dh-frame')?.addEventListener('load', () => {
             const f = document.getElementById('dh-frame');
@@ -8746,7 +8797,7 @@
         document.getElementById('admin-sidebar-nav')?.addEventListener('click', (e) => {
             if (e.target.closest('[data-target="admin-panel-daftarhadir"]')) window.dhBukaPanel();
         });
-        document.getElementById('btn-dh-segarkan')?.addEventListener('click', () => window.dhMuat());
+        document.getElementById('btn-dh-segarkan')?.addEventListener('click', () => window.dhMuat(true));
         document.getElementById('btn-dh-pengaturan')?.addEventListener('click', () => dhTampilCfg(document.getElementById('dh-cfg-box')?.classList.contains('hidden')));
         ['dh-filter-cari', 'dh-filter-status'].forEach(id => {
             document.getElementById(id)?.addEventListener(id === 'dh-filter-cari' ? 'input' : 'change', () => window.dhRender());
@@ -8757,7 +8808,7 @@
             catch (e) { window.showToast('Link aplikasi Daftar Hadir: ' + link, 'info'); }
         });
         document.getElementById('btn-dh-putus')?.addEventListener('click', () => {
-            dhHapusCfg(); dhEvents = []; dhDiCache = 0; window.dhRender();
+            dhHapusCfg(); dhEvents = []; dhDiCache = 0; dhGalat = ''; Object.keys(dhOpen).forEach(k => delete dhOpen[k]); window.dhRender();
             dhStatus('Drive diputuskan dari perangkat ini.', 'info'); dhTampilCfg(true);
             const t = document.getElementById('input-dh-token'); if (t) t.value = '';
         });
@@ -8774,7 +8825,7 @@
                 document.getElementById('input-dh-token').value = '';
                 dhTampilCfg(false);
                 window.showToast('Google Drive terhubung.', 'success');
-                window.dhMuat();
+                window.dhMuat(true);
             } catch (err) { window.showToast('Gagal terhubung: ' + (err.message || err), 'error'); }
             finally { btn.disabled = false; btn.innerText = ori; }
         });
