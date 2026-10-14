@@ -67,7 +67,11 @@ const NARA_KAT = [
   { id: 'eldi', nama: 'Eldi Prayoga Firdaus, S.T.', nip: '', inst: 'Praktisi', grp: 'praktisi' },
   { id: 'kemnaker', nama: 'Kemnaker – RI', nip: '', inst: 'Kemnaker – RI', grp: 'kemnaker' },
   { id: 'fajrin', nama: 'Fajrin Alamo, S.T.', nip: '', inst: 'Praktisi', grp: 'praktisi' },
-  { id: 'damai', nama: 'Damai Boy Lendra Rendika, S.T., M.T.', nip: '', inst: 'Praktisi', grp: 'praktisi' }
+  { id: 'damai', nama: 'Damai Boy Lendra Rendika, S.T., M.T.', nip: '', inst: 'Praktisi', grp: 'praktisi' },
+  { id: 'harso', nama: "HARSO BANGUN", nip: '', inst: '0812-8938-0000', grp: 'harso' },
+  { id: 'dinas', nama: "DINAS DALAM PERMOHONAN", nip: '', inst: '', grp: 'dinas' },
+  { id: 'wendri', nama: "Dr. Wendri", nip: '', inst: '0813-2270-1326', grp: 'wendri' },
+  { id: 'elien', nama: "Elien, S.T", nip: '', inst: '+62 815-1527-3028', grp: 'elien' }
 ];
 const MATERI_KAT = [
   { id: 'reg', judul: 'Regulasi Kebakaran (Kelas D)', grp: 'wasnaker', isi: ['Dasar-dasar dan kebijakan K3', 'K3 Penanggulangan Kebakaran', 'UU No 1 Tahun 1970', 'Kepmenaker No 186 Tahun 1999', 'Dasar-dasar pengaman kebakaran', 'Teori Api dan Anatomi Kebakaran'] },
@@ -83,10 +87,29 @@ const MATERI_KAT = [
   { id: 'rig1', judul: 'Rigger Teknis 1', grp: 'praktisi', isi: ['Pengetahuan Tali Kawat Baja', 'Pengetahuan Alat Bantu angkat', 'Menghitung Berat Beban', 'Pengetahuan Cara Mengikat', 'Sebab-Sebab Kecelakaan Kerja dan Penanganan-nya', 'Tanda Isyarat atau Aba-Aba Pengoperasian Keran Angkat', 'Pengoperasian Aman', 'Pemeriksaan dan Perawatan Harian'] },
   { id: 'rig2', judul: 'Rigger Teknis 2', grp: 'wasnaker', isi: ['Pengetahuan Dasar Keran Angkat Hoist Crane', 'Pengetahuan Dasar Kelistrikan', 'Pengetahuan Tali Kawat Baja', 'Pengetahuan Alat Bantu Angkat'] },
   { id: 'rigp', judul: 'Evaluasi Praktek', grp: 'praktisi', isi: ['Evaluasi Praktek'] },
-  { id: 'evalw', judul: 'Evaluasi Teori', grp: 'wasnaker', isi: ['Evaluasi Teori'] }
+  { id: 'evalw', judul: 'Evaluasi Teori', grp: 'wasnaker', isi: ['Evaluasi Teori'] },
+  { id: 'kim1', judul: "Kimia 1 – Dasar & Penyimpanan Bahan Kimia", grp: 'harso', isi: ["Pengetahuan Dasar Bahan Kimia Berbahaya", "Penyimpanan dan penanganan Bahan Kimia Berbahaya"] },
+  { id: 'kim2', judul: "Kimia 2 – Hygiene Industri & Toksikologi", grp: 'harso', isi: ["Hygiene Industry", "Pengantar Toksikologi Industri", "PAK Paparan Faktor Kimia"] },
+  { id: 'kim3', judul: "Kimia 3 – Inspeksi Fasilitas & Pengendalian Teknis", grp: 'harso', isi: ["Teknik dan Prosedur Inspeksi Fasilitas Kimia", "Pengendalian Teknis BKB"] },
+  { id: 'kim4', judul: "Kimia 4 – LDKB & Tanggap Darurat Kimia", grp: 'harso', isi: ["Klasifikasi dan Komunikasi Bahaya Kimia (LDKB & LABEL)", "Tanggap Darurat Kimia"] },
+  { id: 'kim5', judul: "Kimia 5 – Penilaian Resiko & Major Hazard", grp: 'harso', isi: ["Identifikasi Bahaya & Penilaian Resiko Faktor Kimia", "Pengendalian Bahaya Besar / Major Hazard Control"] },
+  { id: 'kim6', judul: "Kimia 6 – Regulasi K3 Kimia", grp: 'dinas', isi: ["Undang-Undang No. 1 tahun 1970", "Kebijakan K3 Nasional", "Peraturan Perundang-Undangan K3 bidang Kimia di tempat kerja"] },
+  { id: 'kim7', judul: "Kimia 7 – APD & Ruang Terbatas", grp: 'wendri', isi: ["Manajemen APD", "Prosedur K3 di Ruang Terbatas / Confined Space"] },
+  { id: 'kim8', judul: "Kimia 8 – Korosi & Monitoring Kontaminan", grp: 'wendri', isi: ["Pencegahan Korosi", "Teknik & Methoda Monitoring & Analisa Kontaminan di Udara"] },
+  { id: 'kim9', judul: "Kimia 9 – Kelembagaan K3 & SMK3", grp: 'elien', isi: ["Kelembagaan & Keahlian K3", "Pengenalan SMK3", "Audit SMK3"] },
+  { id: 'kim10', judul: "Kimia 10 – P3K, Limbah & Audit SMK3", grp: 'elien', isi: ["P3K Kimia", "Pengelolaan Limbah Kimia Berbahaya", "Audit SMK3"] },
+  { id: 'kim11', judul: "Kimia 11 – PKL & Laporan", grp: 'elien', isi: ["PKL", "Penyusunan Laporan"] },
+  { id: 'kim12', judul: "Kimia 12 – Evaluasi & Seminar", grp: 'kemnaker', isi: ["Evaluasi", "Seminar"] },
+  { id: 'prt1', judul: "Penyelamat RT 1 – Regulasi & Izin Kerja", grp: '*', isi: ["Peraturan Perundang-Undangan K3 Ruang Terbatas", "Dasar-Dasar K3 Ruang Terbatas", "Dasar K3 Ruang Terbatas", "Prosedur Ijin Kerja di Ruang Terbatas"] },
+  { id: 'prt2', judul: "Penyelamat RT 2 – Tanggap Darurat, APD & Penyelamatan", grp: '*', isi: ["Prosedur Tanggap Darurat & Komunikasi di Ruang Terbatas", "P3K di Ruang Terbatas", "Alat Pelindung Diri/APD di Ruang Terbatas dan Alat Bantu Pernafasan", "Teknik Penyelamatan di Ruang Terbatas"] },
+  { id: 'trt1', judul: "Teknisi RT 1 – Tanggap Darurat, APD & P3K", grp: '*', isi: ["Rencana Prosedur Tanggap Darurat & P3K", "Alat Pelindung Diri di Ruang Terbatas", "Teknik Penyelamatan di Ruang Terbatas", "Teknik P3K di Ruang Terbatas"] },
+  { id: 'trt2', judul: "Teknisi RT 2 – Risiko Bahaya & Program Memasuki RT", grp: '*', isi: ["Karakteristik Bahan Kimia Berbahaya", "Identifikasi Resiko Bahaya Ruang Terbatas", "Program Memasuki Ruang Terbatas"] },
+  { id: 'trt3', judul: "Teknisi RT 3 – Deteksi Gas & Log Out Tag Out", grp: '*', isi: ["Teknik Pengukuran dan Deteksi Gas Ruang Terbatas", "Prosedur Log Out Tag Out"] },
+  { id: 'trt4', judul: "Teknisi RT 4 – Regulasi & Izin Kerja", grp: '*', isi: ["Peraturan Perundang-Undangan K3 Ruang Terbatas", "Dasar-Dasar K3 Ruang Terbatas", "Prosedur Ijin Kerja di Ruang Terbatas"] },
+  { id: 'rtev', judul: "Evaluasi & Praktek (Ruang Terbatas)", grp: '*', isi: ["Evaluasi", "Praktek"] }
 ];
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
-const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
+const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp || m.grp === '*') : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(k).nrk || {})[m[1]] || {})[m[2]] || {}) : ((LAPK(k).nr || {})[key] || {}); }; // isian dari admin (web) untuk satu baris
 const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : nrAdmin(k, d); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
@@ -94,7 +117,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v28';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v29';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -108,7 +131,7 @@ const klGroups = k => { const ks = kelasArr(k).filter(Boolean), ps = (k && k.pes
 const curKl = k => (papaOf(k) && P.kl != null) ? P.kl : undefined; // alat yang sedang dibuka (undefined = semua peserta)
 const pesKl = k => pesByKl(k, curKl(k));
 const subK = k => curKl(k) !== undefined ? klLabel(P.kl) : k.nama; // subjudul layar: nama alat (PAPA) atau nama kegiatan
-const nrPfx = k => ''; // v21: absensi narasumber SATU untuk semua alat (kunci = tanggal saja); data lama per alat digabung oleh nrGabung
+const nrPfx = k => (k && k.b3 && papaOf(k) && P.kl) ? kelasKey(P.kl) + '~' : ''; // B3: narasumber tiap program sendiri (kunci '<kunciProgram>~tanggal'); // v21: absensi narasumber SATU untuk semua alat (kunci = tanggal saja); data lama per alat digabung oleh nrGabung
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrOffOf = (k, key) => !!((LAPK(k).nrOff || {})[key]); // hari/baris yang dihapus admin di website
 const nrKeys = (h, k, d, pfx = '') => { // pfx = awalan alat ('' bila bukan PAPA); hasil = kunci lengkap (pfx + hari [+ _n])
@@ -116,7 +139,8 @@ const nrKeys = (h, k, d, pfx = '') => { // pfx = awalan alat ('' bila bukan PAPA
   const kk = pfx ? pfx.slice(0, -1) : '', adm = kk ? Object.keys((LAPK(k).nrk || {})[kk] || {}).map(x => pfx + x) : Object.keys(LAPK(k).nr || {});
   return [pfx + d, ...[...new Set([...adm, ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { if (pfx ? !x.startsWith(pfx) : x.includes('~')) return false; const m = NR_KEY.exec(x.slice(pfx.length)); return m && m[1] === d && m[2] && !nrOffOf(k, x); }).sort((p, q) => +p.split('_').pop() - +q.split('_').pop())];
 };
-function nrGabung(h) { // data v20 (narasumber per alat, kunci 'k..~tanggal') digabung ke kunci tanggal biasa; yang sudah terisi tidak ditimpa
+function nrGabung(h, k) { if (k && k.b3) return; // B3 memang per program: jangan digabung
+  // data v20 (narasumber per alat, kunci 'k..~tanggal') digabung ke kunci tanggal biasa; yang sudah terisi tidak ditimpa
   let ch = false;
   [h.nr, h.nrs].forEach(M => { if (!M) return; Object.keys(M).forEach(key => { const i = key.indexOf('~'); if (i < 0) return; const pl = key.slice(i + 1), kosong = !(pl in M) || (M === h.nr ? !(M[pl] && M[pl].kid) : !M[pl]); if (kosong) M[pl] = M[key]; delete M[key]; ch = true; }); });
   if (h.sent) Object.keys(h.sent).forEach(key => { if (/^nr_k[0-9a-z]+~/.test(key)) delete h.sent[key]; });
@@ -278,7 +302,7 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
       else { const date = key.slice(-10), pid = key.slice(2, -11); (h.hadir[pid] = h.hadir[pid] || {})[date] = d; }
       h.sent[key] = fnv(d);
     });
-    nrGabung(h); H[kid] = h; await saveH(kid); render();
+    nrGabung(h, KEGS[kid]); H[kid] = h; await saveH(kid); render();
   } catch (e) { /* dicoba lagi saat tarik data berikutnya */ }
 }
 
@@ -429,24 +453,24 @@ function render() {
     const tNil = ln.nilai || ln.hasil ? (() => { const ps = pesByKl(k, kl).filter(p => !isBatal(hh, p)), isi = ps.filter(p => (ln.nilai ? nilaiOf(hh, p, 'ut') || nilaiOf(hh, p, 'up') : false) || (ln.hasil && kelOf(hh, p))).length;
       return `<button type="button" class="tile" data-act="go" data-to="nil"><span class="ic">${I.list}</span><span><b>Nilai &amp; Kelulusan</b><small>${isi}/${ps.length} peserta terisi</small></span>${I.chev}</button>`; })() : '';
     const tTtn = ln.nilai ? `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>${hh.n1 || lapNama(hh, k, 's1', 'nama') ? 'Pengawas ' + (hh.n1 ? '✔' : '–') : 'Pengawas –'} · Ahli ${hh.n2 ? '✔' : '–'}</small></span>${I.chev}</button>` : '';
-    const tNar = ln.nara ? (() => { const ds = (k.tgl || []).filter(d => !nrOffOf(k, d)), pf = '', n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && hh.nrs[pf + d]; }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
+    const tNar = (ln.nara && (!k.b3 || alat)) ? (() => { const ds = (k.b3 ? absDays(k) : (k.tgl || [])).filter(d => !nrOffOf(k, nrPfx(k) + d)), pf = nrPfx(k), n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && hh.nrs[pf + d]; }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
     const btnSelesai = alat ? '' : `<button class="btn" type="button" data-act="selesai" style="margin-top:6px">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">Tekan setelah SEMUA isian selesai. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.</p>`;
-    const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua alat' : ''}</small></span>${I.chev}</button>`; })() : '';
+    const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua ' + (k.b3 ? 'program' : 'alat') : ''}</small></span>${I.chev}</button>`; })() : '';
     if (alat) {
       h = appbar(klLabel(P.kl), k.nama, true) + `<div class="screen">
-      <div class="hint">Alat: <b>${esc(klLabel(P.kl))}</b> · ${s.aktif + s.batal} peserta. Semua isian di bawah ini khusus alat ini.</div>
-      ${tAbs}${tDok}${tNil}
+      <div class="hint">${k.b3 ? 'Program' : 'Alat'}: <b>${esc(klLabel(P.kl))}</b> · ${s.aktif + s.batal} peserta. Semua isian di bawah ini khusus ${k.b3 ? 'program' : 'alat'} ini.</div>
+      ${tAbs}${tDok}${tNil}${k.b3 ? tNar : ''}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}</div>
       <p class="hint">Isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p></div>`;
     } else if (papa) {
       h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
-      <div class="hello"><h2 style="font-size:17px">Pilih alat</h2><p class="hint" style="margin:4px 0 0">TTD peserta, dokumentasi peserta, dan nilai &amp; kelulusan dipisah per alat. Dokumentasi harian dan absensi narasumber satu untuk semua alat (lihat bagian bawah).</p></div>
+      <div class="hello"><h2 style="font-size:17px">Pilih ${k.b3 ? 'program' : 'alat'}</h2><p class="hint" style="margin:4px 0 0">${k.b3 ? 'TTD peserta, dokumentasi peserta, nilai &amp; kelulusan, dan absensi narasumber dipisah per program. Dokumentasi harian satu untuk semua program (lihat bagian bawah).' : 'TTD peserta, dokumentasi peserta, dan nilai &amp; kelulusan dipisah per alat. Dokumentasi harian dan absensi narasumber satu untuk semua alat (lihat bagian bawah).'}</p></div>
       ${klGroups(k).map(g => { const sg = stat(kid, g.kl); return `<button type="button" class="kcard" data-act="alat" data-kl="${esc(g.kl)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(klLabel(g.kl))}</h3></div>
         <div class="meta"><span>${g.n} peserta</span></div><div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
-      <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua alat</h2></div>
-      ${tDhr}${tNar}${tPic}${tTtn}
+      <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua ${k.b3 ? 'program' : 'alat'}</h2></div>
+      ${tDhr}${k.b3 ? '' : tNar}${tPic}${tTtn}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
-      <p class="hint">Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1. Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
+      <p class="hint">${k.b3 ? 'Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua program. Absensi Narasumber ada di dalam tiap program.' : 'Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1.'} Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
     } else {
       h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
       ${tAbs}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}
@@ -497,8 +521,8 @@ function render() {
       ${sg('s1', 1, (ln.s1jab || '').replace(/\n/g, ' '), true)}${sg('s2', 2, (ln.s2jab || '').replace(/\n/g, ' '), false)}
       <p class="hint">Nama dan tanda tangan ini tercetak di bagian bawah Daftar Nilai. Bisa juga diisi lewat aplikasi web Daftar Hadir.</p></div>`;
   } else if (P.screen === 'nar') {
-    const hh = hOf(kid), days = k.tgl || [];
-    const brt = days.length > 4 && kelasArr(k).filter(Boolean).length > 0 && k.hk && Object.keys(k.hk).length, hk0 = (() => { const v = k.hk && Object.values(k.hk)[0]; return v ? (Array.isArray(v) ? v : Object.values(v)) : []; })();
+    const hh = hOf(kid), days = k.b3 ? absDays(k) : (k.tgl || []);
+    const brt = !k.b3 && days.length > 4 && kelasArr(k).filter(Boolean).length > 0 && k.hk && Object.keys(k.hk).length, hk0 = (() => { const v = k.hk && Object.values(k.hk)[0]; return v ? (Array.isArray(v) ? v : Object.values(v)) : []; })();
     h = appbar('Absensi Narasumber', subK(k), true) + `<div class="screen">${days.map((d0, i) => { const ks = nrKeys(hh, k, d0, nrPfx(k)); if (!ks.length) return `<div class="card2"><b>Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}</b><div class="hint">Hari ini tidak ada narasumber (dihapus admin).</div></div>`; return ks.map((d, n) => {
       const r = nrOf(hh, k, d), man = r.kid === '_m', mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null, sg = hh.nrs[d];
       return `<div class="card2" data-day="${esc(d)}"><b>${n ? `Narasumber ke-${n + 1} · Hari ${i + 1}` : `Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}`}</b>${brt ? `<small>${hk0.includes(d0) ? 'Semua alat/kelas' : 'Libur Kelas 2/3 & Rigger'}</small>` : ''}
@@ -914,7 +938,7 @@ window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
   const me = await iGet('me');
   if (me) {
     ME = me; KEGS = (await iGet('kegs')) || {};
-    for (const kid of Object.keys(KEGS)) { const h = await iGet('h:' + kid); if (h) { H[kid] = { ...newH(), ...h }; nrGabung(H[kid]); if (H[kid].dirty) saveH(kid); } }
+    for (const kid of Object.keys(KEGS)) { const h = await iGet('h:' + kid); if (h) { H[kid] = { ...newH(), ...h }; nrGabung(H[kid], KEGS[kid]); if (H[kid].dirty) saveH(kid); } }
     P.screen = 'home';
   }
   render();
