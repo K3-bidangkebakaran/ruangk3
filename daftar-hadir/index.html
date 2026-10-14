@@ -98,6 +98,7 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .alat-row label{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13.5px;margin:0;min-width:0}
 .alat-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex:none}
 .alat-row select{width:auto;margin:0;padding:4px 6px;border:1px solid #d1d5db;border-radius:7px;font:inherit;font-size:13px}
+.alat-row .alat-k{display:flex;gap:4px;align-items:center}
 .alat-row .nk{font-size:12px;color:#6b7280}
 .alat-row.on{border-color:var(--accent)}
 .judul-prev{margin-top:8px;padding:8px 10px;border-radius:8px;background:#eef6ff;border:1px solid #bfdbfe;font-size:13px;line-height:1.45}
@@ -561,7 +562,7 @@ table.lap tr.merah td{background:#da2f20;color:#000}
         <button class="btn sm" id="btnSort" title="Urutkan nama peserta sesuai abjad">Urutkan A–Z</button>
         <input type="file" id="fileXls" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
       </div>
-      <p class="xl-tip">File Excel atau PDF dibaca otomatis dari kolom <b>Nama Peserta</b> dan <b>Instansi/Perusahaan</b> (urutan kolom bebas), lalu diurutkan sesuai abjad (A–Z). PDF harus berupa PDF asli, bukan foto/scan. <a href="#" id="btnTpl">Unduh template Excel</a></p>
+      <p class="xl-tip">File Excel atau PDF dibaca otomatis dari kolom <b>Nama Peserta</b> dan <b>Instansi/Perusahaan</b> (urutan kolom bebas). Kolom <b>Alat</b> dan <b>Kelas</b> (1/2/3 atau A–D) ikut terbaca dan mengisi jenis kegiatan, alat, serta kelas otomatis. Daftar lalu diurutkan sesuai abjad (A–Z). PDF harus berupa PDF asli, bukan foto/scan. <a href="#" id="btnTpl">Unduh template Excel</a></p>
       <details class="paste" id="pasteBox">
         <summary>Tempel dari Excel</summary>
         <p class="hint" style="margin-top:6px">Salin kolom <b>Nama | Instansi</b> dari Excel lalu tempel di sini (satu baris = satu peserta). Kolom nomor & baris judul otomatis diabaikan; jika ada 3 kolom (Nama | Jabatan | Instansi), kolom jabatan dilewati. <b>Bidang PAPA:</b> pakai 3 kolom <b>Nama | Instansi | Kelas</b> (kelas baru otomatis masuk Daftar Kelas).</p>
@@ -894,13 +895,16 @@ function judulAuto(a) {
   if (a.jenis === "angkat") { const ls = kelasList(a); return ls.length ? `${J_ANGKAT} (OPERATOR ${ls.map(x => x.toUpperCase()).join(" / ")})` : J_ANGKAT; }
   return a.kegiatan;
 }
-// sinkronkan daftar alat → daftar kelas, judul, dan nama kelas peserta (bila nama kelas berubah)
+const alatId = () => Math.random().toString(36).slice(2, 8);
+const alatSnap = () => (S.acara.alat || []).map(x => ({ id: x.id, label: alatLabel(x) }));
+// sinkronkan daftar alat → daftar kelas, judul, dan nama kelas peserta (bila label sebuah alat berubah). prev = alatSnap() sebelum perubahan
 function syncAngkat(prev) {
   const A = S.acara, lama = {};
-  (prev || []).forEach(x => { lama[x.k] = alatLabel(x); });
-  A.alat = ALAT_SEMUA.map(n => (A.alat || []).find(x => x.k === n)).filter(Boolean).map(x => ({ k: x.k, kls: ALAT_NON.includes(x.k) ? "" : String(x.kls || "") }));
-  A.kelas = A.alat.map(alatLabel);
-  A.alat.forEach(x => { const o = lama[x.k], n = alatLabel(x); if (o && o !== n) S.peserta.forEach(p => { if (p.kelas === o) p.kelas = n; }); });
+  (prev || []).forEach(x => { lama[x.id] = x.label; });
+  A.alat = (A.alat || []).filter(x => ALAT_SEMUA.includes(x.k)).map(x => ({ id: x.id || alatId(), k: x.k, kls: ALAT_NON.includes(x.k) ? "" : String(x.kls || "") }))
+    .sort((x, y) => ALAT_SEMUA.indexOf(x.k) - ALAT_SEMUA.indexOf(y.k) || x.kls.localeCompare(y.kls));
+  A.kelas = kelasList({ kelas: A.alat.map(alatLabel) });
+  A.alat.forEach(x => { const o = lama[x.id], n = alatLabel(x); if (o && o !== n) S.peserta.forEach(q => { if (q.kelas === o) q.kelas = n; }); });
   A.damkar = false; A.papa = true;
   A.kegiatan = judulAuto(A);
 }
@@ -927,7 +931,7 @@ function migAcara(a, hasHari) {
   a.hari = [...new Set((a.hari || []).filter(Boolean))].sort();
   if (a.hari.length) { a.tanggal = a.hari[0]; a.tanggal2 = a.hari[a.hari.length - 1]; }
   a.papa = !!a.papa; a.kelas = kelasList(a);
-  a.alat = (Array.isArray(a.alat) ? a.alat : []).filter(x => x && ALAT_SEMUA.includes(x.k)).map(x => ({ k: x.k, kls: ALAT_NON.includes(x.k) ? "" : String(x.kls || "") }));
+  a.alat = (Array.isArray(a.alat) ? a.alat : []).filter(x => x && ALAT_SEMUA.includes(x.k)).map(x => ({ id: x.id || alatId(), k: x.k, kls: ALAT_NON.includes(x.k) ? "" : String(x.kls || "") }));
   return a;
 }
 function migTtd(d) {
@@ -1591,37 +1595,85 @@ $("#btnCamStart").onclick = () => {
 
 /* ---------- paste from Excel ---------- */
 // kolom "Kelas" di data tempel / Excel: kelas yang baru otomatis masuk Daftar Kelas dan bidang PAPA diaktifkan. Mengembalikan jumlah kelas baru.
+const AUTO = { msg: "" };
+const ALAT_RX = [["Overhead Traveling Crane", /overhead\s*(traveling|travelling|travel)|travel+ing\s*crane|\beot\b/], ["Overhead Crane", /overhead/], ["Crawler Crane", /c(e)?rawler|crawl/], ["Hoist Crane", /hoist/], ["Mobile Crane", /mobile/], ["Portal Crane", /portal/], ["Truck Crane", /truck/], ["Gantry Crane", /gantry/], ["Conveyor", /conveyor|conveyer/], ["Rigger", /rigger|rigging/]];
+const alatDariTeks = t => { const x = norm(t); if (!x) return ""; const m = ALAT_RX.find(([, rx]) => rx.test(x)); return m ? m[0] : ""; };
+const ROMAWI = { i: "1", ii: "2", iii: "3" };
+function kelasAngka(t) {
+  t = norm(t); if (!t) return "";
+  const m = t.match(/\b(?:kelas|kls|class)\s*(1|2|3|iii|ii|i)\b/) || t.match(/^(1|2|3|iii|ii|i)$/) || t.match(/\b(1|2|3)$/);
+  return m ? (ROMAWI[m[1]] || m[1]) : "";
+}
+// Peserta hasil upload/tempel membawa teks alat & kelas. Bila terbaca alat Pesawat Angkat → kegiatan, alat dan kelas diisi otomatis;
+// bila kelas A–D (tanpa alat) → kegiatan Damkar dan kelasnya diisi otomatis. Mengembalikan jumlah kelompok yang terbaca (0 = tidak ada).
 function kelasDariData(list) {
-  if (S.acara.jenis === "angkat") { // cocokkan teks kelas peserta dengan alat (mis. "Mobile Crane" / "mobile crane kelas 2")
-    const prev = JSON.parse(JSON.stringify(S.acara.alat || [])); let baruAlat = 0;
-    list.forEach(p => {
-      const t = String(p.kelas || "").replace(/\s+/g, " ").trim(); if (!t) return;
-      const nm = ALAT_SEMUA.find(n => t.toLowerCase().startsWith(n.toLowerCase())); if (!nm) return;
-      const m = t.match(/kelas\s*([123])/i); let x = (S.acara.alat || []).find(y => y.k === nm);
-      if (!x) { x = { k: nm, kls: "" }; S.acara.alat = (S.acara.alat || []).concat(x); baruAlat++; }
-      if (m && !x.kls && ALAT_KELAS.includes(nm)) x.kls = m[1];
-      p.kelas = alatLabel(x);
-    });
-    syncAngkat(prev);
-    list.forEach(p => { const t = String(p.kelas || ""); const x = (S.acara.alat || []).find(y => t === y.k || t.startsWith(y.k + " Kelas")); if (x) p.kelas = alatLabel(x); });
-    fillJenis(); fillKelas(); fillForm_k();
-    return baruAlat;
+  AUTO.msg = "";
+  const A = S.acara, j = jenisOf(A);
+  if (j !== "lain") {
+    const rows = list.map(p => { const nm = alatDariTeks(p.alat) || alatDariTeks(p.kelas); return { p, nm, kls: nm && ALAT_KELAS.includes(nm) ? (kelasAngka(p.kelas) || kelasAngka(p.alat)) : "" }; });
+    if (rows.some(r => r.nm)) return terapkanAngkat(rows, j);
+    const huruf = list.map(p => { const m = String(p.kelas || "").trim().match(/^(?:kelas\s*)?([abcd])$/i); return m ? m[1].toUpperCase() : ""; });
+    if ((j === "" || j === "damkar") && huruf.some(Boolean)) return terapkanDamkar(list, huruf, j);
+    if (j === "angkat" || j === "damkar") { list.forEach(p => { delete p.alat; if (j === "damkar") p.kelas = ""; }); return 0; }
   }
+  list.forEach(p => { delete p.alat; });
   const ada = kelasList(S.acara), baru = [];
   list.forEach(p => { p.kelas = String(p.kelas || "").replace(/\s+/g, " ").trim(); if (p.kelas && !ada.includes(p.kelas) && !baru.includes(p.kelas)) baru.push(p.kelas); });
   if (!baru.length) return 0;
   S.acara.kelas = ada.concat(baru);
   if (!S.acara.papa) { S.acara.papa = true; S.acara.damkar = false; $("#f-damkar").checked = false; }
-  fillKelas();
+  fillJenis(); fillKelas();
   return baru.length;
 }
+function terapkanAngkat(rows, j) {
+  const A = S.acara, prev = alatSnap();
+  if (j !== "angkat") { A.jenis = "angkat"; A.damkar = false; A.papa = true; A.kelasDamkar = ""; A.alat = []; A.kelas = []; }
+  if (!Array.isArray(A.alat)) A.alat = [];
+  const pakai = r => { // cari/buat entri alat untuk satu baris
+    let x = A.alat.find(y => y.k === r.nm && y.kls === r.kls);
+    if (!x && r.kls) x = A.alat.find(y => y.k === r.nm && !y.kls); // ambil entri yang kelasnya belum dipilih
+    if (!x && !r.kls) { const es = A.alat.filter(y => y.k === r.nm); if (es.length === 1) x = es[0]; } // satu-satunya entri alat ini
+    if (!x) { x = { id: alatId(), k: r.nm, kls: r.kls }; A.alat.push(x); }
+    else if (r.kls && !x.kls) x.kls = r.kls;
+    r.x = x;
+  };
+  rows.filter(r => r.nm && r.kls).forEach(pakai);
+  rows.filter(r => r.nm && !r.kls).forEach(pakai);
+  syncAngkat(prev);
+  rows.forEach(r => { if (r.x) r.p.kelas = alatLabel(r.x); delete r.p.alat; });
+  const hit = {}; rows.forEach(r => { if (r.x) { const l = alatLabel(r.x); hit[l] = (hit[l] || 0) + 1; } });
+  const ls = Object.keys(hit), tanpa = A.alat.filter(x => ALAT_KELAS.includes(x.k) && !x.kls).map(x => x.k);
+  AUTO.msg = `Terbaca otomatis: kegiatan Pesawat Angkat Pesawat Angkut, ${ls.map(l => `${l} (${hit[l]})`).join(", ")}.` + (tanpa.length ? ` Pilih kelas untuk: ${[...new Set(tanpa)].join(", ")}.` : "");
+  fillJenis(); fillKelas(); fillForm_k(); renderFoto();
+  return ls.length;
+}
+function terapkanDamkar(list, huruf, j) {
+  const A = S.acara, uniq = [...new Set(huruf.filter(Boolean))];
+  if (j !== "damkar") { A.jenis = "damkar"; A.damkar = true; A.papa = false; A.kelas = []; A.alat = []; }
+  if (uniq.length === 1) A.kelasDamkar = uniq[0];
+  A.kegiatan = judulAuto(A);
+  list.forEach(p => { delete p.alat; p.kelas = ""; });
+  AUTO.msg = uniq.length === 1 ? `Terbaca otomatis: kegiatan Penanggulangan Kebakaran Kelas ${uniq[0]}.` : `Kelas Damkar di data berbeda-beda (${uniq.join(", ")}). Pilih kelas di dropdown.`;
+  fillJenis(); fillKelas(); fillForm_k(); renderFoto();
+  return 1;
+}
 function parsePaste(txt) {
-  const out = [];
+  const out = []; let hm = null; // hm: peta kolom dari baris judul (Nama / Perusahaan / Alat / Kelas) bila ada
   txt.split(/\r?\n/).forEach((line, li) => {
     if (!line.trim()) return;
     let cells = line.includes("\t") ? line.split("\t") : line.includes(";") ? line.split(";") : [line];
     cells = cells.map(c => c.trim());
-    if (li === 0 && cells.some(c => /^nama/i.test(c))) return;
+    if (li === 0 && cells.some(c => /^nama/i.test(c))) {
+      const f = rx => cells.findIndex(c => rx.test(c));
+      hm = { n: f(/^nama/i), i: f(/^(instansi|perusahaan|company|pt|asal)/i), a: f(/^(alat|jenis alat|nama alat|jenis pesawat|pesawat)\b/i), k: f(/^(kelas|class|tingkat)\b/i) };
+      return;
+    }
+    if (hm && hm.n >= 0 && cells.length > hm.n) {
+      const g = ix => (ix >= 0 && ix < cells.length ? cells[ix] : "");
+      if (!g(hm.n)) return;
+      out.push({ id: uid(), nama: g(hm.n), instansi: g(hm.i), foto: "", kelas: g(hm.k), alat: g(hm.a) });
+      return;
+    }
     if (/^(\d+\.?|no\.?)$/i.test(cells[0]) && cells.length > 1) cells.shift();
     if (!cells[0] && !cells[1]) return;
     if (S.acara.papa && cells.length === 3) { out.push({ id: uid(), nama: cells[0] || "", instansi: cells[1] || "", foto: "", kelas: cells[2] || "" }); return; } // bidang PAPA: Nama | Instansi | Kelas
@@ -1753,11 +1805,13 @@ function fillJenis() {
   renderJudulPrev();
 }
 function renderAlat() {
-  const A = S.acara, box = $("#alatList");
+  const A = S.acara, box = $("#alatList"), arr = A.alat || [];
   box.innerHTML = ALAT_SEMUA.map(n => {
-    const x = (A.alat || []).find(y => y.k === n), kelas = ALAT_KELAS.includes(n);
-    return `<div class="alat-row${x ? " on" : ""}"><label><input type="checkbox" data-alat="${esc(n)}"${x ? " checked" : ""}> ${esc(n)}</label>` +
-      (kelas ? `<select data-alatk="${esc(n)}" aria-label="Kelas ${esc(n)}"${x ? "" : " disabled"}><option value="">Kelas\u2026</option>${["1", "2", "3"].map(v => `<option value="${v}"${x && x.kls === v ? " selected" : ""}>Kelas ${v}</option>`).join("")}</select>` : `<span class="nk">Non kelas</span>`) + `</div>`;
+    const es = arr.filter(x => x.k === n), kelas = ALAT_KELAS.includes(n);
+    if (!es.length) return `<div class="alat-row"><label><input type="checkbox" data-alat="${esc(n)}"> ${esc(n)}</label>${kelas ? `<select disabled aria-label="Kelas ${esc(n)}"><option>Kelas\u2026</option></select>` : `<span class="nk">Non kelas</span>`}</div>`;
+    return es.map((x, i) => `<div class="alat-row on"><label><input type="checkbox" data-aid="${x.id}" checked> ${esc(n)}</label>` + (kelas
+      ? `<span class="alat-k"><select data-aidk="${x.id}" aria-label="Kelas ${esc(n)}"><option value="">Kelas\u2026</option>${["1", "2", "3"].map(v => `<option value="${v}"${x.kls === v ? " selected" : ""}>Kelas ${v}</option>`).join("")}</select>${i === es.length - 1 ? `<button type="button" class="btn sm" data-aplus="${esc(n)}" title="Tambah kelas lain untuk alat ini">+ kelas</button>` : ""}</span>`
+      : `<span class="nk">Non kelas</span>`) + `</div>`).join("");
   }).join("");
 }
 function renderJudulPrev() {
@@ -1780,19 +1834,25 @@ $("#f-jenis").addEventListener("change", e => {
   const A = S.acara, j = e.target.value, prev = A.jenis;
   A.jenis = j;
   if (j === "damkar") { A.damkar = true; A.papa = false; A.kelas = []; A.kegiatan = judulAuto(A); renderFoto(); }
-  else if (j === "angkat") { A.damkar = false; if (!Array.isArray(A.alat)) A.alat = []; syncAngkat(A.alat); renderFoto(); }
+  else if (j === "angkat") { A.damkar = false; if (!Array.isArray(A.alat)) A.alat = []; syncAngkat(alatSnap()); renderFoto(); }
   else if (j === "lain" && prev === "angkat") { A.papa = true; } // daftar kelas tetap, bisa diubah sendiri
   fillJenis(); fillKelas(); fillForm_k(); renderList(); changed();
 });
 function fillForm_k() { const el = $("#f-kegiatan"); if (document.activeElement !== el) el.value = S.acara.kegiatan || ""; }
 $("#f-kdamkar").addEventListener("change", e => { S.acara.kelasDamkar = e.target.value; S.acara.kegiatan = judulAuto(S.acara); renderJudulPrev(); changed(); });
+function afterAlat(prev) { syncAngkat(prev); renderAlat(); renderJudulPrev(); fillKelas(); fillForm_k(); renderList(); changed(); }
 $("#alatList").addEventListener("change", e => {
-  const A = S.acara, prev = JSON.parse(JSON.stringify(A.alat || []));
+  const A = S.acara, prev = alatSnap(), t = e.target;
   if (!Array.isArray(A.alat)) A.alat = [];
-  const n = e.target.dataset.alat, nk = e.target.dataset.alatk;
-  if (n) { if (e.target.checked) { if (!A.alat.some(x => x.k === n)) A.alat.push({ k: n, kls: "" }); } else A.alat = A.alat.filter(x => x.k !== n); }
-  else if (nk) { const x = A.alat.find(y => y.k === nk); if (x) x.kls = e.target.value; }
-  syncAngkat(prev); renderAlat(); renderJudulPrev(); fillKelas(); fillForm_k(); renderList(); changed();
+  if (t.dataset.alat) { if (t.checked) A.alat.push({ id: alatId(), k: t.dataset.alat, kls: "" }); }
+  else if (t.dataset.aid) { if (!t.checked) A.alat = A.alat.filter(x => x.id !== t.dataset.aid); }
+  else if (t.dataset.aidk) { const x = A.alat.find(y => y.id === t.dataset.aidk); if (x) x.kls = t.value; }
+  else return;
+  afterAlat(prev);
+});
+$("#alatList").addEventListener("click", e => {
+  const b = e.target.closest("[data-aplus]"); if (!b) return;
+  const prev = alatSnap(); S.acara.alat.push({ id: alatId(), k: b.dataset.aplus, kls: "" }); afterAlat(prev);
 });
 function fillKelas() {
   const A = S.acara; $("#f-papa").checked = !!A.papa; $("#kelasBox").hidden = !A.papa; $("#kelasTxt").hidden = jenisOf(A) === "angkat";
@@ -1877,7 +1937,7 @@ $("#btnPaste").onclick = () => {
   while (S.peserta.length && !S.peserta[S.peserta.length - 1].nama && !S.peserta[S.peserta.length - 1].foto) S.peserta.pop();
   S.peserta.push(...add); sortPeserta(); $("#pasteText").value = ""; $("#pasteBox").open = false;
   const nk = kelasDariData(add);
-  renderList(); changed(); toast(`${add.length} peserta ditambahkan & diurutkan A–Z.${nk ? ` Laporan dipecah per kelas (${nk} kelas baru).` : ""}`);
+  renderList(); changed(); toast(`${add.length} peserta ditambahkan & diurutkan A–Z.${nk ? " " + (AUTO.msg || `Laporan dipecah per kelas (${nk} kelas baru).`) : ""}`);
 };
 
 /* ---------- preview toggles, tabs, print ---------- */
@@ -2417,7 +2477,7 @@ function findHeader(rows) {
     const hs = (rows[r] || []).map(c => norm(String(c)));
     const ni = hs.findIndex(isNamaH);
     if (ni < 0) continue;
-    return { r, ni, pi: hs.findIndex((h, i) => i !== ni && isPerusH(h)), ki: hs.findIndex((h, i) => i !== ni && /^(kelas|class|jenis alat)\b/.test(h)) };
+    return { r, ni, pi: hs.findIndex((h, i) => i !== ni && isPerusH(h)), ki: hs.findIndex((h, i) => i !== ni && /^(kelas|class|tingkat)\b/.test(h)), ai: hs.findIndex((h, i) => i !== ni && /^(alat|jenis alat|nama alat|jenis pesawat|pesawat)\b/.test(h)) };
   }
   return null;
 }
@@ -2435,7 +2495,7 @@ async function importExcel(file) {
     }
     if (!found) { toast('Kolom "Nama Peserta" tidak ditemukan. Pastikan baris judul berisi "Nama Peserta" dan "Perusahaan".'); return; }
     const { rows, h } = found;
-    masukkanPeserta(rows.slice(h.r + 1).map(r => ({ nama: r[h.ni], inst: h.pi >= 0 ? r[h.pi] : "", kelas: h.ki >= 0 ? r[h.ki] : "" })), "Excel", h.pi >= 0);
+    masukkanPeserta(rows.slice(h.r + 1).map(r => ({ nama: r[h.ni], inst: h.pi >= 0 ? r[h.pi] : "", kelas: h.ki >= 0 ? r[h.ki] : "", alat: h.ai >= 0 ? r[h.ai] : "" })), "Excel", h.pi >= 0);
   } catch (e) { toast(e.message || "File Excel tidak bisa dibaca."); }
 }
 /* ---------- upload PDF peserta ---------- */
@@ -2513,7 +2573,13 @@ function parsePesertaPdf(pages) {
       if (needInst && !pr) continue;
       let no = null;
       for (const L of nb) { no = L.items.find(it => RX_NO.test(norm(it.s)) && (it.x + it.w <= nc.x0 + 1 || it.x >= nc.x1 - 1)); if (no) { no = { ...cellOf(L, no) }; break; } }
-      return { nm: nc, pr: pr ? cellOf(prLine, pr) : null, no };
+      let al = null, kl = null; // kolom Alat dan Kelas (opsional)
+      for (const L of nb) for (const it of L.items) {
+        const t = norm(it.s);
+        if (!al && /^(alat|jenis alat|nama alat|jenis pesawat|pesawat)\b/.test(t)) { const c = cellOf(L, it); if (c.x0 >= nc.x1 - 1 || c.x1 <= nc.x0 + 1) al = c; }
+        if (!kl && /^(kelas|class|tingkat)\b/.test(t)) { const c = cellOf(L, it); if (c.x0 >= nc.x1 - 1 || c.x1 <= nc.x0 + 1) kl = c; }
+      }
+      return { nm: nc, pr: pr ? cellOf(prLine, pr) : null, no, al, kl };
     }
     return null;
   };
@@ -2524,7 +2590,7 @@ function parsePesertaPdf(pages) {
   }
   if (!hdr) return null;
   // 3. baris isi tabel (halaman pertama: setelah judul; halaman lain: semua kecuali judul yang diulang)
-  const VOC = new Set(["instansi", "perusahaan", "company", "asal", "unit", "kerja", "nama", "peserta", "name", "full", "lengkap", "karyawan", "no", "nomor", "urut", "dan", "tanda", "tangan", "ttd", "paraf", "hari", "ke", "keterangan", "ket", "jabatan", "alamat", "telepon", "telp", "hp", "email", "tanggal", "tgl", "nik", "foto", "absen", "hadir", "kehadiran", "signature", "sign", "day", "date", "remarks", "note", "catatan", "status"]);
+  const VOC = new Set(["instansi", "perusahaan", "company", "asal", "unit", "kerja", "nama", "peserta", "name", "full", "lengkap", "karyawan", "no", "nomor", "urut", "dan", "tanda", "tangan", "ttd", "paraf", "hari", "ke", "keterangan", "ket", "jabatan", "alamat", "telepon", "telp", "hp", "email", "tanggal", "tgl", "nik", "foto", "absen", "hadir", "kehadiran", "signature", "sign", "day", "date", "remarks", "note", "catatan", "status", "alat", "pesawat", "angkat", "kelas", "class", "jenis", "tingkat"]);
   const vocabOnly = line => { const raw = line.items.map(i => i.s).join(" "), w = norm(raw).split(" ").filter(Boolean); const lt = w.filter(t => /[a-z]/.test(t)); if (!lt.length) return /^[\d\s]*\d{1,2}\s*[\/.-]\s*\d{1,2}(\s*[\/.-]\s*\d{2,4})?[\d\s\/.-]*$/.test(raw.trim()); /* baris tanggal di bawah judul hari, mis. 6/10/26 */ const frag = t => t.length >= 1 && [...VOC].some(v => v.startsWith(t) || v.endsWith(t)); /* kata judul yang terpotong, mis. "Keterang" + "an" */ return lt.every(t => VOC.has(t) || frag(t)) && w.every(t => VOC.has(t) || frag(t) || /^\d{1,4}$/.test(t)); };
   const FOOT = /(^|\s)(penyelenggara|mengetahui|disetujui|dibuat oleh|diperiksa|hormat kami|jumlah peserta|total peserta|catatan|keterangan\s*:)|\b\d{1,2}\s+(januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember)\s+\d{4}\b/i;
   const body = [];
@@ -2566,9 +2632,11 @@ function parsePesertaPdf(pages) {
   const regionOf = x => regions.findIndex(r => x >= r[0] - 0.5 && x <= r[1] + 0.5);
   const best = c => { let bi = -1, bo = 0; regions.forEach((r, i) => { const o = Math.min(r[1], c.x1) - Math.max(r[0], c.x0); if (o > bo) { bo = o; bi = i; } }); return bi; };
   const rNama = best(hdr.nm), rInst = hdr.pr ? best(hdr.pr) : -2, rNo = hdr.no ? best(hdr.no) : -3;
+  const rAl = hdr.al ? best(hdr.al) : -4, rKl = hdr.kl ? best(hdr.kl) : -5;
   const splitX = hdr.pr ? hdr.pr.x0 - 2 : null; // dipakai bila kolom nama & instansi tak terpisah celah
   const role = it => {
     const c = it.x + it.w / 2, r = regionOf(c);
+    if (r >= 0 && r !== rNama && r !== rInst) { if (r === rAl) return "al"; if (r === rKl) return "kl"; } // kolom Alat & Kelas
     // nomor urut yang menempel pada kolom nama (tanpa celah, mis. PDF hasil cetak Excel)
     if (hdr.no && /^\d+[.)]?$/.test(it.s.trim()) && (c <= hdr.no.x1 + hs * 1.5 || it.x + it.w <= hdr.nm.x0 + 2) && (rNo === rNama || r === rNo)) return "no";
     if (rNama >= 0 && rNama === rInst) return splitX !== null && it.x >= splitX ? "inst" : "nama";
@@ -2579,7 +2647,7 @@ function parsePesertaPdf(pages) {
     return "";
   };
   for (const l of body) {
-    const g = { nama: [], inst: [], no: [] };
+    const g = { nama: [], inst: [], no: [], al: [], kl: [] };
     l.items.forEach(it => { const r = role(it); if (r) g[r].push(it); });
     l.g = g;
   }
@@ -2591,7 +2659,7 @@ function parsePesertaPdf(pages) {
   const pecahNo = !!hdr.no || rate >= 0.8;
   for (const l of body) {
     if (pecahNo && !adaNoSendiri(l) && l.g.nama.length) { const m = RX_NUMNAMA.exec(l.g.nama[0].s.trim()); if (m) { l.g.no = [{ ...l.g.nama[0], s: m[1] }]; l.g.nama = [{ ...l.g.nama[0], s: m[2] }, ...l.g.nama.slice(1)]; } }
-    l.nama = joinItems(l.g.nama); l.inst = joinItems(l.g.inst); l.no = joinItems(l.g.no);
+    l.nama = joinItems(l.g.nama); l.inst = joinItems(l.g.inst); l.no = joinItems(l.g.no); l.alat = joinItems(l.g.al); l.kls = joinItems(l.g.kl);
   }
   if (!hdr.no && rate >= 0.8) hdr.no = { x0: 0, x1: 0, text: "no" }; // kolom nomor tanpa judul: pakai baris bernomor sebagai patokan
   // 5. satu peserta = satu baris bernomor (atau satu baris ber-nama bila tak ada kolom No). Baris lanjutan
@@ -2644,7 +2712,8 @@ function parsePesertaPdf(pages) {
     r.parts.sort((x, y) => x.p - y.p || y.y - x.y); // halaman dulu, lalu dari atas ke bawah
     const nama = cleanTxt(r.parts.map(l => l.nama).filter(Boolean).join(" ")), inst = cleanTxt(r.parts.map(l => l.inst).filter(Boolean).join(" "));
     if (!nama || /^(halaman|page|hal\.?)\s*\d+/i.test(nama) || /^\d+$/.test(nama) || /^(jumlah|total)\b/i.test(nama)) continue;
-    out.push({ nama: nama.replace(/^nama\s+peserta\s+(?=\S)/i, ""), inst: inst.replace(/^(instansi\s*\/\s*)?perusahaan\s+(?=(pt|cv|ud|pd|koperasi|yayasan)\b)/i, "") });
+    const alat = cleanTxt(r.parts.map(l => l.alat).filter(Boolean).join(" ")), kls = cleanTxt(r.parts.map(l => l.kls).filter(Boolean).join(" "));
+    out.push({ alat, kelas: kls, nama: nama.replace(/^nama\s+peserta\s+(?=\S)/i, ""), inst: inst.replace(/^(instansi\s*\/\s*)?perusahaan\s+(?=(pt|cv|ud|pd|koperasi|yayasan)\b)/i, "") });
   }
   return { rows: out, adaInst: !!hdr.pr };
 }
@@ -2673,22 +2742,22 @@ function masukkanPeserta(list, sumber, adaInst) {
     const nama = cleanTxt(r.nama); if (!nama) continue;
     const inst = cleanTxt(r.inst), k = key(nama, inst);
     if (have.has(k)) { dup++; continue; }
-    have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {}, kelas: cleanTxt(r.kelas) });
+    have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {}, kelas: cleanTxt(r.kelas), alat: cleanTxt(r.alat) });
   }
   if (!add.length) { toast(dup ? `Semua nama (${dup}) sudah ada di daftar peserta.` : `Tidak ada nama peserta di file ${sumber} tersebut.`); return; }
   S.peserta = S.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
   S.peserta.push(...add); sortPeserta();
   const nkel = kelasDariData(add);
   renderList(); changed();
-  if (nkel) toast(`Kolom Kelas terbaca: ${nkel} kelas baru, laporan dipecah per kelas.`);
+  if (nkel) toast(AUTO.msg || `Kolom Kelas terbaca: ${nkel} kelas baru, laporan dipecah per kelas.`);
   else toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
 }
 function importFile(file) { return /\.pdf$/i.test(file.name) || file.type === "application/pdf" ? importPdf(file) : importExcel(file); }
 async function downloadTemplate() {
   try {
     const XLSX = await loadXLSX();
-    const ws = XLSX.utils.aoa_to_sheet([["No", "Nama Peserta", "Perusahaan", "Kelas (khusus bidang PAPA, boleh dikosongkan)"], [1, "Ahmad Fauzi", "PT Sinar Jaya Abadi", ""], [2, "Siti Nurhaliza", "PT Mega Konstruksi", ""]]);
-    ws["!cols"] = [{ wch: 5 }, { wch: 32 }, { wch: 32 }, { wch: 28 }];
+    const ws = XLSX.utils.aoa_to_sheet([["No", "Nama Peserta", "Perusahaan", "Alat (Pesawat Angkat, boleh dikosongkan)", "Kelas (1/2/3 atau A-D, boleh dikosongkan)"], [1, "Ahmad Fauzi", "PT Sinar Jaya Abadi", "Mobile Crane", "2"], [2, "Siti Nurhaliza", "PT Mega Konstruksi", "Hoist Crane", "3"]]);
+    ws["!cols"] = [{ wch: 5 }, { wch: 32 }, { wch: 32 }, { wch: 30 }, { wch: 30 }];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Peserta");
     XLSX.writeFile(wb, "template-peserta.xlsx");
   } catch (e) { toast(e.message); }
