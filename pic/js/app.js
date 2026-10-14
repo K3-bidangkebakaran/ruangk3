@@ -117,7 +117,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v29';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v30';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -250,9 +250,16 @@ async function sync() {
     for (const kid of Object.keys(H)) {
       if (!KEGS[kid]) continue;
       const h = H[kid];
-      for (const [key, data] of mediaList(h)) {
-        const hs = fnv(data);
-        if (h.sent[key] !== hs) { await window.PicFB.putMedia(kid, key, data); h.sent[key] = hs; await saveH(kid); renderPill(); }
+      { // gambar dikirim 3 sekaligus (kualitas/ukuran gambar tidak diubah); bila satu gagal, yang lain dituntaskan lalu error dilempar → dicoba lagi otomatis
+        const todo = []; for (const [key, data] of mediaList(h)) { const hs = fnv(data); if (h.sent[key] !== hs) todo.push([key, data, hs]); }
+        let nx = 0, gagal = null;
+        await Promise.all(Array.from({ length: Math.min(3, todo.length) }, async () => {
+          while (!gagal && nx < todo.length) {
+            const [key, data, hs] = todo[nx++];
+            try { await window.PicFB.putMedia(kid, key, data); h.sent[key] = hs; await saveH(kid); renderPill(); } catch (e) { gagal = gagal || e; }
+          }
+        }));
+        if (gagal) throw gagal;
       }
       for (const key of [...(h.gone || [])]) { await window.PicFB.putMedia(kid, key, ''); h.gone = h.gone.filter(x => x !== key); await saveH(kid); renderPill(); }
       if (h.dirty) {

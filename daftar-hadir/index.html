@@ -3212,7 +3212,7 @@ $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("P
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 5; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 6; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
 const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
@@ -3570,6 +3570,9 @@ const Word = (() => {
   return { berkas, daftarHadir, dokumentasi, nilai, hasil, harian, narasumber, rundown, lapFile, kecil, zip, crc32 };
 })();
 
+// ukuran byte & sidik jari ringan sebuah data URL: rumus sama dengan sig_() di Code.gs (dipakai untuk TIDAK mengunggah ulang file yang sudah sama di Drive)
+const dataBytes = d => { const b = d.slice(d.indexOf(",") + 1), n = b.length; return Math.floor(n * 3 / 4) - (b.endsWith("==") ? 2 : b.endsWith("=") ? 1 : 0); };
+const sigData = d => { const b = d.slice(d.indexOf(",") + 1), n = b.length, mid = n >> 1, t = n + "|" + b.slice(0, 300) + b.substr(mid, 300) + b.slice(Math.max(0, n - 300)); let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0; } return h.toString(36); };
 const Cloud = {
   cfg: { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" },
   busy: false, again: false, t: null, gone: new Set(), delBusy: false, delT: null, delErr: "", outdated: false,
@@ -3860,19 +3863,31 @@ const Cloud = {
           ds.forEach(d => { d.key += ":" + (g.kelas || "-"); d.path = [kelasFolder(g.kelas)]; docs.push(d); });
         }
       } catch (e) { docOk = false; console.warn("Berkas Word gagal disusun", e); }
-      const fl = fl0.concat(docs), todo = fl.filter(f => ev.sync.h[f.key] !== f.hash);
+      const fl = fl0.concat(docs);
+      let todo = fl.filter(f => ev.sync.h[f.key] !== f.hash), nLewat = 0;
+      // file yang SUDAH sama persis di Drive (mis. foto/TTD yang dikirim otomatis dari APK) tidak perlu diunggah lagi: cocokkan nama, subfolder, ukuran & sidik jari
+      if (!this.noSizes && todo.filter(f => /^data:image\//.test(f.data || "")).length >= 3) { // hanya bila banyak gambar baru (satu-dua file: langsung unggah, tanpa tambahan 1 panggilan)
+        try {
+          const r = await this.api1("fileSizes", { eventId: ev.id }), sv = (r && r.files) || {};
+          todo = todo.filter(f => {
+            const e = sv[f.key];
+            if (!e || !/^data:image\//.test(f.data || "") || e.n !== f.name || e.p !== f.path.join("/") || e.s !== dataBytes(f.data) || e.g !== sigData(f.data)) return true;
+            ev.sync.h[f.key] = f.hash; nLewat++; return false;
+          });
+        } catch (e) { if (/Aksi tidak dikenal/i.test((e && e.message) || "")) this.noSizes = true; } // Apps Script lama / gangguan sesaat: unggah seperti biasa
+      }
       const evInfo = { id: ev.id, acara: { kegiatan: judulDasar(ev.acara), tanggal: ev.acara.tanggal } };
       // dikirim per paket (±12 file / ±1,8 MB per permintaan): tiap permintaan ke Apps Script punya biaya tetap beberapa detik
       // (buka spreadsheet, folder & peta file), jadi mengirim satu per satu sangat lambat. Apps Script lama (tanpa uploadFiles) → satu per satu.
       const batches = []; let cur = [], sz = 0;
       todo.forEach(f => {
         const n = (f.data || "").length + 400;
-        if (cur.length && (cur.length >= 12 || sz + n > 1800000)) { batches.push(cur); cur = []; sz = 0; }
+        if (cur.length && (cur.length >= 16 || sz + n > 2600000)) { batches.push(cur); cur = []; sz = 0; }
         cur.push(f); sz += n;
       });
       if (cur.length) batches.push(cur);
-      let i = 0;
-      for (const bt of batches) {
+      let i = 0, gagal = null, nx = 0;
+      const kirim = async bt => {
         if (this.gone.has(ev.id)) throw new Error("GONE");
         this.status(`☁️ Upload ${i}/${todo.length}…`, "busy");
         let sent = false;
@@ -3882,12 +3897,21 @@ const Cloud = {
         }
         if (!sent) for (const f of bt) {
           if (this.gone.has(ev.id)) throw new Error("GONE");
-          this.status(`☁️ Upload ${i}/${todo.length}…`, "busy");
           await this.api("uploadFile", { eventId: ev.id, event: evInfo, key: f.key, path: f.path, name: f.name, dataUrl: f.data });
           ev.sync.h[f.key] = f.hash; i++;
+          this.status(`☁️ Upload ${i}/${todo.length}…`, "busy");
         }
-        else { bt.forEach(f => { ev.sync.h[f.key] = f.hash; }); i += bt.length; }
-      }
+        else { bt.forEach(f => { ev.sync.h[f.key] = f.hash; }); i += bt.length; this.status(`☁️ Upload ${i}/${todo.length}…`, "busy"); }
+      };
+      // dua jalur sekaligus: paket berikutnya sudah dikirim lewat jaringan selagi Apps Script memproses paket sebelumnya (Apps Script sendiri tetap memproses satu per satu, jadi aman)
+      const nw = Math.min(batches.length, this.noPar ? 1 : 2);
+      await Promise.all(Array.from({ length: nw }, async () => {
+        while (!gagal && nx < batches.length) {
+          const bt = batches[nx++];
+          try { await kirim(bt); } catch (e) { gagal = gagal || e; if (nw > 1 && e && e.retry) this.noPar = true; } // gangguan saat paralel: sesi berikutnya kirim satu per satu
+        }
+      }));
+      if (gagal) throw gagal;
       if (this.gone.has(ev.id)) throw new Error("GONE");
       const keys = new Set(fl.map(f => f.key));
       if (!docOk) Object.keys(ev.sync.h).filter(k => k.startsWith("doc:")).forEach(k => keys.add(k)); // gagal menyusun Word: jangan hapus berkas Word lama di Drive
@@ -3898,7 +3922,7 @@ const Cloud = {
       ev.sync.at = Date.now(); ev.sync.sv = v0; ev.sync.folderUrl = r.folderUrl || ev.sync.folderUrl;
       if (ev === S) save(); else if (!this.gone.has(ev.id)) await idbPut("event:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
       this.fail = 0; this.nextAt = 0; this.lastErr = null; this.status(); this.heal();
-      if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah).`);
+      if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah${nLewat ? `, ${nLewat} sudah ada di Drive` : ""}).`);
     } catch (e) {
       if (e && e.message === "GONE") { this.status(); return; } // kegiatan dihapus saat sinkron berjalan: berhenti, jangan buat ulang di Drive
       if (!this.lastErr) this.lastErr = { kind: e.kind || "other", msg: this.friendly(e.message) };
