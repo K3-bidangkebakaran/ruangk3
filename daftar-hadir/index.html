@@ -2459,7 +2459,7 @@ Ev.quick = function () {
   [...EV].sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")) || y.updated - x.updated).forEach(e => grup[this.jenisIdx(e)].push(e));
   { // kegiatan yang ada di Google Drive tetapi belum ada di perangkat ini: ikut tampil (ikon awan), klik = unduh & buka
     const mati = new Set([...Cloud.gone]);
-    (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !TOMBS.has(e.id) && !mati.has(e.id)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || ""))).forEach(e => grup[this.jenisIdx(e)].push({ ...e, remote: true }));
+    (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || ""))).forEach(e => grup[this.jenisIdx(e)].push({ ...e, remote: true }));
   }
   $("#qLainWrap").hidden = !grup.lain.length;
   Object.keys(grup).forEach(j => {
@@ -3766,10 +3766,18 @@ const Cloud = {
       { // sapu bersih: kegiatan yang SUDAH dihapus di website ini tetapi foldernya masih / muncul lagi di Drive (hapus gagal, atau dibuat ulang oleh sinkron / pengambil hasil PIC otomatis)
         const sisa = r.events.filter(e => e.id && TOMBS.has(e.id) && !EV.some(x => x.id === e.id) && !q.includes(e.id));
         if (sisa.length) {
+          // JANGAN hapus diam-diam: tanya dulu (data di Drive bisa saja masih dibutuhkan). "Tidak" = simpan: kegiatan itu dibiarkan di Drive dan tampil lagi di daftar.
+          this.recBusy = false;
+          const ok0 = await askConfirm({ title: "Hapus folder kegiatan ini dari Google Drive?", ok: "Ya, hapus dari Drive",
+            body: "Kegiatan berikut sudah dihapus di website ini tetapi foldernya masih ada di Google Drive:<br><br>" + sisa.map(e => `• <b>${esc(e.kegiatan || "(tanpa nama)")}</b>${e.tanggal ? " · " + esc(e.tanggal) : ""}`).join("<br>") + "<br><br>Pilih <b>Batal</b> bila datanya masih dibutuhkan (folder dibiarkan di Drive)." });
+          this.recBusy = true;
+          if (!ok0) { sisa.forEach(e => tombDel(e.id)); toast("Folder tetap disimpan di Google Drive."); Ev.quick(); }
+          else {
           for (const e of sisa) { this.gone.add(e.id); await this.queueDelete(e.id); }
           this.recBusy = false; const ok = await this.flushDeletes(); this.recBusy = true;
           toast(ok ? (sisa.length === 1 ? "Satu folder kegiatan yang sudah dihapus tetapi masih ada di Google Drive dibersihkan." : `${sisa.length} folder kegiatan yang sudah dihapus tetapi masih ada di Google Drive dibersihkan.`)
                    : "Ada folder kegiatan yang sudah dihapus tetapi masih di Google Drive" + (this.delErr ? ": " + this.delErr : ". Akan dicoba lagi otomatis."));
+          }
         }
       }
       for (const e of [...EV]) {
