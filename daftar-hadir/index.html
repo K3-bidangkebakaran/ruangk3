@@ -91,6 +91,18 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .f-phs{display:grid;grid-template-columns:1fr 1fr}.f-phs .f-ph:first-child{border-right:1px solid var(--line)}
 .f-meta .rms{display:flex;gap:6px}
 .pv-kelas{font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--line,#d6d9de);border-radius:8px;background:#fff;max-width:200px}
+.jenis-box{margin-top:8px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb}
+.jenis-box select{width:100%;margin-top:4px}
+.alat-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px;margin-top:6px}
+.alat-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid #e5e7eb;border-radius:8px;background:#fff}
+.alat-row label{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:13.5px;margin:0;min-width:0}
+.alat-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);flex:none}
+.alat-row select{width:auto;margin:0;padding:4px 6px;border:1px solid #d1d5db;border-radius:7px;font:inherit;font-size:13px}
+.alat-row .nk{font-size:12px;color:#6b7280}
+.alat-row.on{border-color:var(--accent)}
+.judul-prev{margin-top:8px;padding:8px 10px;border-radius:8px;background:#eef6ff;border:1px solid #bfdbfe;font-size:13px;line-height:1.45}
+.judul-prev b{display:block;font-size:12px;color:#1e40af;margin-bottom:2px}
+.judul-prev .warn{color:#b45309}
 .kelas-box{margin-top:8px;padding:10px;border:1px dashed #fdba74;border-radius:10px;background:#fffaf3}
 .kelas-box textarea{width:100%;margin-top:4px}
 .kelas-bulk{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
@@ -461,13 +473,32 @@ table.lap tr.merah td{background:#da2f20;color:#000}
   <div class="form-col">
     <section class="card" data-pane="data">
       <h2><span class="n">1</span> Informasi Kegiatan</h2>
-      <div class="field"><label for="f-kegiatan">Nama Kegiatan</label>
-        <input id="f-kegiatan" data-k="kegiatan" placeholder="cth. Pelatihan K3 Penanggulangan Kebakaran">
-        <label class="dk-chk"><input type="checkbox" id="f-damkar"> <b>Damkar</b> <span class="hint">(dokumentasi 2 foto per peserta)</span></label>
-        <label class="dk-chk"><input type="checkbox" id="f-papa"> <b>PAPA</b> <span class="hint">(laporan dipecah per kelas alat)</span></label>
+      <div class="field"><label for="f-jenis">Nama Kegiatan</label>
+        <select id="f-jenis" aria-label="Nama kegiatan">
+          <option value="">— Pilih kegiatan —</option>
+          <option value="damkar">K3 PENANGGULANGAN KEBAKARAN</option>
+          <option value="angkat">K3 PESAWAT ANGKAT PESAWAT ANGKUT</option>
+          <option value="lain">Lainnya (ketik nama sendiri)</option>
+        </select>
+        <div class="jenis-box" id="boxDamkar" hidden>
+          <label for="f-kdamkar">Kelas</label>
+          <select id="f-kdamkar"><option value="">— Pilih kelas —</option><option value="D">Kelas D</option><option value="C">Kelas C</option><option value="B">Kelas B</option><option value="A">Kelas A</option></select>
+          <div class="hint">Damkar: semua peserta dalam satu laporan, dokumentasi 2 foto per peserta.</div>
+        </div>
+        <div class="jenis-box" id="boxAngkat" hidden>
+          <label>Alat <span class="hint">(centang alat yang dilatihkan, lalu pilih kelasnya)</span></label>
+          <div class="alat-list" id="alatList"></div>
+          <div class="hint">Tiap alat dibuat satu set laporan sendiri. Conveyor dan Rigger tidak punya kelas.</div>
+        </div>
+        <div class="judul-prev" id="judulPrev" hidden></div>
+        <div id="boxLain" hidden>
+          <input id="f-kegiatan" data-k="kegiatan" placeholder="cth. Pelatihan K3 Penanggulangan Kebakaran">
+          <label class="dk-chk"><input type="checkbox" id="f-damkar"> <b>Damkar</b> <span class="hint">(dokumentasi 2 foto per peserta)</span></label>
+          <label class="dk-chk"><input type="checkbox" id="f-papa"> <b>Dipecah per kelas</b> <span class="hint">(laporan dipecah per kelas)</span></label>
+        </div>
         <div class="kelas-box" id="kelasBox" hidden>
-          <label for="f-kelas">Daftar Kelas <span class="hint">(satu baris = satu kelas, mis. Hoist Crane)</span></label>
-          <textarea id="f-kelas" rows="3" placeholder="Hoist Crane&#10;Mobile Crane&#10;Portal Crane"></textarea>
+          <div id="kelasTxt"><label for="f-kelas">Daftar Kelas <span class="hint">(satu baris = satu kelas, mis. Hoist Crane)</span></label>
+          <textarea id="f-kelas" rows="3" placeholder="Hoist Crane&#10;Mobile Crane&#10;Portal Crane"></textarea></div>
           <div class="kelas-bulk"><select id="kelasBulk" aria-label="Kelas untuk peserta yang belum punya kelas"></select><button type="button" class="btn sm" id="kelasBulkBtn">Terapkan ke peserta yang belum punya kelas</button></div>
           <div class="hint" id="kelasInfo"></div>
         </div></div>
@@ -805,7 +836,7 @@ const lapNorm = l => {
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
   acara: { kegiatan: "", tanggal: today, tanggal2: "", hari: [today], jamMulai: "08:00", jamSelesai: "16:00", zona: "WIB",
-           tempat: "", narasumber: "", damkar: false, papa: false, kelas: [], kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
+           tempat: "", narasumber: "", jenis: "", kelasDamkar: "", alat: [], damkar: false, papa: false, kelas: [], kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
   peserta: [],
   wm: { alamat: "", auto: true, lat: null, lng: null },
   lap: lapDefault(),
@@ -849,12 +880,36 @@ function kelasList(a) {
   src.forEach(k => { k = String(k == null ? "" : k).replace(/\s+/g, " ").trim(); if (k && !o.includes(k)) o.push(k); });
   return o;
 }
+/* ---------- Nama kegiatan (dropdown): Damkar / Pesawat Angkat-Angkut ---------- */
+const J_DAMKAR = "K3 PENANGGULANGAN KEBAKARAN", J_ANGKAT = "K3 PESAWAT ANGKAT PESAWAT ANGKUT";
+const KELAS_DAMKAR = ["D", "C", "B", "A"];
+const ALAT_KELAS = ["Crawler Crane", "Hoist Crane", "Mobile Crane", "Portal Crane", "Truck Crane", "Gantry Crane", "Overhead Traveling Crane", "Overhead Crane"]; // punya Kelas 1, 2, 3
+const ALAT_NON = ["Conveyor", "Rigger"]; // tanpa kelas
+const ALAT_SEMUA = ALAT_KELAS.concat(ALAT_NON);
+const alatLabel = x => x.kls ? `${x.k} Kelas ${x.kls}` : x.k;
+const jenisOf = a => a.jenis != null && a.jenis !== "" ? a.jenis : ((a.kegiatan || "").trim() || a.damkar || a.papa ? "lain" : "");
+const judulAngkatKelas = k => `${J_ANGKAT} (OPERATOR ${String(k).toUpperCase()})`;
+function judulAuto(a) {
+  if (a.jenis === "damkar") return a.kelasDamkar ? `${J_DAMKAR} (KELAS ${a.kelasDamkar})` : J_DAMKAR;
+  if (a.jenis === "angkat") { const ls = kelasList(a); return ls.length ? `${J_ANGKAT} (OPERATOR ${ls.map(x => x.toUpperCase()).join(" / ")})` : J_ANGKAT; }
+  return a.kegiatan;
+}
+// sinkronkan daftar alat → daftar kelas, judul, dan nama kelas peserta (bila nama kelas berubah)
+function syncAngkat(prev) {
+  const A = S.acara, lama = {};
+  (prev || []).forEach(x => { lama[x.k] = alatLabel(x); });
+  A.alat = ALAT_SEMUA.map(n => (A.alat || []).find(x => x.k === n)).filter(Boolean).map(x => ({ k: x.k, kls: ALAT_NON.includes(x.k) ? "" : String(x.kls || "") }));
+  A.kelas = A.alat.map(alatLabel);
+  A.alat.forEach(x => { const o = lama[x.k], n = alatLabel(x); if (o && o !== n) S.peserta.forEach(p => { if (p.kelas === o) p.kelas = n; }); });
+  A.damkar = false; A.papa = true;
+  A.kegiatan = judulAuto(A);
+}
 function kelasEv(ev, k) {
   const ks = kelasList(ev.acara), a = ev.acara, kg = (a.kegiatan || "").trim();
   return {
     ...ev, kelasNama: k,
     peserta: ev.peserta.filter(p => (p.nama || "").trim() && (k ? p.kelas === k : !ks.includes(p.kelas))),
-    acara: { ...a, kegiatan: k ? (kg ? kg + " \u2013 " + k : k) : a.kegiatan },
+    acara: { ...a, kegiatan: k ? (a.jenis === "angkat" ? judulAngkatKelas(k) : (kg ? kg + " \u2013 " + k : k)) : a.kegiatan },
     lap: { ...ev.lap, uraianTeks: k ? ((ev.lap.uraian || {})[k] || "") : "" }
   };
 }
@@ -872,6 +927,7 @@ function migAcara(a, hasHari) {
   a.hari = [...new Set((a.hari || []).filter(Boolean))].sort();
   if (a.hari.length) { a.tanggal = a.hari[0]; a.tanggal2 = a.hari[a.hari.length - 1]; }
   a.papa = !!a.papa; a.kelas = kelasList(a);
+  a.alat = (Array.isArray(a.alat) ? a.alat : []).filter(x => x && ALAT_SEMUA.includes(x.k)).map(x => ({ k: x.k, kls: ALAT_NON.includes(x.k) ? "" : String(x.kls || "") }));
   return a;
 }
 function migTtd(d) {
@@ -1536,6 +1592,21 @@ $("#btnCamStart").onclick = () => {
 /* ---------- paste from Excel ---------- */
 // kolom "Kelas" di data tempel / Excel: kelas yang baru otomatis masuk Daftar Kelas dan bidang PAPA diaktifkan. Mengembalikan jumlah kelas baru.
 function kelasDariData(list) {
+  if (S.acara.jenis === "angkat") { // cocokkan teks kelas peserta dengan alat (mis. "Mobile Crane" / "mobile crane kelas 2")
+    const prev = JSON.parse(JSON.stringify(S.acara.alat || [])); let baruAlat = 0;
+    list.forEach(p => {
+      const t = String(p.kelas || "").replace(/\s+/g, " ").trim(); if (!t) return;
+      const nm = ALAT_SEMUA.find(n => t.toLowerCase().startsWith(n.toLowerCase())); if (!nm) return;
+      const m = t.match(/kelas\s*([123])/i); let x = (S.acara.alat || []).find(y => y.k === nm);
+      if (!x) { x = { k: nm, kls: "" }; S.acara.alat = (S.acara.alat || []).concat(x); baruAlat++; }
+      if (m && !x.kls && ALAT_KELAS.includes(nm)) x.kls = m[1];
+      p.kelas = alatLabel(x);
+    });
+    syncAngkat(prev);
+    list.forEach(p => { const t = String(p.kelas || ""); const x = (S.acara.alat || []).find(y => t === y.k || t.startsWith(y.k + " Kelas")); if (x) p.kelas = alatLabel(x); });
+    fillJenis(); fillKelas(); fillForm_k();
+    return baruAlat;
+  }
   const ada = kelasList(S.acara), baru = [];
   list.forEach(p => { p.kelas = String(p.kelas || "").replace(/\s+/g, " ").trim(); if (p.kelas && !ada.includes(p.kelas) && !baru.includes(p.kelas)) baru.push(p.kelas); });
   if (!baru.length) return 0;
@@ -1660,6 +1731,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && DP.open) {
 function fillForm() {
   document.querySelectorAll("[data-k]").forEach(el => { el.value = S.acara[el.dataset.k] ?? ""; });
   $("#f-damkar").checked = !!S.acara.damkar;
+  fillJenis();
   fillKelas();
   renderDates();
 }
@@ -1671,8 +1743,59 @@ document.querySelectorAll("[data-k]").forEach(el => {
   });
 });
 
+function fillJenis() {
+  const A = S.acara, j = jenisOf(A);
+  $("#f-jenis").value = j;
+  $("#f-damkar").checked = !!A.damkar; $("#f-papa").checked = !!A.papa;
+  $("#boxDamkar").hidden = j !== "damkar"; $("#boxAngkat").hidden = j !== "angkat"; $("#boxLain").hidden = j !== "lain";
+  $("#f-kdamkar").value = A.kelasDamkar || "";
+  if (j === "angkat") renderAlat();
+  renderJudulPrev();
+}
+function renderAlat() {
+  const A = S.acara, box = $("#alatList");
+  box.innerHTML = ALAT_SEMUA.map(n => {
+    const x = (A.alat || []).find(y => y.k === n), kelas = ALAT_KELAS.includes(n);
+    return `<div class="alat-row${x ? " on" : ""}"><label><input type="checkbox" data-alat="${esc(n)}"${x ? " checked" : ""}> ${esc(n)}</label>` +
+      (kelas ? `<select data-alatk="${esc(n)}" aria-label="Kelas ${esc(n)}"${x ? "" : " disabled"}><option value="">Kelas\u2026</option>${["1", "2", "3"].map(v => `<option value="${v}"${x && x.kls === v ? " selected" : ""}>Kelas ${v}</option>`).join("")}</select>` : `<span class="nk">Non kelas</span>`) + `</div>`;
+  }).join("");
+}
+function renderJudulPrev() {
+  const A = S.acara, j = jenisOf(A), el = $("#judulPrev");
+  if (j !== "damkar" && j !== "angkat") { el.hidden = true; return; }
+  let h = `<b>Judul laporan</b>`;
+  if (j === "damkar") h += esc(judulAuto(A)) + (A.kelasDamkar ? "" : `<div class="warn">Pilih kelas dulu.</div>`);
+  else {
+    const ls = kelasList(A);
+    if (!ls.length) h += esc(J_ANGKAT) + `<div class="warn">Centang minimal satu alat.</div>`;
+    else {
+      h += ls.map(k => esc(judulAngkatKelas(k))).join("<br>");
+      const tanpa = (A.alat || []).filter(x => ALAT_KELAS.includes(x.k) && !x.kls).map(x => x.k);
+      if (tanpa.length) h += `<div class="warn">Pilih kelas untuk: ${esc(tanpa.join(", "))}.</div>`;
+    }
+  }
+  el.innerHTML = h; el.hidden = false;
+}
+$("#f-jenis").addEventListener("change", e => {
+  const A = S.acara, j = e.target.value, prev = A.jenis;
+  A.jenis = j;
+  if (j === "damkar") { A.damkar = true; A.papa = false; A.kelas = []; A.kegiatan = judulAuto(A); renderFoto(); }
+  else if (j === "angkat") { A.damkar = false; if (!Array.isArray(A.alat)) A.alat = []; syncAngkat(A.alat); renderFoto(); }
+  else if (j === "lain" && prev === "angkat") { A.papa = true; } // daftar kelas tetap, bisa diubah sendiri
+  fillJenis(); fillKelas(); fillForm_k(); renderList(); changed();
+});
+function fillForm_k() { const el = $("#f-kegiatan"); if (document.activeElement !== el) el.value = S.acara.kegiatan || ""; }
+$("#f-kdamkar").addEventListener("change", e => { S.acara.kelasDamkar = e.target.value; S.acara.kegiatan = judulAuto(S.acara); renderJudulPrev(); changed(); });
+$("#alatList").addEventListener("change", e => {
+  const A = S.acara, prev = JSON.parse(JSON.stringify(A.alat || []));
+  if (!Array.isArray(A.alat)) A.alat = [];
+  const n = e.target.dataset.alat, nk = e.target.dataset.alatk;
+  if (n) { if (e.target.checked) { if (!A.alat.some(x => x.k === n)) A.alat.push({ k: n, kls: "" }); } else A.alat = A.alat.filter(x => x.k !== n); }
+  else if (nk) { const x = A.alat.find(y => y.k === nk); if (x) x.kls = e.target.value; }
+  syncAngkat(prev); renderAlat(); renderJudulPrev(); fillKelas(); fillForm_k(); renderList(); changed();
+});
 function fillKelas() {
-  const A = S.acara; $("#f-papa").checked = !!A.papa; $("#kelasBox").hidden = !A.papa;
+  const A = S.acara; $("#f-papa").checked = !!A.papa; $("#kelasBox").hidden = !A.papa; $("#kelasTxt").hidden = jenisOf(A) === "angkat";
   if (document.activeElement !== $("#f-kelas")) $("#f-kelas").value = kelasList(A).join("\n");
   renderKelasUi();
 }
@@ -1754,7 +1877,7 @@ $("#btnPaste").onclick = () => {
   while (S.peserta.length && !S.peserta[S.peserta.length - 1].nama && !S.peserta[S.peserta.length - 1].foto) S.peserta.pop();
   S.peserta.push(...add); sortPeserta(); $("#pasteText").value = ""; $("#pasteBox").open = false;
   const nk = kelasDariData(add);
-  renderList(); changed(); toast(`${add.length} peserta ditambahkan & diurutkan A–Z.${nk ? ` Bidang PAPA diaktifkan (${nk} kelas baru).` : ""}`);
+  renderList(); changed(); toast(`${add.length} peserta ditambahkan & diurutkan A–Z.${nk ? ` Laporan dipecah per kelas (${nk} kelas baru).` : ""}`);
 };
 
 /* ---------- preview toggles, tabs, print ---------- */
@@ -2557,7 +2680,7 @@ function masukkanPeserta(list, sumber, adaInst) {
   S.peserta.push(...add); sortPeserta();
   const nkel = kelasDariData(add);
   renderList(); changed();
-  if (nkel) toast(`Kolom Kelas terbaca: ${nkel} kelas baru, bidang PAPA diaktifkan.`);
+  if (nkel) toast(`Kolom Kelas terbaca: ${nkel} kelas baru, laporan dipecah per kelas.`);
   else toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
 }
 function importFile(file) { return /\.pdf$/i.test(file.name) || file.type === "application/pdf" ? importPdf(file) : importExcel(file); }
