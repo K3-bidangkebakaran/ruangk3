@@ -697,7 +697,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 
       <div class="lap-box" id="lpSecNr" hidden>
         <h3>Absensi Narasumber <small style="font-weight:400;color:#6b7280">(juga mengisi Rundown)</small></h3>
-        <div class="rd-tpl" id="rdTpl"><b>Isi cepat dari rundown:</b> <button type="button" class="btn sm" data-act="rdtpl" data-t="crane">📋 Crane / Rigger Kelas 2 &amp; 3</button> <button type="button" class="btn sm" data-act="rdtpl" data-t="conv">📋 Conveyor</button><span class="hint">Mengisi narasumber &amp; materi Hari 1–4 sesuai rundown; bisa diubah lagi per hari.</span></div>
+        <div class="rd-tpl" id="rdTpl"><b>Isi cepat dari rundown:</b> <button type="button" class="btn sm" data-act="rdtpl" data-t="crane">📋 Crane Kelas 2 &amp; 3 (Rigger campur)</button> <button type="button" class="btn sm" data-act="rdtpl" data-t="rigger">📋 Rigger (tanpa Crane)</button> <button type="button" class="btn sm" data-act="rdtpl" data-t="conv">📋 Conveyor</button><span class="hint">Mengisi narasumber &amp; materi Hari 1–4 sesuai rundown; bisa diubah lagi per hari.</span></div>
         <div class="hint">Pilih nama narasumber tiap hari: instansi terisi otomatis, lalu pilih materi (pilihan materi mengikuti instansi narasumber). Pilih <b>Isi manual</b> bila narasumber / materinya tidak ada di daftar. PIC juga bisa mengisi ini dari aplikasi Portal PIC; tanda tangan narasumber digoreskan langsung di layar. <b>Cukup diisi sekali</b>: masuk ke laporan semua alat/kelas. Bila kegiatan lebih dari 4 hari, hari ke-5 dan seterusnya hanya tercetak di laporan Kelas 1.</div>
         <div class="field" id="nrKelasBox" hidden><label for="nrKelas">Alat / kelas yang diisi narasumbernya</label><select id="nrKelas" aria-label="Alat atau kelas"></select><span class="hint">Tiap alat punya absensi narasumber sendiri-sendiri.</span></div>
         <div id="lpNr"></div>
@@ -843,7 +843,9 @@ const NARA_KAT = [
   { id: "adrian", nama: "Adrian Anugerah P, S.E", nip: "", inst: "Ahli K3 Penanggulangan Kebakaran", grp: "ahli" },
   { id: "nikma", nama: "Nikmawati, S.T.", nip: "", inst: "Wasnaker Prov. Sulawesi Tengah", grp: "wasnaker" },
   { id: "eldi", nama: "Eldi Prayoga Firdaus, S.T.", nip: "", inst: "Praktisi", grp: "praktisi" },
-  { id: "kemnaker", nama: "Kemnaker – RI", nip: "", inst: "Kemnaker – RI", grp: "kemnaker" }
+  { id: "kemnaker", nama: "Kemnaker – RI", nip: "", inst: "Kemnaker – RI", grp: "kemnaker" },
+  { id: "fajrin", nama: "Fajrin Alamo, S.T.", nip: "", inst: "Praktisi", grp: "praktisi" },
+  { id: "damai", nama: "Damai Boy Lendra Rendika, S.T., M.T.", nip: "", inst: "Praktisi", grp: "praktisi" }
 ];
 const MATERI_KAT = [
   { id: "reg", judul: "Regulasi Kebakaran (Kelas D)", grp: "wasnaker", isi: ["Dasar-dasar dan kebijakan K3", "K3 Penanggulangan Kebakaran", "UU No 1 Tahun 1970", "Kepmenaker No 186 Tahun 1999", "Dasar-dasar pengaman kebakaran", "Teori Api dan Anatomi Kebakaran"] },
@@ -855,7 +857,12 @@ const MATERI_KAT = [
   { id: "crane3", judul: "Crane Teknis 2", grp: "praktisi", isi: ["Faktor-faktor yang mempengaruhi beban kerja aman", "Pengoperasian Aman", "Perawatan dan Pemeriksaan Harian", "Stabilitas"], sesi: [["Faktor-faktor yang mempengaruhi beban kerja aman"], ["Pengoperasian Aman"], ["Perawatan dan Pemeriksaan Harian"], ["Stabilitas"]] },
   { id: "conv2", judul: "Conveyor Teknis 1", grp: "praktisi", isi: ["Pengoperasian aman pada belt Conveyor", "Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan", "Pengetahuan Tenaga Penggerak & Hidrolik Penggerak", "Perangkat Keselamatan Kerja (Safety Devices)"], sesi: [["Pengoperasian aman pada belt Conveyor"], ["Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan"], ["Pengetahuan Tenaga Penggerak & Hidrolik Penggerak"], ["Perangkat Keselamatan Kerja (Safety Devices)"]] },
   { id: "prakp", judul: "Conveyor Teknis 2 (Praktek)", grp: "praktisi", isi: ["Praktek"], sesi: [["Praktek"], ["Praktek"], ["Praktek"]] },
-  { id: "eval", judul: "Evaluasi Teori", grp: "kemnaker", isi: ["Evaluasi Teori"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"]], app: "ZOOM" }
+  { id: "eval", judul: "Evaluasi Teori", grp: "kemnaker", isi: ["Evaluasi Teori"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"]], app: "ZOOM" },
+  /* Rigger (Juru Ikat) berdiri sendiri, tanpa Crane */
+  { id: "rig1", judul: "Rigger Teknis 1", grp: "praktisi", isi: ["Pengetahuan Tali Kawat Baja", "Pengetahuan Alat Bantu angkat", "Menghitung Berat Beban", "Pengetahuan Cara Mengikat", "Sebab-Sebab Kecelakaan Kerja dan Penanganan-nya", "Tanda Isyarat atau Aba-Aba Pengoperasian Keran Angkat", "Pengoperasian Aman", "Pemeriksaan dan Perawatan Harian"], sesi: [["Pengetahuan Tali Kawat Baja", "Pengetahuan Alat Bantu angkat"], ["Menghitung Berat Beban", "Pengetahuan Cara Mengikat"], ["Sebab-Sebab Kecelakaan Kerja dan Penanganan-nya", "Tanda Isyarat atau Aba-Aba Pengoperasian Keran Angkat"], ["Pengoperasian Aman", "Pemeriksaan dan Perawatan Harian"]] },
+  { id: "rig2", judul: "Rigger Teknis 2", grp: "wasnaker", isi: ["Pengetahuan Dasar Keran Angkat Hoist Crane", "Pengetahuan Dasar Kelistrikan", "Pengetahuan Tali Kawat Baja", "Pengetahuan Alat Bantu Angkat"], sesi: [["Pengetahuan Dasar Keran Angkat Hoist Crane"], ["Pengetahuan Dasar Kelistrikan"], ["Pengetahuan Tali Kawat Baja"], ["Pengetahuan Alat Bantu Angkat"]] },
+  { id: "rigp", judul: "Evaluasi Praktek", grp: "praktisi", isi: ["Evaluasi Praktek"], sesi: [["Evaluasi Praktek"], ["Evaluasi Praktek"], ["Evaluasi Praktek"], ["Evaluasi Praktek"]] },
+  { id: "evalw", judul: "Evaluasi Teori", grp: "wasnaker", isi: ["Evaluasi Teori"], sesi: [["Evaluasi Teori"]] }
 ];
 /* Narasumber yang diisi manual otomatis TERSIMPAN di daftar ini (di browser ini) dan bisa dipilih lagi di kegiatan lain. */
 let NARA_USER = []; const NARA_UK = "nara-user";
@@ -1231,7 +1238,8 @@ const rdTgl = iso => { const d = toD(iso); return d ? `${String(d.getDate()).pad
 const rdLines = r => r.t.length > 1 && r.k === "s" ? r.t.map(x => "- " + x) : r.t;
 const RD_FILL = { // isi cepat Absensi Narasumber dari rundown yang sudah dipakai: [narasumber, materi] per hari
   crane: [[["benny", "ang1"]], [["eldi", "crane2"]], [["eldi", "crane3"]], [["kemnaker", "eval"], ["repy", "prakw"]]],
-  conv: [[["nikma", "ang1"]], [["eldi", "conv2"]], [["eldi", "prakp"]], [["kemnaker", "eval"]]]
+  conv: [[["nikma", "ang1"]], [["eldi", "conv2"]], [["eldi", "prakp"]], [["kemnaker", "eval"]]],
+  rigger: [[["fajrin", "rig1"]], [["ronal", "rig2"]], [["damai", "rigp"]], [["kemnaker", "eval"], ["repy", "evalw"]]]
 };
 function rdTemplate(tp) {
   const plan = RD_FILL[tp]; if (!plan) return 0;
