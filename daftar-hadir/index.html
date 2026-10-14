@@ -2788,12 +2788,17 @@ let pdfP = null;
 function loadPDFJS() {
   if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
   if (!pdfP) pdfP = new Promise((res, rej) => {
-    const src = [["https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"],
-                 ["https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js", "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"]];
+    /* Urutan: salinan di server sendiri (paling andal, termasuk Safari), lalu CDN. Worker dimuat lewat Blob agar tidak diblokir lintas-domain. */
+    const CD = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/", JD = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/";
+    const src = [["lib/pdf.min.js", "lib/pdf.worker.min.js"], ["/daftar-hadir/lib/pdf.min.js", "/daftar-hadir/lib/pdf.worker.min.js"], [CD + "pdf.min.js", CD + "pdf.worker.min.js"], [JD + "pdf.min.js", JD + "pdf.worker.min.js"]];
+    const pasangWorker = async (url) => {
+      try { const r = await fetch(url); if (!r.ok) throw new Error("x"); return URL.createObjectURL(new Blob([await r.text()], { type: "text/javascript" })); }
+      catch (e) { return url; }
+    };
     const tryN = i => {
-      if (i >= src.length) { pdfP = null; rej(new Error("Pembaca PDF gagal dimuat – periksa koneksi internet.")); return; }
+      if (i >= src.length) { pdfP = null; rej(new Error("Pembaca PDF gagal dimuat – periksa koneksi internet, lalu coba lagi.")); return; }
       const sc = document.createElement("script"); sc.src = src[i][0];
-      sc.onload = () => { if (window.pdfjsLib) { window.pdfjsLib.GlobalWorkerOptions.workerSrc = src[i][1]; res(window.pdfjsLib); } else tryN(i + 1); };
+      sc.onload = async () => { if (window.pdfjsLib) { window.pdfjsLib.GlobalWorkerOptions.workerSrc = await pasangWorker(src[i][1]); res(window.pdfjsLib); } else tryN(i + 1); };
       sc.onerror = () => { sc.remove(); tryN(i + 1); };
       document.head.appendChild(sc);
     };
