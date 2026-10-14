@@ -8487,6 +8487,7 @@
         const DH_CFG_KEY = 'rk3_dh_cfg', DH_CACHE_KEY = 'rk3_dh_cache';
         const DH_URL_OK = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/;
         let dhEvents = [], dhBusy = false, dhDiCache = 0;
+        const dhHidden = {}; // id kegiatan yang baru dihapus: jangan tampil lagi walau daftar Drive belum menyusul
         const dhEsc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const dhIsAdmin = () => currentUser && (currentUser.role === 'admin_utama' || currentUser.role === 'admin_lpmi');
         const dhLinkDrive = (u) => /^https:\/\/(drive|docs)\.google\.com\//.test(String(u || '')) ? String(u) : '';
@@ -8613,7 +8614,7 @@
             dhStatus(dhEvents.length ? 'Memperbarui dari Google Drive…' : 'Memuat kegiatan dari Google Drive… (bisa beberapa detik)', 'info');
             try {
                 const j = await dhApi('listEvents');
-                dhEvents = (j.events || []).sort((a, b) => dhMs(b.updated) - dhMs(a.updated));
+                dhEvents = (j.events || []).filter(x => !(dhHidden[x.id] > Date.now())).sort((a, b) => dhMs(b.updated) - dhMs(a.updated));
                 dhDiCache = 0;
                 try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e) {}
                 dhStatus('');
@@ -8672,6 +8673,8 @@
             const ori = btn ? btn.innerText : ''; if (btn) { btn.disabled = true; btn.innerText = 'Menghapus…'; }
             try {
                 await dhApi('deleteEvent', { id: e.id });
+                dhHidden[e.id] = Date.now() + 600000;
+                try { const fr = document.getElementById('dh-frame'); if (fr && fr.getAttribute('src') && fr.contentWindow) fr.contentWindow.postMessage({ rk3: 'dh-del', id: e.id }, location.origin); } catch (e3) {} // aplikasi Input Kegiatan ikut menghapus salinannya
                 dhEvents.splice(i, 1);
                 try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e2) {}
                 window.dhRender();
@@ -8718,6 +8721,13 @@
         document.getElementById('dh-tab-app')?.addEventListener('click', () => window.dhTampilView('app'));
         document.getElementById('dh-tab-pic')?.addEventListener('click', () => window.dhTampilView('pic'));
         document.getElementById('btn-dh-pic-muat')?.addEventListener('click', () => { const pf = document.getElementById('dh-pic-frame'); if (pf) { try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} pf.src = '/pic/admin.html'; } });
+        window.addEventListener('message', (ev) => { // kegiatan dihapus di aplikasi Input Kegiatan -> langsung hilang dari Rekap
+            if (ev.origin !== location.origin) return;
+            const m = ev.data; if (!m || m.rk3 !== 'dh-del' || typeof m.id !== 'string') return;
+            dhHidden[m.id] = Date.now() + 600000;
+            const k = dhEvents.findIndex(x => x.id === m.id);
+            if (k >= 0) { dhEvents.splice(k, 1); try { localStorage.setItem(DH_CACHE_KEY, JSON.stringify({ at: Date.now(), events: dhEvents })); } catch (e4) {} window.dhRender && window.dhRender(); }
+        });
         document.getElementById('dh-frame')?.addEventListener('load', () => {
             const f = document.getElementById('dh-frame');
             if (f && f.getAttribute('src')) document.getElementById('dh-app-loading')?.classList.add('hidden');

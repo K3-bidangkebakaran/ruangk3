@@ -21,6 +21,22 @@ button{cursor:pointer}
 .topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#1f2937;color:#fff}
 .topbar h1{font-size:15px;font-weight:700;white-space:nowrap}
 .topbar .grow{flex:1}
+.quick{flex:0 0 100%;display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:relative;padding-top:8px;border-top:1px solid #374151}
+.quick .lbl{font-size:12px;color:#9ca3af;font-weight:600}
+.qwrap{position:static}
+.qbtn{background:#374151;border:1px solid #4b5563;color:#fff;border-radius:8px;padding:6px 11px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;line-height:1.1}
+.qbtn:hover,.qbtn[aria-expanded=true]{background:#4b5563}
+.qbtn .cnt{background:#fff;color:#1f2937;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:700}
+.qmenu{position:absolute;left:0;top:calc(100% + 6px);z-index:40;width:min(92vw,360px);max-height:min(60vh,420px);overflow:auto;background:#fff;color:#111827;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:6px}
+.qmenu[hidden]{display:none}
+.qmenu .qh{font-size:11.5px;font-weight:700;color:var(--muted);padding:6px 8px 4px;text-transform:uppercase;letter-spacing:.4px}
+.qmenu button{display:block;width:100%;text-align:left;border:0;background:none;border-radius:8px;padding:8px 10px;line-height:1.3}
+.qmenu button:hover{background:#fff7ed}
+.qmenu button.cur{background:#ffedd5}
+.qmenu .qn{font-weight:700;font-size:13.5px}
+.qmenu .qd{font-size:12px;color:#4b5563}
+.qmenu .qnew{color:var(--accent-d);font-weight:700;border-bottom:1px solid var(--line);border-radius:8px 8px 0 0;margin-bottom:4px}
+.qmenu .qe{padding:10px;font-size:12.5px;color:var(--muted)}
 .save-st{font-size:12px;color:#cbd5e1}
 .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;font-weight:600;display:inline-flex;align-items:center;gap:6px;line-height:1.1}
 .btn:hover{border-color:#cbd5e1;background:#fafafa}
@@ -333,6 +349,11 @@ table.doku td.foto{text-align:center}
 .pg-lap .lp-h.s3{font-size:13pt}
 .pg-lap .lp-h small{font-size:10pt;font-weight:400}
 .pg-lap .lp-h.d{font-size:14pt}
+.pg-lap .lp-h{text-wrap:balance;overflow-wrap:anywhere}
+.pg-lap.x1 .lp-h{font-size:12.5pt}.pg-lap.x1 .lp-h.s3,.pg-lap.x1 .lp-h.d{font-size:12pt}
+.pg-lap.x2 .lp-h{font-size:11pt}.pg-lap.x2 .lp-h.s3,.pg-lap.x2 .lp-h.d{font-size:10.5pt}
+.pg-lap.pg-dy .content{display:flex;flex-direction:column}
+.pg-lap.pg-dy .content>.lp-h,.pg-lap.pg-dy .content>.lp-gap{flex:none}
 .pg-lap .lp-gap{height:2.5mm}
 table.lap{width:190mm;margin-left:-8mm;border-collapse:collapse;table-layout:fixed}
 table.lap th{background:#ffff54;color:#000;font-size:11pt;font-weight:700;border:1px solid #000;padding:.2mm 1.5mm;text-align:center;line-height:1.15}
@@ -363,6 +384,9 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 .pg-lap .lp-dir img{display:block;width:22mm;height:22mm;margin:1mm auto}
 .pg-lap .lp-dir .n{font-weight:700;text-decoration:underline}
 .pg-lap .lp-fo{height:94mm;display:flex;align-items:center;justify-content:center}
+.pg-lap.pg-dy .lp-fo{flex:1 1 0;min-height:0;height:auto;max-height:94mm;position:relative}
+.pg-lap.pg-dy .lp-fo .none{height:100%;max-height:94mm}
+.pg-lap.pg-dy .lp-fo img{position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);height:100%;width:160mm;max-width:100%}
 .pg-lap .lp-fo img{height:94mm;width:auto;max-width:160mm;object-fit:contain;display:block} /* 3:2 -> 141x94 mm, 16:9 (foto landscape) -> 160x90 mm, rasio asli terjaga */
 .pg-lap .lp-fo .none{width:141mm;height:94mm;border:1px dashed #b8bcc4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:10pt;background:repeating-linear-gradient(45deg,#f6f7f8 0 10px,#eff0f2 10px 20px)}
 /* tab laporan */
@@ -458,6 +482,13 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
   <button class="btn dark sm" id="btnEvents" title="Daftar semua kegiatan tersimpan">📁 Kegiatan</button>
   <button class="btn primary" id="btnPrint">Cetak / PDF</button>
   <input type="file" id="fileImport" accept=".json,application/json" hidden>
+  <div class="quick" id="quick">
+    <button class="btn primary sm" id="btnNewEv" title="Mulai kegiatan baru (kegiatan sebelumnya tetap tersimpan)">＋ Kegiatan Baru</button>
+    <span class="lbl">Buka kegiatan lama:</span>
+    <div class="qwrap"><button class="qbtn" data-q="damkar" aria-expanded="false" aria-haspopup="true">🔥 Damkar <span class="cnt">0</span> ▾</button><div class="qmenu" data-m="damkar" hidden></div></div>
+    <div class="qwrap"><button class="qbtn" data-q="angkat" aria-expanded="false" aria-haspopup="true">🏗️ PAPA <span class="cnt">0</span> ▾</button><div class="qmenu" data-m="angkat" hidden></div></div>
+    <div class="qwrap" id="qLainWrap" hidden><button class="qbtn" data-q="lain" aria-expanded="false" aria-haspopup="true">📋 Lainnya <span class="cnt">0</span> ▾</button><div class="qmenu" data-m="lain" hidden></div></div>
+  </div>
 </header>
 
 <nav class="tabs">
@@ -879,6 +910,9 @@ const idbPut = (k, v) => idb("readwrite", st => st.put(v, k));
 const idbDel = k => idb("readwrite", st => st.delete(k)).catch(() => { });
 
 let EV = []; // indeks kegiatan: ringkasan tiap kegiatan
+const TOMB = "events-gone"; let TOMBS = new Set(); // id kegiatan yang sudah dihapus: tidak boleh muncul lagi (mis. dari simpan otomatis yang tertunda)
+const tombAdd = id => { TOMBS.add(id); idbPut(TOMB, [...TOMBS].slice(-300)).catch(() => { }); };
+const tombDel = id => { if (TOMBS.delete(id)) idbPut(TOMB, [...TOMBS]).catch(() => { }); };
 /* ---------- Bidang PAPA: satu kegiatan, banyak kelas alat ----------
    Peserta diinput sekali (p.kelas). Laporan (daftar hadir, nilai, narasumber, dokumentasi, lulus/tidak lulus) dibuat satu set per kelas
    dengan menjalankan pembuat laporan yang sama pada "kegiatan turunan" yang hanya berisi peserta kelas itu. */
@@ -964,13 +998,14 @@ const normalize0 = d => {
 };
 const meta = x => {
   const named = x.peserta.filter(p => (p.nama || "").trim() && !p.batal);
-  return { id: x.id, created: x.created, updated: Date.now(), kegiatan: x.acara.kegiatan, tanggal: x.acara.tanggal, tanggal2: x.acara.tanggal2, hari: hariList(x.acara).filter(Boolean),
+  return { id: x.id, created: x.created, updated: Date.now(), kegiatan: x.acara.kegiatan, jenis: jenisOf(x.acara), kelas: x.acara.jenis === "damkar" ? (x.acara.kelasDamkar ? "Kelas " + x.acara.kelasDamkar : "") : kelasList(x.acara).join(", "), tanggal: x.acara.tanggal, tanggal2: x.acara.tanggal2, hari: hariList(x.acara).filter(Boolean),
            tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, x.acara.damkar)).length, ttd: !!x.acara.ttd,
            cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)) };
 };
 let saveT = null;
 async function doSave() {
   saveT = null;
+  if (TOMBS.has(S.id)) return; // kegiatan ini sudah dihapus: jangan dihidupkan lagi
   try {
     const snap = JSON.parse(JSON.stringify(S));
     if (!snap.peserta.length && !(snap.acara.kegiatan || "").trim() && !snap.acara.ttd && !EV.some(e => e.id === snap.id)) { // kegiatan baru yang masih kosong tidak disimpan
@@ -981,6 +1016,7 @@ async function doSave() {
     if (i >= 0) EV[i] = m; else EV.push(m);
     await idbPut(IDX, EV);
     Pic.mark(snap.id);
+    if (Ev.quick) Ev.quick();
     $("#saveSt").textContent = "Tersimpan otomatis";
   } catch (e) {
     $("#saveSt").textContent = "Tidak bisa simpan otomatis – gunakan Ekspor";
@@ -1042,7 +1078,8 @@ const dots = "................................";
 
 /* ---------- render: output pages ---------- */
 const CAM = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
-const page = (inner, cls) => `<section class="page ${cls}"><img class="kop-head" src="${KOP_HEAD}" alt=""><div class="content">${inner}</div><img class="kop-foot" src="${KOP_FOOT}" alt=""></section>`;
+let PAGE_X = ""; // x1/x2 = judul kegiatan panjang: huruf judul laporan diperkecil agar muat
+const page = (inner, cls) => `<section class="page ${cls}${/pg-lap/.test(cls) && PAGE_X ? " " + PAGE_X : ""}"><img class="kop-head" src="${KOP_HEAD}" alt=""><div class="content">${inner}</div><img class="kop-foot" src="${KOP_FOOT}" alt=""></section>`;
 const v = x => esc(x) || "&nbsp;";
 
 const DK_PER = 4, MAX_DAYS = 7;
@@ -1172,6 +1209,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
 
   // --- lembar laporan: Daftar Nilai, Daftar Nama (keterangan), Dokumentasi Harian
   const L = S.lap, LT = lapTexts(S), lpPeserta = S.peserta.filter(p => (p.nama || "").trim());
+  PAGE_X = (LT.keg || "").length > 100 ? "x2" : (LT.keg || "").length > 58 ? "x1" : "";
   const up = s => esc(String(s || "").toUpperCase());
   const lapChunk = (rows, bodyFn) => {
     const chs = []; let cur = [], st = 0;
@@ -1989,6 +2027,7 @@ $("#fileImport").addEventListener("change", async e => {
     await flush();
     const exists = d.id && EV.some(x => x.id === d.id);
     if (exists && !confirm(`Kegiatan "${d.acara.kegiatan || "tanpa nama"}" sudah ada di browser ini.\nOK = timpa dengan data dari file, Batal = simpan sebagai kegiatan baru.`)) d.id = null;
+    if (d.id) tombDel(d.id);
     S = normalize({ ...d, id: d.id || null });
     await doSave(); idbPut(CUR, S.id).catch(() => { });
     applyState(); toast("Data kegiatan berhasil diimpor.");
@@ -2027,15 +2066,29 @@ function askConfirm({ title, body, ok = "Hapus", icon = "🗑", danger = true })
   });
 }
 const Ev = {
-  open() { $("#evModal").hidden = false; $("#evSearch").value = ""; flush().then(() => this.render()); },
+  open() {
+    $("#evModal").hidden = false; $("#evSearch").value = "";
+    flush().then(() => this.render());
+    if (Cloud.ready()) Cloud.reconcile(true).then(() => { this.render(); Cloud.listRemote(); }); // buang yang sudah dihapus di Drive, lalu tampilkan daftar Drive terbaru
+  },
   close() { $("#evModal").hidden = true; },
+  tgl(e) {
+    const days = hariList({ tanggal: e.tanggal, tanggal2: e.tanggal2, hari: e.hari }).filter(Boolean);
+    return days.length ? (days.length > 1 ? `${hariTanggal({}, days)} (${days.length} hari)` : fmtTgl(days[0])) : "Tanggal belum diisi";
+  },
+  /** jenis kegiatan untuk tombol cepat; kegiatan lama (belum ada kolom jenis di indeks) ditebak dari namanya */
+  jenisIdx(e) {
+    if (e.jenis === "damkar" || e.jenis === "angkat") return e.jenis;
+    const t = norm(e.kegiatan || "");
+    if (/kebakaran|damkar|pemadam/.test(t)) return "damkar";
+    if (/pesawat angkat|pesawat angkut|papa|hoist|crane|forklift/.test(t)) return "angkat";
+    return "lain";
+  },
   render() {
     const q = norm($("#evSearch").value);
     const list = [...EV].sort((x, y) => y.updated - x.updated).filter(e => !q || norm(`${e.kegiatan} ${e.tempat}`).includes(q));
-    const tgl = e => {
-      const days = hariList({ tanggal: e.tanggal, tanggal2: e.tanggal2, hari: e.hari }).filter(Boolean);
-      return days.length ? (days.length > 1 ? `${hariTanggal({}, days)} (${days.length} hari)` : fmtTgl(days[0])) : "Tanggal belum diisi";
-    };
+    const tgl = e => this.tgl(e);
+    this.quick();
     const upd = t => new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(t));
     $("#evList").innerHTML = list.length ? list.map(e => `
       <div class="ev-item ${e.id === S.id ? "cur" : ""}" data-id="${e.id}">
@@ -2072,16 +2125,9 @@ const Ev = {
     toast(from ? "Kegiatan disalin. Foto & semua tanda tangan dikosongkan." : "Kegiatan baru dibuat. Kegiatan sebelumnya tetap tersimpan.");
     if (!from) $("#f-kegiatan").focus();
   },
-  async remove(id) {
-    const e = EV.find(x => x.id === id); if (!e) return false;
-    const drive = Cloud.ready() || !!(e.cloud || (id === S.id && S.sync && S.sync.at));
-    const ok = await askConfirm({
-      title: "Hapus kegiatan ini?", ok: "Ya, hapus",
-      body: `<b>${esc(e.kegiatan || "(tanpa nama)")}</b><br>${e.n || 0} peserta beserta foto, tanda tangan, dan berkas Word-nya dihapus dari perangkat ini.` +
-        (drive ? `<br><br>Folder kegiatan di <b>Google Drive</b> juga ikut dihapus otomatis (dipindah ke Sampah Drive, masih bisa dipulihkan ±30 hari).` : "") +
-        `<br><br>Tindakan ini tidak bisa dibatalkan di aplikasi.`
-    });
-    if (!ok) return false;
+  /** hapus kegiatan dari perangkat ini TANPA bertanya. drive=true: antre hapus folder di Google Drive juga. */
+  async purge(id, drive) {
+    tombAdd(id);
     if (id === S.id) { clearTimeout(saveT); saveT = null; }
     Cloud.gone.add(id);
     if (drive) await Cloud.queueDelete(id); // perintah hapus disimpan dulu, jadi tidak hilang walau offline / aplikasi ditutup
@@ -2093,13 +2139,70 @@ const Ev = {
       if (nxt) await this.load(nxt.id); else { S = blank(); await doSave(); idbPut(CUR, S.id).catch(() => { }); applyState(); }
     }
     this.render();
+    this.tell(id);
+  },
+  /** kabari halaman admin (Rekap Kegiatan) agar kegiatan ini langsung hilang dari daftarnya */
+  tell(id) { try { if (window.parent && window.parent !== window) window.parent.postMessage({ rk3: "dh-del", id }, location.origin); } catch (_) { } },
+  async remove(id) {
+    const e = EV.find(x => x.id === id); if (!e) return false;
+    const drive = Cloud.ready() || !!(e.cloud || (id === S.id && S.sync && S.sync.at));
+    const ok = await askConfirm({
+      title: "Hapus kegiatan ini?", ok: "Ya, hapus",
+      body: `<b>${esc(e.kegiatan || "(tanpa nama)")}</b><br>${e.n || 0} peserta beserta foto, tanda tangan, dan berkas Word-nya dihapus dari perangkat ini.` +
+        (drive ? `<br><br>Folder kegiatan di <b>Google Drive</b> juga ikut dihapus otomatis (dipindah ke Sampah Drive, masih bisa dipulihkan ±30 hari).` : "") +
+        `<br><br>Tindakan ini tidak bisa dibatalkan di aplikasi.`
+    });
+    if (!ok) return false;
+    await this.purge(id, drive);
     if (!drive) { toast("Kegiatan dihapus."); return true; }
     toast("Kegiatan dihapus di perangkat ini. Menghapus folder di Google Drive…");
     const done = await Cloud.flushDeletes();
+    if (done) { this.tell(id); if (!$("#evModal").hidden) Cloud.listRemote(); }
     toast(done ? "Kegiatan dihapus, termasuk folder di Google Drive." : (Cloud.delErr ? "Folder di Google Drive BELUM terhapus: " + Cloud.delErr : "Kegiatan dihapus. Folder di Drive akan dihapus otomatis begitu koneksi tersedia."));
     return true;
   }
 };
+/* ---------- tombol cepat: kegiatan baru + buka kegiatan lama per jenis (Damkar / PAPA) lewat dropdown tanggal ---------- */
+Ev.quick = function () {
+  const NAMA = { damkar: "Damkar", angkat: "PAPA (Pesawat Angkat/Angkut)", lain: "Kegiatan lainnya" };
+  const grup = { damkar: [], angkat: [], lain: [] };
+  [...EV].sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")) || y.updated - x.updated).forEach(e => grup[this.jenisIdx(e)].push(e));
+  $("#qLainWrap").hidden = !grup.lain.length;
+  Object.keys(grup).forEach(j => {
+    const btn = document.querySelector(`.qbtn[data-q="${j}"]`), menu = document.querySelector(`.qmenu[data-m="${j}"]`); if (!btn || !menu) return;
+    btn.querySelector(".cnt").textContent = grup[j].length;
+    menu.innerHTML = (j === "lain" ? "" : `<button class="qnew" data-new="${j}">＋ Buat kegiatan ${j === "damkar" ? "Damkar" : "PAPA"} baru</button>`) +
+      `<div class="qh">${NAMA[j]} – pilih tanggal</div>` +
+      (grup[j].length ? grup[j].map(e => `<button data-open="${esc(e.id)}" class="${e.id === S.id ? "cur" : ""}"><div class="qn">${esc(this.tgl(e))}${e.id === S.id ? ' <span class="tag" style="font-size:10.5px;color:#9a3412">dibuka</span>' : ""}</div><div class="qd">${esc(e.kelas ? e.kelas + " · " : "")}${esc(e.tempat || e.kegiatan || "(tanpa nama)")} · ${e.n || 0} peserta</div></button>`).join("")
+        : `<div class="qe">Belum ada kegiatan ${NAMA[j]} yang pernah diinput.</div>`);
+  });
+};
+Ev.menuTutup = () => document.querySelectorAll(".qmenu").forEach(m => { m.hidden = true; const b = m.parentElement.querySelector(".qbtn"); if (b) b.setAttribute("aria-expanded", "false"); });
+Ev.baru = async function (jenis) { // kegiatan baru; jenis "damkar"/"angkat" langsung memilih Nama Kegiatan yang sesuai
+  await this.create(null);
+  if (jenis) { const sel = $("#f-jenis"); sel.value = jenis; sel.dispatchEvent(new Event("change")); }
+};
+$("#btnNewEv").onclick = () => { Ev.menuTutup(); Ev.baru(null); };
+$("#quick").addEventListener("click", e => {
+  e.stopPropagation();
+  const t = e.target.closest("[data-q],[data-new],[data-open]"); if (!t) return;
+  if (t.dataset.q) {
+    const m = document.querySelector(`.qmenu[data-m="${t.dataset.q}"]`), buka = m.hidden;
+    Ev.menuTutup(); if (buka) { Ev.quick(); m.hidden = false; t.setAttribute("aria-expanded", "true"); }
+    return;
+  }
+  Ev.menuTutup();
+  if (t.dataset.new) Ev.baru(t.dataset.new);
+  else if (t.dataset.open && t.dataset.open !== S.id) Ev.load(t.dataset.open);
+});
+document.addEventListener("click", () => Ev.menuTutup());
+document.addEventListener("keydown", e => { if (e.key === "Escape") Ev.menuTutup(); });
+/* kegiatan dihapus dari halaman admin (tab Rekap) -> ikut hilang di sini */
+window.addEventListener("message", e => {
+  if (e.origin !== location.origin) return;
+  const m = e.data; if (!m || m.rk3 !== "dh-del" || typeof m.id !== "string" || !EV.some(x => x.id === m.id)) return;
+  Ev.purge(m.id, false).then(() => toast("Satu kegiatan yang dihapus dari Rekap ikut dihapus di sini."));
+});
 $("#btnEvents").onclick = () => Ev.open();
 $("#evClose").onclick = () => Ev.close();
 $("#evModal").addEventListener("click", e => { if (e.target.id === "evModal") Ev.close(); });
@@ -3262,7 +3365,7 @@ const Cloud = {
       if (!this.ready() || !navigator.onLine || document.hidden || this.busy) return;
       if (!back && this.fail && Date.now() < this.nextAt) return; // masih menunggu jadwal coba-ulang
       if (this.cfg.auto && this.dirty(S)) this.sync(false);
-      this.verify(!!this.lastErr); this.flushDeletes();
+      this.verify(!!this.lastErr); this.flushDeletes().then(() => this.reconcile());
     };
     document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(() => kick(true), 800); });
     window.addEventListener("focus", () => setTimeout(() => kick(true), 800));
@@ -3295,6 +3398,28 @@ const Cloud = {
       clearTimeout(this.delT); this.delT = setTimeout(() => this.flushDeletes(), 90000);
       return false;
     } finally { this.delBusy = false; }
+  },
+  /** Kegiatan yang sudah dihapus di Google Drive (dari tab Rekap / perangkat lain) otomatis ikut dihapus di perangkat ini.
+   *  Aman: hanya kegiatan yang sudah pernah tersinkron & tidak ada perubahan belum terkirim, dan dipastikan lagi ke Drive sebelum dihapus. */
+  async reconcile(force) {
+    if (!this.ready() || !navigator.onLine || this.recBusy || this.busy) return 0;
+    if (!force && Date.now() - (this.recAt || 0) < 240000) return 0;
+    this.recBusy = true; this.recAt = Date.now(); let n = 0;
+    try {
+      const r = await this.api("listEvents");
+      if (!r || !Array.isArray(r.events) || !r.events.length) return 0; // daftar kosong dianggap tidak meyakinkan: jangan hapus apa pun
+      const ada = new Set(r.events.map(e => e.id)), q = (await idbGet(DEL_KEY)) || [];
+      for (const e of [...EV]) {
+        if (ada.has(e.id) || !e.cloud || q.includes(e.id) || this.gone.has(e.id)) continue;
+        if (e.id === S.id && this.dirty(S)) continue;
+        try { await this.api("getEvent", { id: e.id }); continue; } // ternyata masih ada
+        catch (x) { if (!/tidak ditemukan di Drive/i.test(String((x && x.message) || ""))) continue; }
+        await Ev.purge(e.id, false); n++;
+      }
+      if (n) toast(n === 1 ? "Satu kegiatan yang sudah dihapus di Google Drive ikut dihapus di perangkat ini." : `${n} kegiatan yang sudah dihapus di Google Drive ikut dihapus di perangkat ini.`);
+    } catch (_) { }
+    finally { this.recBusy = false; }
+    return n;
   },
   dirty(ev) { const s = ev.sync || {}; return (s.v || 0) > (s.sv || 0); },
   schedule(delay) {
@@ -3464,7 +3589,8 @@ const Cloud = {
     el.innerHTML = `<div class="hint">Memuat daftar dari Google Drive…</div>`;
     try {
       const r = await this.api("listEvents");
-      const list = (r.events || []).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
+      const mati = new Set([...this.gone, ...((await idbGet(DEL_KEY)) || [])]); // yang baru saja dihapus jangan tampil lagi walau Drive belum selesai
+      const list = (r.events || []).filter(e => !mati.has(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
       el.innerHTML = list.length ? list.map(e => {
         const local = EV.some(x => x.id === e.id);
         return `<div class="ev-item" data-id="${esc(e.id)}"><div class="info">
@@ -3490,6 +3616,7 @@ const Cloud = {
   },
   async pull(id) {
     const el = $("#evCloudList");
+    tombDel(id);
     try {
       el.querySelector(`[data-id="${CSS.escape(id)}"] .acts`).innerHTML = `<span class="hint">Mengunduh…</span>`;
       const r = await this.api("getEvent", { id });
@@ -3551,7 +3678,7 @@ $("#evCloudList").addEventListener("click", e => {
   const id = b.closest(".ev-item").dataset.id;
   if (b.dataset.act === "pull") Cloud.pull(id); else Cloud.removeRemote(id);
 });
-window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDeletes(); });
+window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDeletes().then(() => Cloud.reconcile()); });
 
 /* ---------- Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis ----------
    Kegiatan yang diinput di sini (nama, tanggal, tempat, peserta) dikirim ke Firebase (dh_kegiatan) sehingga
@@ -3745,6 +3872,11 @@ const Pic = {
 /* ---------- init ---------- */
 (async () => {
   EV = (await idbGet(IDX)) || [];
+  TOMBS = new Set((await idbGet(TOMB)) || []);
+  if (EV.some(e => TOMBS.has(e.id))) { // sisa kegiatan yang sudah dihapus (mis. tersimpan ulang oleh proses lama): bersihkan
+    for (const e of EV.filter(e => TOMBS.has(e.id))) await idbDel("event:" + e.id);
+    EV = EV.filter(e => !TOMBS.has(e.id)); await idbPut(IDX, EV).catch(() => { });
+  }
   if (!EV.length) { // migrasi dari versi lama (1 kegiatan)
     const old = await idbGet(OLD_KEY);
     if (old && old.acara) { S = normalize(old); await doSave(); await idbDel(OLD_KEY); }
@@ -3758,9 +3890,10 @@ const Pic = {
   Cloud.watch();
   ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
   applyState();
-  Cloud.flushDeletes();
+  Cloud.flushDeletes().then(() => Cloud.reconcile(true));
   Cloud.verify();
   Pic.start();
+  Ev.quick();
   $("#saveSt").textContent = d ? "Data terakhir dimuat" : "Tersimpan otomatis";
 })();
 })();
