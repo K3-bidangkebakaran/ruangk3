@@ -29,7 +29,7 @@ const iDel = k => idb('readwrite', s => s.delete(k)).catch(() => {});
 let ME = null;            // {uid, nama, user}
 let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
-let P = { screen: 'login', kid: null, day: 0, q: '', err: '' };
+let P = { screen: 'login', kid: null, kl: null, day: 0, q: '', err: '' }; // kl: alat/kelas yang sedang dibuka (kegiatan PAPA)
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
 const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {} });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
@@ -62,16 +62,35 @@ const MATERI_KAT = [
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
-const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : ((LAPK(k).nr || {})[d] || {}); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
+const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(k).nrk || {})[m[1]] || {})[m[2]] || {}) : ((LAPK(k).nr || {})[key] || {}); }; // isian dari admin (web) untuk satu baris
+const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, src = (d in h.nr) ? h.nr[d] : nrAdmin(k, d); Object.keys(o).forEach(f => { o[f] = String(src[f] == null ? '' : src[f]); }); const m = MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
 // Bidang PAPA: tiap peserta punya kelas alat (p.kelas); daftar peserta diurutkan per kelas dan kelasnya ditampilkan
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v19';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v20';
+/* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
+   Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
+const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
+const NRK_RE = /^(?:(k[0-9a-z]+)~)?(.+)$/;
+const nrDate = key => NRK_RE.exec(key)[2].slice(0, 10);
+const papaOf = k => !!(k && k.papa && kelasArr(k).filter(Boolean).length);
+const klOfP = (k, p) => kelasArr(k).includes(p.kelas) ? p.kelas : '';
+const klLabel = kl => kl || 'Tanpa kelas';
+const pesByKl = (k, kl) => { const ps = (k && k.peserta) || []; return kl == null ? ps : ps.filter(p => klOfP(k, p) === kl); };
+const klGroups = k => { const ks = kelasArr(k).filter(Boolean), ps = (k && k.peserta) || [], g = ks.map(l => ({ kl: l, n: ps.filter(p => p.kelas === l).length })); const rest = ps.filter(p => !ks.includes(p.kelas)).length; if (rest) g.push({ kl: '', n: rest }); return g.filter(x => x.n); };
+const curKl = k => (papaOf(k) && P.kl != null) ? P.kl : undefined; // alat yang sedang dibuka (undefined = semua peserta)
+const pesKl = k => pesByKl(k, curKl(k));
+const subK = k => curKl(k) !== undefined ? klLabel(P.kl) : k.nama; // subjudul layar: nama alat (PAPA) atau nama kegiatan
+const nrPfx = k => { const kl = curKl(k); return kl ? kelasKey(kl) + '~' : ''; }; // awalan kunci narasumber untuk alat yang sedang dibuka
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
-const nrKeys = (h, k, d) => [d, ...[...new Set([...Object.keys(LAPK(k).nr || {}), ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { const m = NR_KEY.exec(x); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_')[1] - +q.split('_')[1])];
+const nrKeys = (h, k, d, pfx = '') => { // pfx = awalan alat ('' bila bukan PAPA); hasil = kunci lengkap (pfx + hari [+ _n])
+  const kk = pfx ? pfx.slice(0, -1) : '', adm = kk ? Object.keys((LAPK(k).nrk || {})[kk] || {}).map(x => pfx + x) : Object.keys(LAPK(k).nr || {});
+  return [pfx + d, ...[...new Set([...adm, ...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})])].filter(x => { if (pfx ? !x.startsWith(pfx) : x.includes('~')) return false; const m = NR_KEY.exec(x.slice(pfx.length)); return m && m[1] === d && m[2]; }).sort((p, q) => +p.split('_').pop() - +q.split('_').pop())];
+};
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
 function naraPilih(r, kid) {
+  if (!kid) { r.kid = r.nama = r.nip = r.inst = r.mid = r.mtxt = ''; return; } // '— Pilih narasumber —': isian baris dikosongkan
   r.kid = kid; const n = naraOf(kid);
   if (n) { r.nama = n.nama; r.nip = n.nip; r.inst = n.inst; }
   if (r.mid && r.mid !== 'manual' && !materiOpsi(kid).some(m => m.id === r.mid)) { r.mid = ''; r.mtxt = ''; }
@@ -107,8 +126,8 @@ const I = {
 };
 
 /* ---------- hitung ---------- */
-function stat(kid) {
-  const k = KEGS[kid], h = hOf(kid), peserta = (k && k.peserta) || [], days = (k && k.tgl) || [];
+function stat(kid, kl) { // kl: hitung khusus satu alat (PAPA); tanpa kl = semua peserta
+  const k = KEGS[kid], h = hOf(kid), peserta = pesByKl(k, kl), days = (k && k.tgl) || [];
   const aktif = peserta.filter(p => !isBatal(h, p));
   let ttd = 0, ttdTotal = 0; aktif.forEach(p => days.forEach(d => { if (!perluHari(h, p, d, days)) return; ttdTotal++; if (h.hadir[p.id] && h.hadir[p.id][d]) ttd++; }));
   return { aktif: aktif.length, batal: peserta.length - aktif.length, remedial: aktif.filter(p => isRem(h, p)).length, ttd, ttdTotal, foto: aktif.filter(p => fotoLengkap(k, h, p)).length, ttdPic: !!h.ttdPic };
@@ -146,8 +165,8 @@ const flags = h => {
   const foto = {}; Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) foto[pid] = 1; });
   const foto2 = {}; Object.keys(h.foto2 || {}).forEach(pid => { if (h.foto2[pid]) foto2[pid] = 1; });
   const hari = {}; new Set([...Object.keys(h.materi || {}), ...Object.keys(h.hfoto || {})]).forEach(d => { hari[d] = { ids: ((h.hfoto || {})[d] || []).map(f => f.i) }; if (d in (h.materi || {})) hari[d].materi = String(h.materi[d] || ''); });
-  const nr = {}; new Set([...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})]).forEach(d => { const o = { ...((h.nr || {})[d] || {}) }; if ((h.nrs || {})[d]) o.ttd = 1; nr[d] = o; });
-  const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari, nr }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
+  const nr = {}, nrk = {}; new Set([...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})]).forEach(d => { const o = { ...((h.nr || {})[d] || {}) }; if ((h.nrs || {})[d]) o.ttd = 1; const m = NRK_RE.exec(d); if (m[1]) (nrk[m[1]] = nrk[m[1]] || {})[m[2]] = o; else nr[d] = o; });
+  const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari, nr, nrk }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
   return { nilai: h.nilai || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, foto2, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
@@ -199,12 +218,14 @@ async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasi
     const h = newH(); h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0;
     h.nilai = sv.nilai || {}; h.kel = sv.kel || {}; { const l = sv.lap || {}; h.lapN = { s1: l.s1 || {}, s2: l.s2 || {} }; if (l.nKota != null) h.lapN.nKota = l.nKota; Object.keys(l.hari || {}).forEach(d => { if (l.hari[d].materi != null) h.materi[d] = l.hari[d].materi; }); }
     Object.keys((sv.lap || {}).nr || {}).forEach(d => { const { ttd, ...r } = sv.lap.nr[d] || {}; if (Object.keys(r).length) h.nr[d] = r; });
+    Object.keys((sv.lap || {}).nrk || {}).forEach(kk => Object.keys(sv.lap.nrk[kk] || {}).forEach(d => { const { ttd, ...r } = sv.lap.nrk[kk][d] || {}; if (Object.keys(r).length) h.nr[kk + '~' + d] = r; }));
+    const nrSv = key => { const m = NRK_RE.exec(key); return m[1] ? (((sv.lap || {}).nrk || {})[m[1]] || {})[m[2]] : ((sv.lap || {}).nr || {})[key]; };
     const ids = {}; Object.keys((sv.lap || {}).hari || {}).forEach(d => ((sv.lap.hari[d].ids) || []).forEach(i => { ids[`d_${d}_${me4()}_${i}`] = [d, i]; }));
     const own = key => { // hanya gambar yang tercatat di hasil akun ini (gambar PIC lain tidak ikut)
       if (key === 'pic') return !!sv.ttdPic;
       if (key === 'n1') return !!sv.ttdN1;
       if (key === 'n2') return !!sv.ttdN2;
-      if (key.startsWith('nr_')) return !!((((sv.lap || {}).nr || {})[key.slice(3)] || {}).ttd);
+      if (key.startsWith('nr_')) return !!((nrSv(key.slice(3)) || {}).ttd);
       if (key in ids) return true;
       if (key.startsWith('f2_')) return !!(sv.foto2 && sv.foto2[key.slice(3)]);
       if (key.startsWith('f_')) return !!(sv.foto && sv.foto[key.slice(2)]);
@@ -327,7 +348,9 @@ function render() {
   const app = $('#app'); if (!app) return;
   if (!ME) P.screen = 'login';
   const kid = P.kid, k = kid && KEGS[kid];
-  if (['keg', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr'].includes(P.screen) && !k) P.screen = 'home';
+  if (['keg', 'alat', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr', 'nar'].includes(P.screen) && !k) P.screen = 'home';
+  if (k && P.screen === 'alat' && !papaOf(k)) P.screen = 'keg';
+  if (k && papaOf(k) && P.kl == null && ['abs', 'dok', 'nil', 'nar'].includes(P.screen)) P.screen = 'keg'; // layar per alat butuh alat terpilih
   let h = '';
   if (P.screen === 'login') {
     h = `<div class="screen login"><div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px"><img class="logo" src="${LOGO}" alt="LPMI"><h2 style="font-size:26px">Portal PIC</h2><div class="hint">PT Lintas Pengembangan Manajemen Indonesia</div></div>
@@ -356,22 +379,40 @@ function render() {
       <button class="btn" type="button" data-act="upd">Periksa pembaruan aplikasi</button>
       <button class="btn" type="button" data-act="pw">Ganti kata sandi</button>
       <button class="btn" type="button" data-act="logout">Keluar</button></div><p class="hint" style="text-align:center">Versi aplikasi ${APP_VER}</p>`;
-  } else if (P.screen === 'keg') {
-    const s = stat(kid);
-    h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
-      <button type="button" class="tile" data-act="go" data-to="abs"><span class="ic">${I.list}</span><span><b>Absensi TTD Peserta</b><small>${s.ttd}/${s.ttdTotal} tanda tangan${s.batal ? ` · ${s.batal} cancel` : ''}</small></span>${I.chev}</button>
-      <button type="button" class="tile" data-act="go" data-to="pic"><span class="ic">${I.pen}</span><span><b>TTD PIC</b><small>${s.ttdPic ? 'Sudah ditandatangani' : 'Belum ditandatangani'}</small></span>${I.chev}</button>
-      <button type="button" class="tile" data-act="go" data-to="dok"><span class="ic">${I.cam}</span><span><b>Dokumentasi Peserta</b><small>${s.foto}/${s.aktif} foto diambil</small></span>${I.chev}</button>
-      ${LAPK(k).nilai || LAPK(k).hasil ? (() => { const hh = hOf(kid), ps = (k.peserta || []).filter(p => !isBatal(hh, p)), ln = LAPK(k), isi = ps.filter(p => (ln.nilai ? nilaiOf(hh, p, 'ut') || nilaiOf(hh, p, 'up') : false) || (ln.hasil && kelOf(hh, p))).length;
-        return `<button type="button" class="tile" data-act="go" data-to="nil"><span class="ic">${I.list}</span><span><b>Nilai &amp; Kelulusan</b><small>${isi}/${ps.length} peserta terisi</small></span>${I.chev}</button>`; })() : ''}
-      ${LAPK(k).nilai ? (() => { const hh = hOf(kid); return `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>${hh.n1 || lapNama(hh, k, 's1', 'nama') ? 'Pengawas ' + (hh.n1 ? '✔' : '–') : 'Pengawas –'} · Ahli ${hh.n2 ? '✔' : '–'}</small></span>${I.chev}</button>`; })() : ''}
-      ${LAPK(k).nara ? (() => { const hh = hOf(kid), ds = k.tgl || [], n = ds.filter(d => { const r = nrOf(hh, k, d); return r.nama && hh.nrs[d]; }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : ''}
-      ${LAPK(k).harian ? (() => { const hh = hOf(kid), n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari</small></span>${I.chev}</button>`; })() : ''}
+  } else if (P.screen === 'keg' || P.screen === 'alat') {
+    const papa = papaOf(k), alat = P.screen === 'alat', kl = alat ? P.kl : undefined, s = stat(kid, kl), hh = hOf(kid), ln = LAPK(k);
+    const tAbs = `<button type="button" class="tile" data-act="go" data-to="abs"><span class="ic">${I.list}</span><span><b>Absensi TTD Peserta</b><small>${s.ttd}/${s.ttdTotal} tanda tangan${s.batal ? ` · ${s.batal} cancel` : ''}</small></span>${I.chev}</button>`;
+    const tPic = `<button type="button" class="tile" data-act="go" data-to="pic"><span class="ic">${I.pen}</span><span><b>TTD PIC</b><small>${s.ttdPic ? 'Sudah ditandatangani' : 'Belum ditandatangani'}</small></span>${I.chev}</button>`;
+    const tDok = `<button type="button" class="tile" data-act="go" data-to="dok"><span class="ic">${I.cam}</span><span><b>Dokumentasi Peserta</b><small>${s.foto}/${s.aktif} foto diambil</small></span>${I.chev}</button>`;
+    const tNil = ln.nilai || ln.hasil ? (() => { const ps = pesByKl(k, kl).filter(p => !isBatal(hh, p)), isi = ps.filter(p => (ln.nilai ? nilaiOf(hh, p, 'ut') || nilaiOf(hh, p, 'up') : false) || (ln.hasil && kelOf(hh, p))).length;
+      return `<button type="button" class="tile" data-act="go" data-to="nil"><span class="ic">${I.list}</span><span><b>Nilai &amp; Kelulusan</b><small>${isi}/${ps.length} peserta terisi</small></span>${I.chev}</button>`; })() : '';
+    const tTtn = ln.nilai ? `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>${hh.n1 || lapNama(hh, k, 's1', 'nama') ? 'Pengawas ' + (hh.n1 ? '✔' : '–') : 'Pengawas –'} · Ahli ${hh.n2 ? '✔' : '–'}</small></span>${I.chev}</button>` : '';
+    const tNar = ln.nara ? (() => { const ds = k.tgl || [], pf = kl ? kelasKey(kl) + '~' : '', n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && hh.nrs[pf + d]; }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
+    const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua alat' : ''}</small></span>${I.chev}</button>`; })() : '';
+    if (alat) {
+      h = appbar(klLabel(P.kl), k.nama, true) + `<div class="screen">
+      <div class="hint">Alat: <b>${esc(klLabel(P.kl))}</b> · ${s.aktif + s.batal} peserta. Semua isian di bawah ini khusus alat ini.</div>
+      ${tAbs}${tDok}${tNil}${tNar}
+      <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}</div>
+      <p class="hint">Isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p></div>`;
+    } else if (papa) {
+      h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
+      <div class="hello"><h2 style="font-size:17px">Pilih alat</h2><p class="hint" style="margin:4px 0 0">TTD peserta, dokumentasi peserta, nilai &amp; kelulusan, dan absensi narasumber dipisah per alat.</p></div>
+      ${klGroups(k).map(g => { const sg = stat(kid, g.kl); return `<button type="button" class="kcard" data-act="alat" data-kl="${esc(g.kl)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(klLabel(g.kl))}</h3></div>
+        <div class="meta"><span>${g.n} peserta</span></div><div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
+      <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua alat</h2></div>
+      ${tDhr}${tPic}${tTtn}
+      <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
+      <p class="hint">Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat. Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p></div>`;
+    } else {
+      h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
+      ${tAbs}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p></div>`;
+    }
   } else if (P.screen === 'abs') {
     const days = k.tgl || [], d = days[P.day] || days[0] || '';
-    h = appbar('Absensi TTD Peserta', k.nama, true) + `<div class="screen">
+    h = appbar('Absensi TTD Peserta', subK(k), true) + `<div class="screen">
       ${days.length > 1 ? `<div class="chips" role="tablist">${days.map((t, i) => `<button type="button" role="tab" data-act="day" data-i="${i}" aria-selected="${i === P.day}">Hari ${i + 1} · ${esc(tglPendek(t))}</button>`).join('')}</div>` : (d ? `<div class="hint">${esc(hariNama(d))}, ${esc(tglPanjang(d))}</div>` : '')}
       <div class="counter" id="absCount"></div>
       <div class="field"><input id="absQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
@@ -385,9 +426,9 @@ function render() {
       : `<div class="empty">Belum ada tanda tangan PIC.<br>Tanda tangan setelah absensi selesai.</div><button class="btn pri" type="button" data-act="ttdpic" style="min-height:48px">Tanda tangan sekarang</button>`}
       <p class="hint">Tanda tangan dan nama PIC tercetak di bagian bawah daftar hadir.</p></div>`;
   } else if (P.screen === 'dok') {
-    const s = stat(kid), hh = hOf(kid);
-    h = appbar('Dokumentasi Peserta', k.nama, true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
-      <div class="photos${k.damkar ? ' dk' : ''}">${urutKelas(k, k.peserta || []).map(p => {
+    const s = stat(kid, curKl(k)), hh = hOf(kid);
+    h = appbar('Dokumentasi Peserta', subK(k), true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
+      <div class="photos${k.damkar ? ' dk' : ''}">${urutKelas(k, pesKl(k)).map(p => {
         const cx = isBatal(hh, p), rm = isRem(hh, p), keys = k.damkar ? ['foto', 'foto2'] : ['foto'];
         const slot = (key, i) => { const f = hh[key] && hh[key][p.id], lb = k.damkar ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}">` : (cx ? 'Batal ikut' : 'Belum ada foto')}</div>${cx ? '' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button>`}</div>`; };
         return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
@@ -395,7 +436,7 @@ function render() {
   }
   else if (P.screen === 'nil') {
     const ln = LAPK(k);
-    h = appbar('Nilai & Kelulusan', k.nama, true) + `<div class="screen">
+    h = appbar('Nilai & Kelulusan', subK(k), true) + `<div class="screen">
       <div class="counter" id="nilCount" style="grid-template-columns:repeat(3,1fr)"></div>
       <div class="field"><input id="nilQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
       ${ln.hasil ? `<button type="button" class="btn" data-act="allulus">✔ Tandai semua Lulus</button>` : ''}
@@ -413,7 +454,7 @@ function render() {
       <p class="hint">Nama dan tanda tangan ini tercetak di bagian bawah Daftar Nilai. Bisa juga diisi lewat aplikasi web Daftar Hadir.</p></div>`;
   } else if (P.screen === 'nar') {
     const hh = hOf(kid), days = k.tgl || [];
-    h = appbar('Absensi Narasumber', k.nama, true) + `<div class="screen">${days.map((d0, i) => { const ks = nrKeys(hh, k, d0); return ks.map((d, n) => {
+    h = appbar('Absensi Narasumber', subK(k), true) + `<div class="screen">${days.map((d0, i) => { const ks = nrKeys(hh, k, d0, nrPfx(k)); return ks.map((d, n) => {
       const r = nrOf(hh, k, d), man = r.kid === '_m', mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null, sg = hh.nrs[d];
       return `<div class="card2" data-day="${esc(d)}"><b>${n ? `Narasumber ke-${n + 1} · Hari ${i + 1}` : `Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}`}</b>
       <div class="field"><label for="nk${i}_${n}">Narasumber</label><select id="nk${i}_${n}" data-nr="kid"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(n => `<option value="${n.id}"${r.kid === n.id ? ' selected' : ''}>${esc(n.nama)}</option>`).join('')}<option value="_m"${man ? ' selected' : ''}>✍️ Isi manual (kosong)</option></select></div>
@@ -443,7 +484,7 @@ function render() {
 
 function renderNil() {
   const kid = P.kid, k = KEGS[kid]; if (!k) return;
-  const h = hOf(kid), ln = LAPK(k), q = P.q.trim().toLowerCase(), ps = k.peserta || [], aktif = ps.filter(p => !isBatal(h, p));
+  const h = hOf(kid), ln = LAPK(k), q = P.q.trim().toLowerCase(), ps = pesKl(k), aktif = ps.filter(p => !isBatal(h, p));
   const lulus = aktif.filter(p => kelOf(h, p) === 'lulus').length, tdk = aktif.filter(p => kelOf(h, p) === 'tidak').length, kosong = aktif.length - lulus - tdk;
   $('#nilCount').innerHTML = `<div><b>${lulus}</b><small>Lulus</small></div><div><b style="color:${tdk ? 'var(--bad)' : 'inherit'}">${tdk}</b><small>Tidak lulus</small></div><div><b>${ln.hasil ? kosong : aktif.filter(p => nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up')).length}</b><small>${ln.hasil ? 'Belum diisi' : 'Nilai terisi'}</small></div>`;
   const rows = urutKelas(k, ps.filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q) || String(p.kelas || '').toLowerCase().includes(q)));
@@ -456,8 +497,8 @@ function renderNil() {
 }
 function renderAbs() {
   const kid = P.kid, k = KEGS[kid]; if (!k) return;
-  const h = hOf(kid), days = k.tgl || [], d = days[P.day] || days[0] || '', q = P.q.trim().toLowerCase(), s = stat(kid);
-  const peserta = k.peserta || [], perlu = peserta.filter(p => perluHari(h, p, d, days));
+  const h = hOf(kid), days = k.tgl || [], d = days[P.day] || days[0] || '', q = P.q.trim().toLowerCase(), s = stat(kid, curKl(k));
+  const peserta = pesKl(k), perlu = peserta.filter(p => perluHari(h, p, d, days));
   const sudah = perlu.filter(p => h.hadir[p.id] && h.hadir[p.id][d]).length;
   $('#absCount').innerHTML = `<div><b>${sudah}</b><small>Sudah TTD</small></div><div><b>${perlu.length - sudah}</b><small>Belum TTD</small></div><div><b>${s.remedial}</b><small>Remedial</small></div><div><b style="color:${s.batal ? 'var(--bad)' : 'inherit'}">${s.batal}</b><small>Cancel</small></div>`;
   const rows = urutKelas(k, peserta.filter(p => !q || p.nama.toLowerCase().includes(q) || String(p.instansi || '').toLowerCase().includes(q) || String(p.kelas || '').toLowerCase().includes(q)));
@@ -631,7 +672,8 @@ function camFallback(msg) {
   CAM.live = false; camStatus();
 }
 function openCam(kid, pid, slot, hari) {
-  const k = KEGS[kid], p = hari ? { nama: '' } : (k && k.peserta.find(x => x.id === pid)); if (!k || !p) return;
+  const k0 = KEGS[kid], p = hari ? { nama: '' } : (k0 && k0.peserta.find(x => x.id === pid)); if (!k0 || !p) return;
+  const k = (!hari && papaOf(k0) && p.kelas) ? { ...k0, nama: `${k0.nama} – ${p.kelas}` } : k0; // foto peserta PAPA: nama alat ikut di watermark
   const judul = hari ? `Dokumentasi Day ${(k.tgl || []).indexOf(hari) + 1} · ${tglPendek(hari)}` : `${p.nama}${k.damkar ? ' · Foto ' + (slot === 'foto2' ? 2 : 1) : ''}`;
   camClose();
   const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
@@ -681,8 +723,15 @@ function camSave(url) {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, kid = P.kid, k = kid && KEGS[kid];
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { syncErr = ''; sync(); pull(true); toast('Memeriksa dan mengirim data…'); } }
-  else if (a === 'open') { P.kid = b.dataset.id; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
-  else if (a === 'back') { P.screen = (P.screen === 'keg') ? 'home' : 'keg'; render(); }
+  else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
+  else if (a === 'back') { // dari layar per alat (abs/dok/nil/nar) kembali ke menu alat; dari menu alat ke daftar alat
+    if (P.screen === 'keg') P.screen = 'home';
+    else if (P.screen === 'alat') { P.screen = 'keg'; P.kl = null; }
+    else if (k && papaOf(k) && P.kl != null && ['abs', 'dok', 'nil', 'nar'].includes(P.screen)) P.screen = 'alat';
+    else P.screen = 'keg';
+    P.q = ''; render();
+  }
+  else if (a === 'alat') { P.kl = b.dataset.kl; P.screen = 'alat'; P.q = ''; render(); }
   else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; render(); }
   else if (a === 'logout') doLogout(false);
   else if (a === 'logoutforce') { doLogout(true); }
@@ -710,11 +759,11 @@ document.addEventListener('click', e => {
     const row = b.closest('.nrow'), pid = row.dataset.pid, h = hOf(kid), p = (k.peserta || []).find(x => x.id === pid); if (!p) return;
     const cur = kelOf(h, p); h.kel[pid] = cur === b.dataset.v ? '' : b.dataset.v; touch(kid); renderNil();
   }
-  else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; (k.peserta || []).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
+  else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; pesKl(k).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
   else if (a === 'nsig' && k) { const h = hOf(kid), n = b.dataset.n, ln = LAPK(k), nm = lapNama(h, k, 's' + n, 'nama'); openPad('Tanda tangan penandatangan', `${nm || (ln['s' + n + 'jab'] || '').replace(/\n/g, ' ')} · ${k.nama}`, u => { h['n' + n] = u; delete h.sent['n' + n]; touch(kid); render(); }, h['n' + n]); }
   else if (a === 'nsigdel' && k) { const h = hOf(kid), n = b.dataset.n; h['n' + n] = ''; delete h.sent['n' + n]; h.gone.includes('n' + n) || h.gone.push('n' + n); touch(kid); render(); }
-  else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(d.slice(0, 10))}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
-  else if (a === 'nradd' && k) { const d = b.dataset.d, h = hOf(kid), ks = nrKeys(h, k, d); if (ks.length >= NR_MAX) return; let n = 2; while (ks.includes(`${d}_${n}`)) n++; nrSet(h, k, `${d}_${n}`); touch(kid); render(); toast('Baris narasumber ditambahkan'); }
+  else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(nrDate(d))}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
+  else if (a === 'nradd' && k) { const d = b.dataset.d, pf = nrPfx(k), h = hOf(kid), ks = nrKeys(h, k, d, pf); if (ks.length >= NR_MAX) return; let n = 2; while (ks.includes(`${pf}${d}_${n}`)) n++; nrSet(h, k, `${pf}${d}_${n}`); touch(kid); render(); toast('Baris narasumber ditambahkan'); }
   else if (a === 'nrclr' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nr[d] = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }; if (h.nrs[d]) { h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); } touch(kid); render(); toast('Baris dikosongkan (tidak ikut dicetak)'); }
   else if (a === 'nrsigdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); touch(kid); render(); }
   else if (a === 'camx') camClose();

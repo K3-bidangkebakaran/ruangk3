@@ -221,7 +221,7 @@ function migrateSheet_(ss) {
 
 function folderName_(ev) {
   const a = (ev && ev.acara) || {};
-  return (a.tanggal || 'tanpa-tanggal') + ' - ' + String(a.kegiatan || 'Kegiatan tanpa nama').replace(/[\\/]/g, '-');
+  return (a.tanggal || 'tanpa-tanggal') + ' - ' + String(a.folderNama || a.kegiatan || 'Kegiatan tanpa nama').replace(/[\\/]/g, '-');
 }
 
 function findEventRow_(sh, id) {
@@ -295,7 +295,7 @@ function uploadFile_(req) {
   if (map[req.key]) { try { DriveApp.getFileById(map[req.key].id).setTrashed(true); } catch (e) { } }
   const f = sub_(folder, req.path).createFile(blob);
   f.setDescription('lpmi-key=' + req.key);
-  map[req.key] = { id: f.getId(), name: req.name };
+  map[req.key] = { id: f.getId(), name: req.name, p: (req.path || []).join('/') };
   writeMap_(folder, map);
   return { ok: true, id: f.getId(), url: f.getUrl() };
 }
@@ -322,7 +322,7 @@ function uploadFiles_(req) {
       const dir = subs[pk] || (subs[pk] = sub_(folder, f.path));
       const file = dir.createFile(blob);
       file.setDescription('lpmi-key=' + f.key);
-      map[f.key] = { id: file.getId(), name: f.name };
+      map[f.key] = { id: file.getId(), name: f.name, p: pk };
       n++;
     });
   } finally { writeMap_(folder, map); }
@@ -522,6 +522,12 @@ function picLock_(fn) {
   try { return fn(); } finally { try { lock.releaseLock(); } catch (e) { } }
 }
 
+/** Kunci kelas = "k" + fnv32 base36 dari label (rumus sama dengan kelasKey() di web Daftar Hadir & aplikasi PIC). */
+function kelasKey_(label) {
+  const str = String(label); let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return 'k' + (h >>> 0).toString(36);
+}
 function safeName_(s) { return String(s || '').replace(/[\\/:*?"<>|#%]+/g, '-').replace(/\s+/g, ' ').trim() || 'Tanpa nama'; }
 function hariNama_(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
@@ -612,8 +618,12 @@ function picKid_(kid, k, nodes, t0) {
   const lp0 = k.lap || {};
   const batal = {}; peserta.forEach(function (p) { batal[p.id] = !!p.batal; });
   const foto = {}, foto2 = {}, hadir = {}, nrNama = {};
+  const papa = !!k.papa, kls = (k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.keys(k.kelas).map(function (x) { return k.kelas[x]; })) : []).filter(String);
+  const kfOf = function (lbl) { return papa ? [safeName_(kls.indexOf(lbl) >= 0 ? lbl : 'Tanpa kelas')] : []; }; // PAPA: tiap alat punya subfolder sendiri
+  const kkMap = {}; kls.forEach(function (l) { kkMap[kelasKey_(l)] = l; });
   let s1n = lp0.s1nama || '', s2n = lp0.s2nama || '', last = null;
   Object.keys(lp0.nr || {}).forEach(function (d) { nrNama[d] = (lp0.nr[d] || {}).nama || ''; });
+  Object.keys(lp0.nrk || {}).forEach(function (kk) { Object.keys(lp0.nrk[kk] || {}).forEach(function (d) { nrNama[kk + '~' + d] = (lp0.nrk[kk][d] || {}).nama || ''; }); });
   nodes.slice().sort(function (a, b) { return (a.upd || 0) - (b.upd || 0); }).forEach(function (h) {
     const hb = h.batal || {};
     Object.keys(hb).forEach(function (pid) { batal[pid] = !!hb[pid]; });
@@ -624,6 +634,7 @@ function picKid_(kid, k, nodes, t0) {
     if (lp.s1 && 'nama' in lp.s1) s1n = lp.s1.nama || '';
     if (lp.s2 && 'nama' in lp.s2) s2n = lp.s2.nama || '';
     Object.keys(lp.nr || {}).forEach(function (d) { if (lp.nr[d] && 'nama' in lp.nr[d]) nrNama[d] = lp.nr[d].nama || ''; });
+    Object.keys(lp.nrk || {}).forEach(function (kk) { Object.keys(lp.nrk[kk] || {}).forEach(function (d) { if (lp.nrk[kk][d] && 'nama' in lp.nrk[kk][d]) nrNama[kk + '~' + d] = lp.nrk[kk][d].nama || ''; }); });
     if (h.ttdPic) last = h;
   });
 
@@ -631,19 +642,24 @@ function picKid_(kid, k, nodes, t0) {
   const want = [];
   peserta.forEach(function (p) {
     if (batal[p.id]) return;
-    const tag = ' [' + String(p.id).slice(0, 5) + ']', nm = safeName_(p.nama);
-    if (foto[p.id]) want.push({ key: 'foto:' + p.id, mk: 'f_' + p.id, path: ['Foto Dokumentasi'], name: nm + tag + (k.damkar ? ' (1)' : '') + '.jpg' });
-    if (foto2[p.id] && k.damkar) want.push({ key: 'foto2:' + p.id, mk: 'f2_' + p.id, path: ['Foto Dokumentasi'], name: nm + tag + ' (2).jpg' });
+    const tag = ' [' + String(p.id).slice(0, 5) + ']', nm = safeName_(p.nama), kf = kfOf(p.kelas);
+    if (foto[p.id]) want.push({ key: 'foto:' + p.id, mk: 'f_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + (k.damkar ? ' (1)' : '') + '.jpg' });
+    if (foto2[p.id] && k.damkar) want.push({ key: 'foto2:' + p.id, mk: 'f2_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + ' (2).jpg' });
     hari.forEach(function (d) {
-      if (hadir[p.id + '|' + d]) want.push({ key: 'ttd:' + p.id + ':' + d, mk: 's_' + p.id + '_' + d, path: ['Tanda Tangan Peserta', d + ' (' + hariNama_(d) + ')'], name: nm + tag + '.png' });
+      if (hadir[p.id + '|' + d]) want.push({ key: 'ttd:' + p.id + ':' + d, mk: 's_' + p.id + '_' + d, path: kf.concat(['Tanda Tangan Peserta', d + ' (' + hariNama_(d) + ')']), kf: papa, name: nm + tag + '.png' });
     });
   });
   if (last) want.push({ key: 'ttd-org', mk: 'pic', path: ['Tanda Tangan Penyelenggara'], name: safeName_(last.ttdPicNama || last.picNama || 'PIC Kegiatan') + '.png' });
   want.push({ key: 'ttd-s1', mk: 'n1', path: ['Tanda Tangan Penyelenggara'], name: safeName_('Pengawas - ' + (s1n || 'TTD')) + '.png' });
   want.push({ key: 'ttd-s2', mk: 'n2', path: ['Tanda Tangan Penyelenggara'], name: safeName_('Ahli - ' + (s2n || 'TTD')) + '.png' });
   mkeys.filter(function (m) { return m.indexOf('nr_') === 0; }).sort().forEach(function (m) {
-    const d = m.slice(3), mm = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/.exec(d);
-    if (mm && hari.indexOf(mm[1]) >= 0) want.push({ key: 'nr:' + d, mk: m, path: ['Tanda Tangan Narasumber'], name: safeName_('Narasumber ' + d + ' - ' + (nrNama[d] || 'TTD')) + '.png' });
+    const m0 = /^nr_(?:(k[0-9a-z]+)~)?(.+)$/.exec(m); if (!m0) return;
+    const kk = m0[1] || '', d = m0[2], mm = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/.exec(d);
+    if (!mm || hari.indexOf(mm[1]) < 0) return;
+    if (kk) { // narasumber milik satu alat: masuk subfolder alat itu; key sama dengan aplikasi web (nr:<kunciKelas>:<hari>)
+      if (!kkMap[kk]) return;
+      want.push({ key: 'nr:' + kk + ':' + d, mk: m, path: kfOf(kkMap[kk]).concat(['Tanda Tangan Narasumber']), kf: papa, name: safeName_('Narasumber ' + d + ' - ' + (nrNama[kk + '~' + d] || 'TTD')) + '.png' });
+    } else want.push({ key: 'nr:' + d, mk: m, path: ['Tanda Tangan Narasumber'], name: safeName_('Narasumber ' + d + ' - ' + (nrNama[d] || 'TTD')) + '.png' });
   });
   hari.forEach(function (d) {
     mkeys.filter(function (m) { return m.indexOf('d_' + d + '_') === 0; }).sort().forEach(function (m, i) {
@@ -662,7 +678,7 @@ function picKid_(kid, k, nodes, t0) {
     const chunk = todoAll.slice(i, i + 6), map0 = readMap_(folder);
     const resp = UrlFetchApp.fetchAll(chunk.map(function (w) {
       const en = map0[w.key], hd = { 'X-Firebase-ETag': 'true', Referer: FB_HDR.Referer };
-      if (en && en.e && en.h && en.name === w.name) hd['If-None-Match'] = en.e;
+      if (en && en.e && en.h && en.name === w.name && (en.p === undefined ? !w.kf : en.p === w.path.join('/'))) hd['If-None-Match'] = en.e;
       return { url: fbUrl_('dh_media/' + kid + '/' + encodeURIComponent(w.mk)), method: 'get', headers: hd, muteHttpExceptions: true };
     }));
     const baru = [];
@@ -684,17 +700,17 @@ function picKid_(kid, k, nodes, t0) {
           if (!m) return;
           const bytes = Utilities.base64Decode(m[2]);
           let sama = false;
-          if (en && en.name === t.w.name) {
+          const pk = t.w.path.join('/'), pathOk = en && (en.p === undefined ? !t.w.kf : en.p === pk); // berkas lama di folder yang salah (mis. sebelum ada folder per alat) diunggah ulang ke folder yang benar
+          if (en && en.name === t.w.name && pathOk) {
             if (en.h) sama = en.h === t.h;
             else { try { const f0 = DriveApp.getFileById(en.id); sama = !f0.isTrashed() && f0.getSize() === bytes.length; } catch (e) { } } // diunggah web: samakan lewat ukuran
           }
-          if (sama) { map[t.w.key] = { id: en.id, name: en.name, h: t.h, e: t.e }; return; }
+          if (sama) { map[t.w.key] = { id: en.id, name: en.name, h: t.h, e: t.e, p: en.p === undefined ? pk : en.p }; return; }
           if (en) { try { DriveApp.getFileById(en.id).setTrashed(true); } catch (e) { } }
-          const pk = t.w.path.join('/');
           const dir = subs[pk] || (subs[pk] = sub_(folder, t.w.path));
           const file = dir.createFile(Utilities.newBlob(bytes, m[1], t.w.name));
           file.setDescription('lpmi-key=' + t.w.key);
-          map[t.w.key] = { id: file.getId(), name: t.w.name, h: t.h, e: t.e };
+          map[t.w.key] = { id: file.getId(), name: t.w.name, h: t.h, e: t.e, p: pk };
           nFile++;
         });
       } finally { writeMap_(folder, map); }
