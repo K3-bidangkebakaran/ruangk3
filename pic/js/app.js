@@ -71,13 +71,13 @@ const MATERI_KAT = [
   { id: 'reg', judul: 'Regulasi Kebakaran (Kelas D)', grp: 'wasnaker', isi: ['Dasar-dasar dan kebijakan K3', 'K3 Penanggulangan Kebakaran', 'UU No 1 Tahun 1970', 'Kepmenaker No 186 Tahun 1999', 'Dasar-dasar pengaman kebakaran', 'Teori Api dan Anatomi Kebakaran'] },
   { id: 'teori', judul: 'Teori Kebakaran (Kelas D)', grp: 'ahli', isi: ['Prinsip-prinsip pencegahan', 'Teknik Pemadaman Kebakaran', 'Sistem Proteksi Pasif (Komprehensif dll)', 'Sistem Proteksi Aktif (Apar dan Hydrant)'] },
   // Pesawat Angkat & Angkut (isi = poin di Absensi Narasumber; jadwal rundown disusun di website dari materi yang sama)
-  { id: 'ang1', judul: 'Pesawat Angkat – Hari 1 (Regulasi)', grp: 'wasnaker', isi: ['Kebijakan dan Dasar-dasar K3', 'Undang-Undang No.1 Tahun 1970', 'Permenaker No.8 Tahun 2020'] },
-  { id: 'prakw', judul: 'Praktek (Wasnaker)', grp: 'wasnaker', isi: ['Praktek'] },
-  { id: 'crane2', judul: 'Crane – Hari 2 (Dasar Crane, JSA, Penggerak, Safety Devices)', grp: 'praktisi', isi: ['Pengetahuan Dasar Crane', 'Pengetahuan Dasar Kelistrikan', 'Pengetahuan Job Safety Analysis', 'Sebab-Sebab Kecelakaan', 'Pengetahuan Tenaga Penggerak & Hidrolik Penggerak', 'Perangkat Keselamatan Kerja (Safety Devices)'] },
-  { id: 'crane3', judul: 'Crane – Hari 3 (Beban Kerja Aman, Pengoperasian, Perawatan, Stabilitas)', grp: 'praktisi', isi: ['Faktor-faktor yang mempengaruhi beban kerja aman', 'Pengoperasian Aman', 'Perawatan dan Pemeriksaan Harian', 'Stabilitas'] },
-  { id: 'conv2', judul: 'Conveyor – Hari 2 (Pengoperasian, JSA, Penggerak, Safety Devices)', grp: 'praktisi', isi: ['Pengoperasian aman pada belt Conveyor', 'Pengetahuan Job Safety Analysis', 'Sebab-Sebab Kecelakaan', 'Pengetahuan Tenaga Penggerak & Hidrolik Penggerak', 'Perangkat Keselamatan Kerja (Safety Devices)'] },
-  { id: 'prakp', judul: 'Praktek (Praktisi, seharian)', grp: 'praktisi', isi: ['Praktek'] },
-  { id: 'eval', judul: 'Evaluasi Teori (ZOOM)', grp: 'kemnaker', isi: ['Evaluasi Teori'] }
+  { id: 'ang1', judul: 'Regulasi Pesawat Angkat', grp: 'wasnaker', isi: ['Kebijakan dan Dasar-dasar K3', 'Undang-Undang No.1 Tahun 1970', 'Permenaker No.8 Tahun 2020'] },
+  { id: 'prakw', judul: 'Praktek', grp: 'wasnaker', isi: ['Praktek'] },
+  { id: 'crane2', judul: 'Crane Teknis 1', grp: 'praktisi', isi: ['Pengetahuan Dasar Crane', 'Pengetahuan Dasar Kelistrikan', 'Pengetahuan Job Safety Analysis', 'Sebab-Sebab Kecelakaan', 'Pengetahuan Tenaga Penggerak & Hidrolik Penggerak', 'Perangkat Keselamatan Kerja (Safety Devices)'] },
+  { id: 'crane3', judul: 'Crane Teknis 2', grp: 'praktisi', isi: ['Faktor-faktor yang mempengaruhi beban kerja aman', 'Pengoperasian Aman', 'Perawatan dan Pemeriksaan Harian', 'Stabilitas'] },
+  { id: 'conv2', judul: 'Conveyor Teknis 1', grp: 'praktisi', isi: ['Pengoperasian aman pada belt Conveyor', 'Pengetahuan Job Safety Analysis', 'Sebab-Sebab Kecelakaan', 'Pengetahuan Tenaga Penggerak & Hidrolik Penggerak', 'Perangkat Keselamatan Kerja (Safety Devices)'] },
+  { id: 'prakp', judul: 'Conveyor Teknis 2 (Praktek)', grp: 'praktisi', isi: ['Praktek'] },
+  { id: 'eval', judul: 'Evaluasi Teori', grp: 'kemnaker', isi: ['Evaluasi Teori'] }
 ];
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
@@ -88,7 +88,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v24';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v25';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];

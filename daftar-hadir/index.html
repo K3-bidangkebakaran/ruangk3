@@ -849,16 +849,30 @@ const MATERI_KAT = [
   { id: "reg", judul: "Regulasi Kebakaran (Kelas D)", grp: "wasnaker", isi: ["Dasar-dasar dan kebijakan K3", "K3 Penanggulangan Kebakaran", "UU No 1 Tahun 1970", "Kepmenaker No 186 Tahun 1999", "Dasar-dasar pengaman kebakaran", "Teori Api dan Anatomi Kebakaran"] },
   { id: "teori", judul: "Teori Kebakaran (Kelas D)", grp: "ahli", isi: ["Prinsip-prinsip pencegahan", "Teknik Pemadaman Kebakaran", "Sistem Proteksi Pasif (Komprehensif dll)", "Sistem Proteksi Aktif (Apar dan Hydrant)"] },
   /* Pesawat Angkat & Angkut. isi = poin yang tampil di Absensi Narasumber; sesi = isi tiap sesi belajar di Rundown (urut: 08.00-10.00, 10.15-12.00, 13.00-15.00, 15.15-17.00); app = kolom Aplikasi (mis. ZOOM) */
-  { id: "ang1", judul: "Pesawat Angkat – Hari 1 (Regulasi)", grp: "wasnaker", isi: ["Kebijakan dan Dasar-dasar K3", "Undang-Undang No.1 Tahun 1970", "Permenaker No.8 Tahun 2020"], sesi: [["Kebijakan dan Dasar-dasar K3"], ["Undang-Undang No.1 Tahun 1970"], ["Permenaker No.8 Tahun 2020"], ["Permenaker No.8 Tahun 2020"]] },
-  { id: "prakw", judul: "Praktek (Wasnaker)", grp: "wasnaker", isi: ["Praktek"], sesi: [["Praktek"]] },
-  { id: "crane2", judul: "Crane – Hari 2 (Dasar Crane, JSA, Penggerak, Safety Devices)", grp: "praktisi", isi: ["Pengetahuan Dasar Crane", "Pengetahuan Dasar Kelistrikan", "Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan", "Pengetahuan Tenaga Penggerak & Hidrolik Penggerak", "Perangkat Keselamatan Kerja (Safety Devices)"], sesi: [["Pengetahuan Dasar Crane", "Pengetahuan Dasar Kelistrikan"], ["Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan"], ["Pengetahuan Tenaga Penggerak & Hidrolik Penggerak"], ["Perangkat Keselamatan Kerja (Safety Devices)"]] },
-  { id: "crane3", judul: "Crane – Hari 3 (Beban Kerja Aman, Pengoperasian, Perawatan, Stabilitas)", grp: "praktisi", isi: ["Faktor-faktor yang mempengaruhi beban kerja aman", "Pengoperasian Aman", "Perawatan dan Pemeriksaan Harian", "Stabilitas"], sesi: [["Faktor-faktor yang mempengaruhi beban kerja aman"], ["Pengoperasian Aman"], ["Perawatan dan Pemeriksaan Harian"], ["Stabilitas"]] },
-  { id: "conv2", judul: "Conveyor – Hari 2 (Pengoperasian, JSA, Penggerak, Safety Devices)", grp: "praktisi", isi: ["Pengoperasian aman pada belt Conveyor", "Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan", "Pengetahuan Tenaga Penggerak & Hidrolik Penggerak", "Perangkat Keselamatan Kerja (Safety Devices)"], sesi: [["Pengoperasian aman pada belt Conveyor"], ["Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan"], ["Pengetahuan Tenaga Penggerak & Hidrolik Penggerak"], ["Perangkat Keselamatan Kerja (Safety Devices)"]] },
-  { id: "prakp", judul: "Praktek (Praktisi, seharian)", grp: "praktisi", isi: ["Praktek"], sesi: [["Praktek"], ["Praktek"], ["Praktek"]] },
-  { id: "eval", judul: "Evaluasi Teori (ZOOM)", grp: "kemnaker", isi: ["Evaluasi Teori"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"]], app: "ZOOM" }
+  { id: "ang1", judul: "Regulasi Pesawat Angkat", grp: "wasnaker", isi: ["Kebijakan dan Dasar-dasar K3", "Undang-Undang No.1 Tahun 1970", "Permenaker No.8 Tahun 2020"], sesi: [["Kebijakan dan Dasar-dasar K3"], ["Undang-Undang No.1 Tahun 1970"], ["Permenaker No.8 Tahun 2020"], ["Permenaker No.8 Tahun 2020"]] },
+  { id: "prakw", judul: "Praktek", grp: "wasnaker", isi: ["Praktek"], sesi: [["Praktek"]] },
+  { id: "crane2", judul: "Crane Teknis 1", grp: "praktisi", isi: ["Pengetahuan Dasar Crane", "Pengetahuan Dasar Kelistrikan", "Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan", "Pengetahuan Tenaga Penggerak & Hidrolik Penggerak", "Perangkat Keselamatan Kerja (Safety Devices)"], sesi: [["Pengetahuan Dasar Crane", "Pengetahuan Dasar Kelistrikan"], ["Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan"], ["Pengetahuan Tenaga Penggerak & Hidrolik Penggerak"], ["Perangkat Keselamatan Kerja (Safety Devices)"]] },
+  { id: "crane3", judul: "Crane Teknis 2", grp: "praktisi", isi: ["Faktor-faktor yang mempengaruhi beban kerja aman", "Pengoperasian Aman", "Perawatan dan Pemeriksaan Harian", "Stabilitas"], sesi: [["Faktor-faktor yang mempengaruhi beban kerja aman"], ["Pengoperasian Aman"], ["Perawatan dan Pemeriksaan Harian"], ["Stabilitas"]] },
+  { id: "conv2", judul: "Conveyor Teknis 1", grp: "praktisi", isi: ["Pengoperasian aman pada belt Conveyor", "Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan", "Pengetahuan Tenaga Penggerak & Hidrolik Penggerak", "Perangkat Keselamatan Kerja (Safety Devices)"], sesi: [["Pengoperasian aman pada belt Conveyor"], ["Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan"], ["Pengetahuan Tenaga Penggerak & Hidrolik Penggerak"], ["Perangkat Keselamatan Kerja (Safety Devices)"]] },
+  { id: "prakp", judul: "Conveyor Teknis 2 (Praktek)", grp: "praktisi", isi: ["Praktek"], sesi: [["Praktek"], ["Praktek"], ["Praktek"]] },
+  { id: "eval", judul: "Evaluasi Teori", grp: "kemnaker", isi: ["Evaluasi Teori"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"]], app: "ZOOM" }
 ];
-const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
-const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; }; // narasumber manual: semua materi katalog boleh dipakai
+/* Narasumber yang diisi manual otomatis TERSIMPAN di daftar ini (di browser ini) dan bisa dipilih lagi di kegiatan lain. */
+let NARA_USER = []; const NARA_UK = "nara-user";
+const naraAll = () => NARA_KAT.concat(NARA_USER);
+const naraOf = id => naraAll().find(n => n.id === id) || null;
+const materiOpsi = kid => { const n = naraOf(kid); return n && n.grp ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; };
+const naraOpsiHtml = r => { const o = x => `<option value="${x.id}"${r.kid === x.id ? " selected" : ""}>${esc(x.nama)}</option>`; return NARA_KAT.map(o).join("") + (NARA_USER.length ? `<optgroup label="Tersimpan (isi manual sebelumnya)">${NARA_USER.map(o).join("")}</optgroup>` : ""); };
+function naraSimpan(r) { // dipanggil setelah nama/NIP/instansi manual diubah: simpan untuk dipakai lagi
+  if (!r || r.kid !== "_m") return false;
+  const nama = String(r.nama || "").replace(/\s+/g, " ").trim(); if (!nama) return false;
+  const k = norm(nama); if (NARA_KAT.some(n => norm(n.nama) === k)) return false;
+  let u = NARA_USER.find(n => norm(n.nama) === k), baru = !u;
+  if (!u) { u = { id: "u_" + fnv(k).split(":")[0], nama, nip: "", inst: "", grp: "" }; NARA_USER.push(u); }
+  u.nama = nama; u.nip = String(r.nip || "").trim(); u.inst = String(r.inst || "").trim();
+  idbPut(NARA_UK, NARA_USER).catch(() => { }); try { localStorage.setItem("rk3_" + NARA_UK, JSON.stringify(NARA_USER)); } catch (e) { }
+  return baru;
+} // narasumber manual: semua materi katalog boleh dipakai
 const naraNew = () => ({ kid: "", nama: "", nip: "", inst: "", mid: "", mtxt: "", ttd: "" });
 const naraRow = r => { const o = naraNew(); r = r && typeof r === "object" ? r : {}; Object.keys(o).forEach(k => { o[k] = String(r[k] == null ? "" : r[k]); }); return o.kid ? o : naraNew(); };
 /* Baris narasumber: kunci "YYYY-MM-DD" = baris utama hari itu; "YYYY-MM-DD_2", "_3", "_4" = narasumber tambahan di hari yang sama
@@ -1754,7 +1768,7 @@ const alatDariTeks = t => { const x = norm(t); if (!x) return ""; const m = ALAT
 const ROMAWI = { i: "1", ii: "2", iii: "3" };
 function kelasAngka(t) {
   t = norm(t); if (!t) return "";
-  const m = t.match(/\b(?:kelas|kls|class)\s*(1|2|3|iii|ii|i)\b/) || t.match(/^(1|2|3|iii|ii|i)$/) || t.match(/\b(1|2|3)$/);
+  const m = t.match(/\b(?:kelas|kls|class)\s*(1|2|3|iii|ii|i)\b/) || t.match(/^(1|2|3|iii|ii|i)$/) || t.match(/\b(1|2|3|iii|ii|i)$/); // "Mobile Crane 1", "Gantry Crane II", "Kelas I" sama saja dengan Kelas 1/2
   return m ? (ROMAWI[m[1]] || m[1]) : "";
 }
 // Peserta hasil upload/tempel membawa teks alat & kelas. Bila terbaca alat Pesawat Angkat → kegiatan, alat dan kelas diisi otomatis;
@@ -2494,11 +2508,12 @@ function renderLap() {
   const nrCard = (d, i, key, n) => {
     const r = NR[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = (n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`) + (aturan4(S.acara) && kelasList(S.acara).length && days.length > 4 ? ` <span class="dtag ${i >= 4 ? "k1" : "all"}">${i >= 4 ? "Khusus Kelas 1" : "Semua alat/kelas"}</span>` : "");
     return `<div class="lp-day lp-nr" data-day="${key}"><div class="h">${ttl}</div>
-      <select data-nf="kid" aria-label="Narasumber ${ttl}"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(x => `<option value="${x.id}"${r.kid === x.id ? " selected" : ""}>${esc(x.nama)}</option>`).join("")}<option value="_m"${man ? " selected" : ""}>✍️ Isi manual</option></select>
+      <select data-nf="kid" aria-label="Narasumber ${ttl}"><option value="">— Pilih narasumber —</option>${naraOpsiHtml(r)}<option value="_m"${man ? " selected" : ""}>✍️ Isi manual</option></select>
       ${man ? `<input type="text" data-nf="nama" placeholder="Nama narasumber (mis. Fido Rinekas, S.T)" value="${esc(r.nama)}" autocomplete="off"><input type="text" data-nf="nip" placeholder="NIP (opsional)" value="${esc(r.nip)}" autocomplete="off"><input type="text" data-nf="inst" placeholder="Instansi (mis. Kemnaker)" value="${esc(r.inst)}" autocomplete="off">`
         : r.kid ? `<div class="auto">Instansi: <b>${esc(r.inst)}</b><br>NIP: ${esc(r.nip) || "–"}</div>` : ""}
       ${r.kid ? `<select data-nf="mid" aria-label="Materi ${ttl}"><option value="">— Pilih materi —</option>${opsi.map(m => `<option value="${m.id}"${r.mid === m.id ? " selected" : ""}>${esc(m.judul)}</option>`).join("")}<option value="manual"${r.mid === "manual" ? " selected" : ""}>✍️ Isi manual</option></select>` : ""}
       ${mk ? `<div class="bls">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join("")}</div>` : r.mid === "manual" ? `<textarea data-nf="mtxt" rows="4" placeholder="Isi materi, satu baris = satu poin">${esc(r.mtxt)}</textarea>` : ""}
+      ${(r.kid || "").startsWith("u_") ? `<div class="hint">Narasumber ini tersimpan dari isian manual. <button class="btn sm" type="button" data-act="nuhapus">Hapus dari daftar tersimpan</button></div>` : ""}
       <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd ? `background-image:url('${r.ttd}')` : ""}">${r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button><button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan</button><button class="btn sm danger" type="button" data-act="ndel" title="${n ? "Hapus baris narasumber ini" : "Hapus hari ini dari absensi narasumber"}">🗑 ${n ? "Hapus baris" : "Hapus hari ini"}</button></div></div>`;
   };
   const nrOffCard = (d, i) => `<div class="lp-day lp-nr off" data-day="${d}"><div class="h">HARI ${i + 1} · ${esc(fmtTgl(d))}</div><div>Hari ini <b>dihapus</b> dari absensi narasumber (tidak dicetak dan tidak tampil di aplikasi PIC).</div><div class="lap-sig" style="margin-top:8px"><button class="btn sm" type="button" data-act="nback">↩ Pulihkan hari ini</button></div></div>`;
@@ -2553,6 +2568,7 @@ $("#lapBox").addEventListener("input", e => {
 });
 $("#lapBox").addEventListener("change", e => {
   const el = e.target;
+  if (el.dataset.nf && el.tagName !== "SELECT" && el.closest(".lp-nr") && /^(nama|nip|inst)$/.test(el.dataset.nf)) { if (naraSimpan(lapNr(el.closest(".lp-nr").dataset.day))) toast("Narasumber tersimpan. Bisa dipilih lagi di kegiatan lain."); return; }
   if (el.dataset.lpc) { S.lap[el.dataset.lpc] = el.checked; renderLap(); changed(); return; }
   if (el.dataset.nf && el.closest(".lp-nr") && el.tagName === "SELECT") {
     const r = lapNr(el.closest(".lp-nr").dataset.day);
@@ -2582,6 +2598,10 @@ $("#lapBox").addEventListener("click", e => {
     let n = 2; while (ks.includes(`${d}_${n}`)) n++;
     if (S.lap.nrOff) delete S.lap.nrOff[`${d}_${n}`];
     ND[`${d}_${n}`] = naraNew(); renderLap(); changed(); toast("Baris narasumber ditambahkan. Isi lewat pilihan nama atau Isi manual.");
+  }
+  else if (b.dataset.act === "nuhapus" && day) {
+    const r = lapNr(day.dataset.day), i = NARA_USER.findIndex(n => n.id === r.kid);
+    if (i >= 0) { NARA_USER.splice(i, 1); idbPut(NARA_UK, NARA_USER).catch(() => { }); try { localStorage.setItem("rk3_" + NARA_UK, JSON.stringify(NARA_USER)); } catch (e) { } r.kid = "_m"; renderLap(); changed(); toast("Dihapus dari daftar tersimpan (isian di kegiatan ini tetap)."); }
   }
   else if (b.dataset.act === "rdtpl") {
     const has = Object.values(S.lap.nr || {}).some(r => r && (r.kid || r.ttd));
@@ -2927,7 +2947,7 @@ function parsePesertaPdf(pages) {
   const rows = anchors.map(a => ({ a, parts: [a] }));
   { // Baris lanjutan (nama/instansi yang terpotong ke baris berikut) digabung ke peserta yang tepat. Nomor bisa rata atas, tengah,
     // atau bawah sel, jadi batas antar-peserta dicari dari celah terbesar di antara dua baris bernomor (celah antar-peserta > jarak antar-baris dalam satu sel).
-    const info = l => l.nama || l.inst;
+    const info = l => l.nama || l.inst || l.alat || l.kls; // baris yang hanya berisi kolom Alat/Kelas (sel Alat 2 baris, mis. "GANTRY" / "CRANE II") tetap ikut ke peserta
     const ys = body.filter(l => info(l) || anchors.includes(l)).map(l => l);
     const gaps = []; const byP = {};
     ys.forEach(l => (byP[l.p] = byP[l.p] || []).push(l));
@@ -3923,7 +3943,7 @@ const Pic = {
     nrMigrasi(ev);
     const a = ev.acara, hari = hariList(a).filter(Boolean);
     const hkMap = {}; if (a.papa) kelasList(a).forEach(l => { const hk = hariKelas(ev, l); if (hk) hkMap[kelasKey(l)] = hk; }); // alat dengan hari lebih sedikit (hari ke-5 dst. khusus Kelas 1)
-    const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: r.kid || "", nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }]));
+    const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: String(r.kid || "").startsWith("u_") ? "_m" : (r.kid || ""), nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }]));
     return {
       nama: judulDasar(a), tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, papa: !!a.papa, kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
       ttdWeb: !!a.ttd, hk: hkMap,
@@ -4089,6 +4109,7 @@ const Pic = {
 (async () => {
   EV = (await idbGet(IDX)) || [];
   TOMBS = new Set((await idbGet(TOMB)) || []);
+  try { let u = await idbGet(NARA_UK); if (!Array.isArray(u) || !u.length) { try { u = JSON.parse(localStorage.getItem("rk3_" + NARA_UK) || "[]"); } catch (e) { u = []; } } NARA_USER = (Array.isArray(u) ? u : []).filter(n => n && n.id && n.nama); } catch (e) { }
   if (EV.some(e => TOMBS.has(e.id))) { // sisa kegiatan yang sudah dihapus (mis. tersimpan ulang oleh proses lama): bersihkan
     for (const e of EV.filter(e => TOMBS.has(e.id))) await idbDel("event:" + e.id);
     EV = EV.filter(e => !TOMBS.has(e.id)); await idbPut(IDX, EV).catch(() => { });
