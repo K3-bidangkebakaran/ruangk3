@@ -3864,7 +3864,7 @@ const Pic = {
   },
   /** Buang kegiatan "yatim" di aplikasi PIC: kegiatan yang sudah dihapus (di sini / di Rekap / di Drive) tetapi salinannya masih
    *  tertinggal di Firebase sehingga PIC melihat kegiatan ganda. Aman: hanya yang TIDAK ada di perangkat ini, dan (kalau Drive tersambung)
-   *  juga tidak ada di daftar Drive, belum diubah >6 jam, dan tidak sedang menunggu dikirim. */
+   *  juga tidak ada di daftar Drive, belum diubah >30 menit (kecuali dicek manual lewat tombol PIC), dan tidak sedang menunggu dikirim. */
   async bersihkan(force) {
     if (!this.ready || !navigator.onLine || this.cleaning) return 0;
     if (!force && Date.now() - (this.cleanAt || 0) < 600000) return 0;
@@ -3876,7 +3876,7 @@ const Pic = {
         let ada = null;
         if (Cloud.ready()) { try { const r = await Cloud.api("listEvents"); if (r && Array.isArray(r.events) && r.events.length) ada = new Set(r.events.map(e => e.id)); } catch (_) { } }
         for (const id of ids) {
-          const x = all[id] || {}, tua = Date.now() - (x.upd || 0) > 6 * 3600e3;
+          const x = all[id] || {}, tua = force || Date.now() - (x.upd || 0) > 30 * 60e3; // dicek manual (tombol PIC) = langsung; otomatis = tunggu 30 menit
           if (!(TOMBS.has(id) || (ada && !ada.has(id) && tua && !this.dirty.has(id)))) continue;
           await Promise.all(["dh_kegiatan", "dh_hasil", "dh_media"].map(k => this.d.remove(this.r(`${k}/${id}`))));
           delete this.hash[id]; n++;
