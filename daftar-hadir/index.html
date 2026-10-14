@@ -128,6 +128,7 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .aturan ul{margin:6px 0 0;padding-left:18px}
 .aturan .warn{color:#b45309;margin-top:6px}
 .aturan .ck4{display:flex;gap:8px;align-items:center;margin:2px 0 6px;font-weight:600;cursor:pointer}
+.aturan .ah-pick{margin:4px 0 8px}.aturan .ah-days{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.aturan .ah-d{border:1px solid #c4b5fd;background:#fff;color:#5b21b6;border-radius:10px;padding:4px 10px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;font-size:12px}.aturan .ah-d small{font-weight:500;color:#6b7280;font-size:11px}.aturan .ah-d.on{background:#dcfce7;border-color:#16a34a;color:#166534}.aturan .ah-pre{display:flex;gap:6px;flex-wrap:wrap}
 .aturan .ck4 input{width:18px;height:18px;accent-color:#7c3aed}
 .ah-tag,.dtag{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px;white-space:nowrap}
 .ah-tag.all,.dtag.all{background:#dcfce7;color:#166534}
@@ -902,7 +903,13 @@ const aturan4 = a => !!(a && a.papa) && a.aturan4 !== false; // aturan "lebih da
 function hariKelas(ev, k) { // daftar hari (ISO) yang dipakai alat/kelas ini (daftar hadir, dokumentasi, narasumber); null = semua hari kegiatan
   const days = hariList(ev.acara).filter(Boolean);
   if (!k || !aturan4(ev.acara) || days.length <= 4 || KLS1.test(String(k))) return null;
-  return days.slice(0, 4);
+  return hariNon1(ev.acara);
+}
+/* Hari yang dipakai alat selain Kelas 1 pada kegiatan >4 hari. Bawaan: 4 hari pertama. Admin bisa memilih hari lain
+   (mis. Hari 2–5: hari pertama dikosongkan supaya selesainya bersamaan dengan Kelas 1) lewat a.hari4 (daftar tanggal ISO). */
+function hariNon1(a) {
+  const days = hariList(a).filter(Boolean), pick = Array.isArray(a && a.hari4) ? days.filter(d => a.hari4.includes(d)) : [];
+  return pick.length ? pick : days.slice(0, 4);
 }
 const nrEf = r => (r && r.kid ? r : naraNew()); // baris tanpa narasumber terpilih dianggap kosong (nama sisa tidak ikut tercetak)
 function nrMigrasi(ev) { // isian narasumber per alat (versi sebelumnya, lap.nrk) digabung ke satu isian bersama (lap.nr); yang sudah terisi tidak ditimpa
@@ -1243,7 +1250,8 @@ const RD_FILL = { // isi cepat Absensi Narasumber dari rundown yang sudah dipaka
 };
 function rdTemplate(tp) {
   const plan = RD_FILL[tp]; if (!plan) return 0;
-  const days = hariList(S.acara).filter(Boolean).slice(0, plan.length), ND = nrD(S.lap, ""), LP = S.lap; LP.nrOff = LP.nrOff || {};
+  const all = hariList(S.acara).filter(Boolean), win = aturan4(S.acara) && all.length > 4 ? hariNon1(S.acara) : all; // kegiatan >4 hari: template mengisi hari yang dipakai alat selain Kelas 1
+  const days = win.slice(0, plan.length), ND = nrD(S.lap, ""), LP = S.lap; LP.nrOff = LP.nrOff || {};
   days.forEach((d, i) => {
     Object.keys(ND).filter(k => nrIso(k) === d).forEach(k => { delete ND[k]; }); Object.keys(LP.nrOff).filter(k => nrIso(k) === d).forEach(k => { delete LP.nrOff[k]; });
     plan[i].forEach(([kid, mid], j) => { const r = ND[j ? `${d}_${j + 1}` : d] = naraNew(); naraPilih(r, kid); materiPilih(r, mid); });
@@ -1877,8 +1885,8 @@ function renderDates() {
   const t = $("#dateFieldTxt");
   t.textContent = days.length ? days.map(tglChip).join(", ") : "Klik untuk memilih tanggal…";
   t.className = days.length ? "" : "ph";
-  const berat = aturan4(a) && kelasList(a).length && days.length > 4;
-  $("#dateChips").innerHTML = days.map((d, i) => `<span class="date-chip"><b>Hari ${i + 1}</b> ${esc(tglChip(d))}${berat ? ` <span class="dtag ${i >= 4 ? "k1" : "all"}">${i >= 4 ? "Khusus Kelas 1" : "Semua alat"}</span>` : ""}<button type="button" data-rm="${d}" aria-label="Hapus ${esc(tglChip(d))}">✕</button></span>`).join("");
+  const berat = aturan4(a) && kelasList(a).length && days.length > 4, hn = hariNon1(a);
+  $("#dateChips").innerHTML = days.map((d, i) => `<span class="date-chip"><b>Hari ${i + 1}</b> ${esc(tglChip(d))}${berat ? ` <span class="dtag ${hn.includes(d) ? "all" : "k1"}">${hn.includes(d) ? "Semua alat" : "Khusus Kelas 1"}</span>` : ""}<button type="button" data-rm="${d}" aria-label="Hapus ${esc(tglChip(d))}">✕</button></span>`).join("");
   const h = $("#hariHint");
   h.textContent = !days.length ? "Pilih minimal 1 tanggal kegiatan."
     : days.length === 1 ? "Kegiatan 1 hari. Klik tanggal lain di kalender bila kegiatan lebih dari 1 hari – boleh lompat."
@@ -1894,15 +1902,32 @@ function renderAturan() {
   let h = `<b>Aturan jumlah hari per alat / kelas</b>`;
   if (n <= 4) h += `<div>Kegiatan ${n} hari: semua alat/kelas memakai semua hari. <small>(Bila nanti lebih dari 4 hari, hari ke-5 dan seterusnya hanya untuk Kelas 1.)</small></div>`;
   else {
-    h += `<label class="ck4"><input type="checkbox" id="f-aturan4"${on ? " checked" : ""}> Terapkan: hari ke-5 dan seterusnya hanya untuk Kelas 1</label>`;
-    h += `<div class="ah-row"><span class="ah-tag all">Hari 1–4</span> Semua alat/kelas</div>`;
-    h += `<div class="ah-row"><span class="ah-tag k1">Hari 5–${n}</span> ${on ? "Khusus Kelas 1" : "Semua alat/kelas (aturan dimatikan)"}</div><ul>`;
-    h += ks.map(x => `<li><b>${esc(x)}</b> → ${!on || KLS1.test(x) ? `${n} hari (Hari 1–${n})` : "4 hari (Hari 1–4)"}</li>`).join("") + `</ul>`;
-    if (on && !ks.some(x => KLS1.test(x))) h += `<div class="warn">Belum ada alat Kelas 1, jadi Hari 5–${n} tidak dipakai oleh alat mana pun. Pilih Kelas 1 pada alatnya, atau kurangi tanggal.</div>`;
+    const hn = hariNon1(a), lbl = d => `Hari ${days.indexOf(d) + 1}`;
+    h += `<label class="ck4"><input type="checkbox" id="f-aturan4"${on ? " checked" : ""}> Terapkan: alat selain Kelas 1 memakai ${hn.length} hari saja (Kelas 1 memakai semua hari)</label>`;
+    if (on) {
+      h += `<div class="ah-pick"><b>Hari yang dipakai Crane Kelas 2, 3 &amp; Rigger:</b> <small>klik hari untuk menyalakan / mematikan (hari yang dimatikan dikosongkan)</small><div class="ah-days">${days.map((d, i) => `<button type="button" class="ah-d${hn.includes(d) ? " on" : ""}" data-h4="${d}" title="${esc(tglChip(d))}">Hari ${i + 1}<small>${esc(tglChip(d))}</small></button>`).join("")}</div>`;
+      h += `<div class="ah-pre"><button type="button" class="btn sm" data-h4pre="awal">Hari 1–4 (awal)</button> <button type="button" class="btn sm" data-h4pre="akhir">Hari ${n - 3}–${n} (4 hari terakhir: hari pertama dikosongkan, selesai bersamaan Kelas 1)</button></div></div>`;
+    }
+    h += `<div class="ah-row"><span class="ah-tag all">${on ? hn.map(lbl).join(", ") : "Semua hari"}</span> Semua alat/kelas</div>`;
+    h += `<div class="ah-row"><span class="ah-tag k1">${on ? (days.filter(d => !hn.includes(d)).map(lbl).join(", ") || "—") : "—"}</span> ${on ? "Khusus Kelas 1 (alat lain kosong)" : "(aturan dimatikan: semua alat memakai semua hari)"}</div><ul>`;
+    h += ks.map(x => `<li><b>${esc(x)}</b> → ${!on || KLS1.test(x) ? `${n} hari (Hari 1–${n})` : `${hn.length} hari (${hn.map(d => days.indexOf(d) + 1).join(", ")})`}</li>`).join("") + `</ul>`;
+    if (on && !ks.some(x => KLS1.test(x))) h += `<div class="warn">Belum ada alat Kelas 1, jadi hari yang dikosongkan tidak dipakai oleh alat mana pun. Pilih Kelas 1 pada alatnya, atau kurangi tanggal.</div>`;
   }
   el.innerHTML = h; el.hidden = false;
 }
 $("#aturanHari").addEventListener("change", e => { if (e.target.id !== "f-aturan4") return; S.acara.aturan4 = e.target.checked; renderDates(); renderTtdTab(); renderLap(); changed(); });
+$("#aturanHari").addEventListener("click", e => {
+  const b = e.target.closest("[data-h4],[data-h4pre]"); if (!b) return;
+  const a = S.acara, days = hariList(a).filter(Boolean);
+  if (b.dataset.h4pre) { const n = Math.min(4, days.length); a.hari4 = b.dataset.h4pre === "awal" ? days.slice(0, n) : days.slice(days.length - n); }
+  else {
+    const cur = hariNon1(a).slice(), d = b.dataset.h4, i = cur.indexOf(d);
+    if (i >= 0) { if (cur.length <= 1) { toast("Minimal 1 hari dipakai."); return; } cur.splice(i, 1); } else cur.push(d);
+    a.hari4 = days.filter(x => cur.includes(x));
+  }
+  renderDates(); renderTtdTab(); renderLap(); changed();
+  toast(`Alat selain Kelas 1 memakai: ${hariNon1(a).map(d => "Hari " + (days.indexOf(d) + 1)).join(", ")}.`);
+});
 function renderCal() {
   const sel = new Set((S.acara.hari || []).filter(Boolean)), now = todayIso();
   const first = new Date(DP.y, DP.m, 1), start = new Date(first);
@@ -2003,7 +2028,7 @@ function renderAlat() {
   box.innerHTML = ALAT_SEMUA.map(n => {
     const es = arr.filter(x => x.k === n), kelas = ALAT_KELAS.includes(n);
     if (!es.length) return `<div class="alat-row"><label><input type="checkbox" data-alat="${esc(n)}"> ${esc(n)}</label>${kelas ? `<select disabled aria-label="Kelas ${esc(n)}"><option>Kelas\u2026</option></select>` : `<span class="nk">Non kelas</span>`}</div>`;
-    const nh = (A.hari || []).filter(Boolean).length, lb = x => { if (!aturan4({ papa: true, aturan4: A.aturan4 }) || nh <= 4) return ""; const full = KLS1.test(alatLabel(x)); return `<small class="dtag ${full ? "k1" : "all"}" title="Jumlah hari alat ini">${full ? nh + " hari" : "4 hari"}</small>`; };
+    const nh = (A.hari || []).filter(Boolean).length, lb = x => { if (!aturan4({ papa: true, aturan4: A.aturan4 }) || nh <= 4) return ""; const full = KLS1.test(alatLabel(x)); return `<small class="dtag ${full ? "k1" : "all"}" title="Jumlah hari alat ini">${full ? nh + " hari" : hariNon1(A).length + " hari"}</small>`; };
     return es.map((x, i) => `<div class="alat-row on"><label><input type="checkbox" data-aid="${x.id}" checked> ${esc(n)} ${lb(x)}</label>` + (kelas
       ? `<span class="alat-k"><select data-aidk="${x.id}" aria-label="Kelas ${esc(n)}"><option value="">Kelas\u2026</option>${["1", "2", "3"].map(v => `<option value="${v}"${x.kls === v ? " selected" : ""}>Kelas ${v}</option>`).join("")}</select>${i === es.length - 1 ? `<button type="button" class="btn sm" data-aplus="${esc(n)}" title="Tambah kelas lain untuk alat ini">+ kelas</button>` : ""}</span>`
       : `<span class="nk">Non kelas</span>`) + `</div>`).join("");
@@ -2514,7 +2539,7 @@ function renderLap() {
   NRK = ""; { const bx = $("#nrKelasBox"); if (bx) bx.hidden = true; } // narasumber satu untuk semua alat
   const NR = nrD(L, NRK);
   const nrCard = (d, i, key, n) => {
-    const r = NR[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = (n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`) + (aturan4(S.acara) && kelasList(S.acara).length && days.length > 4 ? ` <span class="dtag ${i >= 4 ? "k1" : "all"}">${i >= 4 ? "Khusus Kelas 1" : "Semua alat/kelas"}</span>` : "");
+    const r = NR[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = (n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`) + (aturan4(S.acara) && kelasList(S.acara).length && days.length > 4 ? ` <span class="dtag ${hariNon1(S.acara).includes(d) ? "all" : "k1"}">${hariNon1(S.acara).includes(d) ? "Semua alat/kelas" : "Khusus Kelas 1"}</span>` : "");
     return `<div class="lp-day lp-nr" data-day="${key}"><div class="h">${ttl}</div>
       <select data-nf="kid" aria-label="Narasumber ${ttl}"><option value="">— Pilih narasumber —</option>${naraOpsiHtml(r)}<option value="_m"${man ? " selected" : ""}>✍️ Isi manual</option></select>
       ${man ? `<input type="text" data-nf="nama" placeholder="Nama narasumber (mis. Fido Rinekas, S.T)" value="${esc(r.nama)}" autocomplete="off"><input type="text" data-nf="nip" placeholder="NIP (opsional)" value="${esc(r.nip)}" autocomplete="off"><input type="text" data-nf="inst" placeholder="Instansi (mis. Kemnaker)" value="${esc(r.inst)}" autocomplete="off">`
@@ -2666,7 +2691,7 @@ function renderTtdTab() {
 
   $("#tDays").innerHTML = ds.map(d => `
     <button class="day-chip ${d.k === T_DAY ? "on" : ""}" data-k="${d.k}" ${d.locked ? "disabled title='Hari ini belum tiba'" : ""}>
-      <b>${d.locked ? "🔒 " : ""}Hari ${d.k + 1}${d.today ? '<span class="today">Hari ini</span>' : ""}${berat ? ` <span class="dtag ${d.k >= 4 ? "k1" : "all"}">${d.k >= 4 ? "Khusus Kelas 1" : "Semua alat"}</span>` : ""}</b>
+      <b>${d.locked ? "🔒 " : ""}Hari ${d.k + 1}${d.today ? '<span class="today">Hari ini</span>' : ""}${berat ? ` <span class="dtag ${hariNon1(S.acara).includes(d.iso) ? "all" : "k1"}">${hariNon1(S.acara).includes(d.iso) ? "Semua alat" : "Khusus Kelas 1"}</span>` : ""}</b>
       <span>${d.iso ? esc(fmtTgl(d.iso)) : "Tanggal belum diisi"}</span><br><span>${cnt(d.k)}/${tot(d.k)} sudah TTD</span>
     </button>`).join("");
 
