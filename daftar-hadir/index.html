@@ -3650,6 +3650,15 @@ const Cloud = {
       const r = await this.api("listEvents");
       if (!r || !Array.isArray(r.events) || !r.events.length) return 0; // daftar kosong dianggap tidak meyakinkan: jangan hapus apa pun
       const ada = new Set(r.events.map(e => e.id)), q = (await idbGet(DEL_KEY)) || [];
+      { // sapu bersih: kegiatan yang SUDAH dihapus di website ini tetapi foldernya masih / muncul lagi di Drive (hapus gagal, atau dibuat ulang oleh sinkron / pengambil hasil PIC otomatis)
+        const sisa = r.events.filter(e => e.id && TOMBS.has(e.id) && !EV.some(x => x.id === e.id) && !q.includes(e.id));
+        if (sisa.length) {
+          for (const e of sisa) { this.gone.add(e.id); await this.queueDelete(e.id); }
+          this.recBusy = false; const ok = await this.flushDeletes(); this.recBusy = true;
+          toast(ok ? (sisa.length === 1 ? "Satu folder kegiatan yang sudah dihapus tetapi masih ada di Google Drive dibersihkan." : `${sisa.length} folder kegiatan yang sudah dihapus tetapi masih ada di Google Drive dibersihkan.`)
+                   : "Ada folder kegiatan yang sudah dihapus tetapi masih di Google Drive" + (this.delErr ? ": " + this.delErr : ". Akan dicoba lagi otomatis."));
+        }
+      }
       for (const e of [...EV]) {
         if (ada.has(e.id) || !e.cloud || q.includes(e.id) || this.gone.has(e.id)) continue;
         if (e.id === S.id && this.dirty(S)) continue;
