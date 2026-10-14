@@ -2457,13 +2457,17 @@ Ev.quick = function () {
   const NAMA = { damkar: "Damkar", angkat: "PAPA (Pesawat Angkat/Angkut)", b3: "B3 (Lingkungan Kerja)", lain: "Kegiatan lainnya" };
   const grup = { damkar: [], angkat: [], b3: [], lain: [] };
   [...EV].sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")) || y.updated - x.updated).forEach(e => grup[this.jenisIdx(e)].push(e));
+  { // kegiatan yang ada di Google Drive tetapi belum ada di perangkat ini: ikut tampil (ikon awan), klik = unduh & buka
+    const mati = new Set([...Cloud.gone]);
+    (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !TOMBS.has(e.id) && !mati.has(e.id)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || ""))).forEach(e => grup[this.jenisIdx(e)].push({ ...e, remote: true }));
+  }
   $("#qLainWrap").hidden = !grup.lain.length;
   Object.keys(grup).forEach(j => {
     const btn = document.querySelector(`.qbtn[data-q="${j}"]`), menu = document.querySelector(`.qmenu[data-m="${j}"]`); if (!btn || !menu) return;
     btn.querySelector(".cnt").textContent = grup[j].length;
     menu.innerHTML = (j === "lain" ? "" : `<button class="qnew" data-new="${j}">＋ Buat kegiatan ${j === "damkar" ? "Damkar" : j === "b3" ? "B3" : "PAPA"} baru</button>`) +
       `<div class="qh">${NAMA[j]} – pilih tanggal</div>` +
-      (grup[j].length ? grup[j].map(e => `<button data-open="${esc(e.id)}" class="${e.id === S.id ? "cur" : ""}"><div class="qn">${esc(this.tgl(e))}${e.id === S.id ? ' <span class="tag" style="font-size:10.5px;color:#9a3412">dibuka</span>' : ""}</div><div class="qd">${esc(e.kelas ? e.kelas + " · " : "")}${esc(e.tempat || e.kegiatan || "(tanpa nama)")} · ${e.n || 0} peserta</div></button>`).join("")
+      (grup[j].length ? grup[j].map(e => `<button ${e.remote ? "data-remote" : "data-open"}="${esc(e.id)}" class="${e.id === S.id ? "cur" : ""}"><div class="qn">${e.remote ? "☁️ " : ""}${esc(this.tgl(e))}${e.id === S.id ? ' <span class="tag" style="font-size:10.5px;color:#9a3412">dibuka</span>' : ""}</div><div class="qd">${esc(e.kelas ? e.kelas + " · " : "")}${esc(e.tempat || e.kegiatan || "(tanpa nama)")} · ${e.n || 0} peserta${e.remote ? " · dari Google Drive, klik untuk mengunduh" : ""}</div></button>`).join("")
         : `<div class="qe">Belum ada kegiatan ${NAMA[j]} yang pernah diinput.</div>`);
   });
 };
@@ -2475,7 +2479,7 @@ Ev.baru = async function (jenis) { // kegiatan baru; jenis "damkar"/"angkat" lan
 $("#btnNewEv").onclick = () => { Ev.menuTutup(); Ev.baru(null); };
 $("#quick").addEventListener("click", e => {
   e.stopPropagation();
-  const t = e.target.closest("[data-q],[data-new],[data-open]"); if (!t) return;
+  const t = e.target.closest("[data-q],[data-new],[data-open],[data-remote]"); if (!t) return;
   if (t.dataset.q) {
     const m = document.querySelector(`.qmenu[data-m="${t.dataset.q}"]`), buka = m.hidden;
     Ev.menuTutup(); if (buka) { Ev.quick(); m.hidden = false; t.setAttribute("aria-expanded", "true"); }
@@ -2483,6 +2487,7 @@ $("#quick").addEventListener("click", e => {
   }
   Ev.menuTutup();
   if (t.dataset.new) Ev.baru(t.dataset.new);
+  else if (t.dataset.remote) { toast("Mengunduh kegiatan dari Google Drive…"); Cloud.pull(t.dataset.remote).then(() => Ev.quick()); }
   else if (t.dataset.open && t.dataset.open !== S.id) Ev.load(t.dataset.open);
 });
 document.addEventListener("click", () => Ev.menuTutup());
@@ -3756,6 +3761,7 @@ const Cloud = {
     try {
       const r = await this.api("listEvents");
       if (!r || !Array.isArray(r.events) || !r.events.length) return 0; // daftar kosong dianggap tidak meyakinkan: jangan hapus apa pun
+      this.remote = r.events; Ev.quick(); // tombol cepat ikut menampilkan kegiatan yang ada di Drive tetapi belum ada di perangkat ini
       const ada = new Set(r.events.map(e => e.id)), q = (await idbGet(DEL_KEY)) || [];
       { // sapu bersih: kegiatan yang SUDAH dihapus di website ini tetapi foldernya masih / muncul lagi di Drive (hapus gagal, atau dibuat ulang oleh sinkron / pengambil hasil PIC otomatis)
         const sisa = r.events.filter(e => e.id && TOMBS.has(e.id) && !EV.some(x => x.id === e.id) && !q.includes(e.id));
@@ -3946,6 +3952,7 @@ const Cloud = {
     el.innerHTML = `<div class="hint">Memuat daftar dari Google Drive…</div>`;
     try {
       const r = await this.api("listEvents");
+      this.remote = r.events || []; Ev.quick();
       const mati = new Set([...this.gone, ...((await idbGet(DEL_KEY)) || [])]); // yang baru saja dihapus jangan tampil lagi walau Drive belum selesai
       const list = (r.events || []).filter(e => !mati.has(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
       el.innerHTML = list.length ? list.map(e => {
@@ -3972,10 +3979,10 @@ const Cloud = {
     this.listRemote();
   },
   async pull(id) {
-    const el = $("#evCloudList");
+    const el = $("#evCloudList"), ui = h => { const a = el.querySelector(`[data-id="${CSS.escape(id)}"] .acts`); if (a) a.innerHTML = h; }; // baris daftar Drive bisa tidak ada (dibuka dari tombol cepat)
     tombDel(id);
     try {
-      el.querySelector(`[data-id="${CSS.escape(id)}"] .acts`).innerHTML = `<span class="hint">Mengunduh…</span>`;
+      ui(`<span class="hint">Mengunduh…</span>`);
       const r = await this.api("getEvent", { id });
       const d = r.event, files = r.files || {};
       const ev = normalize({
@@ -3986,7 +3993,7 @@ const Cloud = {
       });
       const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); let i = 0; // berkas Word tidak perlu diunduh
       for (const k of keys) {
-        el.querySelector(`[data-id="${CSS.escape(id)}"] .acts`).innerHTML = `<span class="hint">Mengunduh file ${++i}/${keys.length}…</span>`;
+        ui(`<span class="hint">Mengunduh file ${++i}/${keys.length}…</span>`);
         const f = await this.api("getFile", { id: files[k].id });
         const [kind, pid, day] = k.split(":"), p = ev.peserta.find(x => x.id === pid);
         if (kind === "foto" && p) p.foto = f.dataUrl;
@@ -4290,7 +4297,7 @@ const Pic = {
   Cloud.watch();
   ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
   applyState();
-  Cloud.flushDeletes().then(() => Cloud.reconcile(true));
+  Cloud.flushDeletes().then(() => Cloud.reconcile(true)).then(() => Ev.quick());
   Cloud.verify();
   Pic.start();
   Ev.quick();
