@@ -120,6 +120,19 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .judul-prev{margin-top:8px;padding:8px 10px;border-radius:8px;background:#eef6ff;border:1px solid #bfdbfe;font-size:13px;line-height:1.45}
 .judul-prev b{display:block;font-size:12px;color:#1e40af;margin-bottom:2px}
 .judul-prev .warn{color:#b45309}
+.aturan{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;font-size:13px;line-height:1.5}
+.aturan>b{display:block;font-size:12.5px;color:#5b21b6;margin-bottom:4px}
+.aturan .ah-row{display:flex;gap:8px;align-items:center;margin:2px 0}
+.aturan ul{margin:6px 0 0;padding-left:18px}
+.aturan .warn{color:#b45309;margin-top:6px}
+.aturan .ck4{display:flex;gap:8px;align-items:center;margin:2px 0 6px;font-weight:600;cursor:pointer}
+.aturan .ck4 input{width:18px;height:18px;accent-color:#7c3aed}
+.ah-tag,.dtag{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:1px 8px;white-space:nowrap}
+.ah-tag.all,.dtag.all{background:#dcfce7;color:#166534}
+.ah-tag.k1,.dtag.k1{background:#ede9fe;color:#5b21b6}
+.lp-day.off{background:#fafafa;border-style:dashed;color:#6b7280}
+.lp-day .h .dtag{margin-left:6px}
+.lp-day .btn.danger{border-color:#fca5a5;color:#b91c1c}
 .kelas-box{margin-top:8px;padding:10px;border:1px dashed #fdba74;border-radius:10px;background:#fffaf3}
 .kelas-box textarea{width:100%;margin-top:4px}
 .kelas-bulk{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
@@ -556,6 +569,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
           <div class="date-chips" id="dateChips"></div></div>
       </div>
       <p class="hint" id="hariHint" style="margin:0 0 10px"></p>
+      <div class="aturan" id="aturanHari" hidden></div>
       <div class="row3">
         <div class="field"><label for="f-mulai">Jam Mulai</label><input id="f-mulai" type="time" data-k="jamMulai"></div>
         <div class="field"><label for="f-selesai">Jam Selesai</label><input id="f-selesai" type="time" data-k="jamSelesai"></div>
@@ -830,7 +844,8 @@ const naraRow = r => { const o = naraNew(); r = r && typeof r === "object" ? r :
    (baris tambahan yang masih kosong tidak ikut dicetak). */
 const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4;
 const nrIso = k => (NR_KEY.exec(k) || [])[1] || "";
-const nrKeys = (L, d) => [d, ...Object.keys(L.nr || {}).filter(k => { const m = NR_KEY.exec(k); return m && m[1] === d && m[2]; }).sort((a, b) => +a.split("_")[1] - +b.split("_")[1])];
+const nrOff = (L, k) => !!(L && L.nrOff && L.nrOff[k]); // hari/baris narasumber yang dihapus admin (tidak dicetak, tidak tampil di APK)
+const nrKeys = (L, d) => nrOff(L, d) ? [] : [d, ...Object.keys(L.nr || {}).filter(k => { const m = NR_KEY.exec(k); return m && m[1] === d && m[2] && !nrOff(L, k); }).sort((a, b) => +a.split("_")[1] - +b.split("_")[1])];
 const nrKosong = r => !(r && (r.kid || r.nama || r.mtxt || r.ttd || r.inst));
 const nrCetak = (L, days) => days.flatMap(d => nrKeys(L, d).filter((k, i) => i === 0 || !nrKosong((L.nr || {})[k]))); // daftar baris yang dicetak
 /* Narasumber PER ALAT (kelas): bidang PAPA menyimpan baris narasumber di lap.nrk[kunciKelas][kunciHari]; selain itu di lap.nr.
@@ -840,9 +855,11 @@ const kelasKey = l => "k" + fnv(String(l)).split(":")[0];
    Beda hanya pada jumlah hari: Kelas 1 biasanya lebih dari 4 hari, alat/kelas lain memakai 4 hari pertama (lihat hariKelas). */
 const nrD = (L, kl) => (L.nr = L.nr || {}); // kl diabaikan: satu kamus untuk semua alat
 const nrDget = (L, kl) => (L.nr || {});
-function hariKelas(ev, k) { // daftar hari (ISO) yang dipakai alat/kelas ini untuk absensi narasumber; null = semua hari kegiatan
+const KLS1 = /kelas\s*1\b/i;
+const aturan4 = a => !!(a && a.papa) && a.aturan4 !== false; // aturan "lebih dari 4 hari: hari ke-5 dst. hanya Kelas 1" berlaku (bisa dimatikan di tab 1)
+function hariKelas(ev, k) { // daftar hari (ISO) yang dipakai alat/kelas ini (daftar hadir, dokumentasi, narasumber); null = semua hari kegiatan
   const days = hariList(ev.acara).filter(Boolean);
-  if (!k || days.length <= 4 || /kelas\s*1\b/i.test(String(k))) return null;
+  if (!k || !aturan4(ev.acara) || days.length <= 4 || KLS1.test(String(k))) return null;
   return days.slice(0, 4);
 }
 const nrEf = r => (r && r.kid ? r : naraNew()); // baris tanpa narasumber terpilih dianggap kosong (nama sisa tidak ikut tercetak)
@@ -874,8 +891,9 @@ const lapNorm = l => {
   Object.keys(l.hari || {}).forEach(k => { const h = l.hari[k] || {}; hari[k] = { materi: String(h.materi || ""), fotos: (Array.isArray(h.fotos) ? h.fotos : []).filter(x => typeof x === "string" && x) }; });
   const s = (x, d) => { const o = { ...d, ...(x && typeof x === "object" ? x : {}) }; Object.keys(d).forEach(k => { o[k] = String(o[k] == null ? "" : o[k]); }); return o; };
   const nr = {}; Object.keys(l.nr || {}).forEach(k => { nr[k] = naraRow(l.nr[k]); });
+  const nrOffN = {}; Object.keys(l.nrOff && typeof l.nrOff === "object" ? l.nrOff : {}).forEach(k => { if (l.nrOff[k] && NR_KEY.test(k)) nrOffN[k] = 1; });
   const nrk = {}; Object.keys(l.nrk && typeof l.nrk === "object" ? l.nrk : {}).forEach(kk => { const d = {}; Object.keys(l.nrk[kk] || {}).forEach(k => { d[k] = naraRow(l.nrk[kk][k]); }); nrk[kk] = d; });
-  return { nilai: !!l.nilai, hasil: !!l.hasil, harian: !!l.harian, nara: !!l.nara, nr, nrk, batch: String(l.batch || ""), nKota: String(l.nKota || ""), nTgl: String(l.nTgl || ""), s1: s(l.s1, b.s1), s2: s(l.s2, b.s2), hari };
+  return { nilai: !!l.nilai, hasil: !!l.hasil, harian: !!l.harian, nara: !!l.nara, nr, nrk, nrOff: nrOffN, batch: String(l.batch || ""), nKota: String(l.nKota || ""), nTgl: String(l.nTgl || ""), s1: s(l.s1, b.s1), s2: s(l.s2, b.s2), hari };
 };
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
@@ -956,11 +974,11 @@ function syncAngkat(prev) {
   A.kegiatan = judulAuto(A);
 }
 function kelasEv(ev, k) {
-  const ks = kelasList(ev.acara), a = ev.acara, kg = (a.kegiatan || "").trim();
+  const ks = kelasList(ev.acara), a = ev.acara, kg = (a.kegiatan || "").trim(), hk = hariKelas(ev, k);
   return {
     ...ev, kelasNama: k,
     peserta: ev.peserta.filter(p => (p.nama || "").trim() && (k ? p.kelas === k : !ks.includes(p.kelas))),
-    acara: { ...a, kegiatan: k ? (a.jenis === "angkat" ? judulAngkatKelas(k) : (kg ? kg + " \u2013 " + k : k)) : a.kegiatan },
+    acara: { ...a, kegiatan: k ? (a.jenis === "angkat" ? judulAngkatKelas(k) : (kg ? kg + " \u2013 " + k : k)) : a.kegiatan, ...(hk ? { hari: hk, tanggal: hk[0], tanggal2: hk[hk.length - 1] } : {}) }, // alat selain Kelas 1: hanya 4 hari pertama
     lap: { ...ev.lap, nr: ev.lap.nr || {}, nrHari: hariKelas(ev, k) } // narasumber: satu isian untuk semua alat; hari yang dicetak mengikuti kelas
   };
 }
@@ -1746,13 +1764,32 @@ function renderDates() {
   const t = $("#dateFieldTxt");
   t.textContent = days.length ? days.map(tglChip).join(", ") : "Klik untuk memilih tanggal…";
   t.className = days.length ? "" : "ph";
-  $("#dateChips").innerHTML = days.map((d, i) => `<span class="date-chip"><b>Hari ${i + 1}</b> ${esc(tglChip(d))}<button type="button" data-rm="${d}" aria-label="Hapus ${esc(tglChip(d))}">✕</button></span>`).join("");
+  const berat = aturan4(a) && kelasList(a).length && days.length > 4;
+  $("#dateChips").innerHTML = days.map((d, i) => `<span class="date-chip"><b>Hari ${i + 1}</b> ${esc(tglChip(d))}${berat ? ` <span class="dtag ${i >= 4 ? "k1" : "all"}">${i >= 4 ? "Khusus Kelas 1" : "Semua alat"}</span>` : ""}<button type="button" data-rm="${d}" aria-label="Hapus ${esc(tglChip(d))}">✕</button></span>`).join("");
   const h = $("#hariHint");
   h.textContent = !days.length ? "Pilih minimal 1 tanggal kegiatan."
     : days.length === 1 ? "Kegiatan 1 hari. Klik tanggal lain di kalender bila kegiatan lebih dari 1 hari – boleh lompat."
     : `${days.length} hari kegiatan${isBerurutan(days) ? "" : " (tidak berurutan)"}: ${hariTanggal(a, days)}. Kolom tanda tangan dibuat per tanggal.`;
+  renderAturan(); if (jenisOf(a) === "angkat" && $("#alatList") && !$("#alatList").contains(document.activeElement)) renderAlat(); // badge jumlah hari per alat ikut berubah
   if (DP.open) renderCal();
 }
+function renderAturan() {
+  const el = $("#aturanHari"); if (!el) return;
+  const a = S.acara, days = (a.hari || []).filter(Boolean), ks = kelasList(a), n = days.length;
+  if (!a.papa || !ks.length || !n) { el.hidden = true; return; }
+  const on = a.aturan4 !== false;
+  let h = `<b>Aturan jumlah hari per alat / kelas</b>`;
+  if (n <= 4) h += `<div>Kegiatan ${n} hari: semua alat/kelas memakai semua hari. <small>(Bila nanti lebih dari 4 hari, hari ke-5 dan seterusnya hanya untuk Kelas 1.)</small></div>`;
+  else {
+    h += `<label class="ck4"><input type="checkbox" id="f-aturan4"${on ? " checked" : ""}> Terapkan: hari ke-5 dan seterusnya hanya untuk Kelas 1</label>`;
+    h += `<div class="ah-row"><span class="ah-tag all">Hari 1–4</span> Semua alat/kelas</div>`;
+    h += `<div class="ah-row"><span class="ah-tag k1">Hari 5–${n}</span> ${on ? "Khusus Kelas 1" : "Semua alat/kelas (aturan dimatikan)"}</div><ul>`;
+    h += ks.map(x => `<li><b>${esc(x)}</b> → ${!on || KLS1.test(x) ? `${n} hari (Hari 1–${n})` : "4 hari (Hari 1–4)"}</li>`).join("") + `</ul>`;
+    if (on && !ks.some(x => KLS1.test(x))) h += `<div class="warn">Belum ada alat Kelas 1, jadi Hari 5–${n} tidak dipakai oleh alat mana pun. Pilih Kelas 1 pada alatnya, atau kurangi tanggal.</div>`;
+  }
+  el.innerHTML = h; el.hidden = false;
+}
+$("#aturanHari").addEventListener("change", e => { if (e.target.id !== "f-aturan4") return; S.acara.aturan4 = e.target.checked; renderDates(); renderTtdTab(); renderLap(); changed(); });
 function renderCal() {
   const sel = new Set((S.acara.hari || []).filter(Boolean)), now = todayIso();
   const first = new Date(DP.y, DP.m, 1), start = new Date(first);
@@ -1853,7 +1890,8 @@ function renderAlat() {
   box.innerHTML = ALAT_SEMUA.map(n => {
     const es = arr.filter(x => x.k === n), kelas = ALAT_KELAS.includes(n);
     if (!es.length) return `<div class="alat-row"><label><input type="checkbox" data-alat="${esc(n)}"> ${esc(n)}</label>${kelas ? `<select disabled aria-label="Kelas ${esc(n)}"><option>Kelas\u2026</option></select>` : `<span class="nk">Non kelas</span>`}</div>`;
-    return es.map((x, i) => `<div class="alat-row on"><label><input type="checkbox" data-aid="${x.id}" checked> ${esc(n)}</label>` + (kelas
+    const nh = (A.hari || []).filter(Boolean).length, lb = x => { if (!aturan4({ papa: true, aturan4: A.aturan4 }) || nh <= 4) return ""; const full = KLS1.test(alatLabel(x)); return `<small class="dtag ${full ? "k1" : "all"}" title="Jumlah hari alat ini">${full ? nh + " hari" : "4 hari"}</small>`; };
+    return es.map((x, i) => `<div class="alat-row on"><label><input type="checkbox" data-aid="${x.id}" checked> ${esc(n)} ${lb(x)}</label>` + (kelas
       ? `<span class="alat-k"><select data-aidk="${x.id}" aria-label="Kelas ${esc(n)}"><option value="">Kelas\u2026</option>${["1", "2", "3"].map(v => `<option value="${v}"${x.kls === v ? " selected" : ""}>Kelas ${v}</option>`).join("")}</select>${i === es.length - 1 ? `<button type="button" class="btn sm" data-aplus="${esc(n)}" title="Tambah kelas lain untuk alat ini">+ kelas</button>` : ""}</span>`
       : `<span class="nk">Non kelas</span>`) + `</div>`).join("");
   }).join("");
@@ -1884,7 +1922,7 @@ $("#f-jenis").addEventListener("change", e => {
 });
 function fillForm_k() { const el = $("#f-kegiatan"); if (document.activeElement !== el) el.value = S.acara.kegiatan || ""; }
 $("#f-kdamkar").addEventListener("change", e => { S.acara.kelasDamkar = e.target.value; S.acara.kegiatan = judulAuto(S.acara); renderJudulPrev(); changed(); });
-function afterAlat(prev) { syncAngkat(prev); renderAlat(); renderJudulPrev(); fillKelas(); fillForm_k(); renderList(); changed(); }
+function afterAlat(prev) { syncAngkat(prev); renderAlat(); renderAturan(); renderTtdTab(); renderJudulPrev(); fillKelas(); fillForm_k(); renderList(); changed(); }
 $("#alatList").addEventListener("change", e => {
   const A = S.acara, prev = alatSnap(), t = e.target;
   if (!Array.isArray(A.alat)) A.alat = [];
@@ -2318,7 +2356,7 @@ function openOrgSig() {
     return;
   }
   const days = hariList(a), named = fotoList();
-  const kosong = named.reduce((n, p) => n + days.filter(d => d && !(p.ttd && p.ttd[d])).length, 0);
+  const kosong = named.reduce((n, p) => n + days.filter(d => d && (hariKelas(S, p.kelas) || days).includes(d) && !(p.ttd && p.ttd[d])).length, 0);
   Sig.open({
     title: "✍️ Tanda Tangan Penyelenggara",
     help: "Goreskan tanda tangan dengan jari, stylus, atau mouse. Hasilnya muncul di atas nama penyelenggara pada daftar hadir." +
@@ -2362,17 +2400,19 @@ function renderLap() {
   NRK = ""; { const bx = $("#nrKelasBox"); if (bx) bx.hidden = true; } // narasumber satu untuk semua alat
   const NR = nrD(L, NRK);
   const nrCard = (d, i, key, n) => {
-    const r = NR[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = (n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`) + (S.acara.papa && days.length > 4 && i >= 4 ? " · hanya Kelas 1" : "");
+    const r = NR[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = (n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`) + (aturan4(S.acara) && kelasList(S.acara).length && days.length > 4 ? ` <span class="dtag ${i >= 4 ? "k1" : "all"}">${i >= 4 ? "Khusus Kelas 1" : "Semua alat/kelas"}</span>` : "");
     return `<div class="lp-day lp-nr" data-day="${key}"><div class="h">${ttl}</div>
       <select data-nf="kid" aria-label="Narasumber ${ttl}"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(x => `<option value="${x.id}"${r.kid === x.id ? " selected" : ""}>${esc(x.nama)}</option>`).join("")}<option value="_m"${man ? " selected" : ""}>✍️ Isi manual</option></select>
       ${man ? `<input type="text" data-nf="nama" placeholder="Nama narasumber (mis. Fido Rinekas, S.T)" value="${esc(r.nama)}" autocomplete="off"><input type="text" data-nf="nip" placeholder="NIP (opsional)" value="${esc(r.nip)}" autocomplete="off"><input type="text" data-nf="inst" placeholder="Instansi (mis. Kemnaker)" value="${esc(r.inst)}" autocomplete="off">`
         : r.kid ? `<div class="auto">Instansi: <b>${esc(r.inst)}</b><br>NIP: ${esc(r.nip) || "–"}</div>` : ""}
       ${r.kid ? `<select data-nf="mid" aria-label="Materi ${ttl}"><option value="">— Pilih materi —</option>${opsi.map(m => `<option value="${m.id}"${r.mid === m.id ? " selected" : ""}>${esc(m.judul)}</option>`).join("")}<option value="manual"${r.mid === "manual" ? " selected" : ""}>✍️ Isi manual</option></select>` : ""}
       ${mk ? `<div class="bls">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join("")}</div>` : r.mid === "manual" ? `<textarea data-nf="mtxt" rows="4" placeholder="Isi materi, satu baris = satu poin">${esc(r.mtxt)}</textarea>` : ""}
-      <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd ? `background-image:url('${r.ttd}')` : ""}">${r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button>${n ? `<button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan baris</button>` : ""}</div></div>`;
+      <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd ? `background-image:url('${r.ttd}')` : ""}">${r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button><button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan</button><button class="btn sm danger" type="button" data-act="ndel" title="${n ? "Hapus baris narasumber ini" : "Hapus hari ini dari absensi narasumber"}">🗑 ${n ? "Hapus baris" : "Hapus hari ini"}</button></div></div>`;
   };
+  const nrOffCard = (d, i) => `<div class="lp-day lp-nr off" data-day="${d}"><div class="h">HARI ${i + 1} · ${esc(fmtTgl(d))}</div><div>Hari ini <b>dihapus</b> dari absensi narasumber (tidak dicetak dan tidak tampil di aplikasi PIC).</div><div class="lap-sig" style="margin-top:8px"><button class="btn sm" type="button" data-act="nback">↩ Pulihkan hari ini</button></div></div>`;
   $("#lpNr").innerHTML = !L.nara ? "" : days.length ? days.map((d, i) => {
-    const ks = nrKeys({ nr: NR }, d);
+    if (nrOff(L, d)) return nrOffCard(d, i);
+    const ks = nrKeys({ nr: NR, nrOff: L.nrOff }, d);
     return ks.map((k, n) => nrCard(d, i, k, n)).join("") + (ks.length < NR_MAX ? `<button class="btn sm" type="button" data-act="nadd" data-d="${d}" style="margin-top:8px">➕ Tambah narasumber di hari ini</button>` : "");
   }).join("") : `<div class="empty">Isi tanggal kegiatan di tab 1 dulu.</div>`;
   $("#lpDays").innerHTML = days.length ? days.map((d, i) => {
@@ -2446,9 +2486,21 @@ $("#lapBox").addEventListener("click", e => {
   if (b.dataset.act === "sig1") lapSig("s1");
   else if (b.dataset.act === "sig2") lapSig("s2");
   else if (b.dataset.act === "nadd") {
-    const d = b.dataset.d, ND = nrD(S.lap, NRK), ks = nrKeys({ nr: ND }, d); if (ks.length >= NR_MAX) return;
+    const d = b.dataset.d, ND = nrD(S.lap, NRK), ks = nrKeys({ nr: ND, nrOff: S.lap.nrOff }, d); if (ks.length >= NR_MAX) return;
     let n = 2; while (ks.includes(`${d}_${n}`)) n++;
+    if (S.lap.nrOff) delete S.lap.nrOff[`${d}_${n}`];
     ND[`${d}_${n}`] = naraNew(); renderLap(); changed(); toast("Baris narasumber ditambahkan. Isi lewat pilihan nama atau Isi manual.");
+  }
+  else if (b.dataset.act === "ndel" && day) {
+    const key = day.dataset.day, d = nrIso(key), ND = nrD(S.lap, NRK), LP = S.lap; LP.nrOff = LP.nrOff || {};
+    if (key === d) { // baris utama = hapus seluruh hari (termasuk narasumber tambahan di hari itu)
+      Object.keys(ND).filter(k => nrIso(k) === d).forEach(k => { LP.nrOff[k] = 1; ND[k] = naraNew(); });
+      LP.nrOff[d] = 1; ND[d] = naraNew(); renderLap(); changed(); toast(`Absensi narasumber ${fmtTgl(d)} dihapus. Bisa dipulihkan.`);
+    } else { LP.nrOff[key] = 1; delete ND[key]; renderLap(); changed(); toast("Baris narasumber dihapus."); }
+  }
+  else if (b.dataset.act === "nback" && day) {
+    const d = day.dataset.day, LP = S.lap; if (LP.nrOff) Object.keys(LP.nrOff).filter(k => nrIso(k) === d).forEach(k => { delete LP.nrOff[k]; if (k !== d) delete nrD(LP, NRK)[k]; });
+    nrD(LP, NRK)[d] = naraNew(); renderLap(); changed(); toast("Hari dipulihkan. Isi lagi narasumbernya.");
   }
   else if (b.dataset.act === "nclr" && day) { nrD(S.lap, NRK)[day.dataset.day] = naraNew(); renderLap(); changed(); toast("Baris dikosongkan (tidak ikut dicetak)."); }
   else if (b.dataset.act === "nsig" && day) {
@@ -2479,7 +2531,8 @@ function renderTtdTab() {
   if (T_DAY == null || T_DAY >= ds.length || (ds[T_DAY] && ds[T_DAY].locked && ds.some(d => !d.locked))) T_DAY = pickDefaultDay(ds);
   const key = (ds[T_DAY] && ds[T_DAY].iso) || "";
   // Peserta Remedial hanya tanda tangan di hari terakhir; peserta Cancel tidak ikut dihitung.
-  const lastK = ds.length - 1, perlu = (p, k) => !p.batal && (!p.remedial || k === lastK);
+  const allD = hariList(S.acara), pH = p => hariKelas(S, p.kelas) || allD, berat = aturan4(S.acara) && ds.filter(d => d.iso).length > 4 && kelasList(S.acara).length > 0;
+  const perlu = (p, k) => { if (p.batal) return false; const ph = pH(p), iso = ds[k].iso; return ph.includes(iso) && (!p.remedial || iso === ph[ph.length - 1]); };
   const cnt = k => all.filter(p => perlu(p, k) && p.ttd && ds[k].iso && p.ttd[ds[k].iso]).length;
   const tot = k => all.filter(p => perlu(p, k)).length;
   // badge di tab: total tanda tangan terisi / dibutuhkan
@@ -2488,7 +2541,7 @@ function renderTtdTab() {
 
   $("#tDays").innerHTML = ds.map(d => `
     <button class="day-chip ${d.k === T_DAY ? "on" : ""}" data-k="${d.k}" ${d.locked ? "disabled title='Hari ini belum tiba'" : ""}>
-      <b>${d.locked ? "🔒 " : ""}Hari ${d.k + 1}${d.today ? '<span class="today">Hari ini</span>' : ""}</b>
+      <b>${d.locked ? "🔒 " : ""}Hari ${d.k + 1}${d.today ? '<span class="today">Hari ini</span>' : ""}${berat ? ` <span class="dtag ${d.k >= 4 ? "k1" : "all"}">${d.k >= 4 ? "Khusus Kelas 1" : "Semua alat"}</span>` : ""}</b>
       <span>${d.iso ? esc(fmtTgl(d.iso)) : "Tanggal belum diisi"}</span><br><span>${cnt(d.k)}/${tot(d.k)} sudah TTD</span>
     </button>`).join("");
 
@@ -2515,7 +2568,7 @@ function renderTtdTab() {
     <button class="t-item ${sg ? "done" : ""}" data-id="${p.id}" ${cur.locked || !S.acara.tanggal || p.batal || skip ? "disabled" : ""}>
       <span class="no">${semua.indexOf(p) + 1}.</span>
       <span class="who"><span class="nm">${esc(p.nama)}</span><br><span class="in">${esc(p.instansi || "-")}${kls(p)}</span></span>
-      <span class="sg" ${sg ? `style="background-image:url('${sg}')"` : ""}>${sg ? "" : (p.batal ? "Cancel" : skip ? "Hari terakhir" : "Belum TTD")}</span>
+      <span class="sg" ${sg ? `style="background-image:url('${sg}')"` : ""}>${sg ? "" : (p.batal ? "Cancel" : skip ? (p.remedial && pH(p).includes(key) ? "Hari terakhir" : "Bukan hari kelas ini") : "Belum TTD")}</span>
     </button></div>`;
   }).join("");
 }
@@ -3726,6 +3779,12 @@ const Pic = {
       for (const e of EV) { const l = (e.hari && e.hari[e.hari.length - 1]) || e.tanggal2 || e.tanggal; if (e.kegiatan && (!l || new Date(l + "T00:00:00").getTime() >= batas)) this.dirty.add(e.id); }
       await idbPut("pic-pub", [...this.dirty]);
     }
+    if (!(await idbGet("pic-seed-v23"))) { // sekali: kegiatan terbaru dikirim ulang agar status TTD/foto dari website ikut terbaca di APK (yang tidak berubah dilewati lewat hash)
+      await idbPut("pic-seed-v23", 1);
+      const batas = Date.now() - 60 * 864e5;
+      for (const e of EV) { const l = (e.hari && e.hari[e.hari.length - 1]) || e.tanggal2 || e.tanggal; if (e.kegiatan && (!l || new Date(l + "T00:00:00").getTime() >= batas)) this.dirty.add(e.id); }
+      await idbPut("pic-pub", [...this.dirty]);
+    }
     this.status();
     window.addEventListener("online", () => { this.status(); this.flush(); this.pullAll(); });
     window.addEventListener("offline", () => this.status());
@@ -3744,11 +3803,16 @@ const Pic = {
   node(ev) {
     nrMigrasi(ev);
     const a = ev.acara, hari = hariList(a).filter(Boolean);
+    const hkMap = {}; if (a.papa) kelasList(a).forEach(l => { const hk = hariKelas(ev, l); if (hk) hkMap[kelasKey(l)] = hk; }); // alat dengan hari lebih sedikit (hari ke-5 dst. khusus Kelas 1)
     const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: r.kid || "", nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }]));
     return {
       nama: judulDasar(a), tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, papa: !!a.papa, kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
-      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" })), dibuat: ev.created,
-      lap: { nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: nrPic(ev.lap.nr), nrk: {}, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
+      ttdWeb: !!a.ttd, hk: hkMap,
+      peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => { // wt = tanggal yang sudah ditandatangani di website, wf/wf2 = foto sudah ada di website (supaya APK tidak menampilkan "belum" untuk yang sudah selesai di web)
+        const o = { id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" };
+        const wt = {}; Object.keys(p.ttd || {}).forEach(d => { if (p.ttd[d] && hari.includes(d)) wt[d] = 1; }); if (Object.keys(wt).length) o.wt = wt;
+        if (p.foto) o.wf = 1; if (p.foto2) o.wf2 = 1; return o; }), dibuat: ev.created,
+      lap: { nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: nrPic(ev.lap.nr), nrOff: { ...(ev.lap.nrOff || {}) }, nrk: {}, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
     };
   },
   async flush() {
