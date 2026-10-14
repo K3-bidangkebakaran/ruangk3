@@ -120,6 +120,8 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .judul-prev{margin-top:8px;padding:8px 10px;border-radius:8px;background:#eef6ff;border:1px solid #bfdbfe;font-size:13px;line-height:1.45}
 .judul-prev b{display:block;font-size:12px;color:#1e40af;margin-bottom:2px}
 .judul-prev .warn{color:#b45309}
+.rd-tpl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px;padding:8px 10px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px}
+.rd-tpl .hint{flex-basis:100%;margin:2px 0 0}
 .aturan{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#f5f3ff;border:1px solid #ddd6fe;font-size:13px;line-height:1.5}
 .aturan>b{display:block;font-size:12.5px;color:#5b21b6;margin-bottom:4px}
 .aturan .ah-row{display:flex;gap:8px;align-items:center;margin:2px 0}
@@ -355,7 +357,7 @@ table.doku td.nama{font-weight:600;padding-left:3mm}
 table.doku td.foto{text-align:center}
 .ph{height:40mm;width:60mm;margin:0 auto;border-radius:1.5mm;background:repeating-linear-gradient(45deg,#f3f4f6 0 10px,#eceef1 10px 20px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9aa0a6;gap:4px;font-size:9pt}
 .ph-img{width:60mm;height:40mm;display:block;margin:0 auto;border-radius:1mm;object-fit:contain}
-#pages.hide-dh .pg-dh,#pages.hide-dk .pg-dk,#pages.hide-nl .pg-nl,#pages.hide-ln .pg-ln,#pages.hide-dy .pg-dy,#pages.hide-nr .pg-nr{display:none}
+#pages.hide-rd .pg-rd,#pages.hide-dh .pg-dh,#pages.hide-dk .pg-dk,#pages.hide-nl .pg-nl,#pages.hide-ln .pg-ln,#pages.hide-dy .pg-dy,#pages.hide-nr .pg-nr{display:none}
 /* laporan: daftar nilai, daftar nama (keterangan), dokumentasi harian */
 .pg-lap{font-family:Calibri,Carlito,"Liberation Sans Narrow","Arial Narrow",Arial,sans-serif;color:#000;font-size:11pt}
 .pg-lap .lp-h{text-align:center;font-weight:700;font-size:14pt;line-height:1.3}
@@ -374,6 +376,11 @@ table.lap.nl th{background:#ffd84a}
 table.lap td{border:1px solid #000;padding:.1mm 1.5mm;font-size:11pt;line-height:1.15;height:4.8mm;vertical-align:middle;word-wrap:break-word}
 table.lap td.c{text-align:center}
 table.lap.nr th{background:#d9d9d9}
+table.lap.rd th{background:#fff;font-size:10pt;border:1px solid #000}
+table.lap.rd td{height:4.7mm;padding:.1mm 1.2mm;font-size:9.5pt;line-height:1.15;vertical-align:middle}
+table.lap.rd td.gy{background:#e7e6e6}
+table.lap.rd td.hr{font-size:10pt}
+table.lap.rd tr.sep td{height:2.4mm;padding:0;background:#595959}
 table.lap.nr td{height:17mm;padding:1mm 1.5mm;font-size:11pt;line-height:1.25}
 table.lap.nr td.mt{text-align:left}
 table.lap.nr .bl{display:flex;gap:1.5mm;line-height:1.25}
@@ -651,6 +658,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
       <h2><span class="n">📝</span> Laporan Nilai &amp; Dokumentasi Harian</h2>
       <p class="hint">Centang lembar yang ingin dibuat. Lembar yang dicentang muncul di Pratinjau, Cetak/PDF, berkas Word, dan ikut tersimpan ke Google Drive. Data peserta (nama &amp; instansi) diambil otomatis dari tab 1.</p>
       <div class="lap-chk">
+        <label><input type="checkbox" data-lpc="rundown"> Rundown / Jadwal Pembinaan (halaman pertama; narasumber &amp; materi diambil dari Absensi Narasumber)</label>
         <label><input type="checkbox" data-lpc="nilai"> Daftar Nilai Peserta (Nilai Ujian Teori &amp; Nilai Ujian Praktek, tanda tangan pengawas &amp; ahli)</label>
         <label><input type="checkbox" data-lpc="nara"> Absensi Narasumber (pilih narasumber, instansi &amp; materi otomatis, tanda tangan per hari)</label>
         <label><input type="checkbox" data-lpc="harian"> Dokumentasi Harian (foto Day 1, Day 2, …)</label>
@@ -688,7 +696,8 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
       </div>
 
       <div class="lap-box" id="lpSecNr" hidden>
-        <h3>Absensi Narasumber</h3>
+        <h3>Absensi Narasumber <small style="font-weight:400;color:#6b7280">(juga mengisi Rundown)</small></h3>
+        <div class="rd-tpl" id="rdTpl"><b>Isi cepat dari rundown:</b> <button type="button" class="btn sm" data-act="rdtpl" data-t="crane">📋 Crane / Rigger Kelas 2 &amp; 3</button> <button type="button" class="btn sm" data-act="rdtpl" data-t="conv">📋 Conveyor</button><span class="hint">Mengisi narasumber &amp; materi Hari 1–4 sesuai rundown; bisa diubah lagi per hari.</span></div>
         <div class="hint">Pilih nama narasumber tiap hari: instansi terisi otomatis, lalu pilih materi (pilihan materi mengikuti instansi narasumber). Pilih <b>Isi manual</b> bila narasumber / materinya tidak ada di daftar. PIC juga bisa mengisi ini dari aplikasi Portal PIC; tanda tangan narasumber digoreskan langsung di layar. <b>Cukup diisi sekali</b>: masuk ke laporan semua alat/kelas. Bila kegiatan lebih dari 4 hari, hari ke-5 dan seterusnya hanya tercetak di laporan Kelas 1.</div>
         <div class="field" id="nrKelasBox" hidden><label for="nrKelas">Alat / kelas yang diisi narasumbernya</label><select id="nrKelas" aria-label="Alat atau kelas"></select><span class="hint">Tiap alat punya absensi narasumber sendiri-sendiri.</span></div>
         <div id="lpNr"></div>
@@ -708,6 +717,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
       <b>Pratinjau</b>
       <select id="pvKelas" class="pv-kelas" hidden aria-label="Kelas yang ditampilkan"></select>
       <label><input type="checkbox" id="cDh" checked> Daftar Hadir</label>
+      <label hidden><input type="checkbox" id="cRd" checked> Rundown</label>
       <label hidden><input type="checkbox" id="cNl" checked> Daftar Nilai</label>
       <label hidden><input type="checkbox" id="cNr" checked> Absensi Narasumber</label>
       <label hidden><input type="checkbox" id="cDy" checked> Dok. Harian</label>
@@ -830,11 +840,22 @@ const NARA_KAT = [
   { id: "repy", nama: "Repy, S.T", nip: "198512192015041001", inst: "Wasnaker Prov. Sulawesi Tengah", grp: "wasnaker" },
   { id: "ronal", nama: "Ronal Sarira, S.T.", nip: "198309172011611007", inst: "Wasnaker Prov. Sulawesi Tengah", grp: "wasnaker" },
   { id: "benny", nama: "Benny, S.H.", nip: "1980061720060110", inst: "Wasnaker Prov. Sulawesi Tengah", grp: "wasnaker" },
-  { id: "adrian", nama: "Adrian Anugerah P, S.E", nip: "", inst: "Ahli K3 Penanggulangan Kebakaran", grp: "ahli" }
+  { id: "adrian", nama: "Adrian Anugerah P, S.E", nip: "", inst: "Ahli K3 Penanggulangan Kebakaran", grp: "ahli" },
+  { id: "nikma", nama: "Nikmawati, S.T.", nip: "", inst: "Wasnaker Prov. Sulawesi Tengah", grp: "wasnaker" },
+  { id: "eldi", nama: "Eldi Prayoga Firdaus, S.T.", nip: "", inst: "Praktisi", grp: "praktisi" },
+  { id: "kemnaker", nama: "Kemnaker – RI", nip: "", inst: "Kemnaker – RI", grp: "kemnaker" }
 ];
 const MATERI_KAT = [
   { id: "reg", judul: "Regulasi Kebakaran (Kelas D)", grp: "wasnaker", isi: ["Dasar-dasar dan kebijakan K3", "K3 Penanggulangan Kebakaran", "UU No 1 Tahun 1970", "Kepmenaker No 186 Tahun 1999", "Dasar-dasar pengaman kebakaran", "Teori Api dan Anatomi Kebakaran"] },
-  { id: "teori", judul: "Teori Kebakaran (Kelas D)", grp: "ahli", isi: ["Prinsip-prinsip pencegahan", "Teknik Pemadaman Kebakaran", "Sistem Proteksi Pasif (Komprehensif dll)", "Sistem Proteksi Aktif (Apar dan Hydrant)"] }
+  { id: "teori", judul: "Teori Kebakaran (Kelas D)", grp: "ahli", isi: ["Prinsip-prinsip pencegahan", "Teknik Pemadaman Kebakaran", "Sistem Proteksi Pasif (Komprehensif dll)", "Sistem Proteksi Aktif (Apar dan Hydrant)"] },
+  /* Pesawat Angkat & Angkut. isi = poin yang tampil di Absensi Narasumber; sesi = isi tiap sesi belajar di Rundown (urut: 08.00-10.00, 10.15-12.00, 13.00-15.00, 15.15-17.00); app = kolom Aplikasi (mis. ZOOM) */
+  { id: "ang1", judul: "Pesawat Angkat – Hari 1 (Regulasi)", grp: "wasnaker", isi: ["Kebijakan dan Dasar-dasar K3", "Undang-Undang No.1 Tahun 1970", "Permenaker No.8 Tahun 2020"], sesi: [["Kebijakan dan Dasar-dasar K3"], ["Undang-Undang No.1 Tahun 1970"], ["Permenaker No.8 Tahun 2020"], ["Permenaker No.8 Tahun 2020"]] },
+  { id: "prakw", judul: "Praktek (Wasnaker)", grp: "wasnaker", isi: ["Praktek"], sesi: [["Praktek"]] },
+  { id: "crane2", judul: "Crane – Hari 2 (Dasar Crane, JSA, Penggerak, Safety Devices)", grp: "praktisi", isi: ["Pengetahuan Dasar Crane", "Pengetahuan Dasar Kelistrikan", "Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan", "Pengetahuan Tenaga Penggerak & Hidrolik Penggerak", "Perangkat Keselamatan Kerja (Safety Devices)"], sesi: [["Pengetahuan Dasar Crane", "Pengetahuan Dasar Kelistrikan"], ["Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan"], ["Pengetahuan Tenaga Penggerak & Hidrolik Penggerak"], ["Perangkat Keselamatan Kerja (Safety Devices)"]] },
+  { id: "crane3", judul: "Crane – Hari 3 (Beban Kerja Aman, Pengoperasian, Perawatan, Stabilitas)", grp: "praktisi", isi: ["Faktor-faktor yang mempengaruhi beban kerja aman", "Pengoperasian Aman", "Perawatan dan Pemeriksaan Harian", "Stabilitas"], sesi: [["Faktor-faktor yang mempengaruhi beban kerja aman"], ["Pengoperasian Aman"], ["Perawatan dan Pemeriksaan Harian"], ["Stabilitas"]] },
+  { id: "conv2", judul: "Conveyor – Hari 2 (Pengoperasian, JSA, Penggerak, Safety Devices)", grp: "praktisi", isi: ["Pengoperasian aman pada belt Conveyor", "Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan", "Pengetahuan Tenaga Penggerak & Hidrolik Penggerak", "Perangkat Keselamatan Kerja (Safety Devices)"], sesi: [["Pengoperasian aman pada belt Conveyor"], ["Pengetahuan Job Safety Analysis", "Sebab-Sebab Kecelakaan"], ["Pengetahuan Tenaga Penggerak & Hidrolik Penggerak"], ["Perangkat Keselamatan Kerja (Safety Devices)"]] },
+  { id: "prakp", judul: "Praktek (Praktisi, seharian)", grp: "praktisi", isi: ["Praktek"], sesi: [["Praktek"], ["Praktek"], ["Praktek"]] },
+  { id: "eval", judul: "Evaluasi Teori (ZOOM)", grp: "kemnaker", isi: ["Evaluasi Teori"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"]], app: "ZOOM" }
 ];
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp) : MATERI_KAT; }; // narasumber manual: semua materi katalog boleh dipakai
@@ -880,7 +901,7 @@ function materiPilih(r, mid) { // pilih materi katalog: isi materi terisi otomat
   if (m) r.mtxt = m.isi.join("\n");
 }
 const lapDefault = () => ({
-  nilai: true, hasil: true, harian: true, nara: true, nr: {}, nrk: {}, batch: "", nKota: "", nTgl: "",
+  nilai: true, hasil: true, harian: true, nara: true, rundown: null, nr: {}, nrk: {}, batch: "", nKota: "", nTgl: "",
   s1: { jab: "PENGAWAS KETENAGAKERJAAN\nSULAWESI TENGAH", nama: "", nip: "", ttd: "" },
   s2: { jab: "AHLI PENANGGULANGAN KEBAKARAN", nama: "", ttd: "" },
   hari: {}
@@ -893,7 +914,7 @@ const lapNorm = l => {
   const nr = {}; Object.keys(l.nr || {}).forEach(k => { nr[k] = naraRow(l.nr[k]); });
   const nrOffN = {}; Object.keys(l.nrOff && typeof l.nrOff === "object" ? l.nrOff : {}).forEach(k => { if (l.nrOff[k] && NR_KEY.test(k)) nrOffN[k] = 1; });
   const nrk = {}; Object.keys(l.nrk && typeof l.nrk === "object" ? l.nrk : {}).forEach(kk => { const d = {}; Object.keys(l.nrk[kk] || {}).forEach(k => { d[k] = naraRow(l.nrk[kk][k]); }); nrk[kk] = d; });
-  return { nilai: !!l.nilai, hasil: !!l.hasil, harian: !!l.harian, nara: !!l.nara, nr, nrk, nrOff: nrOffN, batch: String(l.batch || ""), nKota: String(l.nKota || ""), nTgl: String(l.nTgl || ""), s1: s(l.s1, b.s1), s2: s(l.s2, b.s2), hari };
+  return { nilai: !!l.nilai, hasil: !!l.hasil, harian: !!l.harian, nara: !!l.nara, rundown: l.rundown == null ? null : !!l.rundown, nr, nrk, nrOff: nrOffN, batch: String(l.batch || ""), nKota: String(l.nKota || ""), nTgl: String(l.nTgl || ""), s1: s(l.s1, b.s1), s2: s(l.s2, b.s2), hari };
 };
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
@@ -1150,6 +1171,64 @@ function lapTexts(ev) {
   };
 }
 
+/* ---------- RUNDOWN (halaman pertama): jadwal pembinaan per hari. Narasumber & materi DIAMBIL dari Absensi Narasumber (lap.nr), jadi selalu sinkron. ---------- */
+const rdOn = ev => { const r = (ev.lap || {}).rundown; return r == null ? jenisOf(ev.acara) === "angkat" : !!r; }; // otomatis aktif untuk Pesawat Angkat & Angkut, bisa dimatikan
+const RD_A = [["07.45 – 08.00", "open"], ["08.00 – 10.00", "s"], ["10.00 – 10.15", "br"], ["10.15 – 12.00", "s"], ["12.00 – 13.00", "iso"], ["13.00 – 15.00", "s"], ["15.00 – 15.15", "br"], ["15.15 – 17.00", "s"]];
+const RD_B = [["08.00 – 08.15", "open"], ["08.15 – 10.00", "s"], ["10.00 – 10.15", "br"], ["10.15 – 12.00", "s"], ["12.00 – 13.00", "iso"], ["13.00 – 17.00", "s"]]; // hari praktek / evaluasi (3 sesi)
+const RD_TXT = { open: ["Pembukaan, Registrasi, (Absen Pagi)"], openB: ["Pembukaan, (Absen Pagi)"], br: ["Coffee Break"], iso: ["ISOMA"] };
+const rdRole = (inst, nama) => { const t = /wasnaker/i.test(inst || "") ? "Wasnaker" : String(inst || "").trim(); return t && t !== String(nama || "").trim() ? t : ""; };
+function rdSesiRow(r) { // sesi belajar yang dipakai satu baris narasumber: dari katalog (sesi) atau dibagi rata dari poin materi
+  const m = r.mid && r.mid !== "manual" ? MATERI_KAT.find(x => x.id === r.mid) : null;
+  if (m && m.sesi) return m.sesi.map(l => ({ lines: l.slice(), app: m.app || "" }));
+  const lines = String(r.mtxt || "").split("\n").map(x => x.trim()).filter(Boolean);
+  if (!lines.length) return [{ lines: [], app: "" }];
+  const n = Math.min(lines.length, 4), out = Array.from({ length: n }, () => ({ lines: [], app: "" }));
+  lines.forEach((x, i) => out[Math.min(n - 1, Math.floor(i * n / lines.length))].lines.push(x));
+  return out;
+}
+function rdBuild(ev) { // [{ iso, i, rows:[{w, k, t:[], app, pj, ns}] }]
+  const L = ev.lap || {}, days = hariList(ev.acara).filter(Boolean);
+  return days.map((iso, i) => {
+    const blocks = nrKeys(L, iso).filter(k => (L.nr || {})[k] && L.nr[k].kid).map(k => { const r = nrEf(L.nr[k]); return { r, ses: rdSesiRow(r) }; });
+    let total = blocks.reduce((n, b) => n + b.ses.length, 0);
+    for (let j = blocks.length - 1; j >= 0 && total > 4; j--) { // maksimal 4 sesi sehari: kelebihan digabung ke sesi terakhir narasumber itu
+      const b = blocks[j], cut = Math.min(total - 4, b.ses.length - 1);
+      if (cut > 0) { const t = b.ses.splice(b.ses.length - cut, cut); b.ses[b.ses.length - 1].lines.push(...t.flatMap(x => x.lines)); total -= cut; }
+    }
+    const B = total > 0 && total <= 3, grid = B ? RD_B : RD_A, flat = [];
+    blocks.forEach((b, bi) => b.ses.forEach(se => flat.push({ ...se, bi })));
+    let si = 0; const rows = grid.map(([w, k]) => {
+      if (k === "s") { const se = flat[si++]; return { w, k, t: se ? se.lines : [], app: se ? se.app : "", bi: se ? se.bi : -1 }; }
+      return { w, k, t: k === "open" ? (B ? RD_TXT.openB : RD_TXT.open) : RD_TXT[k], app: "", bi: -1, pj: k === "open" };
+    });
+    blocks.forEach((b, bi) => { // sel Narasumber digabung dari sesi pertama sampai sesi terakhir narasumber itu
+      const idx = rows.map((r, j) => r.bi === bi ? j : -1).filter(j => j >= 0); if (!idx.length) return;
+      rows[idx[0]].ns = { start: 1, span: idx[idx.length - 1] - idx[0] + 1, r: b.r };
+      for (let j = idx[0] + 1; j <= idx[idx.length - 1]; j++) rows[j].ns = { skip: 1 };
+    });
+    return { iso, i, rows };
+  });
+}
+function rdTitle(ev) { // [baris 1, baris 2]
+  const keg = (ev.acara.kegiatan || "").trim().toUpperCase(), rg = rentangUp(hariList(ev.acara).filter(Boolean)), m = /^(.*?)\s*(\(.*\))\s*$/.exec(keg);
+  return m ? [`JADWAL PEMBINAAN ${m[1]}`.trim(), `${m[2]} ${rg}`.trim()] : [`JADWAL PEMBINAAN ${keg}`.trim(), rg];
+}
+const rdTgl = iso => { const d = toD(iso); return d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}` : ""; };
+const rdLines = r => r.t.length > 1 && r.k === "s" ? r.t.map(x => "- " + x) : r.t;
+const RD_FILL = { // isi cepat Absensi Narasumber dari rundown yang sudah dipakai: [narasumber, materi] per hari
+  crane: [[["benny", "ang1"]], [["eldi", "crane2"]], [["eldi", "crane3"]], [["kemnaker", "eval"], ["repy", "prakw"]]],
+  conv: [[["nikma", "ang1"]], [["eldi", "conv2"]], [["eldi", "prakp"]], [["kemnaker", "eval"]]]
+};
+function rdTemplate(tp) {
+  const plan = RD_FILL[tp]; if (!plan) return 0;
+  const days = hariList(S.acara).filter(Boolean).slice(0, plan.length), ND = nrD(S.lap, ""), LP = S.lap; LP.nrOff = LP.nrOff || {};
+  days.forEach((d, i) => {
+    Object.keys(ND).filter(k => nrIso(k) === d).forEach(k => { delete ND[k]; }); Object.keys(LP.nrOff).filter(k => nrIso(k) === d).forEach(k => { delete LP.nrOff[k]; });
+    plan[i].forEach(([kid, mid], j) => { const r = ND[j ? `${d}_${j + 1}` : d] = naraNew(); naraPilih(r, kid); materiPilih(r, mid); });
+  });
+  return days.length;
+}
+
 function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menutupi S global
   const a = S.acara;
   const days = hariList(a), multi = days.length > 1;
@@ -1249,7 +1328,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   };
   const colg = W => `<colgroup>${W.map(w => `<col style="width:${w}mm">`).join("")}</colgroup>`;
   const empty = n => `<tr><td colspan="${n}" class="c" style="color:#999">Belum ada peserta</td></tr>`;
-  let nNl = 0, nLn = 0, nDy = 0, nNr = 0;
+  let nNl = 0, nLn = 0, nDy = 0, nNr = 0, nRd = 0;
   sec.dk = html; html = "";
 
   if (L.nilai) {
@@ -1300,10 +1379,22 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
     chs.forEach((c, pi) => { html += page(bodyR(c, pi, 0, pi === chs.length - 1), "pg-lap pg-nr"); });
     nNr = chs.length;
   }
-  sec.nr = html;
-  html = (sec.dh || "") + (sec.nl || "") + (sec.nr || "") + (sec.dy || "") + (sec.dk || "") + (sec.ln || ""); // urutan laporan: Daftar Hadir, Daftar Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta, Lulus/Tidak Lulus
+  sec.nr = html; html = "";
+  if (rdOn(S)) { // Rundown: halaman pertama
+    const WR = [17, 24, 64, 8, 22, 55], [t1, t2] = rdTitle(S), RD = rdBuild(S);
+    const nsHtml = r => r.pj ? `<td class="c">PJK3</td>` : r.ns && r.ns.start ? `<td class="c" rowspan="${r.ns.span}"><b><u>${esc(r.ns.r.nama)}</u></b>${rdRole(r.ns.r.inst, r.ns.r.nama) ? `<br>${esc(rdRole(r.ns.r.inst, r.ns.r.nama))}` : ""}</td>` : r.ns && r.ns.skip ? "" : `<td></td>`;
+    const dayHtml = d => `<tr><td class="c hr" rowspan="${d.rows.length + 1}"><b>Hari<br>Ke – ${d.i + 1}</b></td><td class="c"><b><i>${rdTgl(d.iso)}</i></b></td><td></td><td></td><td></td><td></td></tr>`
+      + d.rows.map(r => { const g = r.k === "br" || r.k === "iso" ? " gy" : ""; return `<tr><td class="c${g}">${r.w}</td><td class="${g.trim()}">${rdLines(r).map(esc).join("<br>")}</td><td></td><td class="c"><b>${esc(r.app)}</b></td>${nsHtml(r)}</tr>`; }).join("");
+    const headRd = pi => `<div class="lp-h">${esc(t1)}${pi ? " <small>(lanjutan)</small>" : ""}</div><div class="lp-h s3">${esc(t2)}</div><div class="lp-gap"></div>`;
+    const bodyRd = c => headRd(c._pi || 0) + `<table class="lap rd">${colg(WR)}<thead><tr><th>HARI</th><th>WAKTU</th><th>MATERI &amp; PEMBINAAN</th><th></th><th>APLIKASI</th><th>NARSUM</th></tr></thead><tbody>${c.map(dayHtml).join(`<tr class="sep"><td colspan="6"></td></tr>`)}</tbody></table>`;
+    const chs = lapChunk(RD, (c, pi, st, tail) => { c._pi = pi; return bodyRd(c); });
+    chs.forEach((c, pi) => { c._pi = pi; html += page(bodyRd(c), "pg-lap pg-rd"); });
+    nRd = chs.length;
+  }
+  sec.rd = html; html = "";
+  html = (sec.rd || "") + (sec.dh || "") + (sec.nl || "") + (sec.nr || "") + (sec.dy || "") + (sec.dk || "") + (sec.ln || ""); // urutan laporan: Daftar Hadir, Daftar Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta, Lulus/Tidak Lulus
   meas.innerHTML = "";
-  return { html, nd: ch.length, nk: dch.length, noFoto: dk.filter(p => !p.batal && !fotoOk(p, dkOn)).length, nPes: dk.length, nNl, nLn, nDy, nNr };
+  return { html, nd: ch.length, nk: dch.length, noFoto: dk.filter(p => !p.batal && !fotoOk(p, dkOn)).length, nPes: dk.length, nNl, nLn, nDy, nNr, nRd };
 }
 let PV_KELAS = "*"; // pratinjau: "*" = semua kelas
 function renderPages() {
@@ -1318,11 +1409,11 @@ function renderPages() {
     }
   }
   const use = papa && PV_KELAS !== "*" ? gs.filter(g => g.kelas === PV_KELAS) : gs;
-  const T = { html: "", nd: 0, nk: 0, noFoto: 0, nPes: 0, nNl: 0, nLn: 0, nDy: 0, nNr: 0 };
+  const T = { html: "", nd: 0, nk: 0, noFoto: 0, nPes: 0, nNl: 0, nLn: 0, nDy: 0, nNr: 0, nRd: 0 };
   use.forEach(g => { const r = renderSet(g.ev); T.html += r.html; Object.keys(T).forEach(k => { if (k !== "html") T[k] += r[k]; }); });
-  [["Nl", T.nNl], ["Ln", T.nLn], ["Dy", T.nDy], ["Nr", T.nNr]].forEach(([k, n]) => { const lb = $("#c" + k).closest("label"); if (lb) lb.hidden = !n; });
+  [["Rd", T.nRd], ["Nl", T.nNl], ["Ln", T.nLn], ["Dy", T.nDy], ["Nr", T.nNr]].forEach(([k, n]) => { const lb = $("#c" + k).closest("label"); if (lb) lb.hidden = !n; });
   $("#pages").innerHTML = T.html;
-  const lap = T.nNl + T.nLn + T.nDy + T.nNr;
+  const lap = T.nRd + T.nNl + T.nLn + T.nDy + T.nNr;
   $("#pgInfo").textContent = `${papa ? use.length + " kelas · " : ""}${T.nd} hal. daftar hadir · ${T.nk} hal. dokumentasi${T.nPes && T.noFoto ? ` · ${T.noFoto} peserta belum ada foto` : ""}${lap ? ` · ${lap} hal. laporan` : ""}`;
   fitPreview();
 }
@@ -2026,7 +2117,7 @@ $("#btnPaste").onclick = () => {
 $("#cDh").onchange = e => $("#pages").classList.toggle("hide-dh", !e.target.checked);
 $("#cDk").onchange = e => $("#pages").classList.toggle("hide-dk", !e.target.checked);
 $("#pvKelas").onchange = e => { PV_KELAS = e.target.value; renderPages(); };
-[["Nl", "nl"], ["Ln", "ln"], ["Dy", "dy"], ["Nr", "nr"]].forEach(([k, c]) => { $("#c" + k).onchange = e => $("#pages").classList.toggle("hide-" + c, !e.target.checked); });
+[["Rd", "rd"], ["Nl", "nl"], ["Ln", "ln"], ["Dy", "dy"], ["Nr", "nr"]].forEach(([k, c]) => { $("#c" + k).onchange = e => $("#pages").classList.toggle("hide-" + c, !e.target.checked); });
 function setTab(t) {
   document.body.dataset.tab = t;
   document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x.dataset.t === t));
@@ -2377,15 +2468,16 @@ const lpGet = path => path.split(".").reduce((o, k) => (o || {})[k], S.lap);
 const lpSet = (path, val) => { const k = path.split("."); let o = S.lap; while (k.length > 1) o = o[k.shift()]; o[k[0]] = val; };
 function fillLap() {
   document.querySelectorAll("#lapBox [data-lp]").forEach(el => { el.value = lpGet(el.dataset.lp) || ""; });
-  document.querySelectorAll("#lapBox [data-lpc]").forEach(el => { el.checked = !!S.lap[el.dataset.lpc]; });
+  document.querySelectorAll("#lapBox [data-lpc]").forEach(el => { el.checked = el.dataset.lpc === "rundown" ? rdOn(S) : !!S.lap[el.dataset.lpc]; });
   renderLap();
 }
 function renderLap() {
   if (!$("#lpList")) return;
   const L = S.lap, days = hariList(S.acara).filter(Boolean), nilai = L.nilai, hasil = L.hasil;
-  $("#lpSecSign").hidden = !nilai; $("#lpSecPes").hidden = !(nilai || hasil); $("#lpSecHari").hidden = !L.harian; $("#lpSecNr").hidden = !L.nara;
+  { const rc = document.querySelector("#lapBox [data-lpc=rundown]"); if (rc) rc.checked = rdOn(S); }
+  $("#lpSecSign").hidden = !nilai; $("#lpSecPes").hidden = !(nilai || hasil); $("#lpSecHari").hidden = !L.harian; $("#lpSecNr").hidden = !(L.nara || rdOn(S));
   [["#lpT1", L.s1.ttd], ["#lpT2", L.s2.ttd]].forEach(([s, u]) => { const t = $(s); t.style.backgroundImage = u ? `url('${u}')` : ""; t.textContent = u ? "" : "Belum ada"; });
-  $("#lpDl").innerHTML = [["dh", "Daftar Hadir", true], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true], ["ln", "Daftar Peserta Lulus/Tidak Lulus", hasil]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
+  $("#lpDl").innerHTML = [["rd", "Rundown", rdOn(S)], ["dh", "Daftar Hadir", true], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true], ["ln", "Daftar Peserta Lulus/Tidak Lulus", hasil]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
   const ps = S.peserta.filter(p => (p.nama || "").trim());
   const list = $("#lpList");
   list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["80px", "80px"] : []), ...(hasil ? ["auto"] : [])].join(" "));
@@ -2410,7 +2502,7 @@ function renderLap() {
       <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd ? `background-image:url('${r.ttd}')` : ""}">${r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button><button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan</button><button class="btn sm danger" type="button" data-act="ndel" title="${n ? "Hapus baris narasumber ini" : "Hapus hari ini dari absensi narasumber"}">🗑 ${n ? "Hapus baris" : "Hapus hari ini"}</button></div></div>`;
   };
   const nrOffCard = (d, i) => `<div class="lp-day lp-nr off" data-day="${d}"><div class="h">HARI ${i + 1} · ${esc(fmtTgl(d))}</div><div>Hari ini <b>dihapus</b> dari absensi narasumber (tidak dicetak dan tidak tampil di aplikasi PIC).</div><div class="lap-sig" style="margin-top:8px"><button class="btn sm" type="button" data-act="nback">↩ Pulihkan hari ini</button></div></div>`;
-  $("#lpNr").innerHTML = !L.nara ? "" : days.length ? days.map((d, i) => {
+  $("#lpNr").innerHTML = !(L.nara || rdOn(S)) ? "" : days.length ? days.map((d, i) => {
     if (nrOff(L, d)) return nrOffCard(d, i);
     const ks = nrKeys({ nr: NR, nrOff: L.nrOff }, d);
     return ks.map((k, n) => nrCard(d, i, k, n)).join("") + (ks.length < NR_MAX ? `<button class="btn sm" type="button" data-act="nadd" data-d="${d}" style="margin-top:8px">➕ Tambah narasumber di hari ini</button>` : "");
@@ -2440,7 +2532,7 @@ async function unduhLap(kind) {
     let blob, name;
     if (files.length === 1) { blob = new Blob([files[0].bytes], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }); name = files[0].name; }
     else { // PAPA: satu berkas per kelas, dikemas dalam ZIP
-      const LBL = { dh: "Daftar Hadir", nl: "Daftar Nilai Peserta", nr: "Absensi Narasumber", dy: "Dokumentasi Harian", dk: "Dokumentasi Peserta", ln: "Daftar Peserta Lulus-Tidak Lulus" };
+      const LBL = { rd: "Rundown", dh: "Daftar Hadir", nl: "Daftar Nilai Peserta", nr: "Absensi Narasumber", dy: "Dokumentasi Harian", dk: "Dokumentasi Peserta", ln: "Daftar Peserta Lulus-Tidak Lulus" };
       blob = new Blob([Word.zip(files.map(f => ({ name: f.name, data: f.bytes })))], { type: "application/zip" });
       name = safeName(`${LBL[kind] || "Laporan"} per alat - ${judulDasar(snap.acara) || "Kegiatan"}`) + ".zip";
     }
@@ -2490,6 +2582,11 @@ $("#lapBox").addEventListener("click", e => {
     let n = 2; while (ks.includes(`${d}_${n}`)) n++;
     if (S.lap.nrOff) delete S.lap.nrOff[`${d}_${n}`];
     ND[`${d}_${n}`] = naraNew(); renderLap(); changed(); toast("Baris narasumber ditambahkan. Isi lewat pilihan nama atau Isi manual.");
+  }
+  else if (b.dataset.act === "rdtpl") {
+    const has = Object.values(S.lap.nr || {}).some(r => r && (r.kid || r.ttd));
+    if (has && !confirm("Narasumber & materi Hari 1–4 yang sudah terisi akan diganti dengan template rundown ini (tanda tangan narasumber hari itu ikut terhapus). Lanjutkan?")) return;
+    const n = rdTemplate(b.dataset.t); renderLap(); changed(); toast(n ? `Template terisi untuk ${n} hari. Cek di pratinjau halaman pertama.` : "Isi dulu tanggal kegiatan.");
   }
   else if (b.dataset.act === "ndel" && day) {
     const key = day.dataset.day, d = nrIso(key), ND = nrD(S.lap, NRK), LP = S.lap; LP.nrOff = LP.nrOff || {};
@@ -3021,7 +3118,7 @@ const Word = (() => {
       const y = bottom ? PAGE_H * MM - cy : 0;
       return `<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="${id}" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>${y}</wp:posOffset></wp:positionV><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="${id}" name="Kop ${id}"/><wp:cNvGraphicFramePr/>${gfx(rel(rels, im.name), cx, cy, id)}</wp:anchor></w:drawing></w:r>`;
     };
-    const run = (t, o = {}) => `<w:r><w:rPr>${o.font ? `<w:rFonts w:ascii="${o.font}" w:hAnsi="${o.font}" w:cs="${o.font}"/>` : ""}${o.b ? "<w:b/>" : ""}${o.strike ? "<w:strike/>" : ""}${o.color ? `<w:color w:val="${o.color}"/>` : ""}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ""}${o.u ? '<w:u w:val="single"/>' : ""}</w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
+    const run = (t, o = {}) => `<w:r><w:rPr>${o.font ? `<w:rFonts w:ascii="${o.font}" w:hAnsi="${o.font}" w:cs="${o.font}"/>` : ""}${o.b ? "<w:b/>" : ""}${o.i ? "<w:i/>" : ""}${o.strike ? "<w:strike/>" : ""}${o.color ? `<w:color w:val="${o.color}"/>` : ""}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ""}${o.u ? '<w:u w:val="single"/>' : ""}</w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
     const par = (inner, o = {}) => `<w:p><w:pPr>${o.keep ? "<w:keepNext/>" : ""}${o.pbb ? "<w:pageBreakBefore/>" : ""}<w:spacing w:before="${o.before || 0}" w:after="${o.after || 0}" w:line="${o.line || 240}" w:lineRule="auto"/>${o.ind || o.indR != null || o.hang ? `<w:ind w:left="${o.ind || 0}"${o.indR != null ? ` w:right="${o.indR}"` : ""}${o.hang ? ` w:hanging="${o.hang}"` : ""}/>` : ""}<w:jc w:val="${o.jc || "left"}"/></w:pPr>${inner}</w:p>`;
     const cell = (w, inner, o = {}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ""}${o.vm ? `<w:vMerge${o.vm === "restart" ? ' w:val="restart"' : ""}/>` : ""}${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ""}<w:vAlign w:val="center"/></w:tcPr>${inner || par("")}</w:tc>`;
     const row = (cells, o = {}) => `<w:tr><w:trPr><w:cantSplit/>${o.head ? "<w:tblHeader/>" : ""}${o.h ? `<w:trHeight w:val="${o.h}" w:hRule="atLeast"/>` : ""}</w:trPr>${cells}</w:tr>`;
@@ -3218,6 +3315,27 @@ const Word = (() => {
       + lapTable(D, Wm, head + (rows || lapEmpty(D, Wm))) + sign;
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }
+  function rundown(ev, ctx) { // Rundown / Jadwal Pembinaan (isi dari Absensi Narasumber)
+    const D = Doc(), Wm = [17, 24, 64, 8, 22, 55], W = Wm.map(tw), GR = "D9D9D9", GY = "E7E6E6", [t1, t2] = rdTitle(ev), RD = rdBuild(ev), SZ = 19;
+    const head = lapHead(D, Wm, ["HARI", "WAKTU", "MATERI & PEMBINAAN", "", "APLIKASI", "NARSUM"], "FFFFFF");
+    const C = (i, txt, o = {}) => D.cell(W[i], txt, o);
+    const P = (t, o = {}) => D.par(lr(D, t, { sz: SZ, ...(o.r || {}) }), { jc: o.jc, before: 10, after: 10 });
+    const rows = RD.map((d, di) => {
+      let x = D.row(C(0, D.par(lr(D, "Hari", { b: 1, sz: 20 }), { jc: "center" }) + D.par(lr(D, `Ke – ${d.i + 1}`, { b: 1, sz: 20 }), { jc: "center" }), { vm: "restart" })
+        + C(1, P(rdTgl(d.iso), { jc: "center", r: { b: 1, i: 1 } })) + C(2, D.par("")) + C(3, D.par("")) + C(4, D.par("")) + C(5, D.par("")), { h: tw(4.7) });
+      d.rows.forEach(r => {
+        const g = r.k === "br" || r.k === "iso" ? { fill: GY } : {}, lines = rdLines(r);
+        const ns = r.pj ? C(5, P("PJK3", { jc: "center" }))
+          : r.ns && r.ns.start ? C(5, D.par(lr(D, r.ns.r.nama || "", { b: 1, u: 1, sz: SZ }), { jc: "center" }) + (rdRole(r.ns.r.inst, r.ns.r.nama) ? P(rdRole(r.ns.r.inst, r.ns.r.nama), { jc: "center" }) : ""), { vm: "restart" })
+          : r.ns && r.ns.skip ? C(5, D.par(""), { vm: true }) : C(5, D.par(""));
+        x += D.row(C(0, D.par(""), { vm: true }) + C(1, P(r.w, { jc: "center" }), g) + C(2, lines.length ? lines.map(t => P(t)).join("") : D.par(""), g) + C(3, D.par("")) + C(4, r.app ? P(r.app, { jc: "center", r: { b: 1 } }) : D.par("")) + ns, { h: tw(4.7) });
+      });
+      if (di < RD.length - 1) x += D.row(D.cell(Wm.reduce((a, b) => a + tw(b), 0), D.par(""), { span: 6, fill: "595959" }), { h: tw(2.4) });
+      return x;
+    }).join("");
+    const xml = lapTitle(D, t1) + lapTitle(D, t2, { sz: 26, after: 3 }) + lapTable(D, Wm, head + (rows || lapEmpty(D, Wm)));
+    return D.build(xml, ctx.kopHead, ctx.kopFoot);
+  }
   async function lapFile(kind, ev, ctx) {
     const nm = safeName(ev.acara.kegiatan || "Kegiatan");
     if (kind === "dh") return { name: `Daftar Hadir - ${nm}.docx`, bytes: daftarHadir(ev, ctx) };
@@ -3229,6 +3347,7 @@ const Word = (() => {
     if (kind === "nl") return { name: `Daftar Nilai Peserta - ${nm}.docx`, bytes: nilai(ev, ctx) };
     if (kind === "ln") return { name: `Daftar Peserta Lulus-Tidak Lulus - ${nm}.docx`, bytes: hasil(ev, ctx) };
     if (kind === "nr") return { name: `Absensi Narasumber - ${nm}.docx`, bytes: narasumber(ev, ctx) };
+    if (kind === "rd") return { name: `Rundown - ${nm}.docx`, bytes: rundown(ev, ctx) };
     const hari = {};
     for (const d of Object.keys((ev.lap || {}).hari || {})) hari[d] = { ...ev.lap.hari[d], fotos: await Promise.all((ev.lap.hari[d].fotos || []).map(u => kecil(u, 960))) };
     return { name: `Dokumentasi Harian - ${nm}.docx`, bytes: harian({ ...ev, lap: { ...ev.lap, hari } }, ctx) };
@@ -3257,8 +3376,8 @@ const Word = (() => {
     if (!hasP && !(ev.acara.kegiatan || "").trim()) return out;
     const add = async (key, name, bytes) => { const data = await toDataUrl(bytes); out.push({ key, path: [], name, data, hash: fnv(name + "|" + data.length + "|" + data.slice(-64) + "|" + crc32(bytes)) }); };
     const LP = ev.lap || {}; // urutan (nomor di depan nama berkas): 1 Daftar Hadir, 2 Nilai, 3 Absensi Narasumber, 4 Dok. Harian, 5 Dok. Peserta, 6 Lulus/Tidak Lulus
-    const NO = { dh: 1, nl: 2, nr: 3, dy: 4, dk: 5, ln: 6 };
-    for (const [flag, kind] of [[true, "dh"], [LP.nilai, "nl"], [LP.nara, "nr"], [LP.harian, "dy"], [true, "dk"], [LP.hasil, "ln"]]) {
+    const NO = { rd: 0, dh: 1, nl: 2, nr: 3, dy: 4, dk: 5, ln: 6 };
+    for (const [flag, kind] of [[rdOn(ev), "rd"], [true, "dh"], [LP.nilai, "nl"], [LP.nara, "nr"], [LP.harian, "dy"], [true, "dk"], [LP.hasil, "ln"]]) {
       if (!flag) continue;
       if (kind === "dk") {
         if (!ev.peserta.some(p => p.foto || p.foto2)) continue;
@@ -3271,7 +3390,7 @@ const Word = (() => {
     }
     return out;
   }
-  return { berkas, daftarHadir, dokumentasi, nilai, hasil, harian, narasumber, lapFile, kecil, zip, crc32 };
+  return { berkas, daftarHadir, dokumentasi, nilai, hasil, harian, narasumber, rundown, lapFile, kecil, zip, crc32 };
 })();
 
 const Cloud = {
