@@ -529,15 +529,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 <section class="landing" id="landing" hidden aria-label="Pilih kegiatan atau kegiatan baru">
   <div class="ln-box">
     <h2>Pilih kegiatan atau kegiatan baru</h2>
-    <p class="ln-sub">Pilih kegiatan yang sudah ada untuk melanjutkan, atau buat kegiatan baru. Data kegiatan yang sudah tersimpan tidak berubah sebelum Anda membukanya.</p>
-    <div class="ln-new">
-      <button class="btn primary" id="lnNew" type="button">＋ Kegiatan Baru</button>
-      <button class="btn" type="button" data-lnnew="damkar">🔥 Damkar baru</button>
-      <button class="btn" type="button" data-lnnew="b3">🧪 B3 baru</button>
-      <button class="btn" type="button" data-lnnew="angkat">🏗️ PAPA baru</button>
-    </div>
-    <input class="ln-q" id="lnSearch" type="search" placeholder="Cari kegiatan tersimpan…" autocomplete="off" aria-label="Cari kegiatan">
-    <div id="lnList"></div>
+    <p class="ln-sub">Pilih kegiatan yang sudah ada untuk melanjutkan, atau buat kegiatan baru.</p>
   </div>
 </section>
 
@@ -2357,28 +2349,7 @@ function showLanding(on) {
   const el = document.getElementById("landing"); if (el) el.hidden = !landingOn;
   if (landingOn) { const c = document.getElementById("curName"); if (c) c.textContent = ""; renderLanding(); window.scrollTo({ top: 0 }); }
 }
-function renderLanding() {
-  if (!landingOn) return;
-  const box = document.getElementById("lnList"); if (!box) return;
-  const q = norm((document.getElementById("lnSearch") || {}).value || "");
-  const upd = t => new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(t));
-  const cocok = e => !q || norm(`${e.kegiatan} ${e.tempat}`).includes(q);
-  const lokal = [...EV].sort((x, y) => y.updated - x.updated).filter(cocok);
-  const mati = new Set([...Cloud.gone]);
-  const jauh = (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id) && cocok(e)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")));
-  const item = e => `<div class="ev-item" data-id="${esc(e.id)}"><div class="info"><div class="t">${esc(e.kegiatan || "(Kegiatan tanpa nama)")}${e.id === landingLast ? '<span class="tag">Terakhir dibuka</span>' : ""}</div><div class="d">${esc(Ev.tgl(e))}${e.tempat ? " · " + esc(e.tempat) : ""}</div><div class="m">${e.n || 0} peserta${e.updated ? " · diubah " + upd(e.updated) : ""}</div></div><div class="acts"><button class="btn sm primary" type="button" data-lnopen="${esc(e.id)}">Buka</button></div></div>`;
-  const itemJ = e => `<div class="ev-item" data-id="${esc(e.id)}"><div class="info"><div class="t">☁️ ${esc(e.kegiatan || "(Kegiatan tanpa nama)")}</div><div class="d">${esc(Ev.tgl(e))}${e.tempat ? " · " + esc(e.tempat) : ""}</div><div class="m">Ada di Google Drive, belum ada di perangkat ini</div></div><div class="acts"><button class="btn sm primary" type="button" data-lnremote="${esc(e.id)}">Unduh &amp; buka</button></div></div>`;
-  box.innerHTML = (lokal.length ? `<div class="ln-h">Kegiatan tersimpan (${lokal.length})</div>` + lokal.map(item).join("") : `<div class="empty">${q ? "Tidak ada kegiatan yang cocok." : "Belum ada kegiatan tersimpan. Tekan “＋ Kegiatan Baru”."}</div>`)
-    + (jauh.length ? `<div class="ln-h">Dari Google Drive (${jauh.length})</div>` + jauh.map(itemJ).join("") : "");
-}
-document.getElementById("lnSearch").addEventListener("input", renderLanding);
-document.getElementById("lnNew").onclick = () => Ev.baru(null);
-document.getElementById("landing").addEventListener("click", e => {
-  const t = e.target.closest("[data-lnnew],[data-lnopen],[data-lnremote]"); if (!t) return;
-  if (t.dataset.lnnew) Ev.baru(t.dataset.lnnew);
-  else if (t.dataset.lnopen) Ev.load(t.dataset.lnopen);
-  else if (t.dataset.lnremote) { toast("Mengunduh kegiatan dari Google Drive…"); Cloud.pull(t.dataset.lnremote).then(() => Ev.quick()); }
-});
+function renderLanding() { /* layar awal hanya berisi teks; pilihan kegiatan ada di bar atas (Kegiatan Baru / Damkar / B3 / PAPA) */ }
 function applyState() {
   if (landingOn && !landingInit) showLanding(false); // kegiatan dibuka / dibuat / diimpor: tutup layar awal
   T_DAY = null;
@@ -2517,7 +2488,6 @@ Ev.quick = function () {
     (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || ""))).forEach(e => grup[this.jenisIdx(e)].push({ ...e, remote: true }));
   }
   $("#qLainWrap").hidden = !grup.lain.length;
-  renderLanding();
   Object.keys(grup).forEach(j => {
     const btn = document.querySelector(`.qbtn[data-q="${j}"]`), menu = document.querySelector(`.qmenu[data-m="${j}"]`); if (!btn || !menu) return;
     btn.querySelector(".cnt").textContent = grup[j].length;
