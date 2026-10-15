@@ -203,6 +203,17 @@ small.kls{display:inline-block;margin-left:6px;padding:0 6px;border-radius:99px;
 .ev-item .m{font-size:12px;color:var(--muted);margin-top:2px}
 .ev-item .tag{display:inline-block;font-size:11px;font-weight:700;color:#9a3412;background:#ffedd5;border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:1px}
 .ev-item .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+/* layar awal: pilih kegiatan atau kegiatan baru (kegiatan terakhir tidak dibuka otomatis) */
+.landing{padding:20px 16px 40px}
+.landing[hidden]{display:none}
+.landing .ln-box{max-width:760px;margin:0 auto}
+.landing h2{font-size:22px;margin:6px 0 4px}
+.landing .ln-sub{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+.landing .ln-new{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.landing .ln-new .btn{padding:11px 16px;font-size:14.5px}
+.landing .ln-q{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;font:inherit}
+.landing .ln-h{font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px}
+body.landing .tabs,body.landing .layout,body.landing #btnPrint{display:none!important}
 .cur-ev{font-size:12px;color:#fde68a;max-width:28vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* tanda tangan */
 .sig-wrap{position:relative;border:1.5px dashed #cbd5e1;border-radius:10px;background:#fff;touch-action:none}
@@ -514,6 +525,21 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
     <div class="qwrap" id="qLainWrap" hidden><button class="qbtn" data-q="lain" aria-expanded="false" aria-haspopup="true">📋 Lainnya <span class="cnt">0</span> ▾</button><div class="qmenu" data-m="lain" hidden></div></div>
   </div>
 </header>
+
+<section class="landing" id="landing" hidden aria-label="Pilih kegiatan atau kegiatan baru">
+  <div class="ln-box">
+    <h2>Pilih kegiatan atau kegiatan baru</h2>
+    <p class="ln-sub">Pilih kegiatan yang sudah ada untuk melanjutkan, atau buat kegiatan baru. Data kegiatan yang sudah tersimpan tidak berubah sebelum Anda membukanya.</p>
+    <div class="ln-new">
+      <button class="btn primary" id="lnNew" type="button">＋ Kegiatan Baru</button>
+      <button class="btn" type="button" data-lnnew="damkar">🔥 Damkar baru</button>
+      <button class="btn" type="button" data-lnnew="b3">🧪 B3 baru</button>
+      <button class="btn" type="button" data-lnnew="angkat">🏗️ PAPA baru</button>
+    </div>
+    <input class="ln-q" id="lnSearch" type="search" placeholder="Cari kegiatan tersimpan…" autocomplete="off" aria-label="Cari kegiatan">
+    <div id="lnList"></div>
+  </div>
+</section>
 
 <nav class="tabs">
   <button data-t="data" class="on">1. <span class="lg">Kegiatan &amp; Peserta</span><span class="sm-only">Data</span> <span class="badge" id="tbPeserta">0</span></button>
@@ -1135,7 +1161,7 @@ async function doSave() {
   try {
     const snap = JSON.parse(JSON.stringify(S));
     if (!snap.peserta.length && !(snap.acara.kegiatan || "").trim() && !snap.acara.ttd && !EV.some(e => e.id === snap.id)) { // kegiatan baru yang masih kosong tidak disimpan
-      $("#saveSt").textContent = "Tersimpan otomatis"; $("#curName").textContent = "· (kegiatan tanpa nama)"; return;
+      $("#saveSt").textContent = "Tersimpan otomatis"; $("#curName").textContent = landingOn ? "" : "· (kegiatan tanpa nama)"; return;
     }
     await idbPut("event:" + snap.id, snap);
     const m = meta(snap), i = EV.findIndex(e => e.id === snap.id);
@@ -1147,7 +1173,7 @@ async function doSave() {
   } catch (e) {
     $("#saveSt").textContent = "Tidak bisa simpan otomatis – gunakan Ekspor";
   }
-  $("#curName").textContent = S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
+  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
 }
 function save() {
   clearTimeout(saveT);
@@ -2324,12 +2350,42 @@ $("#fileImport").addEventListener("change", async e => {
 });
 
 /* ---------- terapkan state ke tampilan ---------- */
+/* ---------- layar awal: Pilih kegiatan atau kegiatan baru ---------- */
+let landingOn = false, landingInit = false, landingLast = "";
+function showLanding(on) {
+  landingOn = !!on; document.body.classList.toggle("landing", landingOn);
+  const el = document.getElementById("landing"); if (el) el.hidden = !landingOn;
+  if (landingOn) { const c = document.getElementById("curName"); if (c) c.textContent = ""; renderLanding(); window.scrollTo({ top: 0 }); }
+}
+function renderLanding() {
+  if (!landingOn) return;
+  const box = document.getElementById("lnList"); if (!box) return;
+  const q = norm((document.getElementById("lnSearch") || {}).value || "");
+  const upd = t => new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(t));
+  const cocok = e => !q || norm(`${e.kegiatan} ${e.tempat}`).includes(q);
+  const lokal = [...EV].sort((x, y) => y.updated - x.updated).filter(cocok);
+  const mati = new Set([...Cloud.gone]);
+  const jauh = (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id) && cocok(e)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")));
+  const item = e => `<div class="ev-item" data-id="${esc(e.id)}"><div class="info"><div class="t">${esc(e.kegiatan || "(Kegiatan tanpa nama)")}${e.id === landingLast ? '<span class="tag">Terakhir dibuka</span>' : ""}</div><div class="d">${esc(Ev.tgl(e))}${e.tempat ? " · " + esc(e.tempat) : ""}</div><div class="m">${e.n || 0} peserta${e.updated ? " · diubah " + upd(e.updated) : ""}</div></div><div class="acts"><button class="btn sm primary" type="button" data-lnopen="${esc(e.id)}">Buka</button></div></div>`;
+  const itemJ = e => `<div class="ev-item" data-id="${esc(e.id)}"><div class="info"><div class="t">☁️ ${esc(e.kegiatan || "(Kegiatan tanpa nama)")}</div><div class="d">${esc(Ev.tgl(e))}${e.tempat ? " · " + esc(e.tempat) : ""}</div><div class="m">Ada di Google Drive, belum ada di perangkat ini</div></div><div class="acts"><button class="btn sm primary" type="button" data-lnremote="${esc(e.id)}">Unduh &amp; buka</button></div></div>`;
+  box.innerHTML = (lokal.length ? `<div class="ln-h">Kegiatan tersimpan (${lokal.length})</div>` + lokal.map(item).join("") : `<div class="empty">${q ? "Tidak ada kegiatan yang cocok." : "Belum ada kegiatan tersimpan. Tekan “＋ Kegiatan Baru”."}</div>`)
+    + (jauh.length ? `<div class="ln-h">Dari Google Drive (${jauh.length})</div>` + jauh.map(itemJ).join("") : "");
+}
+document.getElementById("lnSearch").addEventListener("input", renderLanding);
+document.getElementById("lnNew").onclick = () => Ev.baru(null);
+document.getElementById("landing").addEventListener("click", e => {
+  const t = e.target.closest("[data-lnnew],[data-lnopen],[data-lnremote]"); if (!t) return;
+  if (t.dataset.lnnew) Ev.baru(t.dataset.lnnew);
+  else if (t.dataset.lnopen) Ev.load(t.dataset.lnopen);
+  else if (t.dataset.lnremote) { toast("Mengunduh kegiatan dari Google Drive…"); Cloud.pull(t.dataset.lnremote).then(() => Ev.quick()); }
+});
 function applyState() {
+  if (landingOn && !landingInit) showLanding(false); // kegiatan dibuka / dibuat / diimpor: tutup layar awal
   T_DAY = null;
   fillForm(); renderList(); fillLap(); renderPages(); renderTtd(); renderTtdTab();
   $("#wmAlamat").value = S.wm.alamat || "";
   Loc.status(S.wm.alamat ? (S.wm.auto ? "Alamat dari GPS terakhir. Tekan 📍 untuk memperbarui." : "Alamat diisi manual.") : "Alamat belum diisi – akan dideteksi otomatis saat kamera dibuka.", "");
-  $("#curName").textContent = S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
+  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
   Cloud.status(); if (Cloud.dirty(S)) Cloud.schedule(2000);
 }
 function renderTtd() {
@@ -2425,8 +2481,7 @@ const Ev = {
     Pic.drop(id);
     EV = EV.filter(x => x.id !== id); await idbPut(IDX, EV).catch(() => { });
     if (id === S.id) {
-      const nxt = [...EV].sort((x, y) => y.updated - x.updated)[0];
-      if (nxt) await this.load(nxt.id); else { S = blank(); await doSave(); idbPut(CUR, S.id).catch(() => { }); applyState(); }
+      S = blank(); landingLast = ""; applyState(); showLanding(true); // kegiatan yang sedang dibuka dihapus: kembali ke layar pilih kegiatan (tidak membuka kegiatan lain otomatis)
     }
     this.render();
     this.tell(id);
@@ -2462,6 +2517,7 @@ Ev.quick = function () {
     (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || ""))).forEach(e => grup[this.jenisIdx(e)].push({ ...e, remote: true }));
   }
   $("#qLainWrap").hidden = !grup.lain.length;
+  renderLanding();
   Object.keys(grup).forEach(j => {
     const btn = document.querySelector(`.qbtn[data-q="${j}"]`), menu = document.querySelector(`.qmenu[data-m="${j}"]`); if (!btn || !menu) return;
     btn.querySelector(".cnt").textContent = grup[j].length;
@@ -4322,19 +4378,17 @@ const Pic = {
     if (old && old.acara) { S = normalize(old); await doSave(); await idbDel(OLD_KEY); }
   }
   const cur = await idbGet(CUR);
-  let d = cur && EV.some(e => e.id === cur) ? await idbGet("event:" + cur) : null;
-  if (!d && EV.length) { const latest = [...EV].sort((x, y) => y.updated - x.updated)[0]; d = await idbGet("event:" + latest.id); }
-  if (d) S = normalize(d); else { S = blank(); await doSave(); }
-  idbPut(CUR, S.id).catch(() => { });
+  landingLast = cur && EV.some(e => e.id === cur) ? cur : "";
+  S = blank(); // layar awal "Pilih kegiatan atau kegiatan baru": kegiatan terakhir TIDAK dibuka otomatis (kegiatan kosong ini tidak disimpan)
   await Cloud.loadCfg();
   Cloud.watch();
   ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
-  applyState();
+  landingInit = true; showLanding(true); applyState(); landingInit = false;
   Cloud.flushDeletes().then(() => Cloud.reconcile(true)).then(() => Ev.quick());
   Cloud.verify();
   Pic.start();
   Ev.quick();
-  $("#saveSt").textContent = d ? "Data terakhir dimuat" : "Tersimpan otomatis";
+  $("#saveSt").textContent = EV.length ? "Pilih kegiatan" : "Tersimpan otomatis";
 })();
 })();
 </script>
