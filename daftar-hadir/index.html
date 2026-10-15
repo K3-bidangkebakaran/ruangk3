@@ -715,7 +715,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 
       <div class="lap-box" id="lpSecHari" hidden>
         <h3>Dokumentasi Harian</h3>
-        <div class="hint">Isi materi tiap hari lalu ambil foto dengan kamera aplikasi. Foto diberi watermark (hari, tanggal, jam, alamat) tanpa nama peserta. Ambil 4 foto per hari: tiap halaman Word memuat 2 foto, jadi tiap hari 2 halaman. Foto ke-5 dan seterusnya tidak dimasukkan ke Word.</div>
+        <div class="hint">Isi materi tiap hari lalu ambil foto dengan kamera aplikasi. Foto diberi watermark (hari, tanggal, jam, alamat) tanpa nama peserta. Tiap halaman Word memuat 2 foto; kalau fotonya lebih dari 2 (mis. 4 foto), otomatis lanjut ke halaman berikutnya — tanpa batas jumlah foto. Foto dari aplikasi PIC (APK) ikut masuk di sini.</div>
         <div id="lpDays"></div>
       </div>
     </section>
@@ -844,7 +844,6 @@ const DB_NAME = "lpmi-daftar-hadir", STORE = "kv", OLD_KEY = "state-v1", IDX = "
 /* ---------- state ---------- */
 const today = (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date());
 /* ---------- laporan: nilai, kelulusan, dokumentasi harian ---------- */
-const HARI_FOTO = 4; // foto Dokumentasi Harian yang masuk ke Word per hari (2 foto per halaman → 2 halaman per hari)
 /* Katalog Absensi Narasumber. Salinan yang sama ada di pic/js/app.js (NARA_KAT / MATERI_KAT): ubah keduanya bersamaan.
    kid: "" = belum dipilih, "_m" = isi manual, selain itu id katalog. Materi (mid) hanya ditawarkan bila grup-nya sama dengan grup instansi narasumber. */
 const NARA_KAT = [
@@ -1446,7 +1445,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   sec.ln = html; html = "";
   if (L.harian) {
     LT.days.forEach(({ iso, title }) => {
-      const h = L.hari[iso] || { materi: "", fotos: [] }, fs = (h.fotos || []).slice(0, HARI_FOTO), np = fs.length > 2 ? 2 : 1; // Word: 4 foto pertama per hari, 2 foto per halaman → tiap hari maksimal 2 halaman
+      const h = L.hari[iso] || { materi: "", fotos: [] }, fs = h.fotos || [], np = Math.max(1, Math.ceil(fs.length / 2));
       for (let pg = 0; pg < np; pg++) {
         const slot = k => { const u = fs[pg * 2 + k]; return `<div class="lp-fo">${u ? `<img src="${u}" alt="">` : (!fs.length ? `<div class="none">${CAM}<span>Belum ada foto</span></div>` : "")}</div>`; };
         html += page(`<div class="lp-h">DOKUMENTASI ${esc(LT.keg)}</div><div class="lp-h">${esc(LT.rentang)}${LT.batch ? ` (BATCH ${esc(LT.batch)})` : ""}</div><div class="lp-gap"></div><div class="lp-h d">${esc(title)}</div><div class="lp-h d">MATERI${h.materi ? "&nbsp; " + up(h.materi) : ""}</div><div class="lp-gap"></div>${slot(0)}${slot(1)}`, "pg-lap pg-dy");
@@ -2678,8 +2677,8 @@ function renderLap() {
     const h = L.hari[d] || { materi: "", fotos: [] };
     return `<div class="lp-day" data-day="${d}"><div class="h">DAY ${i + 1} · ${esc(fmtTgl(d))}</div>
       <input type="text" data-f="materi" placeholder="Materi hari ini (mis. Regulasi Online)" value="${esc(h.materi)}" autocomplete="off">
-      <div class="hint" style="margin:4px 0">Foto dipakai di Word: <b>${Math.min((h.fotos || []).length, HARI_FOTO)}/${HARI_FOTO}</b> (2 foto per halaman)${(h.fotos || []).length > HARI_FOTO ? ` · foto ke-${HARI_FOTO + 1} dst. tidak dimasukkan ke Word` : ""}</div>
-      <div class="lp-ph">${(h.fotos || []).map((u, k) => `<div class="t"${k >= HARI_FOTO ? ' style="opacity:.35" title="Tidak dimasukkan ke Word (maksimal 4 foto per hari)"' : ""}><img src="${u}" alt=""><i>${k + 1}</i><button type="button" data-act="hdel" data-i="${k}" title="Hapus foto">✕</button></div>`).join("")}</div>
+      <div class="hint" style="margin:4px 0"><b>${(h.fotos || []).length}</b> foto → <b>${Math.max(1, Math.ceil((h.fotos || []).length / 2))}</b> halaman di Word (2 foto per halaman)</div>
+      <div class="lp-ph">${(h.fotos || []).map((u, k) => `<div class="t"><img src="${u}" alt=""><i>${k + 1}</i><button type="button" data-act="hdel" data-i="${k}" title="Hapus foto">✕</button></div>`).join("")}</div>
       <button class="btn sm primary" type="button" data-act="hfoto">📷 Tambah foto</button></div>`;
   }).join("") : `<div class="empty">Isi tanggal kegiatan di tab 1 dulu.</div>`;
 }
@@ -3457,7 +3456,7 @@ const Word = (() => {
   function harian(ev, ctx) {
     const D = Doc(), L = ev.lap || {}, T = ctx.lap; let xml = "", first = true;
     T.days.forEach(({ iso, title }) => {
-      const h = (L.hari || {})[iso] || { materi: "", fotos: [] }, fs = (h.fotos || []).slice(0, HARI_FOTO), np = fs.length > 2 ? 2 : 1;
+      const h = (L.hari || {})[iso] || { materi: "", fotos: [] }, fs = h.fotos || [], np = Math.max(1, Math.ceil(fs.length / 2));
       for (let pg = 0; pg < np; pg++) {
         const t1 = D.par(lr(D, "DOKUMENTASI " + T.keg, { b: 1, sz: 28 }), { jc: "center", keep: 1, pbb: !first });
         first = false;
@@ -3528,7 +3527,7 @@ const Word = (() => {
     if (kind === "nr") return { name: `Absensi Narasumber - ${nm}.docx`, bytes: narasumber(ev, ctx) };
     if (kind === "rd") return { name: `Rundown - ${nm}.docx`, bytes: rundown(ev, ctx) };
     const hari = {};
-    for (const d of Object.keys((ev.lap || {}).hari || {})) hari[d] = { ...ev.lap.hari[d], fotos: await Promise.all((ev.lap.hari[d].fotos || []).slice(0, HARI_FOTO).map(u => kecil(u, 960))) };
+    for (const d of Object.keys((ev.lap || {}).hari || {})) hari[d] = { ...ev.lap.hari[d], fotos: await Promise.all((ev.lap.hari[d].fotos || []).map(u => kecil(u, 960))) };
     return { name: `Dokumentasi Harian - ${nm}.docx`, bytes: harian({ ...ev, lap: { ...ev.lap, hari } }, ctx) };
   }
 
