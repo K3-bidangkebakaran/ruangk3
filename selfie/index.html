@@ -94,6 +94,7 @@ async function backend() {
   return {
     info: async k => (await to(d.get(R(`dh_selfie/${k}`)), 20000)).val(),
     status: async k => (await to(d.get(R(`dh_selfie_st/${k}`)), 20000)).val() || {},
+    has: async (k, key) => (await to(d.get(R(`dh_selfie_st/${k}/${key}`)), 15000)).val() != null,
     offset: () => to(new Promise(res => d.onValue(d.ref(db, ".info/serverTimeOffset"), s => res(+s.val() || 0), () => res(0), { onlyOnce: true })), 3000).catch(() => 0),
     async put(k, key, url) { await to(d.set(R(`dh_selfie_foto/${k}/${key}`), url), 90000, "Pengiriman terlalu lambat."); await to(d.set(R(`dh_selfie_st/${k}/${key}`), d.serverTimestamp()), 30000); },
   };
@@ -101,15 +102,17 @@ async function backend() {
 
 /* ---------- waktu mengikuti zona kegiatan (bukan zona HP) ---------- */
 let OFF = 0;
-const nowZ = zona => { const t = new Date(Date.now() + OFF + (ZONA[zona] || 7) * 3600e3); return { iso: `${t.getUTCFullYear()}-${p2(t.getUTCMonth() + 1)}-${p2(t.getUTCDate())}`, h: t.getUTCHours(), m: t.getUTCMinutes(), dow: t.getUTCDay(), d: t.getUTCDate(), mo: t.getUTCMonth(), y: t.getUTCFullYear() }; };
+/* Waktu setempat: jam server (anti jam HP salah) + zona waktu HP bila WIB/WITA/WIT; selain itu zona kegiatan. */
+const zonaHP = () => { const m = -new Date().getTimezoneOffset(); return m === 420 ? "WIB" : m === 480 ? "WITA" : m === 540 ? "WIT" : ""; };
+const nowZ = zona => { const zn = zonaHP() || (ZONA[zona] ? zona : "WIB"), t = new Date(Date.now() + OFF + ZONA[zn] * 3600e3); return { zn, iso: `${t.getUTCFullYear()}-${p2(t.getUTCMonth() + 1)}-${p2(t.getUTCDate())}`, h: t.getUTCHours(), m: t.getUTCMinutes(), dow: t.getUTCDay(), d: t.getUTCDate(), mo: t.getUTCMonth(), y: t.getUTCFullYear() }; };
 const tglPanjang = iso => { const [y, m, d] = iso.split("-").map(Number), w = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); return `${HARI[w]}, ${d} ${BLN[m - 1]} ${y}`; };
 const sesiOf = z => (z.h < 12 ? "p" : "s");
 const sesiNama = s => (s === "p" ? "Pagi" : "Siang");
 
 /* ---------- state ---------- */
-let FB = null, INFO = null, ST = {}, CHOSEN = null, SHOT = null, STREAM = null, busy = false;
+let FB = null, INFO = null, ST = {}, CHOSEN = null, SHOT = null, STREAM = null, busy = false, SCREEN = "", LASTKEY = "";
 const main = $("#main");
-const show = html => { main.innerHTML = html; };
+const show = (html, scr) => { SCREEN = scr || ""; main.innerHTML = html; };
 const fail = (msg, extra) => { $("#barSub").textContent = ""; show(`<div class="note err">${esc(msg)}</div>${extra || ""}<button class="btn" id="reload">Muat ulang</button>`); const b = $("#reload"); if (b) b.onclick = () => location.reload(); };
 
 async function boot() {
@@ -133,11 +136,11 @@ function head(c) {
     + (c.idx >= 0 ? `<span class="pill ${c.ses === "s" ? "siang" : ""}">Hari ke-${c.idx + 1} · Absen ${sesiNama(c.ses)}</span>` : "") + `</div>`;
 }
 function list(q) {
-  const c = ctx();
+  const c = ctx(); LASTKEY = c.z.iso + c.ses;
   if (c.idx < 0) {
     const awal = c.tgl.length && c.z.iso < c.tgl[0], akhir = c.tgl.length && c.z.iso > c.tgl[c.tgl.length - 1];
     show(head(c) + `<div class="note warn">${awal ? "Kegiatan belum dimulai." : akhir ? "Kegiatan sudah selesai." : "Hari ini bukan hari kegiatan."} Absen selfie hanya bisa dilakukan pada hari kegiatan.</div>`
-      + `<div class="meta">Jadwal: ${esc(c.tgl.map(tglPanjang).join(" · "))}</div><button class="btn" id="reload">Periksa lagi</button>`);
+      + `<div class="meta">Jadwal: ${esc(c.tgl.map(tglPanjang).join(" · "))}</div><button class="btn" id="reload">Periksa lagi</button>`, "off");
     $("#reload").onclick = () => location.reload(); return;
   }
   const done = id => !!ST[`${id}~${c.z.iso}~${c.ses}`];
@@ -145,7 +148,7 @@ function list(q) {
   const n = INFO.peserta.filter(p => done(p.id)).length;
   show(head(c) + `<div class="note okk" id="prog">${n} dari ${INFO.peserta.length} peserta sudah absen ${sesiNama(c.ses).toLowerCase()}.</div>
     <h2>Pilih nama Anda</h2><input class="search" id="q" type="search" placeholder="Cari nama atau perusahaan" aria-label="Cari nama atau perusahaan" autocomplete="off" value="${esc(q || "")}">
-    <ul class="names">${ps.map(p => `<li><button class="nm" data-id="${esc(p.id)}"${done(p.id) ? " disabled" : ""}><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small>${done(p.id) ? `<span class="ok">✓ Sudah absen</span>` : ""}</button></li>`).join("") || `<li class="empty">${INFO.peserta.length ? "Nama tidak ditemukan." : "Belum ada peserta di kegiatan ini."}</li>`}</ul>`);
+    <ul class="names">${ps.map(p => `<li><button class="nm" data-id="${esc(p.id)}"${done(p.id) ? " disabled" : ""}><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small>${done(p.id) ? `<span class="ok">✓ Sudah absen</span>` : ""}</button></li>`).join("") || `<li class="empty">${INFO.peserta.length ? "Nama tidak ditemukan." : "Belum ada peserta di kegiatan ini."}</li>`}</ul>`, "list");
   const qi = $("#q"); qi.oninput = () => { const v = qi.value, pos = qi.selectionStart; list(v); const q2 = $("#q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (_) { } };
   main.querySelectorAll(".nm").forEach(b => { b.onclick = () => pilih(b.dataset.id); });
 }
@@ -187,7 +190,7 @@ function toastMsg(m) { const el = $("#camMsg"); if (el) el.innerHTML = `<div cla
 /* ---------- ambil gambar + watermark ---------- */
 function wrap(ctx2, text, maxW) { const w = String(text || "").split(/\s+/), out = []; let cur = ""; w.forEach(x => { const t = cur ? cur + " " + x : x; if (ctx2.measureText(t).width > maxW && cur) { out.push(cur); cur = x; } else cur = t; }); if (cur) out.push(cur); return out; }
 async function ambil(src, sw, sh, mirror) {
-  const z = nowZ(INFO.zona), ses = sesiOf(z), W = 720, H = 960, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const z = nowZ(INFO.zona), ses = sesiOf(z), W = 600, H = 800, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const g = cv.getContext("2d"), r = Math.max(W / sw, H / sh), dw = sw * r, dh = sh * r;
   g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
   if (mirror) { g.save(); g.translate(W, 0); g.scale(-1, 1); }
@@ -198,7 +201,7 @@ async function ambil(src, sw, sh, mirror) {
   g.font = `700 ${Math.round(px * 1.15)}px system-ui,Arial,sans-serif`; wrap(g, CHOSEN.nama, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 700, 1.15]));
   g.font = `500 ${px}px system-ui,Arial,sans-serif`; wrap(g, CHOSEN.instansi, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 1]));
   g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`;
-  wrap(g, `${tglPanjang(z.iso)} · ${p2(z.h)}:${p2(z.m)} ${INFO.zona || "WIB"} · Absen ${sesiNama(ses)}`, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92]));
+  wrap(g, `${tglPanjang(z.iso)} · ${p2(z.h)}:${p2(z.m)} ${z.zn} · Absen ${sesiNama(ses)}`, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92]));
   const lok = [INFO.tempat, INFO.kota].filter(Boolean).join(", ");
   if (lok) { g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`; wrap(g, "📍 " + lok, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92])); }
   const lh = l => Math.round(px * l[2] * 1.28), total = lines.reduce((s, l) => s + lh(l), 0) + pad * 1.4, y0 = H - total;
@@ -207,7 +210,7 @@ async function ambil(src, sw, sh, mirror) {
   let y = y0 + pad * 0.7; g.textBaseline = "top"; g.shadowColor = "rgba(0,0,0,.7)"; g.shadowBlur = 4;
   lines.forEach(l => { g.font = `${l[1]} ${Math.round(px * l[2])}px system-ui,Arial,sans-serif`; g.fillStyle = "#fff"; g.fillText(l[0], pad, y); y += lh(l); });
   await stopCam();
-  SHOT = { url: cv.toDataURL("image/jpeg", 0.74), ses, iso: z.iso };
+  SHOT = { url: cv.toDataURL("image/jpeg", 0.72), ses, iso: z.iso };
   preview();
 }
 function preview() {
@@ -224,8 +227,7 @@ async function kirim() {
   const b = $("#send"), a = $("#again"), msg = $("#sendMsg"); b.disabled = a.disabled = true; b.textContent = "Mengirim…"; msg.innerHTML = "";
   const key = `${CHOSEN.id}~${SHOT.iso}~${SHOT.ses}`;
   try {
-    await refreshSt();
-    if (ST[key]) throw Object.assign(new Error("dup"), { dup: true });
+    if (ST[key] || (FB.has && await FB.has(KID, key))) throw Object.assign(new Error("dup"), { dup: true });
     await FB.put(KID, key, SHOT.url);
     ST[key] = Date.now();
     selesai();
@@ -243,6 +245,13 @@ function selesai() {
     <button class="btn pri" id="done">Selesai</button>`);
   $("#done").onclick = () => { CHOSEN = null; SHOT = null; list(); };
 }
+/* Hari / sesi (pagi-siang) berubah saat halaman masih terbuka: perbarui otomatis */
+function tick() {
+  if (!INFO) return; const c = ctx(), key = c.z.iso + c.ses; if (key === LASTKEY) return; const first = !LASTKEY; LASTKEY = key; if (first) return;
+  if (SCREEN === "list" || SCREEN === "off") refreshSt().then(() => { if (SCREEN === "list" || SCREEN === "off") list(($("#q") || {}).value); });
+  else { const pl = main.querySelector(".pill"); if (pl) { pl.textContent = `Hari ke-${c.idx + 1} · Absen ${sesiNama(c.ses)}`; pl.classList.toggle("siang", c.ses === "s"); } }
+}
+setInterval(tick, 10000); window.__sfTick = tick;
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !CHOSEN && FB && INFO) refreshSt().then(() => { if (!CHOSEN) list(($("#q") || {}).value); }); });
 boot();
 </script>
