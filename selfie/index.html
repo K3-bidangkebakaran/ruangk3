@@ -182,7 +182,7 @@ async function bukaKamera() {
     STREAM = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
     const v = $("#vid"); v.srcObject = STREAM; await v.play().catch(() => { });
     $("#snap").disabled = false;
-    $("#snap").onclick = async () => { const v2 = $("#vid"); if (!v2.videoWidth) { toastMsg("Kamera belum siap, tunggu sebentar."); return; } await ambil(v2, v2.videoWidth, v2.videoHeight, false); };
+    $("#snap").onclick = async () => { const v2 = $("#vid"); if (!v2.videoWidth) { toastMsg("Kamera belum siap, tunggu sebentar."); return; } await ambil(v2, v2.videoWidth, v2.videoHeight, true); }; // kamera depan: hasil di-flip horizontal (sama seperti pratinjau cermin); watermark tetap terbaca normal
   } catch (e) { useFile(/denied|permission|notallowed/i.test(String(e && (e.name + e.message))) ? "Izin kamera ditolak. Izinkan kamera di pengaturan browser, atau gunakan kamera bawaan HP." : "Kamera tidak bisa dibuka. Gunakan kamera bawaan HP."); }
 }
 function toastMsg(m) { const el = $("#camMsg"); if (el) el.innerHTML = `<div class="note warn">${esc(m)}</div>`; }
