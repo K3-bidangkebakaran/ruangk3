@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Absen Selfie Peserta</title>
+<meta name="theme-color" content="#14201a">
+<link rel="icon" href="../pic/icons/icon-192.png">
+<style>
+:root{
+  --bg:#eef0ea; --surface:#fff; --surface-2:#f6f7f2; --ink:#17201b; --muted:#5b665e; --line:#d9ded5;
+  --brand:#f6c800; --brand-ink:#1e1a00; --chrome:#14201a; --chrome-ink:#f2f5ee; --chrome-muted:#a9b6ac;
+  --ok:#14804a; --ok-soft:#dcf2e5; --bad:#b42318; --bad-soft:#fde2df; --warn:#a85a05; --warn-soft:#fdebcf; --focus:#1d4ed8;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0d120f; --surface:#161d18; --surface-2:#1c2520; --ink:#eef1ec; --muted:#9aa69d; --line:#2b362e; --chrome:#0a0f0c;
+  --ok:#4ade80; --ok-soft:#10301d; --bad:#f87171; --bad-soft:#3b1512; --warn:#fbbf24; --warn-soft:#3a2a08; --focus:#7aa2ff; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+#app{min-height:100%;max-width:520px;margin:0 auto;background:var(--surface);display:flex;flex-direction:column}
+@media (min-width:560px){#app{border-inline:1px solid var(--line)}}
+.bar{background:var(--chrome);color:var(--chrome-ink);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;gap:10px;align-items:center}
+.bar img{width:36px;height:36px;border-radius:9px;flex:none}
+.bar b{display:block;font-size:16px;line-height:1.2}
+.bar small{display:block;color:var(--chrome-muted);font-size:12px}
+main{flex:1;display:flex;flex-direction:column;gap:14px;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+h1,h2{margin:0;line-height:1.2}
+h2{font-size:20px}
+.card{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface-2);display:grid;gap:6px}
+.card h1{font-size:18px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted);font-size:13.5px}
+.pill{display:inline-block;padding:3px 11px;border-radius:99px;font-weight:700;font-size:13px;background:var(--brand);color:var(--brand-ink);justify-self:start}
+.pill.siang{background:#7dd3fc;color:#0c2a3a}
+.search{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:48px;background:var(--surface)}
+.names{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.nm{width:100%;text-align:left;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;min-height:56px}
+.nm:active{background:var(--surface-2)}
+.nm b{font-size:16px}
+.nm small{grid-column:1;color:var(--muted);font-size:13px}
+.nm .ok{grid-column:2;grid-row:1/3;color:var(--ok);font-weight:700;font-size:13px;background:var(--ok-soft);border-radius:99px;padding:3px 10px}
+.nm[disabled]{opacity:.65;cursor:not-allowed}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 16px;font-weight:700;min-height:48px;width:100%}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.bad{color:var(--bad)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.row{display:grid;gap:10px}
+.row.two{grid-template-columns:1fr 1fr}
+.note{border-radius:12px;padding:12px 14px;font-size:14.5px}
+.note.err{background:var(--bad-soft);color:var(--bad)}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.okk{background:var(--ok-soft);color:var(--ok)}
+.empty{color:var(--muted);text-align:center;padding:22px 8px}
+.cam{position:relative;background:#000;border-radius:14px;overflow:hidden;aspect-ratio:3/4;width:100%}
+.cam video,.cam img,.cam canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.cam video{transform:scaleX(-1)}
+.cam .hint{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#fff;font-size:13px;text-shadow:0 1px 3px #000}
+.who{display:grid;gap:2px}
+.who b{font-size:18px}.who span{color:var(--muted)}
+.spin{width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp 1s linear infinite;margin:30px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.big{font-size:56px;text-align:center;line-height:1}
+.center{text-align:center}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="bar"><img src="../pic/icons/icon-192.png" alt=""><div><b>Absen Selfie Peserta</b><small id="barSub">Memuat…</small></div></header>
+  <main id="main"><div class="spin" role="status" aria-label="Memuat"></div></main>
+</div>
+<script type="module">
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const KID = (new URLSearchParams(location.search).get("k") || "").trim();
+const ZONA = { WIB: 7, WITA: 8, WIT: 9 };
+const HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"], BLN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+const p2 = n => String(n).padStart(2, "0");
+
+/* ---------- akses data (Firebase; bisa digantikan window.__SF_FB untuk uji) ---------- */
+async function backend() {
+  if (window.__SF_FB) return window.__SF_FB;
+  const V = "https://www.gstatic.com/firebasejs/11.6.1/", ROOT = "artifacts/k3-kebakaran-app-v5/public/data";
+  const [a, au, d] = await Promise.all([import(V + "firebase-app.js"), import(V + "firebase-auth.js"), import(V + "firebase-database.js")]);
+  const app = a.initializeApp({ apiKey: "AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg", authDomain: "portal-k3-bidang-kebakaran.firebaseapp.com", databaseURL: "https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "portal-k3-bidang-kebakaran", appId: "1:497833559757:web:01c2de15cd5f56dbb18b84" }, "selfie");
+  const auth = au.getAuth(app), db = d.getDatabase(app), R = p => d.ref(db, `${ROOT}/${p}`);
+  const to = (pr, ms, m) => { let t; return Promise.race([pr, new Promise((_, rj) => { t = setTimeout(() => rj(new Error(m || "Koneksi terlalu lambat.")), ms); })]).finally(() => clearTimeout(t)); };
+  await to(au.signInAnonymously(auth), 20000, "Tidak bisa terhubung. Cek internet lalu muat ulang halaman.");
+  return {
+    info: async k => (await to(d.get(R(`dh_selfie/${k}`)), 20000)).val(),
+    status: async k => (await to(d.get(R(`dh_selfie_st/${k}`)), 20000)).val() || {},
+    offset: () => to(new Promise(res => d.onValue(d.ref(db, ".info/serverTimeOffset"), s => res(+s.val() || 0), () => res(0), { onlyOnce: true })), 3000).catch(() => 0),
+    async put(k, key, url) { await to(d.set(R(`dh_selfie_foto/${k}/${key}`), url), 90000, "Pengiriman terlalu lambat."); await to(d.set(R(`dh_selfie_st/${k}/${key}`), d.serverTimestamp()), 30000); },
+  };
+}
+
+/* ---------- waktu mengikuti zona kegiatan (bukan zona HP) ---------- */
+let OFF = 0;
+const nowZ = zona => { const t = new Date(Date.now() + OFF + (ZONA[zona] || 7) * 3600e3); return { iso: `${t.getUTCFullYear()}-${p2(t.getUTCMonth() + 1)}-${p2(t.getUTCDate())}`, h: t.getUTCHours(), m: t.getUTCMinutes(), dow: t.getUTCDay(), d: t.getUTCDate(), mo: t.getUTCMonth(), y: t.getUTCFullYear() }; };
+const tglPanjang = iso => { const [y, m, d] = iso.split("-").map(Number), w = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); return `${HARI[w]}, ${d} ${BLN[m - 1]} ${y}`; };
+const sesiOf = z => (z.h < 12 ? "p" : "s");
+const sesiNama = s => (s === "p" ? "Pagi" : "Siang");
+
+/* ---------- state ---------- */
+let FB = null, INFO = null, ST = {}, CHOSEN = null, SHOT = null, STREAM = null, busy = false;
+const main = $("#main");
+const show = html => { main.innerHTML = html; };
+const fail = (msg, extra) => { $("#barSub").textContent = ""; show(`<div class="note err">${esc(msg)}</div>${extra || ""}<button class="btn" id="reload">Muat ulang</button>`); const b = $("#reload"); if (b) b.onclick = () => location.reload(); };
+
+async function boot() {
+  if (!KID) return fail("Link tidak lengkap. Minta link absen selfie yang benar dari PIC.");
+  try { FB = await backend(); } catch (e) { return fail(e.message || "Tidak bisa terhubung."); }
+  try { [INFO, OFF] = await Promise.all([FB.info(KID), FB.offset()]); } catch (e) { return fail(/permission/i.test(e.message || "") ? "Absen selfie belum bisa dibuka (akses ditolak). Hubungi PIC." : (e.message || "Gagal memuat data.")); }
+  if (!INFO || !Array.isArray(INFO.peserta)) return fail("Absen selfie untuk kegiatan ini belum aktif atau link tidak berlaku. Hubungi PIC.");
+  $("#barSub").textContent = INFO.nama || "";
+  await refreshSt(); list();
+}
+async function refreshSt() { try { ST = await FB.status(KID); } catch (_) { /* pakai data terakhir */ } }
+
+/* ---------- daftar nama ---------- */
+function ctx() {
+  const z = nowZ(INFO.zona), tgl = Array.isArray(INFO.tgl) ? INFO.tgl : Object.values(INFO.tgl || {}), idx = tgl.indexOf(z.iso);
+  return { z, tgl, idx, ses: sesiOf(z) };
+}
+function head(c) {
+  const meta = [INFO.tempat && `📍 ${INFO.tempat}${INFO.kota ? ", " + INFO.kota : ""}`].filter(Boolean).join("");
+  return `<div class="card"><h1>${esc(INFO.nama)}</h1><div class="meta"><span>${esc(tglPanjang(c.z.iso))}</span>${meta ? `<span>${esc(meta)}</span>` : ""}</div>`
+    + (c.idx >= 0 ? `<span class="pill ${c.ses === "s" ? "siang" : ""}">Hari ke-${c.idx + 1} · Absen ${sesiNama(c.ses)}</span>` : "") + `</div>`;
+}
+function list(q) {
+  const c = ctx();
+  if (c.idx < 0) {
+    const awal = c.tgl.length && c.z.iso < c.tgl[0], akhir = c.tgl.length && c.z.iso > c.tgl[c.tgl.length - 1];
+    show(head(c) + `<div class="note warn">${awal ? "Kegiatan belum dimulai." : akhir ? "Kegiatan sudah selesai." : "Hari ini bukan hari kegiatan."} Absen selfie hanya bisa dilakukan pada hari kegiatan.</div>`
+      + `<div class="meta">Jadwal: ${esc(c.tgl.map(tglPanjang).join(" · "))}</div><button class="btn" id="reload">Periksa lagi</button>`);
+    $("#reload").onclick = () => location.reload(); return;
+  }
+  const done = id => !!ST[`${id}~${c.z.iso}~${c.ses}`];
+  const ps = INFO.peserta.filter(p => !q || (p.nama + " " + p.instansi).toLowerCase().includes(q.toLowerCase()));
+  const n = INFO.peserta.filter(p => done(p.id)).length;
+  show(head(c) + `<div class="note okk" id="prog">${n} dari ${INFO.peserta.length} peserta sudah absen ${sesiNama(c.ses).toLowerCase()}.</div>
+    <h2>Pilih nama Anda</h2><input class="search" id="q" type="search" placeholder="Cari nama atau perusahaan" aria-label="Cari nama atau perusahaan" autocomplete="off" value="${esc(q || "")}">
+    <ul class="names">${ps.map(p => `<li><button class="nm" data-id="${esc(p.id)}"${done(p.id) ? " disabled" : ""}><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small>${done(p.id) ? `<span class="ok">✓ Sudah absen</span>` : ""}</button></li>`).join("") || `<li class="empty">${INFO.peserta.length ? "Nama tidak ditemukan." : "Belum ada peserta di kegiatan ini."}</li>`}</ul>`);
+  const qi = $("#q"); qi.oninput = () => { const v = qi.value, pos = qi.selectionStart; list(v); const q2 = $("#q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (_) { } };
+  main.querySelectorAll(".nm").forEach(b => { b.onclick = () => pilih(b.dataset.id); });
+}
+
+/* ---------- pilih nama -> kamera ---------- */
+function pilih(id) {
+  CHOSEN = INFO.peserta.find(p => p.id === id); if (!CHOSEN) return;
+  SHOT = null; konfirmasi();
+}
+function konfirmasi() {
+  const c = ctx();
+  show(head(c) + `<div class="who"><span>Anda memilih:</span><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi)}</span></div>
+    <div class="note warn">Bukan nama Anda? Tekan <b>Kembali</b>. Selfie hanya bisa dikirim <b>satu kali</b> untuk tiap sesi (pagi / siang). Wajah harus terlihat jelas.</div>
+    <div class="row two"><button class="btn" id="back">Kembali</button><button class="btn pri" id="go">📸 Buka kamera</button></div>`);
+  $("#back").onclick = () => { CHOSEN = null; list(); };
+  $("#go").onclick = bukaKamera;
+}
+async function stopCam() { if (STREAM) { STREAM.getTracks().forEach(t => t.stop()); STREAM = null; } }
+async function bukaKamera() {
+  const c = ctx();
+  show(head(c) + `<div class="who"><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi)}</span></div>
+    <div class="cam" id="cam"><video id="vid" playsinline muted autoplay></video><div class="hint">Hadapkan wajah ke kamera depan</div></div>
+    <div id="camMsg"></div>
+    <div class="row two"><button class="btn" id="back">Batal</button><button class="btn pri" id="snap" disabled>📸 Ambil foto</button></div>
+    <label class="btn" id="fbWrap" hidden style="display:none;text-align:center">Buka kamera bawaan HP<input id="fbFile" type="file" accept="image/*" capture="user" hidden></label>`);
+  $("#back").onclick = async () => { await stopCam(); CHOSEN = null; list(); };
+  const useFile = (why) => { $("#camMsg").innerHTML = `<div class="note warn">${esc(why)}</div>`; const w = $("#fbWrap"); w.hidden = false; w.style.display = "block"; $("#cam").style.display = "none"; $("#snap").style.display = "none"; };
+  $("#fbFile").onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; try { const img = await new Promise((res, rej) => { const u = URL.createObjectURL(f), i = new Image(); i.onload = () => { URL.revokeObjectURL(u); res(i); }; i.onerror = rej; i.src = u; }); await ambil(img, img.naturalWidth, img.naturalHeight, false); } catch (_) { useFile("Foto tidak bisa dibaca. Coba lagi."); } };
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return useFile("Kamera langsung tidak tersedia di browser ini. Gunakan kamera bawaan HP.");
+  try {
+    STREAM = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+    const v = $("#vid"); v.srcObject = STREAM; await v.play().catch(() => { });
+    $("#snap").disabled = false;
+    $("#snap").onclick = async () => { const v2 = $("#vid"); if (!v2.videoWidth) { toastMsg("Kamera belum siap, tunggu sebentar."); return; } await ambil(v2, v2.videoWidth, v2.videoHeight, false); };
+  } catch (e) { useFile(/denied|permission|notallowed/i.test(String(e && (e.name + e.message))) ? "Izin kamera ditolak. Izinkan kamera di pengaturan browser, atau gunakan kamera bawaan HP." : "Kamera tidak bisa dibuka. Gunakan kamera bawaan HP."); }
+}
+function toastMsg(m) { const el = $("#camMsg"); if (el) el.innerHTML = `<div class="note warn">${esc(m)}</div>`; }
+
+/* ---------- ambil gambar + watermark ---------- */
+function wrap(ctx2, text, maxW) { const w = String(text || "").split(/\s+/), out = []; let cur = ""; w.forEach(x => { const t = cur ? cur + " " + x : x; if (ctx2.measureText(t).width > maxW && cur) { out.push(cur); cur = x; } else cur = t; }); if (cur) out.push(cur); return out; }
+async function ambil(src, sw, sh, mirror) {
+  const z = nowZ(INFO.zona), ses = sesiOf(z), W = 720, H = 960, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const g = cv.getContext("2d"), r = Math.max(W / sw, H / sh), dw = sw * r, dh = sh * r;
+  g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+  if (mirror) { g.save(); g.translate(W, 0); g.scale(-1, 1); }
+  g.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  if (mirror) g.restore();
+  // watermark: nama, perusahaan, tanggal & jam, lokasi kegiatan
+  const px = Math.round(W * 0.042), pad = Math.round(W * 0.035), lines = [];
+  g.font = `700 ${Math.round(px * 1.15)}px system-ui,Arial,sans-serif`; wrap(g, CHOSEN.nama, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 700, 1.15]));
+  g.font = `500 ${px}px system-ui,Arial,sans-serif`; wrap(g, CHOSEN.instansi, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 1]));
+  g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`;
+  wrap(g, `${tglPanjang(z.iso)} · ${p2(z.h)}:${p2(z.m)} ${INFO.zona || "WIB"} · Absen ${sesiNama(ses)}`, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92]));
+  const lok = [INFO.tempat, INFO.kota].filter(Boolean).join(", ");
+  if (lok) { g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`; wrap(g, "📍 " + lok, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92])); }
+  const lh = l => Math.round(px * l[2] * 1.28), total = lines.reduce((s, l) => s + lh(l), 0) + pad * 1.4, y0 = H - total;
+  const gr = g.createLinearGradient(0, y0 - px, 0, H); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(0.28, "rgba(0,0,0,.62)"); gr.addColorStop(1, "rgba(0,0,0,.82)");
+  g.fillStyle = gr; g.fillRect(0, y0 - px, W, total + px);
+  let y = y0 + pad * 0.7; g.textBaseline = "top"; g.shadowColor = "rgba(0,0,0,.7)"; g.shadowBlur = 4;
+  lines.forEach(l => { g.font = `${l[1]} ${Math.round(px * l[2])}px system-ui,Arial,sans-serif`; g.fillStyle = "#fff"; g.fillText(l[0], pad, y); y += lh(l); });
+  await stopCam();
+  SHOT = { url: cv.toDataURL("image/jpeg", 0.74), ses, iso: z.iso };
+  preview();
+}
+function preview() {
+  const c = ctx();
+  show(head(c) + `<div class="who"><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi)}</span></div>
+    <div class="cam"><img src="${SHOT.url}" alt="Hasil selfie"></div><div id="sendMsg"></div>
+    <div class="row two"><button class="btn" id="again">Ulangi foto</button><button class="btn pri" id="send">✓ Kirim absen</button></div>`);
+  $("#again").onclick = bukaKamera; $("#send").onclick = kirim;
+}
+
+/* ---------- kirim ---------- */
+async function kirim() {
+  if (busy) return; busy = true;
+  const b = $("#send"), a = $("#again"), msg = $("#sendMsg"); b.disabled = a.disabled = true; b.textContent = "Mengirim…"; msg.innerHTML = "";
+  const key = `${CHOSEN.id}~${SHOT.iso}~${SHOT.ses}`;
+  try {
+    await refreshSt();
+    if (ST[key]) throw Object.assign(new Error("dup"), { dup: true });
+    await FB.put(KID, key, SHOT.url);
+    ST[key] = Date.now();
+    selesai();
+  } catch (e) {
+    const dup = e && (e.dup || /permission/i.test(e.message || ""));
+    msg.innerHTML = `<div class="note err">${dup ? "Nama ini sudah tercatat absen untuk sesi ini. Jika foto sebelumnya salah, minta PIC menghapusnya agar Anda bisa mengulang." : "Gagal mengirim: " + esc((e && e.message) || "cek internet") + ". Foto Anda masih tersimpan, tekan Kirim lagi."}</div>`;
+    b.disabled = a.disabled = false; b.textContent = dup ? "Kembali ke daftar" : "✓ Kirim lagi";
+    if (dup) { b.onclick = () => { CHOSEN = null; SHOT = null; list(); }; a.hidden = true; }
+  } finally { busy = false; }
+}
+function selesai() {
+  show(`<div class="big">✅</div><h2 class="center">Absen ${esc(sesiNama(SHOT.ses).toLowerCase())} berhasil</h2>
+    <div class="who center"><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi)}</span></div>
+    <div class="cam"><img src="${SHOT.url}" alt="Selfie terkirim"></div>
+    <button class="btn pri" id="done">Selesai</button>`);
+  $("#done").onclick = () => { CHOSEN = null; SHOT = null; list(); };
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !CHOSEN && FB && INFO) refreshSt().then(() => { if (!CHOSEN) list(($("#q") || {}).value); }); });
+boot();
+</script>
+</body>
+</html>

@@ -135,3 +135,41 @@ Hasil PIC (`dh_hasil` + `dh_media`) juga diambil oleh Apps Script Daftar Hadir t
 
 `dh_kegiatan/{kid}` membawa `papa` (bool), `kelas` (daftar nama kelas) dan `peserta[].kelas`. APK hanya menampilkan lencana kelas di daftar peserta dan mengurutkan per kelas; hasil PIC (`dh_hasil`, `dh_media`) tetap per peserta sehingga tidak berubah. Laporan dipecah per kelas di aplikasi Daftar Hadir.
 
+
+## Absen Selfie Peserta (halaman `ruangk3.com/selfie/`)
+
+Fitur opsional per kegiatan: di Daftar Hadir → tab **Laporan**, centang **Absen Selfie Peserta**. Aplikasi menerbitkan `dh_selfie/{kid}`;
+PIC melihat tile **Link Absen Selfie Peserta** di kegiatan itu (aplikasi Portal PIC) dan membagikan link `https://ruangk3.com/selfie/?k={kid}` ke peserta.
+Peserta (tanpa login, Firebase anonim) memilih nama (+ perusahaan), selfie kamera depan; foto 720×960 ber-watermark nama, perusahaan, tanggal/jam, lokasi.
+Pagi = sebelum 12.00, siang = 12.00 ke atas, menurut zona waktu kegiatan (jam server Firebase). Hanya bisa pada hari kegiatan, sekali per peserta per sesi.
+Aplikasi Daftar Hadir (admin) menarik foto ke `p.sf[tanggal].p|s`, menyimpannya ke Drive (`Selfie Absensi/<tanggal>`), dan membuat lembar **Absen Selfie Peserta**
+(tabel per hari: No, Nama, Perusahaan, Absen Pagi, Absen Siang) tepat setelah Daftar Hadir (pratinjau, Cetak/PDF, Word `2. Absen Selfie Peserta - …`).
+Admin bisa menghapus satu selfie (tab Laporan → "Lihat / hapus selfie per peserta") agar peserta mengulang.
+
+| Node | Isi |
+|---|---|
+| `dh_selfie/{kid}` | info untuk halaman peserta: `{nama, tgl[], tempat, kota, zona, peserta[{id,nama,instansi}]}` (hanya diterbitkan bila Absen Selfie dicentang) |
+| `dh_selfie_foto/{kid}/{pid~tanggal~p|s}` | foto selfie (dataURL JPEG), sekali tulis |
+| `dh_selfie_st/{kid}/{pid~tanggal~p|s}` | penanda waktu server (angka) bahwa foto sudah ada |
+
+### WAJIB: tambahkan aturan Firebase untuk selfie
+Firebase Console → Realtime Database → Rules, di dalam `artifacts → k3-kebakaran-app-v5 → public → data` (gabungkan, jangan menimpa aturan lain):
+
+```json
+"dh_selfie": {
+  "$kid": { ".read": "auth != null", ".write": "auth != null" }
+},
+"dh_selfie_st": {
+  ".read": "auth != null",
+  "$kid": { "$k": { ".write": "auth != null && (!data.exists() || !newData.exists())", ".validate": "newData.isNumber()" } }
+},
+"dh_selfie_foto": {
+  "$kid": {
+    ".read": "auth != null",
+    "$k": { ".write": "auth != null && (!data.exists() || !newData.exists())", ".validate": "newData.isString() && newData.val().length < 400000 && newData.val().matches(/^data:image\\/jpeg;base64,/)" }
+  }
+}
+```
+
+Catatan: peserta dan admin sama-sama login anonim, jadi aturan tidak bisa membedakan; yang dijaga: foto tidak bisa ditimpa (hanya ditulis sekali, boleh dihapus),
+ukuran dibatasi, dan daftar kegiatan tidak bisa dicacah (tidak ada `.read` di `dh_selfie`/`dh_selfie_foto` tingkat atas). Link berisi ID kegiatan acak; siapa pun yang memegang link bisa melihat nama peserta kegiatan itu.
