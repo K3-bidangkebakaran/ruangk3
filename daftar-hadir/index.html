@@ -638,6 +638,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
       <div class="p-tools">
         <button class="btn sm primary" id="btnXls">📄 Upload Excel / PDF</button>
         <button class="btn sm" id="btnAdd">+ Tambah Manual</button>
+        <button class="btn sm" id="btnTenant" title="Ubah singkatan perusahaan peserta (mis. BDM) menjadi nama lengkap sesuai Database Tenant IMIP di Google Drive">🏢 Lengkapi nama perusahaan</button>
         <button class="btn sm" id="btnSort" title="Urutkan nama peserta sesuai abjad">Urutkan A–Z</button>
         <input type="file" id="fileXls" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
       </div>
@@ -1955,6 +1956,8 @@ function parsePaste(txt) {
     if (S.acara.papa && cells.length === 3) { out.push({ id: uid(), nama: cells[0] || "", instansi: cells[1] || "", foto: "", kelas: cells[2] || "" }); return; } // bidang PAPA: Nama | Instansi | Kelas
     out.push({ id: uid(), nama: cells[0] || "", instansi: (cells.length >= 3 ? cells[2] : cells[1]) || "", foto: "", kelas: cells.length >= 4 ? cells[3] : "" });
   });
+  out.forEach(p => { p.instansi = Tenant.full(p.instansi); }); // singkatan perusahaan -> nama lengkap (Database Tenant)
+  Tenant.refresh();
   return out;
 }
 
@@ -2240,6 +2243,13 @@ $("#pList").addEventListener("input", e => {
   S.peserta[i][f] = e.target.value; changed(); renderFotoSoon();
   if (f === "kelas") { e.target.classList.toggle("kosong", !kelasList(S.acara).includes(e.target.value)); renderKelasUi(); }
 });
+$("#pList").addEventListener("change", e => { // selesai mengetik perusahaan: singkatan (mis. BDM) otomatis jadi nama lengkap tenant
+  if (e.target.dataset.f !== "instansi") return;
+  const row = e.target.closest(".p-row"); if (!row) return; const p = S.peserta[idx(row.dataset.id)]; if (!p) return;
+  Tenant.refresh();
+  const v = Tenant.full(e.target.value);
+  if (v !== e.target.value.trim() && v) { const lama = e.target.value.trim(); p.instansi = v; e.target.value = v; changed(); renderFotoSoon(); toast(`"${lama}" → ${v}`); }
+});
 $("#pList").addEventListener("keydown", e => {
   if (e.key === "Enter" && e.target.dataset.f) {
     e.preventDefault();
@@ -2276,6 +2286,21 @@ function addRow() {
   const rows = document.querySelectorAll(".p-row .nama"); rows[rows.length - 1].focus();
 }
 $("#btnAdd").onclick = addRow;
+$("#btnTenant").onclick = async () => {
+  const b = $("#btnTenant"), ori = b.textContent; b.disabled = true; b.textContent = "Memeriksa data tenant…";
+  try {
+    if (!Cloud.ready()) { if (!Tenant.list.length) { toast("Hubungkan Google Drive dulu agar Database Tenant bisa dibaca."); return; } }
+    else {
+      const ok = await Tenant.refresh(true);
+      if (!ok && Tenant.old) { toast("Apps Script belum diperbarui: tempel Code.gs terbaru lalu Deploy versi baru."); return; }
+      if (!ok && !Tenant.list.length) { toast("Database Tenant belum bisa dibaca: " + (Tenant.err || "cek koneksi") ); return; }
+    }
+    const ch = Tenant.lengkapi(S.peserta.filter(p => (p.nama || "").trim() || p.instansi));
+    if (!ch.length) { toast(`Tidak ada singkatan yang perlu dilengkapi (${Tenant.list.length} tenant di database).`); return; }
+    renderList(); changed();
+    toast(`${ch.length} nama perusahaan dilengkapi dari Database Tenant.`, "Batalkan", () => { ch.forEach(c => { c.p.instansi = c.lama; }); renderList(); changed(); });
+  } finally { b.disabled = false; b.textContent = ori; }
+};
 $("#btnPaste").onclick = () => {
   const add = parsePaste($("#pasteText").value);
   if (!add.length) { toast("Tidak ada data yang bisa dibaca."); return; }
@@ -3197,11 +3222,12 @@ function masukkanPeserta(list, sumber, adaInst) {
     if (nm.length && bersih && sama >= Math.max(3, Math.min(nm.length, list.length) * 0.5) && confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = GANTI seluruh daftar dengan hasil baca file ini (disarankan bila daftar sebelumnya salah baca).\nBatal = hanya tambahkan nama yang belum ada.`)) S.peserta = [];
   }
   const key = (n, i) => norm(n) + "|" + norm(i);
-  const have = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => key(p.nama, p.instansi)));
-  const add = []; let dup = 0;
+  const have = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => key(p.nama, Tenant.full(p.instansi))));
+  const add = []; let dup = 0, nTen = 0; Tenant.refresh();
   for (const r of list) {
     const nama = cleanTxt(r.nama); if (!nama) continue;
-    const inst = cleanTxt(r.inst), k = key(nama, inst);
+    const inst0 = cleanTxt(r.inst), inst = Tenant.full(inst0), k = key(nama, inst);
+    if (inst !== inst0) nTen++;
     if (have.has(k)) { dup++; continue; }
     have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {}, kelas: cleanTxt(r.kelas), alat: cleanTxt(r.alat) });
   }
@@ -3211,7 +3237,7 @@ function masukkanPeserta(list, sumber, adaInst) {
   const nkel = kelasDariData(add);
   renderList(); changed();
   if (nkel) toast(AUTO.msg || `Kolom Kelas terbaca: ${nkel} kelas baru, laporan dipecah per kelas.`);
-  else toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
+  else toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${nTen ? `, ${nTen} nama perusahaan dilengkapi dari Database Tenant` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
 }
 function importFile(file) { return /\.pdf$/i.test(file.name) || file.type === "application/pdf" ? importPdf(file) : importExcel(file); }
 async function downloadTemplate() {
@@ -3240,7 +3266,7 @@ $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("P
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 6; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 7; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
 const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
@@ -3598,6 +3624,37 @@ const Word = (() => {
   return { berkas, daftarHadir, dokumentasi, nilai, hasil, harian, narasumber, rundown, lapFile, kecil, zip, crc32 };
 })();
 
+/* ---------- Database Tenant IMIP (Google Drive "Database Tenant IMIP"): singkatan perusahaan -> nama lengkap ----------
+   Peserta yang kolom perusahaannya HANYA singkatan (mis. "BDM", "PT SMI") otomatis diganti nama lengkap tenant. Sumber data = spreadsheet di
+   folder Daftar Hadir di Google Drive (bisa diubah/ditambah di sana); salinan terakhir disimpan di perangkat (jalan walau offline).
+   Singkatan yang dipakai dua perusahaan sekaligus dianggap ambigu dan dibiarkan apa adanya. */
+const Tenant = {
+  list: [], map: new Map(), at: 0, url: "", busy: false, checked: 0, old: false, err: "",
+  key(t) { return String(t || "").toUpperCase().replace(/[.,;:()\/\\_'"\-]+/g, " ").replace(/\s+/g, " ").trim().replace(/^(PT|P T|CV)\s+/, ""); },
+  build(list) {
+    const m = new Map(), put = (k, n) => { if (!k) return; if (!m.has(k)) m.set(k, n); else if (m.get(k) !== n) m.set(k, null); };
+    (list || []).forEach(x => { if (!x || !x.n) return; put(this.key(x.n), x.n); put(this.key(x.s), x.n); (x.a || []).forEach(a => put(this.key(a), x.n)); });
+    this.list = list || []; this.map = m;
+  },
+  full(t) { const v = String(t || "").trim(); if (!v) return v; const n = this.map.get(this.key(v)); return n || v; },
+  async init() { const c = await idbGet("tenant-db"); if (c && Array.isArray(c.list)) { this.build(c.list); this.at = c.at || 0; this.url = c.url || ""; } },
+  async refresh(force) {
+    if (this.busy || !Cloud.ready() || !navigator.onLine) return false;
+    if (!force && Date.now() - this.checked < 600000) return false;
+    this.busy = true; this.checked = Date.now();
+    try {
+      const r = await Cloud.api1("tenants");
+      if (!r || !Array.isArray(r.tenants)) throw new Error("Respons tenant tidak valid");
+      this.build(r.tenants); this.at = Date.now(); this.url = r.url || this.url; this.err = ""; this.old = false;
+      await idbPut("tenant-db", { list: r.tenants, at: this.at, url: this.url }).catch(() => { });
+      try { Cloud.links(); } catch (e) { }
+      return true;
+    } catch (e) { this.err = String((e && e.message) || e); this.old = /tidak dikenal/i.test(this.err); this.checked = Date.now() - 540000; return false; }
+    finally { this.busy = false; }
+  },
+  /** lengkapi nama perusahaan seluruh peserta; mengembalikan daftar perubahan [{p, lama}] */
+  lengkapi(arr) { const ch = []; (arr || []).forEach(p => { const v = this.full(p.instansi); if (v && v !== (p.instansi || "")) { ch.push({ p, lama: p.instansi }); p.instansi = v; } }); return ch; }
+};
 // ukuran byte & sidik jari ringan sebuah data URL: rumus sama dengan sig_() di Code.gs (dipakai untuk TIDAK mengunggah ulang file yang sudah sama di Drive)
 const dataBytes = d => { const b = d.slice(d.indexOf(",") + 1), n = b.length; return Math.floor(n * 3 / 4) - (b.endsWith("==") ? 2 : b.endsWith("=") ? 1 : 0); };
 const sigData = d => { const b = d.slice(d.indexOf(",") + 1), n = b.length, mid = n >> 1, t = n + "|" + b.slice(0, 300) + b.substr(mid, 300) + b.slice(Math.max(0, n - 300)); let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0; } return h.toString(36); };
@@ -3981,6 +4038,7 @@ const Cloud = {
     const s = S.sync || {}, L = [];
     if (this.cfg.rootUrl) L.push(`<a href="${esc(this.cfg.rootUrl)}" target="_blank" rel="noopener">📂 Folder induk di Google Drive</a>`);
     if (this.cfg.sheetUrl) L.push(`<a href="${esc(this.cfg.sheetUrl)}" target="_blank" rel="noopener">📊 Spreadsheet Database Induk</a>`);
+    if (Tenant.url) L.push(`<a href="${esc(Tenant.url)}" target="_blank" rel="noopener">🏢 Database Tenant IMIP (bisa diubah/ditambah)</a>`);
     if (s.folderUrl) L.push(`<a href="${esc(s.folderUrl)}" target="_blank" rel="noopener">📁 Folder kegiatan ini</a>`);
     $("#cLinks").innerHTML = L.join("");
   },
@@ -4352,6 +4410,7 @@ const Pic = {
   landingLast = cur && EV.some(e => e.id === cur) ? cur : "";
   S = blank(); // layar awal "Pilih kegiatan atau kegiatan baru": kegiatan terakhir TIDAK dibuka otomatis (kegiatan kosong ini tidak disimpan)
   await Cloud.loadCfg();
+  Tenant.init().then(() => Tenant.refresh(true));
   Cloud.watch();
   ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
   landingInit = true; showLanding(true); applyState(); landingInit = false;
