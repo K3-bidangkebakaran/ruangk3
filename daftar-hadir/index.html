@@ -1077,7 +1077,23 @@ const J_DAMKAR = "K3 PENANGGULANGAN KEBAKARAN", J_ANGKAT = "K3 PESAWAT ANGKAT PE
 const KELAS_DAMKAR = ["D", "C", "B", "A"];
 /* K3 Lingkungan Kerja Bahan Berbahaya dan Beracun (B3): tiap program = satu "kelas" (laporan dipecah per program, hari & narasumber tiap program sendiri-sendiri) */
 const J_B3 = "K3 LINGKUNGAN KERJA BAHAN BERBAHAYA DAN BERACUN";
-const B3_PROG = ["Petugas Penyelamat Ruang Terbatas", "Ahli K3 Kimia", "Teknisi Ruang Terbatas", "Ahli K3 Muda Lingkungan Kerja", "Petugas K3 Kimia", "Teknisi K3 Deteksi Gas"];
+/* Nama program B3 yang diganti: nama lama otomatis diubah di kegiatan tersimpan (b3Rename), termasuk kunci narasumber per program (kelasKey). */
+const B3_RESCUE = "PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS";
+const B3_RENAME = { "Petugas Penyelamat Ruang Terbatas": B3_RESCUE };
+const B3_KK = Object.fromEntries(Object.entries(B3_RENAME).map(([o, n]) => [kelasKey(o), kelasKey(n)])); // kunci program lama -> baru (data PIC lama)
+function b3Rename(ev) {
+  const A = ev.acara, L = ev.lap;
+  Object.entries(B3_RENAME).forEach(([o, n]) => {
+    if (Array.isArray(A.kelas) && A.kelas.includes(o)) A.kelas = A.kelas.map(k => (k === o ? n : k)).filter((k, i, a) => a.indexOf(k) === i);
+    (ev.peserta || []).forEach(p => { if (p.kelas === o) p.kelas = n; });
+    if (A.liburK && o in A.liburK) { if (!(n in A.liburK)) A.liburK[n] = A.liburK[o]; delete A.liburK[o]; }
+    if (typeof A.kegiatan === "string" && A.kegiatan.includes(o)) A.kegiatan = A.kegiatan.split(o).join(n);
+    const ok = kelasKey(o), nk = kelasKey(n);
+    ["nrk", "nrOffK"].forEach(f => { if (L && L[f] && L[f][ok]) { if (!L[f][nk]) L[f][nk] = L[f][ok]; delete L[f][ok]; } });
+  });
+  return ev;
+}
+const B3_PROG = [B3_RESCUE, "Ahli K3 Kimia", "Teknisi Ruang Terbatas", "Ahli K3 Muda Lingkungan Kerja", "Petugas K3 Kimia", "Teknisi K3 Deteksi Gas"];
 const isB3 = a => !!a && a.jenis === "b3";
 const judulB3Kelas = k => `${J_B3} (${String(k).toUpperCase()})`;
 const ALAT_KELAS = ["Crawler Crane", "Hoist Crane", "Mobile Crane", "Portal Crane", "Truck Crane", "Gantry Crane", "Overhead Traveling Crane", "Overhead Crane"]; // punya Kelas 1, 2, 3
@@ -1148,7 +1164,7 @@ function migTtd(d) {
     return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, sf: sfNorm(p.sf), kelas: String(p.kelas || "").trim(), batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: String(p.ut || ""), up: String(p.up || ""), hasil: p.hasil === "lulus" || p.hasil === "tidak" ? p.hasil : "" };
   });
 }
-const normalize = d => { const ev = normalize0(d); nrMigrasi(ev); return ev; };
+const normalize = d => { const ev = normalize0(d); b3Rename(ev); nrMigrasi(ev); return ev; };
 const normalize0 = d => {
   const b = blank();
   return {
@@ -1342,7 +1358,7 @@ const RD_FILL = { // isi cepat Absensi Narasumber dari rundown yang sudah dipaka
   trt: [[["_m", "trt1"]], [["_m", "trt2"]], [["_m", "trt3"]], [["_m", "trt4"]], [["_m", "rtev"]]],
   rigger: [[["fajrin", "rig1"]], [["ronal", "rig2"]], [["damai", "rigp"]], [["kemnaker", "eval"], ["repy", "evalw"]]]
 };
-const RD_B3 = { "Ahli K3 Kimia": "kimia", "Petugas Penyelamat Ruang Terbatas": "prt", "Teknisi Ruang Terbatas": "trt" }; // program B3 yang sudah punya template rundown
+const RD_B3 = { "Ahli K3 Kimia": "kimia", [B3_RESCUE]: "prt", "Teknisi Ruang Terbatas": "trt" }; // program B3 yang sudah punya template rundown
 function rdTemplate(tp) {
   const plan = RD_FILL[tp]; if (!plan) return 0;
   const b3 = isB3(S.acara), kl = b3 ? NRK : "", all = hariList(S.acara).filter(Boolean);
@@ -1892,7 +1908,7 @@ $("#btnCamStart").onclick = () => {
 // kolom "Kelas" di data tempel / Excel: kelas yang baru otomatis masuk Daftar Kelas dan bidang PAPA diaktifkan. Mengembalikan jumlah kelas baru.
 const AUTO = { msg: "" };
 const ALAT_RX = [["Overhead Traveling Crane", /overhead\s*(traveling|travelling|travel)|travel+ing\s*crane|\beot\b/], ["Overhead Crane", /overhead/], ["Crawler Crane", /c(e)?rawler|crawl/], ["Hoist Crane", /hoist/], ["Mobile Crane", /mobile/], ["Portal Crane", /portal/], ["Truck Crane", /truck/], ["Gantry Crane", /gantry/], ["Conveyor", /conveyor|conveyer/], ["Rigger", /rigger|rigging/]];
-const B3_RX = [["Teknisi K3 Deteksi Gas", /deteksi\s*gas/], ["Petugas Penyelamat Ruang Terbatas", /penyelamat/], ["Teknisi Ruang Terbatas", /teknisi.*ruang\s*terbatas|ruang\s*terbatas.*teknisi/], ["Ahli K3 Muda Lingkungan Kerja", /(ahli\s*k3\s*muda|k3\s*muda|ahli\s*muda).*(lingkungan|\blk\b)/], ["Petugas K3 Kimia", /petugas.*kimia/], ["Ahli K3 Kimia", /ahli.*kimia/]];
+const B3_RX = [["Teknisi K3 Deteksi Gas", /deteksi\s*gas/], [B3_RESCUE, /penyelamat/], ["Teknisi Ruang Terbatas", /teknisi.*ruang\s*terbatas|ruang\s*terbatas.*teknisi/], ["Ahli K3 Muda Lingkungan Kerja", /(ahli\s*k3\s*muda|k3\s*muda|ahli\s*muda).*(lingkungan|\blk\b)/], ["Petugas K3 Kimia", /petugas.*kimia/], ["Ahli K3 Kimia", /ahli.*kimia/]];
 const b3DariTeks = t => { const x = norm(t); if (!x) return ""; const m = B3_RX.find(([, rx]) => rx.test(x)); return m ? m[0] : ""; };
 const alatDariTeks = t => { const x = norm(t); if (!x) return ""; const m = ALAT_RX.find(([, rx]) => rx.test(x)); return m ? m[0] : ""; };
 const ROMAWI = { i: "1", ii: "2", iii: "3" };
@@ -4433,7 +4449,7 @@ const Pic = {
         const baru = Object.keys(sk).filter(k => (+sk[k] || 0) > (seen[k] || 0)); if (!baru.length) continue;
         let n = 0; const nama = [];
         for (const key of baru) {
-          const m = /^(?:(k[0-9a-z]+)~)?(.+)$/.exec(key), d = m && m[2], ts = +sk[key] || 1;
+          const m = /^(?:(k[0-9a-z]+)~)?(.+)$/.exec(key), d = m && m[2], ts = +sk[key] || 1; if (m && m[1] && B3_KK[m[1]]) m[1] = B3_KK[m[1]];
           if (!m || !NR_KEY.test(d) || !hari.includes(nrIso(d))) { seen[key] = ts; continue; }
           let D = (ev.lap.nr = ev.lap.nr || {}); if (m[1]) { const kl = kelasList(a).find(l => kelasKey(l) === m[1]); if (!kl) { seen[key] = ts; continue; } D = nrD(ev.lap, kl); }
           const u = (await this.d.get(this.r(`dh_nara_ttd/${kid}/${key}`))).val();
@@ -4520,7 +4536,7 @@ const Pic = {
         Object.entries(x.hari || {}).forEach(([d, hh]) => { if (hari.includes(d) && hh && hh.materi != null) set(lapHariOf(ev, d), "materi", hh.materi); });
         const nrSet = (D, d, rr) => { if (NR_KEY.test(d) && hari.includes(nrIso(d)) && rr && typeof rr === "object") { const t = (D[d] = D[d] || naraNew()); ["kid", "nama", "nip", "inst", "mid", "mtxt"].forEach(k => { if (k in rr) set(t, k, rr[k]); }); if (!t.kid && (t.nama || t.nip || t.inst || t.mid || t.mtxt)) { Object.assign(t, naraNew()); n++; } } };
         Object.entries(x.nr || {}).forEach(([d, rr]) => nrSet(LP.nr, d, rr));
-        Object.entries(x.nrk || {}).forEach(([kk, D]) => { const kl = kelasList(a).find(l => kelasKey(l) === kk); if (kl) Object.entries(D || {}).forEach(([d, rr]) => nrSet(nrD(LP, kl), d, rr)); }); // narasumber per alat
+        Object.entries(x.nrk || {}).forEach(([kk0, D]) => { const kk = B3_KK[kk0] || kk0, kl = kelasList(a).find(l => kelasKey(l) === kk); if (kl) Object.entries(D || {}).forEach(([d, rr]) => nrSet(nrD(LP, kl), d, rr)); }); // narasumber per alat
       }
       Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) return; Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
       Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (p && u && p.foto !== u) { p.foto = u; n++; } });
@@ -4533,7 +4549,7 @@ const Pic = {
       if (media.n2 && LP.s2.ttd !== media.n2) { LP.s2.ttd = media.n2; n++; }
       Object.keys(media).filter(k => k.startsWith("nr_")).forEach(k => { // tanda tangan narasumber dari PIC: nr_<hari> atau nr_<kunciKelas>~<hari>
         const m = /^nr_(?:(k[0-9a-z]+)~)?(.+)$/.exec(k), d = m && m[2], u = media[k]; if (!m || !u || !NR_KEY.test(d) || !hari.includes(nrIso(d))) return;
-        let D = LP.nr; if (m[1]) { const kl = kelasList(a).find(l => kelasKey(l) === m[1]); if (!kl) return; D = nrD(LP, kl); }
+        let D = LP.nr; if (m[1]) { const kk = B3_KK[m[1]] || m[1], kl = kelasList(a).find(l => kelasKey(l) === kk); if (!kl) return; D = nrD(LP, kl); }
         const t = (D[d] = D[d] || naraNew()); if (t.ttd !== u) { t.ttd = u; n++; }
       });
       const hf = { ...(((ev.pic || {}).hf) || {}) };

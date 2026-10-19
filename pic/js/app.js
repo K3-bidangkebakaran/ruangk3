@@ -46,7 +46,7 @@ const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kela
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); }; // hari yang tampil di tab absensi: alat selain Kelas 1 hanya 4 hari
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const fotoLengkap = (k, h, p) => fotoAda(h, p, 'foto') && (!(k && k.damkar) || fotoAda(h, p, 'foto2'));
 const LAPK = k => (k && k.lap) || {};
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
@@ -118,10 +118,21 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v33';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v34';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
+/* Program B3 yang namanya diganti: kunci narasumber lokal 'kunciLama~tanggal' dipindah ke 'kunciBaru~tanggal' (sekali per kegiatan) */
+const B3_REN = [['Petugas Penyelamat Ruang Terbatas', 'PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS']];
+function b3Ren(h) {
+  h.ren1 = 1;
+  B3_REN.forEach(([o, n]) => {
+    const op = kelasKey(o) + '~', np = kelasKey(n) + '~', mv = (obj, pre) => { if (!obj) return; Object.keys(obj).forEach(k => { if (k.startsWith(pre + op)) { const nk = pre + np + k.slice(pre.length + op.length); if (!(nk in obj)) obj[nk] = obj[k]; delete obj[k]; if (obj === h.nrs || obj === h.nr) h.dirty = true; } }); };
+    mv(h.nr, ''); mv(h.nrs, ''); mv(h.nshared, ''); mv(h.naraSeen, ''); mv(h.sent, 'nr_');
+    if (Array.isArray(h.gone)) h.gone = h.gone.map(k => (k.startsWith('nr_' + op) ? 'nr_' + np + k.slice(3 + op.length) : k));
+    if (h.nrs) Object.keys(h.nrs).forEach(k => { if (k.startsWith(np)) delete (h.sent || {})['nr_' + k]; }); // dikirim ulang dengan kunci baru
+  });
+}
 const NRK_RE = /^(?:(k[0-9a-z]+)~)?(.+)$/;
 const nrDate = key => NRK_RE.exec(key)[2].slice(0, 10);
 const papaOf = k => !!(k && k.papa && kelasArr(k).filter(Boolean).length);
