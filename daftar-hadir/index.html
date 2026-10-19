@@ -203,6 +203,7 @@ small.kls{display:inline-block;margin-left:6px;padding:0 6px;border-radius:99px;
 .ev-item .t{font-weight:700;font-size:14px}
 .ev-item .d{font-size:12.5px;color:#374151;margin-top:2px}
 .ev-item .m{font-size:12px;color:var(--muted);margin-top:2px}
+.sfx{display:inline-block;font-size:11px;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:6px;padding:0 7px;margin-left:6px;vertical-align:1px;letter-spacing:.3px}
 .ev-item .tag{display:inline-block;font-size:11px;font-weight:700;color:#9a3412;background:#ffedd5;border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:1px}
 .ev-item .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 /* layar awal: pilih kegiatan atau kegiatan baru (kegiatan terakhir tidak dibuka otomatis) */
@@ -1188,6 +1189,20 @@ const meta = x => {
            tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, x.acara.damkar)).length, ttd: !!x.acara.ttd,
            cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)), ru: (x.sync && x.sync.ru) || 0 }; // ru = waktu 'Diperbarui' di Drive yang terakhir cocok dengan salinan ini
 };
+/* Penanda A/B/C: bila ada lebih dari satu kegiatan dengan nama & tanggal yang sama, daftar/rekap memberi huruf pembeda.
+   HANYA tampilan: nama kegiatan yang tersimpan & semua laporan/berkas Word TIDAK berubah. Urutan huruf = urutan di Google Drive (sama di semua perangkat & di Rekap admin). */
+const hurufKe = i => (i >= 26 ? hurufKe(Math.floor(i / 26) - 1) : "") + String.fromCharCode(65 + i % 26);
+const sufMap = () => {
+  const rem = (Cloud.remote || []), ro = new Map(rem.map((e, i) => [e && e.id, i])), items = new Map();
+  EV.forEach(e => items.set(e.id, { id: e.id, k: e.kegiatan, t: e.tanggal, o: ro.has(e.id) ? ro.get(e.id) : 1e9 + (Number(e.created) || 0) }));
+  rem.forEach((e, i) => { if (e && e.id && !items.has(e.id) && !Cloud.gone.has(e.id)) items.set(e.id, { id: e.id, k: e.kegiatan, t: e.tanggal, o: i }); });
+  const g = {}; items.forEach(x => { if (!String(x.k || "").trim() || !x.t) return; (g[norm(x.k) + "|" + String(x.t).slice(0, 10)] = g[norm(x.k) + "|" + String(x.t).slice(0, 10)] || []).push(x); });
+  const m = new Map();
+  Object.values(g).filter(a => a.length > 1).forEach(a => a.sort((p, q) => p.o - q.o || (p.id < q.id ? -1 : 1)).forEach((x, i) => m.set(x.id, hurufKe(i))));
+  return m;
+};
+const sfxTag = (m, id) => m.has(id) ? `<span class="sfx" title="Ada kegiatan lain dengan nama & tanggal yang sama. Huruf ini hanya penanda di daftar, tidak masuk laporan.">${m.get(id)}</span>` : "";
+const sfxTxt = (m, id) => m.has(id) ? " (" + m.get(id) + ")" : "";
 let saveT = null, lastEditAt = 0;
 async function doSave() {
   saveT = null;
@@ -1207,7 +1222,7 @@ async function doSave() {
   } catch (e) {
     $("#saveSt").textContent = "Tidak bisa simpan otomatis – gunakan Ekspor";
   }
-  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
+  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan + sfxTxt(sufMap(), S.id) : "· (kegiatan tanpa nama)";
 }
 function save() {
   lastEditAt = Date.now(); clearTimeout(saveT);
@@ -2446,7 +2461,7 @@ function applyState() {
   fillForm(); renderList(); fillLap(); renderPages(); renderTtd(); renderTtdTab();
   $("#wmAlamat").value = S.wm.alamat || "";
   Loc.status(S.wm.alamat ? (S.wm.auto ? "Alamat dari GPS terakhir. Tekan 📍 untuk memperbarui." : "Alamat diisi manual.") : "Alamat belum diisi – akan dideteksi otomatis saat kamera dibuka.", "");
-  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
+  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan + sfxTxt(sufMap(), S.id) : "· (kegiatan tanpa nama)";
   Cloud.status(); if (Cloud.dirty(S)) Cloud.schedule(2000);
 }
 function renderTtd() {
@@ -2498,12 +2513,12 @@ const Ev = {
     const q = norm($("#evSearch").value);
     const list = [...EV].sort((x, y) => y.updated - x.updated).filter(e => !q || norm(`${e.kegiatan} ${e.tempat}`).includes(q));
     const tgl = e => this.tgl(e);
-    this.quick();
+    this.quick(); const sm = sufMap();
     const upd = t => new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(t));
     $("#evList").innerHTML = list.length ? list.map(e => `
       <div class="ev-item ${e.id === S.id ? "cur" : ""}" data-id="${e.id}">
         <div class="info">
-          <div class="t">${esc(e.kegiatan || "(Kegiatan tanpa nama)")}${e.id === S.id ? '<span class="tag">Sedang dibuka</span>' : ""}</div>
+          <div class="t">${esc(e.kegiatan || "(Kegiatan tanpa nama)")}${sfxTag(sm, e.id)}${e.id === S.id ? '<span class="tag">Sedang dibuka</span>' : ""}</div>
           <div class="d">${esc(tgl(e))}${e.tempat ? " · " + esc(e.tempat) : ""}</div>
           <div class="m">${e.n || 0} peserta · ${e.foto || 0}/${e.n || 0} foto · ${e.ttd ? "✍️ sudah TTD" : "belum TTD"} · ${e.cloud ? "☁️ tersinkron" : "☁️ belum sinkron"} · diubah ${upd(e.updated)}</div>
         </div>
@@ -2580,13 +2595,13 @@ Ev.quick = function () {
     const mati = new Set([...Cloud.gone]);
     (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id)).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || ""))).forEach(e => grup[this.jenisIdx(e)].push({ ...e, remote: true }));
   }
-  $("#qLainWrap").hidden = !grup.lain.length;
+  $("#qLainWrap").hidden = !grup.lain.length; const sm = sufMap();
   Object.keys(grup).forEach(j => {
     const btn = document.querySelector(`.qbtn[data-q="${j}"]`), menu = document.querySelector(`.qmenu[data-m="${j}"]`); if (!btn || !menu) return;
     btn.querySelector(".cnt").textContent = grup[j].length;
     menu.innerHTML = (j === "lain" ? "" : `<button class="qnew" data-new="${j}">＋ Buat kegiatan ${j === "damkar" ? "Damkar" : j === "b3" ? "B3" : "PAPA"} baru</button>`) +
       `<div class="qh">${NAMA[j]} – pilih tanggal</div>` +
-      (grup[j].length ? grup[j].map(e => `<button ${e.remote ? "data-remote" : "data-open"}="${esc(e.id)}" class="${e.id === S.id ? "cur" : ""}"><div class="qn">${e.remote ? "☁️ " : ""}${esc(this.tgl(e))}${e.id === S.id ? ' <span class="tag" style="font-size:10.5px;color:#9a3412">dibuka</span>' : ""}</div><div class="qd">${esc(e.kelas ? e.kelas + " · " : "")}${esc(e.tempat || e.kegiatan || "(tanpa nama)")} · ${e.n || 0} peserta${e.remote ? " · dari Google Drive, klik untuk mengunduh" : ""}</div></button>`).join("")
+      (grup[j].length ? grup[j].map(e => `<button ${e.remote ? "data-remote" : "data-open"}="${esc(e.id)}" class="${e.id === S.id ? "cur" : ""}"><div class="qn">${e.remote ? "☁️ " : ""}${esc(this.tgl(e))}${sfxTag(sm, e.id)}${e.id === S.id ? ' <span class="tag" style="font-size:10.5px;color:#9a3412">dibuka</span>' : ""}</div><div class="qd">${esc(e.kelas ? e.kelas + " · " : "")}${esc(e.tempat || e.kegiatan || "(tanpa nama)")} · ${e.n || 0} peserta${e.remote ? " · dari Google Drive, klik untuk mengunduh" : ""}</div></button>`).join("")
         : `<div class="qe">Belum ada kegiatan ${NAMA[j]} yang pernah diinput.</div>`);
   });
 };
@@ -4195,7 +4210,7 @@ const Cloud = {
   renderRemote() {
     const el = $("#evCloudList"); if (!el) return;
     const mati = new Set([...this.gone]);
-    const list = this.remoteList().filter(e => !mati.has(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
+    const sm = sufMap(), list = this.remoteList().filter(e => !mati.has(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
     el.innerHTML = list.length ? list.map(e => {
       const st = this.stateOf(e);
       const aksi = st === "new" ? `<button class="btn sm primary" data-act="pull">Unduh &amp; Buka</button>`
@@ -4203,7 +4218,7 @@ const Cloud = {
         : st === "unsent" ? `<span class="hint">⏳ Belum terkirim ke Drive</span>`
         : `<span class="hint">✓ Sama dengan Drive</span>`;
       return `<div class="ev-item" data-id="${esc(e.id)}"><div class="info">
-          <div class="t">${esc(e.kegiatan || "(tanpa nama)")}</div>
+          <div class="t">${esc(e.kegiatan || "(tanpa nama)")}${sfxTag(sm, e.id)}</div>
           <div class="d">${esc(hariTanggal({}, hariList({ tanggal: e.tanggal, tanggal2: e.tanggal2, hari: e.hari }).filter(Boolean)) || "-")}${e.tempat ? " · " + esc(e.tempat) : ""}</div>
           <div class="m">${esc(e.n)} peserta · foto ${esc(e.foto)} · TTD ${esc(e.ttdPeserta)}${e.folderUrl ? ` · <a href="${esc(e.folderUrl)}" target="_blank" rel="noopener">buka folder</a>` : ""}</div></div>
           <div class="acts">${aksi}<button class="btn sm danger" data-act="cdel">Hapus</button></div></div>`;

@@ -8495,6 +8495,13 @@
             (arr || []).forEach(x => { if (!x || x.id == null || x.id === '') return; const k = String(x.id), o = m.get(k); if (!o || dhMs(x.updated) >= dhMs(o.updated)) m.set(k, x); });
             return [...m.values()].sort((a, b) => dhMs(b.updated) - dhMs(a.updated));
         };
+        /* Penanda A/B/C: kegiatan dengan nama & tanggal mulai yang sama diberi huruf pembeda (urutan = urutan di Google Drive, sama dengan aplikasi Daftar Hadir). Hanya tampilan; tidak masuk laporan. */
+        const dhSufiks = (arr) => {
+            const g = {}, out = {}, huruf = (i) => (i >= 26 ? huruf(Math.floor(i / 26) - 1) : '') + String.fromCharCode(65 + i % 26);
+            (arr || []).forEach(e => { if (!e || !String(e.kegiatan || '').trim() || !e.tanggal) return; const k = String(e.kegiatan).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + '|' + String(e.tanggal).slice(0, 10); (g[k] = g[k] || []).push(e); });
+            Object.values(g).filter(a => a.length > 1).forEach(a => a.sort((x, y) => (x._o ?? 1e9) - (y._o ?? 1e9) || (String(x.id) < String(y.id) ? -1 : 1)).forEach((e, i) => { out[e.id] = huruf(i); }));
+            return out;
+        };
         const dhHidden = {}; // id kegiatan yang baru dihapus: jangan tampil lagi walau daftar Drive belum menyusul
         const dhEsc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const dhIsAdmin = () => currentUser && (currentUser.role === 'admin_utama' || currentUser.role === 'admin_lpmi');
@@ -8614,6 +8621,7 @@
                 (!st || (st === 'lengkap') === dhLengkap(e)) &&
                 (!q || `${e.kegiatan} ${e.tempat}`.toLowerCase().includes(q)));
             if (!rows.length) { tb.innerHTML = kosong('Tidak ada kegiatan yang cocok dengan filter.'); return; }
+            const sfx = dhSufiks(dhEvents);
             tb.innerHTML = rows.map((e) => {
                 const tgl = e.tanggal ? (e.tanggal2 && e.tanggal2 !== e.tanggal ? dhTgl(e.tanggal) + ' – ' + dhTgl(e.tanggal2) : dhTgl(e.tanggal)) : '–';
                 const drive = dhLinkDrive(e.folderUrl);
@@ -8621,7 +8629,7 @@
                 return `
                 <tr class="hover:bg-slate-50">
                     <td class="px-3 py-2 text-xs text-slate-500">${dhEsc(dhWaktu(e.updated))}</td>
-                    <td class="px-3 py-2 font-semibold text-slate-800 whitespace-normal min-w-[200px]">${dhEsc(e.kegiatan || '(tanpa nama)')}${dhLengkap(e) ? ' <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">Lengkap</span>' : ''}</td>
+                    <td class="px-3 py-2 font-semibold text-slate-800 whitespace-normal min-w-[200px]">${dhEsc(e.kegiatan || '(tanpa nama)')}${sfx[e.id] ? ' <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-700" title="Ada kegiatan lain dengan nama & tanggal yang sama. Huruf ini hanya penanda di Rekap, tidak masuk laporan.">' + sfx[e.id] + '</span>' : ''}${dhLengkap(e) ? ' <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">Lengkap</span>' : ''}</td>
                     <td class="px-3 py-2 text-xs">${dhEsc(tgl)}<br><span class="text-[10px] text-slate-500">${dhEsc(e.jumlahHari || 1)} hari</span></td>
                     <td class="px-3 py-2 text-xs text-slate-600 whitespace-normal min-w-[140px]">${dhEsc(e.tempat || '–')}</td>
                     <td class="px-3 py-2 text-xs">${dhEsc(e.n || 0)}</td>
@@ -8658,7 +8666,7 @@
                 if (!j) throw err || new Error('Gagal');
                 const sekarang = dhCfg();
                 if (!dhIsAdmin() || !sekarang || sekarang.url !== cfg.url) return; // Drive diputuskan / keluar akun saat memuat: buang hasilnya
-                dhEvents = dhRapikan((j.events || []).filter(x => !(dhHidden[x.id] > Date.now())));
+                dhEvents = dhRapikan((j.events || []).map((x, i) => ({ ...x, _o: i })).filter(x => !(dhHidden[x.id] > Date.now()))); // _o = urutan di Drive (untuk huruf A/B/C)
                 dhDiCache = 0; dhGalat = ''; dhOkAt = Date.now();
                 Object.keys(dhOpen).forEach(id => { // baris terbuka: buang yang kegiatannya sudah tidak ada, muat ulang yang isinya berubah
                     const e = dhById(id);
