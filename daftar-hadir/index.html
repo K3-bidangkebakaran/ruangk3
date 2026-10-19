@@ -1216,7 +1216,7 @@ async function doSave() {
     const m = meta(snap), i = EV.findIndex(e => e.id === snap.id);
     if (i >= 0) EV[i] = m; else EV.push(m);
     await idbPut(IDX, EV);
-    Pic.mark(snap.id);
+    Pic.mark(snap.id); if (Pic.sfxSync) Pic.sfxSync();
     if (Ev.quick) Ev.quick();
     $("#saveSt").textContent = "Tersimpan otomatis";
   } catch (e) {
@@ -2558,7 +2558,7 @@ const Ev = {
     if (drive) await Cloud.queueDelete(id); // perintah hapus disimpan dulu, jadi tidak hilang walau offline / aplikasi ditutup
     await idbDel("event:" + id);
     Pic.drop(id);
-    EV = EV.filter(x => x.id !== id); await idbPut(IDX, EV).catch(() => { });
+    EV = EV.filter(x => x.id !== id); await idbPut(IDX, EV).catch(() => { }); if (Pic.sfxSync) Pic.sfxSync();
     if (id === S.id) {
       S = blank(); landingLast = ""; applyState(); showLanding(true); // kegiatan yang sedang dibuka dihapus: kembali ke layar pilih kegiatan (tidak membuka kegiatan lain otomatis)
     }
@@ -4196,7 +4196,7 @@ const Cloud = {
   },
   /* ---- ambil kegiatan dari Drive ---- */
   setRemote(list) { // daftar kegiatan di Drive: disimpan juga di perangkat supaya langsung tampil saat aplikasi dibuka
-    this.remote = list; this.remoteAt = list ? Date.now() : 0;
+    this.remote = list; this.remoteAt = list ? Date.now() : 0; if (Pic.sfxSync) Pic.sfxSync();
     if (list) idbPut(REMOTE_KEY, list).catch(() => { }); else idbDel(REMOTE_KEY).catch(() => { });
   },
   remoteList() { const mati = new Set([...this.gone]); return (this.remote || []).filter(e => e && e.id && !mati.has(e.id)); },
@@ -4500,6 +4500,15 @@ const Pic = {
     $("#picBtn").onclick = () => this.manual();
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
   },
+  /** huruf A/B/C kegiatan kembar ikut dikirim ke APK PIC (node.sfx). Bila huruf suatu kegiatan berubah (mis. ada kegiatan kembar baru / yang lama dihapus), kegiatan itu dikirim ulang. */
+  sfxSync() {
+    try {
+      const m = sufMap(), last = this.sfxLast;
+      if (!last) { this.sfxLast = new Map(m); idbGet("pic-sfx").then(old => { if (!Array.isArray(old)) { m.forEach((h, id) => { if (EV.some(e => e.id === id)) this.mark(id); }); return; } const o = new Map(old); new Set([...m.keys(), ...o.keys()]).forEach(id => { if ((m.get(id) || "") !== (o.get(id) || "") && EV.some(e => e.id === id)) this.mark(id); }); }).catch(() => { }); }
+      else new Set([...m.keys(), ...last.keys()]).forEach(id => { if ((m.get(id) || "") !== (last.get(id) || "") && EV.some(e => e.id === id)) this.mark(id); });
+      this.sfxLast = new Map(m); idbPut("pic-sfx", [...m]).catch(() => { });
+    } catch (_) { }
+  },
   mark(id) {
     if (!id) return;
     this.dirty.add(id); idbPut("pic-pub", [...this.dirty]).catch(() => { });
@@ -4512,7 +4521,7 @@ const Pic = {
     const hkMap = {}; if (a.papa) kelasList(a).forEach(l => { const hk = hariKelas(ev, l); if (hk) hkMap[kelasKey(l)] = hk; }); // alat dengan hari lebih sedikit (hari ke-5 dst. khusus Kelas 1)
     const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: String(r.kid || "").startsWith("u_") ? "_m" : (r.kid || ""), nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }]));
     return {
-      nama: judulDasar(a), tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, papa: !!a.papa, b3: isB3(a), kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
+      nama: judulDasar(a), sfx: sufMap().get(ev.id) || "", tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, papa: !!a.papa, b3: isB3(a), kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
       ttdWeb: !!a.ttd, hk: hkMap,
       peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => { // wt = tanggal yang sudah ditandatangani di website, wf/wf2 = foto sudah ada di website (supaya APK tidak menampilkan "belum" untuk yang sudah selesai di web)
         const o = { id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" };

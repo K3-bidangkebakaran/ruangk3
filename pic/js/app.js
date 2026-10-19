@@ -118,7 +118,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v34';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v35';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -142,7 +142,8 @@ const pesByKl = (k, kl) => { const ps = (k && k.peserta) || []; return kl == nul
 const klGroups = k => { const ks = kelasArr(k).filter(Boolean), ps = (k && k.peserta) || [], g = ks.map(l => ({ kl: l, n: ps.filter(p => p.kelas === l).length })); const rest = ps.filter(p => !ks.includes(p.kelas)).length; if (rest) g.push({ kl: '', n: rest }); return g.filter(x => x.n); };
 const curKl = k => (papaOf(k) && P.kl != null) ? P.kl : undefined; // alat yang sedang dibuka (undefined = semua peserta)
 const pesKl = k => pesByKl(k, curKl(k));
-const subK = k => curKl(k) !== undefined ? klLabel(P.kl) : k.nama; // subjudul layar: nama alat (PAPA) atau nama kegiatan
+const kNama = k => k.nama + (k.sfx ? ' (' + k.sfx + ')' : ''); // huruf A/B/C bila ada kegiatan kembar (nama & tanggal sama); hanya untuk tampilan layar
+const subK = k => curKl(k) !== undefined ? klLabel(P.kl) : kNama(k); // subjudul layar: nama alat (PAPA) atau nama kegiatan
 const nrPfx = k => (k && k.b3 && papaOf(k) && P.kl) ? kelasKey(P.kl) + '~' : ''; // B3: narasumber tiap program sendiri (kunci '<kunciProgram>~tanggal'); // v21: absensi narasumber SATU untuk semua alat (kunci = tanggal saja); data lama per alat digabung oleh nrGabung
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrOffOf = (k, key) => !!((LAPK(k).nrOff || {})[key]); // hari/baris yang dihapus admin di website
@@ -511,7 +512,7 @@ function render() {
       .sort((a, b) => { const ua = akhir(a) >= hari, ub = akhir(b) >= hari; if (ua !== ub) return ua ? -1 : 1; return ua ? awal(a).localeCompare(awal(b)) : awal(b).localeCompare(awal(a)); });
     h = appbar('Portal PIC', ME.nama, false) + `<div class="screen"><div class="hello"><h2>Daftar kegiatan</h2><p class="hint" style="margin:4px 0 0">${qq ? `${list.length} dari ${all.length} kegiatan` : `${all.length} kegiatan ${P.showDone ? 'yang sudah selesai' : 'dari admin utama'}`}.</p></div>
       ${all.length > 4 ? `<div class="field"><input id="homeQ" type="search" placeholder="Cari nama kegiatan atau tempat" aria-label="Cari kegiatan" value="${esc(P.hq || '')}"></div>` : ''}
-      ${list.length ? list.map(x => { const s = stat(x.id), st = statusKeg(x.id); return `<button type="button" class="kcard" data-act="open" data-id="${esc(x.id)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(x.nama)}</h3><span class="pill ${st[1]}">${st[0]}</span></div>
+      ${list.length ? list.map(x => { const s = stat(x.id), st = statusKeg(x.id); return `<button type="button" class="kcard" data-act="open" data-id="${esc(x.id)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(x.nama)}${x.sfx ? ` <span style="display:inline-block;font-size:12px;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:6px;padding:0 7px;vertical-align:2px" title="Ada kegiatan lain dengan nama & tanggal yang sama">${esc(x.sfx)}</span>` : ''}</h3><span class="pill ${st[1]}">${st[0]}</span></div>
         <div class="meta"><span>${esc(rentang(x.tgl))}</span><span>${esc(x.tempat || '')}</span><span>${(x.peserta || []).length} peserta</span></div>
         <div class="bars">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div></button>${P.showDone ? `<button class="btn" type="button" data-act="bukalagi" data-id="${esc(x.id)}" style="margin-top:-6px">Buka lagi di daftar</button>` : ''}`; }).join('')
         : `<div class="empty">${qq ? 'Tidak ada kegiatan yang cocok.' : 'Belum ada kegiatan. Semua kegiatan yang diinput admin utama muncul di sini begitu HP mendapat sinyal.'}</div>`}
@@ -540,7 +541,7 @@ function render() {
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}</div>
       <p class="hint">Isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p></div>`;
     } else if (papa) {
-      h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
+      h = appbar(kNama(k), rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
       <div class="hello"><h2 style="font-size:17px">Pilih ${k.b3 ? 'program' : 'alat'}</h2><p class="hint" style="margin:4px 0 0">${k.b3 ? 'TTD peserta, dokumentasi peserta, nilai &amp; kelulusan, dan absensi narasumber dipisah per program. Dokumentasi harian satu untuk semua program (lihat bagian bawah).' : 'TTD peserta, dokumentasi peserta, dan nilai &amp; kelulusan dipisah per alat. Dokumentasi harian dan absensi narasumber satu untuk semua alat (lihat bagian bawah).'}</p></div>
       ${klGroups(k).map(g => { const sg = stat(kid, g.kl); return `<button type="button" class="kcard" data-act="alat" data-kl="${esc(g.kl)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(klLabel(g.kl))}</h3></div>
         <div class="meta"><span>${g.n} peserta</span></div><div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
@@ -549,7 +550,7 @@ function render() {
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">${k.b3 ? 'Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua program. Absensi Narasumber ada di dalam tiap program.' : 'Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1.'} Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
     } else {
-      h = appbar(k.nama, rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
+      h = appbar(kNama(k), rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
       ${tAbs}${tSf}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
