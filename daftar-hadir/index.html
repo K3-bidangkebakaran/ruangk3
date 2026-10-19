@@ -1919,12 +1919,20 @@ function kelasAngka(t) {
 }
 // Peserta hasil upload/tempel membawa teks alat & kelas. Bila terbaca alat Pesawat Angkat → kegiatan, alat dan kelas diisi otomatis;
 // bila kelas A–D (tanpa alat) → kegiatan Damkar dan kelasnya diisi otomatis. Mengembalikan jumlah kelompok yang terbaca (0 = tidak ada).
+/* K3 Lingkungan Kerja B3: bila di awal (tab 1) hanya satu program yang dipilih, peserta yang belum punya program otomatis masuk program itu.
+   force = true (hasil baca file/tempel tanpa nama program yang dikenali): isi kolom kelas apa pun diganti. Tanpa force: hanya yang kosong / sisa dari jenis kegiatan lain (peserta di program B3 lain yang tidak dicentang tidak disentuh). Banyak program dipilih = tidak diisi otomatis (pilih per peserta). */
+function b3Auto(list, force) {
+  const A = S.acara; if (!isB3(A)) return 0; const ks = kelasList(A); if (ks.length !== 1) return 0;
+  let n = 0; (list || S.peserta).forEach(p => { if (!(p.nama || "").trim() && !force) return; if (p.kelas === ks[0]) return; const k = String(p.kelas || "").trim(); if (force || !k || !B3_PROG.includes(k)) { p.kelas = ks[0]; n++; } });
+  return n;
+}
 function kelasDariData(list) {
   AUTO.msg = "";
   const A = S.acara, j = jenisOf(A);
   if (j !== "lain") {
     const rb = list.map(p => ({ p, prog: b3DariTeks(p.alat) || b3DariTeks(p.kelas) })); // program K3 Lingkungan Kerja B3 (ambil dari data)
     if (rb.some(r => r.prog)) return terapkanB3(rb, j);
+    if (j === "b3" && kelasList(A).length === 1) { list.forEach(p => { delete p.alat; }); const n = b3Auto(list, true); if (n) AUTO.msg = `${n} peserta otomatis masuk program ${kelasList(A)[0]} (sesuai pilihan di awal).`; return n ? 1 : 0; }
     const rows = list.map(p => { const nm = alatDariTeks(p.alat) || alatDariTeks(p.kelas); return { p, nm, kls: nm && ALAT_KELAS.includes(nm) ? (kelasAngka(p.kelas) || kelasAngka(p.alat)) : "" }; });
     if (rows.some(r => r.nm)) return terapkanAngkat(rows, j);
     const huruf = list.map(p => { const m = String(p.kelas || "").trim().match(/^(?:kelas\s*)?([abcd])$/i); return m ? m[1].toUpperCase() : ""; });
@@ -2203,7 +2211,7 @@ function renderB3() {
   const A = S.acara, box = $("#b3List"), sel = kelasList(A), extra = sel.filter(k => !B3_PROG.includes(k));
   box.innerHTML = B3_PROG.concat(extra).map(k => `<div class="alat-row${sel.includes(k) ? " on" : ""}"><label><input type="checkbox" data-b3p="${esc(k)}"${sel.includes(k) ? " checked" : ""}> ${esc(k)}</label></div>`).join("");
 }
-function afterB3() { const A = S.acara; A.damkar = false; A.papa = true; A.kegiatan = judulAuto(A); renderB3(); renderDates(); renderTtdTab(); renderJudulPrev(); fillKelas(); fillForm_k(); renderList(); renderLap(); changed(); }
+function afterB3() { const A = S.acara; A.damkar = false; A.papa = true; A.kegiatan = judulAuto(A); const na = b3Auto(); if (na) toast(`${na} peserta otomatis masuk program ${kelasList(A)[0]}.`); renderB3(); renderDates(); renderTtdTab(); renderJudulPrev(); fillKelas(); fillForm_k(); renderList(); renderLap(); changed(); }
 $("#b3List").addEventListener("change", e => {
   const t = e.target; if (!t.dataset.b3p) return;
   const A = S.acara, cur = kelasList(A), nx = t.checked ? cur.concat(t.dataset.b3p) : cur.filter(x => x !== t.dataset.b3p);
@@ -2330,7 +2338,7 @@ $("#fList").addEventListener("click", e => {
 $("#fOnlyEmpty").onchange = renderFoto;
 
 function addRow() {
-  S.peserta.push({ id: uid(), nama: "", jabatan: "", instansi: "", foto: "" });
+  S.peserta.push({ id: uid(), nama: "", jabatan: "", instansi: "", foto: "", kelas: isB3(S.acara) && kelasList(S.acara).length === 1 ? kelasList(S.acara)[0] : "" });
   renderList(); changed();
   const rows = document.querySelectorAll(".p-row .nama"); rows[rows.length - 1].focus();
 }
