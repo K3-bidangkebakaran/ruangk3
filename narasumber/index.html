@@ -98,6 +98,7 @@ const zonaHP = () => { const m = -new Date().getTimezoneOffset(); return m === 4
 const nowZ = zona => { const zn = zonaHP() || (ZONA[zona] ? zona : "WIB"), t = new Date(Date.now() + OFF + ZONA[zn] * 3600e3); return { zn, h: t.getUTCHours() }; };
 /* pagi 04.00-10.59, siang 11.00-14.59, sore 15.00-17.59, malam 18.00-03.59 */
 const salam = h => (h >= 4 && h < 11 ? "pagi" : h >= 11 && h < 15 ? "siang" : h >= 15 && h < 18 ? "sore" : "malam");
+const lokasi = (t, k) => { t = String(t || "").trim(); k = String(k || "").trim(); return [t, k && !t.toLowerCase().includes(k.toLowerCase()) ? k : ""].filter(Boolean).join(", "); };
 const tglPanjang = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); if (!m) return ""; const y = +m[1], mo = +m[2], d = +m[3], w = new Date(Date.UTC(y, mo - 1, d)).getUTCDay(); return `${HARI[w]}, ${d} ${BLN[mo - 1]} ${y}`; };
 
 /* ---------- state ---------- */
@@ -124,7 +125,7 @@ const helloHtml = () => {
     <p>berikut adalah link penandatanganan absensi narasumber dari kegiatan <b>Training K3 Kemenaker RI</b>. Atas perhatiannya kami ucapkan terima kasih.</p></div>`;
 };
 const infoHtml = () => {
-  const lok = [INFO.tempat, INFO.kota].filter(Boolean).join(", "), rows = [["Kegiatan", INFO.kegiatan], ["Hari/tanggal", tglPanjang(INFO.tgl)], ["Tempat", lok], ["Instansi", INFO.inst], ["Materi", INFO.materi]].filter(r => r[1]);
+  const lok = lokasi(INFO.tempat, INFO.kota), rows = [["Kegiatan", INFO.kegiatan], ["Hari/tanggal", tglPanjang(INFO.tgl)], ["Tempat", lok], ["Instansi", INFO.inst], ["Materi", INFO.materi]].filter(r => r[1]);
   return rows.length ? `<div class="card">${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join("")}</div>` : "";
 };
 function form() {

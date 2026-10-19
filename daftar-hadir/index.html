@@ -615,17 +615,17 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
           <select id="f-zona" data-k="zona"><option>WIB</option><option>WITA</option><option>WIT</option></select></div>
       </div>
       <div class="field"><label for="f-tempat">Tempat</label>
-        <input id="f-tempat" data-k="tempat" placeholder="cth. Aula Training PT LPMI, Depok"></div>
+        <input id="f-tempat" data-k="tempat" placeholder="cth. Aula Training PT LPMI, Morowali"></div>
     </section>
 
     <section class="card" data-pane="data">
       <h2><span class="n">2</span> Penandatangan Daftar Hadir</h2>
       <div class="row2">
-        <div class="field"><label for="f-kota">Kota</label><input id="f-kota" data-k="kota" placeholder="Depok"></div>
+        <div class="field"><label for="f-kota">Kota</label><input id="f-kota" data-k="kota" placeholder="Morowali"></div>
         <div class="field"><label for="f-tglttd">Tanggal TTD</label><input id="f-tglttd" type="date" data-k="tglTtd"></div>
       </div>
       <div class="row2">
-        <div class="field"><label for="f-jabttd">Sebagai</label><input id="f-jabttd" data-k="jabatanTtd" placeholder="Penyelenggara"></div>
+        <div class="field"><label for="f-jabttd">Sebagai</label><input id="f-jabttd" data-k="jabatanTtd" placeholder="PIC"></div>
         <div class="field"><label for="f-namattd">Nama <span class="hint">(kosong = titik-titik)</span></label><input id="f-namattd" data-k="namaTtd"></div>
       </div>
       <div class="field" style="margin-bottom:4px"><label>Tanda Tangan Penyelenggara</label></div>
@@ -1024,8 +1024,8 @@ const lapNorm = l => {
 };
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
-  acara: { kegiatan: "", tanggal: today, tanggal2: "", hari: [today], jamMulai: "08:00", jamSelesai: "16:00", zona: "WIB",
-           tempat: "", narasumber: "", jenis: "", kelasDamkar: "", alat: [], damkar: false, papa: false, kelas: [], kota: "Depok", tglTtd: today, jabatanTtd: "Penyelenggara", namaTtd: "", ttd: "", barisKosong: 0 },
+  acara: { kegiatan: "", tanggal: today, tanggal2: "", hari: [today], jamMulai: "08:00", jamSelesai: "16:00", zona: "WITA",
+           tempat: "Morowali", narasumber: "", jenis: "", kelasDamkar: "", alat: [], damkar: false, papa: false, kelas: [], kota: "Morowali", tglTtd: today, jabatanTtd: "PIC", namaTtd: "", ttd: "", barisKosong: 0 },
   peserta: [],
   wm: { alamat: "", auto: true, lat: null, lng: null },
   lap: lapDefault(),
@@ -1165,11 +1165,13 @@ function migTtd(d) {
   });
 }
 const normalize = d => { const ev = normalize0(d); b3Rename(ev); nrMigrasi(ev); return ev; };
+/* Bawaan kegiatan BARU: zona WITA, kota & tempat Morowali, "Sebagai" = PIC (semua bisa diubah manual). Kegiatan lama yang kolomnya belum tercatat tetap memakai bawaan lama. */
+const LEGACY_DEF = { zona: "WIB", tempat: "", kota: "Depok", jabatanTtd: "Penyelenggara" };
 const normalize0 = d => {
   const b = blank();
   return {
     id: d.id || b.id, created: d.created || Date.now(),
-    acara: migAcara({ ...b.acara, ...(d.acara || {}) }, !!(d.acara && Array.isArray(d.acara.hari))),
+    acara: migAcara({ ...b.acara, ...LEGACY_DEF, ...(d.acara || {}) }, !!(d.acara && Array.isArray(d.acara.hari))),
     peserta: migTtd(d),
     wm: { ...b.wm, ...(d.wm || {}) }, lap: lapNorm(d.lap), pic: d.pic || null,
     sync: { ...b.sync, ...(d.sync || {}), h: { ...((d.sync && d.sync.h) || {}) } }

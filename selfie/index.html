@@ -81,6 +81,8 @@ const KID = (new URLSearchParams(location.search).get("k") || "").trim();
 const ZONA = { WIB: 7, WITA: 8, WIT: 9 };
 const HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"], BLN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 const p2 = n => String(n).padStart(2, "0");
+/* tempat + kota tanpa pengulangan (mis. tempat "Morowali" & kota "Morowali" -> "Morowali") */
+const lokasi = (t, k) => { t = String(t || "").trim(); k = String(k || "").trim(); return [t, k && !t.toLowerCase().includes(k.toLowerCase()) ? k : ""].filter(Boolean).join(", "); };
 
 /* ---------- akses data (Firebase; bisa digantikan window.__SF_FB untuk uji) ---------- */
 async function backend() {
@@ -131,7 +133,7 @@ function ctx() {
   return { z, tgl, idx, ses: sesiOf(z) };
 }
 function head(c) {
-  const meta = [INFO.tempat && `📍 ${INFO.tempat}${INFO.kota ? ", " + INFO.kota : ""}`].filter(Boolean).join("");
+  const lk = lokasi(INFO.tempat, INFO.kota), meta = lk ? `📍 ${lk}` : "";
   return `<div class="card"><h1>${esc(INFO.nama)}</h1><div class="meta"><span>${esc(tglPanjang(c.z.iso))}</span>${meta ? `<span>${esc(meta)}</span>` : ""}</div>`
     + (c.idx >= 0 ? `<span class="pill ${c.ses === "s" ? "siang" : ""}">Hari ke-${c.idx + 1} · Absen ${sesiNama(c.ses)}</span>` : "") + `</div>`;
 }
@@ -202,7 +204,7 @@ async function ambil(src, sw, sh, mirror) {
   g.font = `500 ${px}px system-ui,Arial,sans-serif`; wrap(g, CHOSEN.instansi, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 1]));
   g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`;
   wrap(g, `${tglPanjang(z.iso)} · ${p2(z.h)}:${p2(z.m)} ${z.zn} · Absen ${sesiNama(ses)}`, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92]));
-  const lok = [INFO.tempat, INFO.kota].filter(Boolean).join(", ");
+  const lok = lokasi(INFO.tempat, INFO.kota);
   if (lok) { g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`; wrap(g, "📍 " + lok, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92])); }
   const lh = l => Math.round(px * l[2] * 1.28), total = lines.reduce((s, l) => s + lh(l), 0) + pad * 1.4, y0 = H - total;
   const gr = g.createLinearGradient(0, y0 - px, 0, H); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(0.28, "rgba(0,0,0,.62)"); gr.addColorStop(1, "rgba(0,0,0,.82)");
