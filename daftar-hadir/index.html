@@ -22,6 +22,8 @@ button{cursor:pointer}
 .topbar h1{font-size:15px;font-weight:700;white-space:nowrap}
 .topbar .grow{flex:1}
 .quick{flex:0 0 100%;display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:relative;padding-top:8px;border-top:1px solid #374151}
+.drv-warn{background:#fffbeb;border:1px solid #fcd34d;color:#78350f;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.45;margin:10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.drv-warn[hidden]{display:none}
 .quick .lbl{font-size:12px;color:#9ca3af;font-weight:600}
 .qwrap{position:static}
 .qbtn{background:#374151;border:1px solid #4b5563;color:#fff;border-radius:8px;padding:6px 11px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;line-height:1.1}
@@ -533,6 +535,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
   <div class="ln-box">
     <h2>Pilih kegiatan atau kegiatan baru</h2>
     <p class="ln-sub">Pilih kegiatan yang sudah ada untuk melanjutkan, atau buat kegiatan baru.</p>
+    <div class="drv-warn" id="lnNoDrive" hidden></div>
   </div>
 </section>
 
@@ -811,13 +814,15 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
   <div class="sheet">
     <div class="sheet-head"><b>📁 Kegiatan Tersimpan</b><button class="x-btn" id="evClose" aria-label="Tutup">✕</button></div>
     <div class="sheet-body">
+      <div class="drv-warn" id="evNoDrive" hidden></div>
       <div class="ev-top"><button class="btn primary" id="evNew">+ Kegiatan Baru</button><input id="evSearch" placeholder="Cari nama kegiatan / tempat…"></div>
       <div id="evList"></div>
       <div class="ev-cloud">
-        <div class="ev-cloud-head"><b>☁️ Di Google Drive (database induk)</b><button class="btn sm" id="evCloudLoad">Muat daftar</button></div>
-        <div id="evCloudList"><div class="hint">Tekan "Muat daftar" untuk melihat kegiatan yang tersimpan di Google Drive, termasuk yang dibuat di perangkat lain.</div></div>
+        <div class="ev-cloud-head"><b>☁️ Di Google Drive (database induk)</b><button class="btn sm" id="evCloudLoad">🔄 Samakan sekarang</button></div>
+        <p class="hint" style="margin:0 0 6px">Kegiatan di Google Drive otomatis diunduh &amp; diperbarui di perangkat ini, jadi isinya sama di semua akun &amp; perangkat yang memakai Drive yang sama.</p>
+        <div id="evCloudList"><div class="hint">Memuat daftar dari Google Drive…</div></div>
       </div>
-      <p class="hint" style="margin-top:6px">Semua kegiatan tersimpan otomatis di browser ini (termasuk peserta, foto &amp; tanda tangan), jadi kegiatan beberapa hari bisa dilanjutkan kapan saja. Gunakan <b>Ekspor</b> untuk backup atau pindah perangkat.</p>
+      <p class="hint" style="margin-top:6px">Semua kegiatan tersimpan otomatis di browser ini (termasuk peserta, foto &amp; tanda tangan), jadi kegiatan beberapa hari bisa dilanjutkan kapan saja. Bila Google Drive terhubung, kegiatan juga otomatis sama di semua perangkat. <b>Ekspor</b> dipakai untuk backup.</p>
     </div>
   </div>
 </div>
@@ -1181,9 +1186,9 @@ const meta = x => {
   const named = x.peserta.filter(p => (p.nama || "").trim() && !p.batal);
   return { id: x.id, created: x.created, updated: Date.now(), kegiatan: x.acara.kegiatan, jenis: jenisOf(x.acara), kelas: x.acara.jenis === "damkar" ? (x.acara.kelasDamkar ? "Kelas " + x.acara.kelasDamkar : "") : kelasList(x.acara).join(", "), tanggal: x.acara.tanggal, tanggal2: x.acara.tanggal2, hari: hariList(x.acara).filter(Boolean),
            tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, x.acara.damkar)).length, ttd: !!x.acara.ttd,
-           cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)) };
+           cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)), ru: (x.sync && x.sync.ru) || 0 }; // ru = waktu 'Diperbarui' di Drive yang terakhir cocok dengan salinan ini
 };
-let saveT = null;
+let saveT = null, lastEditAt = 0;
 async function doSave() {
   saveT = null;
   if (TOMBS.has(S.id)) return; // kegiatan ini sudah dihapus: jangan dihidupkan lagi
@@ -1205,7 +1210,7 @@ async function doSave() {
   $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan : "· (kegiatan tanpa nama)";
 }
 function save() {
-  clearTimeout(saveT);
+  lastEditAt = Date.now(); clearTimeout(saveT);
   $("#saveSt").textContent = "Menyimpan…";
   saveT = setTimeout(doSave, 500);
 }
@@ -2470,7 +2475,10 @@ const Ev = {
   open() {
     $("#evModal").hidden = false; $("#evSearch").value = "";
     flush().then(() => this.render());
-    if (Cloud.ready()) Cloud.reconcile(true).then(() => { this.render(); Cloud.listRemote(); }); // buang yang sudah dihapus di Drive, lalu tampilkan daftar Drive terbaru
+    Cloud.banner();
+    if (!Cloud.ready()) { Cloud.listRemote(); return; }
+    if (Cloud.remote) Cloud.renderRemote(); // daftar tersimpan langsung tampil, lalu diperbarui
+    Cloud.reconcile(true).then(() => { this.render(); if (Date.now() - (Cloud.remoteAt || 0) < 20000) Cloud.renderRemote(); else Cloud.listRemote(); }); // buang yang sudah dihapus di Drive, lalu tampilkan daftar Drive terbaru
   },
   close() { $("#evModal").hidden = true; },
   tgl(e) {
@@ -3339,7 +3347,8 @@ $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("P
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 7; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 8; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const REMOTE_KEY = "cloud-remote-list"; // salinan terakhir daftar kegiatan di Drive (supaya langsung tampil)
 const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
 const safeName = s => (s || "").replace(/[\\/:*?"<>|#%]+/g, "-").replace(/\s+/g, " ").trim() || "Tanpa nama";
@@ -3828,7 +3837,13 @@ const Cloud = {
     const b = btoa(unescape(encodeURIComponent(JSON.stringify({ u: this.cfg.url, t: this.cfg.token })))).replace(/\+/g, "-").replace(/\//g, "_");
     return location.origin + location.pathname + "#cfg=" + b;
   },
+  banner() {
+    const on = !this.ready(), html = on ? `<span><b>⚠️ Perangkat ini belum terhubung ke Google Drive.</b> Karena itu daftar kegiatannya bisa berbeda dengan perangkat lain. Hubungkan sekali saja (tempel Tautan Pengaturan dari perangkat yang sudah terhubung), lalu semua kegiatan otomatis sama di semua perangkat.</span><button class="btn sm primary" data-drv>Hubungkan Google Drive</button>` : "";
+    if (this._bn === html) return; this._bn = html;
+    ["evNoDrive", "lnNoDrive"].forEach(id => { const el = document.getElementById(id); if (!el) return; el.hidden = !on; el.innerHTML = html; });
+  },
   status(txt, st) {
+    this.banner();
     const b = $("#cloudBtn"); let tip = "Sinkron Google Drive";
     if (!txt) {
       if (!this.ready()) { txt = this.lost ? "⚠️ Drive terlepas – pulihkan" : "☁️ Hubungkan Drive"; st = this.lost ? "err" : ""; if (this.lost) tip = "Koneksi Google Drive hilang dari browser ini. Ketuk untuk memulihkan."; }
@@ -3895,7 +3910,7 @@ const Cloud = {
       this.outdated = (r.ver || 0) < API_VER;
       this.cfg.rootUrl = r.rootUrl || this.cfg.rootUrl; this.cfg.sheetUrl = r.sheetUrl || this.cfg.sheetUrl;
       this.status(); this.heal();
-      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama (hasil APK belum tersimpan otomatis ke Drive, upload lebih lambat). Tempel Code.gs terbaru lalu Deploy versi baru."); }
+      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama (hasil APK belum tersimpan otomatis ke Drive; upload & unduhan antar perangkat lebih lambat). Tempel Code.gs terbaru lalu Deploy versi baru."); }
       else if (!this.outdated && r.pic && r.pic.aktif === false && !this.toldPic) { this.toldPic = true; toast("Penyimpanan otomatis hasil APK ke Drive belum dinyalakan: jalankan fungsi picOtomatisAktifkan di Apps Script (lihat PANDUAN-GOOGLE-DRIVE.md)."); }
     } catch (e) { this.status(); } finally { this.vBusy = false; }
   },
@@ -3943,12 +3958,12 @@ const Cloud = {
    *  Aman: hanya kegiatan yang sudah pernah tersinkron & tidak ada perubahan belum terkirim, dan dipastikan lagi ke Drive sebelum dihapus. */
   async reconcile(force) {
     if (!this.ready() || !navigator.onLine || this.recBusy || this.busy) return 0;
-    if (!force && Date.now() - (this.recAt || 0) < 240000) return 0;
+    if (!force && Date.now() - (this.recAt || 0) < 45000) return 0;
     this.recBusy = true; this.recAt = Date.now(); let n = 0;
     try {
       const r = await this.api("listEvents");
       if (!r || !Array.isArray(r.events) || !r.events.length) return 0; // daftar kosong dianggap tidak meyakinkan: jangan hapus apa pun
-      this.remote = r.events; Ev.quick(); // tombol cepat ikut menampilkan kegiatan yang ada di Drive tetapi belum ada di perangkat ini
+      this.setRemote(r.events); Ev.quick(); // tombol cepat ikut menampilkan kegiatan yang ada di Drive tetapi belum ada di perangkat ini
       const ada = new Set(r.events.map(e => e.id)), q = (await idbGet(DEL_KEY)) || [];
       { // sapu bersih: kegiatan yang SUDAH dihapus di website ini tetapi foldernya masih / muncul lagi di Drive (hapus gagal, atau dibuat ulang oleh sinkron / pengambil hasil PIC otomatis)
         const sisa = r.events.filter(e => e.id && TOMBS.has(e.id) && !EV.some(x => x.id === e.id) && !q.includes(e.id));
@@ -3977,6 +3992,7 @@ const Cloud = {
       if (n) toast(n === 1 ? "Satu kegiatan yang sudah dihapus di Google Drive ikut dihapus di perangkat ini." : `${n} kegiatan yang sudah dihapus di Google Drive ikut dihapus di perangkat ini.`);
     } catch (_) { }
     finally { this.recBusy = false; }
+    setTimeout(() => this.align(), 0); // samakan isi perangkat ini dengan Drive (unduh yang baru / perbarui yang usang / kirim yang belum terkirim)
     return n;
   },
   dirty(ev) { const s = ev.sync || {}; return (s.v || 0) > (s.sv || 0); },
@@ -4104,7 +4120,7 @@ const Cloud = {
       const removed = Object.keys(ev.sync.h).filter(k => !keys.has(k));
       const r = await this.api("saveEvent", { event: this.payload(ev), keys: [...keys], removed });
       removed.forEach(k => delete ev.sync.h[k]);
-      ev.sync.at = Date.now(); ev.sync.sv = v0; ev.sync.folderUrl = r.folderUrl || ev.sync.folderUrl;
+      ev.sync.at = Date.now(); ev.sync.sv = v0; ev.sync.folderUrl = r.folderUrl || ev.sync.folderUrl; ev.sync.ru = Number(r.updated) || 0; // Apps Script v8 mengembalikan waktu 'Diperbarui'
       if (ev === S) save(); else if (!this.gone.has(ev.id)) await idbPut("event:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
       this.fail = 0; this.nextAt = 0; this.lastErr = null; this.status(); this.heal();
       if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah${nLewat ? `, ${nLewat} sudah ada di Drive` : ""}).`);
@@ -4164,24 +4180,44 @@ const Cloud = {
     this.sync(false);
   },
   /* ---- ambil kegiatan dari Drive ---- */
-  async listRemote() {
-    const el = $("#evCloudList");
-    if (!this.ready()) { el.innerHTML = `<div class="hint">Google Drive belum terhubung. <a href="#" id="evCloudSet">Hubungkan sekarang</a>.</div>`; $("#evCloudSet").onclick = e => { e.preventDefault(); Ev.close(); this.openSettings(); }; return; }
-    el.innerHTML = `<div class="hint">Memuat daftar dari Google Drive…</div>`;
-    try {
-      const r = await this.api("listEvents");
-      this.remote = r.events || []; Ev.quick();
-      const mati = new Set([...this.gone, ...((await idbGet(DEL_KEY)) || [])]); // yang baru saja dihapus jangan tampil lagi walau Drive belum selesai
-      const list = (r.events || []).filter(e => !mati.has(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
-      el.innerHTML = list.length ? list.map(e => {
-        const local = EV.some(x => x.id === e.id);
-        return `<div class="ev-item" data-id="${esc(e.id)}"><div class="info">
+  setRemote(list) { // daftar kegiatan di Drive: disimpan juga di perangkat supaya langsung tampil saat aplikasi dibuka
+    this.remote = list; this.remoteAt = list ? Date.now() : 0;
+    if (list) idbPut(REMOTE_KEY, list).catch(() => { }); else idbDel(REMOTE_KEY).catch(() => { });
+  },
+  remoteList() { const mati = new Set([...this.gone]); return (this.remote || []).filter(e => e && e.id && !mati.has(e.id)); },
+  /** keadaan salinan di perangkat ini dibanding Drive: new (belum ada) | stale (Drive lebih baru) | unsent (ada perubahan belum terkirim) | same */
+  stateOf(e) {
+    const loc = EV.find(x => x.id === e.id); if (!loc) return "new";
+    if (!loc.cloud) return "unsent";
+    const up = Number(e.updated) || 0;
+    return up && up > (loc.ru || ((loc.updated || 0) + 120000)) ? "stale" : "same"; // salinan lama (belum tercatat waktunya): beri toleransi 2 menit untuk beda jam
+  },
+  renderRemote() {
+    const el = $("#evCloudList"); if (!el) return;
+    const mati = new Set([...this.gone]);
+    const list = this.remoteList().filter(e => !mati.has(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)));
+    el.innerHTML = list.length ? list.map(e => {
+      const st = this.stateOf(e);
+      const aksi = st === "new" ? `<button class="btn sm primary" data-act="pull">Unduh &amp; Buka</button>`
+        : st === "stale" ? `<span class="hint">⬇ Drive lebih baru</span><button class="btn sm primary" data-act="upd">Perbarui</button>`
+        : st === "unsent" ? `<span class="hint">⏳ Belum terkirim ke Drive</span>`
+        : `<span class="hint">✓ Sama dengan Drive</span>`;
+      return `<div class="ev-item" data-id="${esc(e.id)}"><div class="info">
           <div class="t">${esc(e.kegiatan || "(tanpa nama)")}</div>
           <div class="d">${esc(hariTanggal({}, hariList({ tanggal: e.tanggal, tanggal2: e.tanggal2, hari: e.hari }).filter(Boolean)) || "-")}${e.tempat ? " · " + esc(e.tempat) : ""}</div>
           <div class="m">${esc(e.n)} peserta · foto ${esc(e.foto)} · TTD ${esc(e.ttdPeserta)}${e.folderUrl ? ` · <a href="${esc(e.folderUrl)}" target="_blank" rel="noopener">buka folder</a>` : ""}</div></div>
-          <div class="acts">${local ? `<span class="hint">Ada di perangkat ini</span>` : `<button class="btn sm primary" data-act="pull">Unduh &amp; Buka</button>`}<button class="btn sm danger" data-act="cdel">Hapus</button></div></div>`;
-      }).join("") : `<div class="hint">Belum ada kegiatan di Google Drive.</div>`;
-    } catch (e) { el.innerHTML = `<div class="hint" style="color:var(--danger)">Gagal memuat: ${esc(e.message)}</div>`; }
+          <div class="acts">${aksi}<button class="btn sm danger" data-act="cdel">Hapus</button></div></div>`;
+    }).join("") : `<div class="hint">Belum ada kegiatan di Google Drive.</div>`;
+  },
+  async listRemote() {
+    const el = $("#evCloudList");
+    if (!this.ready()) { el.innerHTML = `<div class="hint">Google Drive belum terhubung. <a href="#" id="evCloudSet">Hubungkan sekarang</a>.</div>`; $("#evCloudSet").onclick = e => { e.preventDefault(); Ev.close(); this.openSettings(); }; return; }
+    if (this.remote) this.renderRemote(); else el.innerHTML = `<div class="hint">Memuat daftar dari Google Drive…</div>`; // daftar tersimpan tampil dulu
+    try {
+      const r = await this.api("listEvents");
+      this.setRemote(r.events || []); Ev.quick(); this.renderRemote();
+      setTimeout(() => this.align(), 0);
+    } catch (e) { if (!this.remote) el.innerHTML = `<div class="hint" style="color:var(--danger)">Gagal memuat: ${esc(e.message)}</div>`; }
   },
   async removeRemote(id) {
     if (EV.some(x => x.id === id)) { await Ev.remove(id); return this.listRemote(); } // ada juga di perangkat ini: hapus dua-duanya
@@ -4196,42 +4232,166 @@ const Cloud = {
     } catch (e) { toast("Gagal menghapus di Drive: " + this.friendly(e.message)); }
     this.listRemote();
   },
+  /** pasang satu berkas hasil unduhan ke tempatnya di kegiatan */
+  place(ev, k, url) {
+    const [kind, pid, day, ses] = k.split(":"), p = ev.peserta.find(x => x.id === pid);
+    if (kind === "foto" && p) p.foto = url;
+    else if (kind === "foto2" && p) p.foto2 = url;
+    else if (kind === "ttd" && p) p.ttd[day] = url;
+    else if (kind === "sf" && p && (ses === "p" || ses === "s")) { (p.sf[day] = p.sf[day] || {})[ses] = url; }
+    else if (kind === "ttd-org") ev.acara.ttd = url;
+    else if (kind === "ttd-s1") ev.lap.s1.ttd = url;
+    else if (kind === "ttd-s2") ev.lap.s2.ttd = url;
+    else if (kind === "nr") { const r = day ? ((ev.lap.nrk || {})[pid] || {})[day] : ev.lap.nr[pid]; if (r) r.ttd = url; }
+    else if (kind === "hari") { const h = (ev.lap.hari[pid] = ev.lap.hari[pid] || { materi: "", fotos: [] }); h.fotos[+day] = url; }
+  },
+  /** Unduh berkas kegiatan: beberapa berkas per permintaan (getFiles, Code.gs v8) dan beberapa permintaan sekaligus.
+   *  Code.gs lama (tanpa getFiles) → satu per satu tetapi tetap 4 jalur sekaligus. Berkas yang sudah dihapus di Drive dilewati. */
+  async fetchFiles(ev, files, keys, prog) {
+    let done = 0; const tick = () => { done++; if (prog) prog(done, keys.length); };
+    const per = this.noGetFiles ? 1 : 6, batches = []; let cur = [], sz = 0;
+    keys.forEach(k => {
+      const n = files[k].sz || 150000;
+      if (cur.length && (cur.length >= per || sz + n > 3500000)) { batches.push(cur); cur = []; sz = 0; }
+      cur.push(k); sz += n;
+    });
+    if (cur.length) batches.push(cur);
+    const one = async k => {
+      try { const f = await this.api("getFile", { id: files[k].id }); if (f && f.dataUrl) this.place(ev, k, f.dataUrl); tick(); }
+      catch (e) { if (e && e.kind === "server" && !e.retry) tick(); else throw e; } // berkas sudah tidak ada di Drive: lewati
+    };
+    const run = async bt => {
+      if (!this.noGetFiles && bt.length > 1) {
+        try {
+          const r = await this.api("getFiles", { ids: bt.map(k => files[k].id) }), m = (r && r.files) || {};
+          bt.forEach(k => { const u = m[files[k].id]; if (u) this.place(ev, k, u); tick(); });
+          return;
+        } catch (e) { if (/Aksi tidak dikenal/i.test((e && e.message) || "")) { this.noGetFiles = true; this.lastErr = null; this.status(); } else throw e; }
+      }
+      for (const k of bt) await one(k);
+    };
+    let nx = 0, gagal = null;
+    await Promise.all(Array.from({ length: Math.min(batches.length, this.noGetFiles ? 4 : 3) }, async () => {
+      while (!gagal && nx < batches.length) { const bt = batches[nx++]; try { await run(bt); } catch (e) { gagal = gagal || e; } }
+    }));
+    if (gagal) throw gagal;
+  },
+  /** Ambil satu kegiatan lengkap dari Drive menjadi objek kegiatan (belum disimpan / dibuka). */
+  async fetchEvent(id, prog) {
+    const ent = (this.remote || []).find(x => x.id === id), ru = ent ? Number(ent.updated) || 0 : 0; // dicatat SEBELUM unduh: perubahan yang masuk saat mengunduh terdeteksi lagi nanti
+    const r = await this.api("getEvent", { id });
+    const d = r.event, files = r.files || {};
+    const ev = normalize({
+      id: d.id, created: d.created, wm: d.wm,
+      acara: { ...d.acara, ttd: "" },
+      lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [] }])), nr: Object.fromEntries(Object.entries(lp.nr || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }])), nrk: Object.fromEntries(Object.entries(lp.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }]))])) }))(d.lap || {}),
+      peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: "", foto2: "", ttd: {}, sf: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, hasil: p.hasil }))
+    });
+    const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); // berkas Word tidak perlu diunduh
+    await this.fetchFiles(ev, files, keys, prog);
+    Object.values(ev.lap.hari).forEach(h => { h.fotos = h.fotos.filter(Boolean); });
+    ev.sync = { h: {}, v: 0, sv: 0, at: Date.now(), folderUrl: r.folderUrl || "", ru };
+    this.files(ev).forEach(f => ev.sync.h[f.key] = f.hash);
+    return ev;
+  },
+  /** simpan kegiatan hasil unduhan ke perangkat ini TANPA membukanya */
+  async storeEv(ev) {
+    await idbPut("event:" + ev.id, ev);
+    const m = meta(ev), i = EV.findIndex(e => e.id === ev.id);
+    if (i >= 0) EV[i] = m; else EV.push(m);
+    await idbPut(IDX, EV);
+  },
+  /** Samakan satu kegiatan di perangkat ini dengan Drive (kegiatan baru diunduh; yang sudah ada diperbarui). Mengembalikan true bila diganti. */
+  async refresh(id, force) {
+    const old = id === S.id ? S : await idbGet("event:" + id);
+    const ev = await this.fetchEvent(id);
+    if (TOMBS.has(id) || this.gone.has(id)) return false; // dihapus selagi mengunduh
+    const loc = EV.find(x => x.id === id);
+    if (!force) {
+      if (loc && !loc.cloud) return false; // ada perubahan baru di perangkat ini selagi mengunduh: jangan ditimpa
+      if (id === S.id && (saveT || this.dirty(S) || Date.now() - lastEditAt < 10000)) return false; // sedang diedit: coba lagi nanti
+    }
+    if (old && old.pic) ev.pic = old.pic; // catatan PIC milik perangkat ini dipertahankan
+    if (id === S.id) { S = ev; await doSave(); applyState(); }
+    else await this.storeEv(ev);
+    return true;
+  },
+  /** Samakan SEMUA kegiatan dengan Drive: yang belum ada diunduh, yang usang diperbarui, yang belum terkirim dikirim. Terbaru dulu. */
+  async align() {
+    if (!this.ready() || !navigator.onLine || this.alBusy || !Array.isArray(this.remote) || Date.now() - (this.remoteAt || 0) > 180000) return;
+    this.alBusy = true; let n = 0;
+    try {
+      const q = (await idbGet(DEL_KEY)) || [];
+      const jobs = this.remoteList().filter(e => !TOMBS.has(e.id) && !q.includes(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)))
+        .map(e => ({ e, st: this.stateOf(e) })).filter(j => j.st === "new" || j.st === "stale");
+      if (jobs.length) {
+        toast(jobs.length === 1 ? "Menyamakan 1 kegiatan dari Google Drive…" : `Menyamakan ${jobs.length} kegiatan dari Google Drive…`);
+        let i = 0;
+        for (const j of jobs) {
+          this.status(`☁️ Mengunduh kegiatan ${++i}/${jobs.length}…`, "busy");
+          try { if (await this.refresh(j.e.id)) n++; }
+          catch (e) { if (e && e.retry) break; } // sinyal buruk: berhenti, dicoba lagi otomatis
+        }
+        this.status();
+      }
+    } catch (_) { }
+    finally { this.alBusy = false; }
+    if (n) {
+      toast(n === 1 ? "1 kegiatan disamakan dengan Google Drive." : `${n} kegiatan disamakan dengan Google Drive.`);
+      Ev.quick(); if (!$("#evModal").hidden) { Ev.render(); this.renderRemote(); }
+    } else if (!$("#evModal").hidden) this.renderRemote();
+    await this.syncDirty();
+  },
+  /** kirim ke Drive kegiatan lain (bukan yang sedang dibuka) yang belum terkirim, mis. dibuat saat offline / sebelum Drive terhubung */
+  async syncDirty() {
+    if (!this.ready() || !this.cfg.auto || !navigator.onLine) return;
+    const ada = new Set((this.remote || []).map(e => e.id));
+    for (const loc of [...EV]) {
+      if (loc.cloud || loc.id === S.id || this.gone.has(loc.id) || TOMBS.has(loc.id)) continue;
+      if (!(loc.n > 0 || String(loc.kegiatan || "").trim())) continue;
+      const raw = await idbGet("event:" + loc.id); if (!raw) continue;
+      const ev = normalize(raw), sy = ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 };
+      if (!ada.has(ev.id) && sy.at) continue; // sudah dihapus di Drive oleh perangkat lain: jangan dihidupkan lagi tanpa sengaja
+      if (!this.dirty(ev)) sy.v = (sy.v || 0) + 1; // belum pernah terkirim
+      for (let w = 0; this.busy && w < 40; w++) await new Promise(r => setTimeout(r, 1500));
+      if (this.busy) return;
+      await this.sync(false, ev);
+      if (this.fail || this.lastErr) return; // gangguan: berhenti, dicoba lagi nanti
+      if (!this.dirty(ev)) { const i = EV.findIndex(e => e.id === ev.id); if (i >= 0) { EV[i] = { ...meta(ev), updated: EV[i].updated }; await idbPut(IDX, EV).catch(() => { }); } }
+    }
+  },
+  /** tombol "Samakan sekarang" */
+  async syncAll() {
+    if (!this.ready()) { Ev.close(); this.openSettings(); return; }
+    const b = $("#evCloudLoad"); if (b) b.disabled = true;
+    try {
+      await this.flushDeletes(); await this.reconcile(true);
+      await new Promise(r => setTimeout(r, 80));
+      for (let w = 0; this.alBusy && w < 120; w++) await new Promise(r => setTimeout(r, 1000));
+    } finally { if (b) b.disabled = false; }
+    this.listRemote();
+  },
   async pull(id) {
     const el = $("#evCloudList"), ui = h => { const a = el.querySelector(`[data-id="${CSS.escape(id)}"] .acts`); if (a) a.innerHTML = h; }; // baris daftar Drive bisa tidak ada (dibuka dari tombol cepat)
     tombDel(id);
     try {
       ui(`<span class="hint">Mengunduh…</span>`);
-      const r = await this.api("getEvent", { id });
-      const d = r.event, files = r.files || {};
-      const ev = normalize({
-        id: d.id, created: d.created, wm: d.wm,
-        acara: { ...d.acara, ttd: "" },
-        lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [] }])), nr: Object.fromEntries(Object.entries(lp.nr || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }])), nrk: Object.fromEntries(Object.entries(lp.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }]))])) }))(d.lap || {}),
-        peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: "", foto2: "", ttd: {}, sf: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, hasil: p.hasil }))
-      });
-      const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); let i = 0; // berkas Word tidak perlu diunduh
-      for (const k of keys) {
-        ui(`<span class="hint">Mengunduh file ${++i}/${keys.length}…</span>`);
-        const f = await this.api("getFile", { id: files[k].id });
-        const [kind, pid, day, ses] = k.split(":"), p = ev.peserta.find(x => x.id === pid);
-        if (kind === "foto" && p) p.foto = f.dataUrl;
-        else if (kind === "foto2" && p) p.foto2 = f.dataUrl;
-        else if (kind === "ttd" && p) p.ttd[day] = f.dataUrl;
-        else if (kind === "sf" && p && (ses === "p" || ses === "s")) { (p.sf[day] = p.sf[day] || {})[ses] = f.dataUrl; }
-        else if (kind === "ttd-org") ev.acara.ttd = f.dataUrl;
-        else if (kind === "ttd-s1") ev.lap.s1.ttd = f.dataUrl;
-        else if (kind === "ttd-s2") ev.lap.s2.ttd = f.dataUrl;
-        else if (kind === "nr") { const r = day ? ((ev.lap.nrk || {})[pid] || {})[day] : ev.lap.nr[pid]; if (r) r.ttd = f.dataUrl; }
-        else if (kind === "hari") { const h = (ev.lap.hari[pid] = ev.lap.hari[pid] || { materi: "", fotos: [] }); h.fotos[+day] = f.dataUrl; }
-      }
-      Object.values(ev.lap.hari).forEach(h => { h.fotos = h.fotos.filter(Boolean); });
-      ev.sync = { h: {}, v: 0, sv: 0, at: Date.now(), folderUrl: r.folderUrl || "" };
-      this.files(ev).forEach(f => ev.sync.h[f.key] = f.hash);
+      const ev = await this.fetchEvent(id, (i, n) => ui(`<span class="hint">Mengunduh file ${i}/${n}…</span>`));
       await flush();
       S = ev; await doSave(); idbPut(CUR, S.id).catch(() => { });
       applyState(); setTab("data"); Ev.close();
       toast(`Kegiatan "${ev.acara.kegiatan || "tanpa nama"}" diunduh dari Google Drive.`);
     } catch (e) { toast("Gagal mengunduh: " + e.message); this.listRemote(); }
+  },
+  async upd(id) { // tombol "Perbarui" di daftar Drive
+    const el = $("#evCloudList"), a = el.querySelector(`[data-id="${CSS.escape(id)}"] .acts`);
+    if (a) a.innerHTML = `<span class="hint">Memperbarui…</span>`;
+    try {
+      const ok = await this.refresh(id);
+      toast(ok ? "Kegiatan diperbarui dari Google Drive." : "Kegiatan sedang diedit di perangkat ini; dicoba lagi otomatis.");
+      Ev.quick(); Ev.render();
+    } catch (e) { toast("Gagal memperbarui: " + this.friendly(e.message)); }
+    this.renderRemote();
   }
 };
 $("#cloudBtn").onclick = () => Cloud.openSettings();
@@ -4253,13 +4413,14 @@ $("#cRecoverBtn").onclick = () => {
 $("#cSyncNow").onclick = () => { if (!Cloud.ready()) { Cloud.info("Simpan pengaturan dulu.", "err"); return; } Cloud.closeSettings(); Cloud.sync(true); };
 $("#cDisconnect").onclick = async () => {
   if (!confirm("Putuskan sinkron Google Drive di perangkat ini? Data di Drive tidak dihapus.")) return;
-  Cloud.cfg = { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" }; Cloud.lastErr = null; Cloud.lost = false; await Cloud.saveCfg(); Cloud.status(); Cloud.openSettings();
+  Cloud.cfg = { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" }; Cloud.lastErr = null; Cloud.lost = false; Cloud.setRemote(null); await Cloud.saveCfg(); Cloud.status(); Cloud.openSettings();
 };
-$("#evCloudLoad").onclick = () => Cloud.listRemote();
+$("#evCloudLoad").onclick = () => Cloud.syncAll();
+document.addEventListener("click", e => { if (e.target.closest("[data-drv]")) { Ev.close(); Cloud.openSettings(); } });
 $("#evCloudList").addEventListener("click", e => {
-  const b = e.target.closest("[data-act=pull],[data-act=cdel]"); if (!b) return;
+  const b = e.target.closest("[data-act=pull],[data-act=cdel],[data-act=upd]"); if (!b) return;
   const id = b.closest(".ev-item").dataset.id;
-  if (b.dataset.act === "pull") Cloud.pull(id); else Cloud.removeRemote(id);
+  if (b.dataset.act === "pull") Cloud.pull(id); else if (b.dataset.act === "upd") Cloud.upd(id); else Cloud.removeRemote(id);
 });
 window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDeletes().then(() => Cloud.reconcile()); });
 
@@ -4631,6 +4792,7 @@ const Pic = {
   landingLast = cur && EV.some(e => e.id === cur) ? cur : "";
   S = blank(); // layar awal "Pilih kegiatan atau kegiatan baru": kegiatan terakhir TIDAK dibuka otomatis (kegiatan kosong ini tidak disimpan)
   await Cloud.loadCfg();
+  if (Cloud.ready()) { const rl = await idbGet(REMOTE_KEY); if (Array.isArray(rl)) Cloud.remote = rl; } // daftar Drive terakhir langsung tersedia (belum dianggap segar: remoteAt = 0)
   Tenant.init().then(() => Tenant.refresh(true));
   Cloud.watch();
   ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
