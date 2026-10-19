@@ -4459,6 +4459,7 @@ const Pic = {
         await Promise.race([au.signInAnonymously(auth), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 15000))]);
         this.d = d; this.db = d.getDatabase(app); this.ready = true; this.err = "";
         d.onValue(this.r("dh_selfie_st"), snap => this.pullSelfieSoon(250, snap.val() || {}), () => { }); // selfie baru: jalur sendiri & cepat (tanpa menunggu tarik hasil PIC)
+        d.onValue(this.r("dh_ttdp_st"), snap => this.pullTtdpSoon(250, snap.val() || {}), () => { }); // peserta tanda tangan lewat link: masuk langsung ke daftar hadir
         d.onValue(this.r("dh_nara_st"), snap => this.pullNaraSoon(250, snap.val() || {}), () => { }); // narasumber tanda tangan lewat link: masuk langsung ke baris narasumber (tanpa menunggu PIC)
         d.onValue(this.r("dh_hasil"), () => this.pullSoon(), e => { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; this.status(); });
       } catch (e) { this.ready = false; this.initP = null; this.err = "net"; }
@@ -4590,6 +4591,7 @@ const Pic = {
     } catch (e) { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; }
     total += await this.pullSelfie();
     total += await this.pullNara();
+    total += await this.pullTtdp();
     this.pulling = false; this.status();
     if (manual) toast(total ? "Hasil PIC diperbarui." : (this.err ? "Gagal memeriksa hasil PIC." : "Belum ada hasil baru dari PIC."));
     return total;
@@ -4610,7 +4612,7 @@ const Pic = {
   },
   async hapusSelfieSemua(id) { // kegiatan dihapus: buang info + semua foto selfie (tiap kunci, sesuai aturan Firebase); gagal = diabaikan
     try {
-      await Promise.all(["dh_nara", "dh_nara_ttd", "dh_nara_st"].map(n => this.d.remove(this.r(`${n}/${id}`)).catch(() => { }))); // link tanda tangan narasumber ikut dibuang
+      await Promise.all(["dh_nara", "dh_nara_ttd", "dh_nara_st", "dh_ttdp", "dh_ttdp_ttd", "dh_ttdp_st"].map(n => this.d.remove(this.r(`${n}/${id}`)).catch(() => { }))); // link tanda tangan narasumber ikut dibuang
       await this.d.remove(this.r(`dh_selfie/${id}`)).catch(() => { });
       const st = (await this.d.get(this.r(`dh_selfie_st/${id}`))).val() || {};
       await Promise.all(Object.keys(st).flatMap(k => [this.d.remove(this.r(`dh_selfie_foto/${id}/${k}`)).catch(() => { }), this.d.remove(this.r(`dh_selfie_st/${id}/${k}`)).catch(() => { })]));
@@ -4660,6 +4662,47 @@ const Pic = {
           if (n && Cloud.ready()) this.q = this.q.then(async () => { for (let i = 0; i < 300 && Cloud.busy; i++) await new Promise(r => setTimeout(r, 200)); await Cloud.sync(false, ev); });
         }
         if (n) toast(`Tanda tangan narasumber masuk: ${nama.join(", ")}.`);
+      }
+    } catch (_) { /* offline / aturan Firebase: abaikan */ }
+    return total;
+  },
+  /* --- Tanda tangan peserta lewat link (ruangk3.com/ttd/): PIC menerbitkan dh_ttdp/{kid}/{alat|_}; peserta menulis TTD ke dh_ttdp_ttd/{kid}/{alat|_}/{pid~tanggal} + penanda waktu dh_ttdp_st.
+         Di sini TTD langsung dipasang ke p.ttd[tanggal] (tidak menimpa TTD yang sudah ada), tanpa menunggu hasil PIC. --- */
+  pullTtdpSoon(ms, st) { if (st) this.tpSt = st; clearTimeout(this.tpT); this.tpT = setTimeout(() => this.pullTtdp(), ms == null ? 250 : ms); },
+  async pullTtdp() {
+    if (this.tpBusy) { this.tpAgain = true; return 0; }
+    this.tpBusy = true; let total = 0;
+    try { do { this.tpAgain = false; total += await this.pullTtdp1(); } while (this.tpAgain); } finally { this.tpBusy = false; }
+    return total;
+  },
+  async pullTtdp1() {
+    let total = 0;
+    try {
+      if (!this.ready) return 0;
+      const st = this.tpSt || (await this.d.get(this.r("dh_ttdp_st"))).val() || {}; this.tpSt = null;
+      for (const kid of Object.keys(st)) {
+        const sk = st[kid]; if (!sk || typeof sk !== "object" || !EV.some(e => e.id === kid)) continue;
+        const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid)); if (!ev || !ev.peserta) continue;
+        const seen = { ...((ev.pic && ev.pic.tp) || {}) }, hari = hariList(ev.acara).filter(Boolean), by = new Map(ev.peserta.map(p => [p.id, p])), baru = [];
+        Object.keys(sk).forEach(klk => { const sm = sk[klk]; if (!sm || typeof sm !== "object") return; Object.keys(sm).forEach(key => { const sk2 = klk + "|" + key, ts = +sm[key] || 1; if (ts > (seen[sk2] || 0)) baru.push({ klk, key, sk2, ts }); }); });
+        if (!baru.length) continue;
+        let n = 0; const nama = [];
+        for (const x of baru) {
+          const [pid, d] = x.key.split("~"), p = by.get(pid);
+          if (!p || p.batal || !hari.includes(d)) { seen[x.sk2] = x.ts; continue; }
+          const u = (await this.d.get(this.r(`dh_ttdp_ttd/${kid}/${x.klk}/${x.key}`))).val();
+          if (typeof u === "string" && /^data:image\//.test(u)) { p.ttd = p.ttd || {}; if (!p.ttd[d]) { p.ttd[d] = u; n++; nama.push(p.nama); } }
+          seen[x.sk2] = x.ts;
+        }
+        ev.pic = { ...(ev.pic || {}), tp: seen }; total += n;
+        if (kid === S.id) { if (n) changed(); else save(); renderSoon(); }
+        else {
+          if (n) ev.sync.v = (ev.sync.v || 0) + 1;
+          await idbPut("event:" + kid, JSON.parse(JSON.stringify(ev)));
+          const i = EV.findIndex(e => e.id === kid); if (i >= 0) { EV[i] = meta(ev); await idbPut(IDX, EV); }
+          if (n && Cloud.ready()) this.q = this.q.then(async () => { for (let i = 0; i < 300 && Cloud.busy; i++) await new Promise(r => setTimeout(r, 200)); await Cloud.sync(false, ev); });
+        }
+        if (n) toast(`Tanda tangan peserta masuk lewat link: ${nama.slice(0, 3).join(", ")}${nama.length > 3 ? ` +${nama.length - 3}` : ""}.`);
       }
     } catch (_) { /* offline / aturan Firebase: abaikan */ }
     return total;

@@ -184,3 +184,15 @@ lalu kotak tanda tangan. TTD (PNG 600x240) ditulis ke `dh_nara_ttd/{kid}/{kunciB
 Aplikasi PIC (pendengar `dh_nara_st`) dan Daftar Hadir admin (`Pic.pullNara`) langsung memasang TTD itu ke baris narasumber yang sama (`lap.nr` / `lap.nrk`), jadi tampil di pratinjau dan Word Absensi Narasumber.
 Bila PIC menghapus TTD, node `dh_nara_ttd` + `dh_nara_st` baris itu ikut dikosongkan supaya link bisa dipakai lagi. Perubahan nama/materi setelah link dibagikan otomatis memperbarui `dh_nara`.
 Teks "Training K3 Kemenaker RI" di kalimat pembuka ada di `narasumber/index.html` (fungsi `helloHtml`). Aturan Firebase tidak perlu diubah (cukup `auth != null` seperti fitur lain). Menghapus kegiatan juga membuang ketiga node ini.
+
+## Link Tanda Tangan Peserta (halaman `ruangk3.com/ttd/`)
+
+Di aplikasi Portal PIC → **Absensi TTD Peserta** ada kartu **Link TTD peserta** dengan tombol **Bagikan link** dan **Salin link**.
+Link: `https://ruangk3.com/ttd/?k={kid}` (kegiatan biasa) atau `...&kl={kunciAlat}` (PAPA / B3: satu link per alat/program, hanya memuat nama peserta alat itu).
+Tombol menerbitkan `dh_ttdp/{kid}/{kunciAlat|_}` = `{kegiatan, kelas, tgl[], tempat, kota, zona, peserta[{id,nama,instansi,hr[]}]}`; `hr` = hari wajib TTD
+(peserta cancel tidak ikut, remedial hanya hari terakhir). Perubahan status peserta setelah link dibagikan otomatis memperbarui daftar nama.
+Peserta membuka link (tanpa login), memilih namanya (ada pencarian), lalu **langsung muncul kotak tanda tangan** untuk HARI INI menurut jam server & zona kegiatan.
+TTD (PNG 600x240) ditulis ke `dh_ttdp_ttd/{kid}/{kunciAlat|_}/{pid~tanggal}` + penanda waktu `dh_ttdp_st/...`; satu kali per nama per hari (nama yang sudah TTD terkunci "✓ Sudah TTD").
+Aplikasi PIC (pendengar `dh_ttdp_st`) memasangnya ke `h.hadir[pid][tanggal]` (tidak menimpa TTD yang sudah ada) sehingga ikut terkirim ke admin lewat jalur biasa;
+Daftar Hadir admin juga menariknya langsung (`Pic.pullTtdp`, penanda terlihat di `ev.pic.tp`) ke `p.ttd[tanggal]`. Menghapus kegiatan membuang ketiga node ini.
+Aturan Firebase tidak perlu diubah (cukup `auth != null` seperti fitur narasumber).

@@ -31,7 +31,7 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, kl: null, day: 0, q: '', err: '' }; // kl: alat/kelas yang sedang dibuka (kegiatan PAPA)
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, selesai: false });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, selesai: false });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 const isBatal = (h, p) => (p.id in h.batal) ? !!h.batal[p.id] : !!p.batal;
 // Remedial (baris kuning di daftar hadir): hanya tanda tangan di HARI TERAKHIR; Cancel (merah) tidak ikut absensi.
@@ -46,7 +46,7 @@ const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kela
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); }; // hari yang tampil di tab absensi: alat selain Kelas 1 hanya 4 hari
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const fotoLengkap = (k, h, p) => fotoAda(h, p, 'foto') && (!(k && k.damkar) || fotoAda(h, p, 'foto2'));
 const LAPK = k => (k && k.lap) || {};
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
@@ -118,7 +118,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v35';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v36';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -209,6 +209,65 @@ async function naraGot(st) { // TTD yang dikirim narasumber lewat link -> masuk 
       } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
     }
   }
+}
+/* ---- Link tanda tangan peserta: halaman ruangk3.com/ttd/?k=<kegiatan>[&kl=<kunci alat/program>] ----
+   PIC menerbitkan daftar nama peserta kelas itu ke dh_ttdp/{kid}/{kl|_}; peserta memilih nama lalu langsung tanda tangan (hari ini);
+   TTD masuk ke dh_ttdp_ttd + penanda waktu dh_ttdp_st, lalu dipasang ke h.hadir (ikut terkirim ke admin lewat jalur biasa). */
+const ttdpKl = kl => (kl != null ? kelasKey(kl) : '_');
+const ttdpLink = (kid, klk) => `${location.origin}/ttd/?k=${encodeURIComponent(kid)}${klk && klk !== '_' ? '&kl=' + encodeURIComponent(klk) : ''}`;
+const daysKl = (k, kl) => { const hk = kl != null && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); };
+function ttdpInfo(h, k, kl) { // isi yang dibaca halaman peserta: hanya yang ikut (bukan cancel) dan hari wajib TTD-nya
+  const days = daysKl(k, kl);
+  const peserta = pesByKl(k, kl == null ? undefined : kl).filter(p => (p.nama || '').trim() && !isBatal(h, p)).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || '', hr: days.filter(d => perluHari(h, p, d, days, k)) })).filter(p => p.hr.length);
+  return { kegiatan: k.nama || '', kelas: kl != null ? klLabel(kl) : '', tgl: days, tempat: k.tempat || '', kota: k.kota || '', zona: k.zona || 'WIB', peserta };
+}
+async function ttdpPublish(kid, kl, force) { // terbitkan / perbarui daftar nama di server; lempar error bila gagal
+  const k = KEGS[kid], h = hOf(kid), klk = ttdpKl(kl), info = ttdpInfo(h, k, kl), hs = fnv(JSON.stringify(info));
+  if (!force && h.tshared[klk] && h.tshared[klk].hs === hs) return info;
+  await window.PicFB.ttdpPub(kid, klk, info); h.tshared[klk] = { kl: kl == null ? null : kl, hs }; await saveH(kid); return info;
+}
+let ttdpT = 0;
+function ttdpRepub(kid) { // peserta cancel / remedial / daftar peserta berubah setelah link dibagikan: perbarui daftar nama di server (diam-diam)
+  clearTimeout(ttdpT);
+  ttdpT = setTimeout(async () => { const h = H[kid]; if (!h || !KEGS[kid] || !fbOk() || !online()) return; for (const klk of Object.keys(h.tshared || {})) { try { await ttdpPublish(kid, (h.tshared[klk] || {}).kl == null ? undefined : h.tshared[klk].kl); } catch (e) { } } }, 2500);
+}
+async function ttdpShare(b, a, k, kid) {
+  if (!fbOk() || !online()) { toast('Membuat link perlu internet dan login.'); return; }
+  const kl = curKl(k), klk = ttdpKl(kl); b.disabled = true;
+  try { await ttdpPublish(kid, kl, true); } catch (e) { b.disabled = false; toast('Link belum bisa dibuat. ' + friendlyErr(e)); return; }
+  b.disabled = false;
+  const link = ttdpLink(kid, klk), msg = `Link tanda tangan peserta – ${k.nama || 'kegiatan'}${kl != null ? ' (' + klLabel(kl) + ')' : ''}:\n${link}`;
+  const nt = $('#tpNote'); if (nt) nt.textContent = 'Link sudah dibuat. Peserta tinggal memilih nama dan tanda tangan.';
+  if (a === 'tpcopy') { copyText(link).then(() => toast('Link disalin'), () => toast('Tidak bisa menyalin. Gunakan tombol Bagikan.')); return; }
+  if (navigator.share) navigator.share({ title: 'TTD Peserta', text: msg }).catch(() => { });
+  else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+let ttdpOff = null, ttdpUid = null;
+async function ttdpGot(st) { // TTD yang dikirim peserta lewat link -> masuk ke daftar hadir hari itu (tidak menimpa TTD yang sudah ada)
+  for (const kid of Object.keys(st || {})) {
+    const h = H[kid], k = KEGS[kid], sk = st[kid]; if (!h || !k || !sk || typeof sk !== 'object') continue;
+    for (const klk of Object.keys(sk)) {
+      const sm = sk[klk]; if (!h.tshared[klk] || !sm || typeof sm !== 'object') continue;
+      for (const key of Object.keys(sm)) {
+        const ts = +sm[key] || 1, sk2 = klk + '|' + key; if (ts <= (h.ttdpSeen[sk2] || 0)) continue;
+        const [pid, day] = key.split('~'), p = (k.peserta || []).find(x => x.id === pid);
+        if (!p || !(k.tgl || []).includes(day) || isBatal(h, p)) { h.ttdpSeen[sk2] = ts; continue; }
+        try {
+          const u = await window.PicFB.ttdpGet(kid, klk, key);
+          if (typeof u === 'string' && /^data:image\//.test(u)) {
+            if (!sudahTtd(h, p, day)) { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][day] = u; h.ttdpSeen[sk2] = ts; touch(kid); render(); toast(`${p.nama} sudah tanda tangan`); }
+            else { h.ttdpSeen[sk2] = ts; saveH(kid); }
+          } else { h.ttdpSeen[sk2] = ts; }
+        } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
+      }
+    }
+  }
+}
+function startTtdp() {
+  if (!fbOk() || !window.PicFB.watchTtdp || (ttdpOff && ttdpUid === ME.uid)) return;
+  if (ttdpOff) { try { ttdpOff(); } catch (e) { } } ttdpOff = null;
+  const uid = ME.uid; ttdpUid = uid;
+  try { ttdpOff = window.PicFB.watchTtdp(st => { if (ME && ME.uid === uid) ttdpGot(st).catch(() => { }); }, () => { if (ttdpUid === uid) { ttdpOff = null; ttdpUid = null; } }); } catch (e) { ttdpOff = null; ttdpUid = null; }
 }
 function startNara() {
   if (!fbOk() || !window.PicFB.watchNara || (naraOff && naraUid === ME.uid)) return;
@@ -343,7 +402,7 @@ async function sync() {
     syncErr = friendlyErr(e); clearTimeout(retryT); retryT = setTimeout(sync, 30000);
   } finally { syncing = false; renderPill(); if (pending() && !syncErr && online()) setTimeout(sync, 500); }
 }
-function touch(kid) { const h = hOf(kid); h.upd = Date.now(); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); setTimeout(sync, 1200); if (Object.keys(h.nshared || {}).length) naraRepub(kid); }
+function touch(kid) { const h = hOf(kid); h.upd = Date.now(); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); setTimeout(sync, 1200); if (Object.keys(h.nshared || {}).length) naraRepub(kid); if (Object.keys(h.tshared || {}).length) ttdpRepub(kid); }
 
 async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasil yang sudah ada di server
   try {
@@ -411,7 +470,7 @@ async function applyKegs(srv) {
 }
 function stopWatch() { if (watchOff) { try { watchOff(); } catch (e) { } } watchOff = null; watchUid = null; watchGot = 0; }
 function startWatch() {
-  startNara();
+  startNara(); startTtdp();
   if (!fbOk() || !window.PicFB.watchKegiatan) return;
   if (watchOff && watchUid === ME.uid) return;
   stopWatch();
@@ -443,7 +502,7 @@ async function doLogin(user, pw) {
 }
 async function doLogout(force, msg) {
   if (!force && pending()) { askLogout(); return; }
-  stopWatch(); if (naraOff) { try { naraOff(); } catch (e) { } } naraOff = null; naraUid = null; lastSrv = '';
+  stopWatch(); if (naraOff) { try { naraOff(); } catch (e) { } } naraOff = null; naraUid = null; if (ttdpOff) { try { ttdpOff(); } catch (e) { } } ttdpOff = null; ttdpUid = null; lastSrv = '';
   try { if (window.PicFB) await window.PicFB.logout(); } catch (e) {}
   ME = null; KEGS = {}; const ks = Object.keys(H); H = {};
   await iDel('me'); await iDel('kegs'); await Promise.all(ks.map(k => iDel('h:' + k)));
@@ -559,6 +618,8 @@ function render() {
     const days = absDays(k), d = days[P.day] || days[0] || '';
     h = appbar('Absensi TTD Peserta', subK(k), true) + `<div class="screen">
       ${days.length > 1 ? `<div class="chips" role="tablist">${days.map((t, i) => `<button type="button" role="tab" data-act="day" data-i="${i}" aria-selected="${i === P.day}">Hari ${i + 1} · ${esc(tglPendek(t))}</button>`).join('')}</div>` : (d ? `<div class="hint">${esc(hariNama(d))}, ${esc(tglPanjang(d))}</div>` : '')}
+      <div class="card2"><b>Link TTD peserta</b><div class="hint">Bagikan ke peserta${curKl(k) != null ? ' kelas/alat ini' : ''} (mis. lewat grup WhatsApp). Peserta membuka link, memilih namanya sendiri, lalu langsung tanda tangan di HP-nya. Hasilnya masuk otomatis ke daftar di bawah.</div>
+        <div class="row"><button type="button" class="btn pri" data-act="tpshare">📤 Bagikan link</button><button type="button" class="btn" data-act="tpcopy">Salin link</button></div><div class="hint" id="tpNote">${hOf(P.kid).tshared[ttdpKl(curKl(k))] ? 'Link sudah dibuat. Peserta tinggal memilih nama dan tanda tangan.' : ''}</div></div>
       <div class="counter" id="absCount"></div>
       <div class="field"><input id="absQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
       <div class="ahead"><span>Status</span><span>Peserta</span><span style="text-align:center">TTD</span></div>
@@ -891,6 +952,7 @@ document.addEventListener('click', e => {
     else P.screen = 'keg';
     P.q = ''; render();
   }
+  else if ((a === 'tpshare' || a === 'tpcopy') && k) ttdpShare(b, a, k, kid);
   else if (a === 'sfcopy') { const t = $('#sfLink').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link disalin'), () => { $('#sfLink').select(); toast('Tahan lalu pilih Salin'); }); }
   else if (a === 'sfshare') { const t = $('#sfLink').value, msg = `Absen selfie ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Absen Selfie', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
   else if (a === 'alat') { P.kl = b.dataset.kl; P.screen = 'alat'; P.q = ''; render(); }

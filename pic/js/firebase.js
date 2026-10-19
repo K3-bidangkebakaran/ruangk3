@@ -96,6 +96,10 @@ window.PicFB = {
   async naraTtd(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), 40000)).val(); },
   async naraReset(kid, key) { await Promise.all([remove(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_st/${kid}/${key}`))].map(p => p.catch(() => {}))); },
   async naraCabut(kid, key) { await Promise.all([remove(ref(db, `${ROOT}/dh_nara/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_st/${kid}/${key}`))].map(p => p.catch(() => {}))); },
+  // Link tanda tangan peserta (halaman ruangk3.com/ttd/): daftar nama -> dh_ttdp/{kid}/{kl}; TTD -> dh_ttdp_ttd/{kid}/{kl}/{pid~tgl}; penanda waktu -> dh_ttdp_st
+  async ttdpPub(kid, kl, info) { await withTimeout(set(ref(db, `${ROOT}/dh_ttdp/${kid}/${kl}`), clean({ ...info, upd: Date.now() })), 30000); },
+  async ttdpGet(kid, kl, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_ttdp_ttd/${kid}/${kl}/${key}`)), 40000)).val(); },
+  watchTtdp(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_ttdp_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
   watchNara(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_nara_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
 };
 window.dispatchEvent(new Event('pic-fb-ready'));
