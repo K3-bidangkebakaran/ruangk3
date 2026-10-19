@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Tanda Tangan Narasumber</title>
+<meta name="theme-color" content="#14201a">
+<link rel="icon" href="../pic/icons/icon-192.png">
+<style>
+:root{
+  --bg:#eef0ea; --surface:#fff; --surface-2:#f6f7f2; --ink:#17201b; --muted:#5b665e; --line:#d9ded5;
+  --brand:#f6c800; --brand-ink:#1e1a00; --chrome:#14201a; --chrome-ink:#f2f5ee; --chrome-muted:#a9b6ac;
+  --ok:#14804a; --ok-soft:#dcf2e5; --bad:#b42318; --bad-soft:#fde2df; --warn:#a85a05; --warn-soft:#fdebcf; --focus:#1d4ed8;
+  --padbg:#fcfcf8; --padink:#14233a;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0d120f; --surface:#161d18; --surface-2:#1c2520; --ink:#eef1ec; --muted:#9aa69d; --line:#2b362e; --chrome:#0a0f0c;
+  --ok:#4ade80; --ok-soft:#10301d; --bad:#f87171; --bad-soft:#3b1512; --warn:#fbbf24; --warn-soft:#3a2a08; --focus:#7aa2ff; --padbg:#f4f4ee; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+#app{min-height:100%;max-width:520px;margin:0 auto;background:var(--surface);display:flex;flex-direction:column}
+@media (min-width:560px){#app{border-inline:1px solid var(--line)}}
+.bar{background:var(--chrome);color:var(--chrome-ink);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;gap:10px;align-items:center}
+.bar img{width:36px;height:36px;border-radius:9px;flex:none}
+.bar b{display:block;font-size:16px;line-height:1.2}
+.bar small{display:block;color:var(--chrome-muted);font-size:12px}
+main{flex:1;display:flex;flex-direction:column;gap:14px;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+h2{margin:0;font-size:20px;line-height:1.25}
+.hello{display:grid;gap:8px;font-size:17px;line-height:1.55}
+.hello p{margin:0}
+.hello .nm{font-size:20px;font-weight:800;line-height:1.3;overflow-wrap:anywhere}
+.card{border:1px solid var(--line);border-radius:14px;padding:4px 14px;background:var(--surface-2);display:grid}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:2px 10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.kv:last-child{border-bottom:0}
+.kv span{color:var(--muted)}
+.kv b{font-weight:600;overflow-wrap:anywhere}
+.padwrap{display:grid;gap:6px}
+.padwrap label{font-weight:700}
+.pad{width:100%;aspect-ratio:5/2;border:2px dashed var(--line);border-radius:14px;background:var(--padbg);touch-action:none;display:block;cursor:crosshair}
+.pad.ink{border-style:solid;border-color:var(--padink)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 16px;font-weight:700;min-height:48px;width:100%}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.row{display:grid;gap:10px}
+.row.two{grid-template-columns:1fr 1fr}
+.note{border-radius:12px;padding:12px 14px;font-size:14.5px}
+.note.err{background:var(--bad-soft);color:var(--bad)}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.okk{background:var(--ok-soft);color:var(--ok)}
+.hint{color:var(--muted);font-size:13.5px}
+.sigshow{border:1px solid var(--line);border-radius:14px;background:var(--padbg);padding:8px;display:grid;place-items:center}
+.sigshow img{max-width:100%;max-height:150px;display:block}
+.spin{width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp 1s linear infinite;margin:30px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.big{font-size:56px;text-align:center;line-height:1}
+.center{text-align:center}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="bar"><img src="../pic/icons/icon-192.png" alt=""><div><b>Tanda Tangan Narasumber</b><small id="barSub">Memuat…</small></div></header>
+  <main id="main"><div class="spin" role="status" aria-label="Memuat"></div></main>
+</div>
+<script type="module">
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const QS = new URLSearchParams(location.search), KID = (QS.get("k") || "").trim(), KEY = (QS.get("r") || "").trim();
+const ZONA = { WIB: 7, WITA: 8, WIT: 9 };
+const HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"], BLN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+/* ---------- akses data (Firebase; bisa digantikan window.__NR_FB untuk uji) ---------- */
+async function backend() {
+  if (window.__NR_FB) return window.__NR_FB;
+  const V = "https://www.gstatic.com/firebasejs/11.6.1/", ROOT = "artifacts/k3-kebakaran-app-v5/public/data";
+  const [a, au, d] = await Promise.all([import(V + "firebase-app.js"), import(V + "firebase-auth.js"), import(V + "firebase-database.js")]);
+  const app = a.initializeApp({ apiKey: "AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg", authDomain: "portal-k3-bidang-kebakaran.firebaseapp.com", databaseURL: "https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "portal-k3-bidang-kebakaran", appId: "1:497833559757:web:01c2de15cd5f56dbb18b84" }, "narasumber");
+  const auth = au.getAuth(app), db = d.getDatabase(app), R = p => d.ref(db, `${ROOT}/${p}`);
+  const to = (pr, ms, m) => { let t; return Promise.race([pr, new Promise((_, rj) => { t = setTimeout(() => rj(new Error(m || "Koneksi terlalu lambat.")), ms); })]).finally(() => clearTimeout(t)); };
+  await to(au.signInAnonymously(auth), 20000, "Tidak bisa terhubung. Cek internet lalu muat ulang halaman.");
+  return {
+    info: async (k, r) => (await to(d.get(R(`dh_nara/${k}/${r}`)), 20000)).val(),
+    status: async (k, r) => (await to(d.get(R(`dh_nara_st/${k}/${r}`)), 20000)).val(),
+    ttd: async (k, r) => (await to(d.get(R(`dh_nara_ttd/${k}/${r}`)), 20000)).val(),
+    offset: () => to(new Promise(res => d.onValue(d.ref(db, ".info/serverTimeOffset"), s => res(+s.val() || 0), () => res(0), { onlyOnce: true })), 3000).catch(() => 0),
+    async put(k, r, url) { await to(d.set(R(`dh_nara_ttd/${k}/${r}`), url), 60000, "Pengiriman terlalu lambat."); await to(d.set(R(`dh_nara_st/${k}/${r}`), d.serverTimestamp()), 30000); },
+  };
+}
+
+/* ---------- waktu: jam server + zona waktu HP (WIB/WITA/WIT), selain itu zona kegiatan ---------- */
+let OFF = 0;
+const zonaHP = () => { const m = -new Date().getTimezoneOffset(); return m === 420 ? "WIB" : m === 480 ? "WITA" : m === 540 ? "WIT" : ""; };
+const nowZ = zona => { const zn = zonaHP() || (ZONA[zona] ? zona : "WIB"), t = new Date(Date.now() + OFF + ZONA[zn] * 3600e3); return { zn, h: t.getUTCHours() }; };
+/* pagi 04.00-10.59, siang 11.00-14.59, sore 15.00-17.59, malam 18.00-03.59 */
+const salam = h => (h >= 4 && h < 11 ? "pagi" : h >= 11 && h < 15 ? "siang" : h >= 15 && h < 18 ? "sore" : "malam");
+const tglPanjang = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); if (!m) return ""; const y = +m[1], mo = +m[2], d = +m[3], w = new Date(Date.UTC(y, mo - 1, d)).getUTCDay(); return `${HARI[w]}, ${d} ${BLN[mo - 1]} ${y}`; };
+
+/* ---------- state ---------- */
+let FB = null, INFO = null, STAMP = null, busy = false, INK = false, SCREEN = "";
+const main = $("#main");
+const show = (html, scr) => { SCREEN = scr || ""; main.innerHTML = html; };
+const fail = (msg) => { $("#barSub").textContent = ""; show(`<div class="note err">${esc(msg)}</div><button class="btn" id="reload">Muat ulang</button>`); $("#reload").onclick = () => location.reload(); };
+
+async function boot() {
+  if (!KID || !KEY) return fail("Link tidak lengkap. Minta link penandatanganan yang benar dari PIC.");
+  try { FB = await backend(); } catch (e) { return fail(e.message || "Tidak bisa terhubung."); }
+  try { [INFO, OFF, STAMP] = await Promise.all([FB.info(KID, KEY), FB.offset(), FB.status(KID, KEY)]); }
+  catch (e) { return fail(/permission/i.test(e.message || "") ? "Halaman ini belum bisa dibuka (akses ditolak). Hubungi PIC." : (e.message || "Gagal memuat data.")); }
+  if (!INFO || !INFO.nama) return fail("Link penandatanganan ini belum aktif atau sudah tidak berlaku. Hubungi PIC.");
+  $("#barSub").textContent = INFO.kegiatan || "";
+  if (STAMP) return sudah();
+  form();
+}
+
+/* ---------- tampilan ---------- */
+const helloHtml = () => {
+  const z = nowZ(INFO.zona);
+  return `<div class="hello"><p>Selamat <span id="salam">${salam(z.h)}</span>, Bpk/Ibu</p><p class="nm">${esc(INFO.nama)}</p>
+    <p>berikut adalah link penandatanganan absensi narasumber dari kegiatan <b>Training K3 Kemenaker RI</b>. Atas perhatiannya kami ucapkan terima kasih.</p></div>`;
+};
+const infoHtml = () => {
+  const lok = [INFO.tempat, INFO.kota].filter(Boolean).join(", "), rows = [["Kegiatan", INFO.kegiatan], ["Hari/tanggal", tglPanjang(INFO.tgl)], ["Tempat", lok], ["Instansi", INFO.inst], ["Materi", INFO.materi]].filter(r => r[1]);
+  return rows.length ? `<div class="card">${rows.map(r => `<div class="kv"><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join("")}</div>` : "";
+};
+function form() {
+  INK = false;
+  show(helloHtml() + infoHtml() + `<div class="padwrap"><label for="pad">Tanda tangan di kotak ini</label><canvas class="pad" id="pad" aria-label="Kotak tanda tangan"></canvas><div class="hint" id="padHint">Gunakan jari atau pena layar. Tanda tangan hanya bisa dikirim satu kali.</div></div>
+    <div id="sendMsg"></div>
+    <div class="row two"><button class="btn" id="clr" type="button">Hapus</button><button class="btn pri" id="send" type="button" disabled>✓ Kirim tanda tangan</button></div>`, "form");
+  const c = $("#pad"); c.width = 600; c.height = 240;
+  const x = c.getContext("2d"); x.strokeStyle = "#14233a"; x.lineWidth = 5; x.lineCap = "round"; x.lineJoin = "round";
+  let down = false, lx = 0, ly = 0;
+  const pos = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * 600 / r.width, (e.clientY - r.top) * 240 / r.height]; };
+  const mark = () => { INK = true; c.classList.add("ink"); $("#send").disabled = false; };
+  c.addEventListener("pointerdown", e => { e.preventDefault(); down = true; try { c.setPointerCapture(e.pointerId); } catch (_) { } [lx, ly] = pos(e); x.beginPath(); x.arc(lx, ly, 2.4, 0, 7); x.fillStyle = "#14233a"; x.fill(); mark(); });
+  c.addEventListener("pointermove", e => { if (!down) return; e.preventDefault(); const [nx, ny] = pos(e); x.beginPath(); x.moveTo(lx, ly); x.lineTo(nx, ny); x.stroke(); lx = nx; ly = ny; });
+  const up = () => { down = false; }; c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up);
+  $("#clr").onclick = () => { x.clearRect(0, 0, 600, 240); INK = false; c.classList.remove("ink"); $("#send").disabled = true; $("#sendMsg").innerHTML = ""; };
+  $("#send").onclick = () => kirim(c);
+}
+async function kirim(c) {
+  if (busy || !INK) return; busy = true;
+  const b = $("#send"), cl = $("#clr"), msg = $("#sendMsg"); b.disabled = cl.disabled = true; b.textContent = "Mengirim…"; msg.innerHTML = "";
+  const url = c.toDataURL("image/png");
+  try {
+    const st = await FB.status(KID, KEY); if (st) throw Object.assign(new Error("dup"), { dup: true });
+    await FB.put(KID, KEY, url);
+    STAMP = Date.now(); selesai(url);
+  } catch (e) {
+    if (e && e.dup) { try { STAMP = await FB.status(KID, KEY); } catch (_) { STAMP = 1; } return sudah(); }
+    msg.innerHTML = `<div class="note err">Gagal mengirim: ${esc((e && e.message) || "cek internet")}. Tanda tangan Anda masih ada di kotak, tekan Kirim lagi.</div>`;
+    b.disabled = cl.disabled = false; b.textContent = "✓ Kirim lagi";
+  } finally { busy = false; }
+}
+function selesai(url) {
+  show(`<div class="big">✅</div><h2 class="center">Tanda tangan berhasil dikirim</h2>
+    <p class="center hint" style="margin:0">Terima kasih, Bpk/Ibu ${esc(INFO.nama)}. Absensi narasumber ${esc(tglPanjang(INFO.tgl))} sudah tercatat.</p>
+    <div class="sigshow"><img src="${url}" alt="Tanda tangan terkirim"></div>
+    <p class="center hint" style="margin:0">Halaman ini boleh ditutup.</p>`, "done");
+}
+async function sudah() {
+  show(`<div class="big">✅</div><h2 class="center">Sudah ditandatangani</h2>
+    <p class="center hint" style="margin:0">Absensi narasumber ${esc(INFO.nama)}${INFO.tgl ? " · " + esc(tglPanjang(INFO.tgl)) : ""} sudah tercatat.</p>
+    <div class="sigshow" id="sg"><div class="spin"></div></div>
+    <div class="note warn">Jika tanda tangan salah dan perlu diulang, minta PIC menghapusnya di aplikasi PIC, lalu buka link ini lagi.</div>`, "done");
+  try { const u = await FB.ttd(KID, KEY); const sg = $("#sg"); if (sg) sg.innerHTML = typeof u === "string" && /^data:image\//.test(u) ? `<img src="${u}" alt="Tanda tangan tercatat">` : `<span class="hint">Tanda tangan tercatat.</span>`; } catch (_) { const sg = $("#sg"); if (sg) sg.innerHTML = `<span class="hint">Tanda tangan tercatat.</span>`; }
+}
+/* Ucapan salam mengikuti jam saat halaman terbuka (tanpa menghapus tanda tangan yang sedang digambar) */
+function tick() { if (!INFO) return; const el = $("#salam"); if (el) { const s = salam(nowZ(INFO.zona).h); if (el.textContent !== s) el.textContent = s; } }
+setInterval(tick, 10000); window.__nrTick = tick;
+boot();
+</script>
+</body>
+</html>

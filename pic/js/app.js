@@ -31,7 +31,7 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, kl: null, day: 0, q: '', err: '' }; // kl: alat/kelas yang sedang dibuka (kegiatan PAPA)
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, selesai: false });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, selesai: false });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 const isBatal = (h, p) => (p.id in h.batal) ? !!h.batal[p.id] : !!p.batal;
 // Remedial (baris kuning di daftar hadir): hanya tanda tangan di HARI TERAKHIR; Cancel (merah) tidak ikut absensi.
@@ -46,7 +46,7 @@ const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kela
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); }; // hari yang tampil di tab absensi: alat selain Kelas 1 hanya 4 hari
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const fotoLengkap = (k, h, p) => fotoAda(h, p, 'foto') && (!(k && k.damkar) || fotoAda(h, p, 'foto2'));
 const LAPK = k => (k && k.lap) || {};
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
@@ -118,7 +118,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v32';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v33';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -148,6 +148,62 @@ function nrGabung(h, k) { if (k && k.b3) return; // B3 memang per program: janga
   if (ch) { h.dirty = true; h.upd = Date.now(); h.rev = (h.rev || 0) + 1; }
 }
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
+/* ---- Link tanda tangan narasumber: halaman ruangk3.com/narasumber/?k=<kegiatan>&r=<kunci baris> ---- */
+const naraLink = (kid, key) => `${location.origin}/narasumber/?k=${encodeURIComponent(kid)}&r=${encodeURIComponent(key)}`;
+function naraInfo(h, k, key) { // isi yang dibaca halaman narasumber (nama sesuai baris hari itu)
+  const r = nrOf(h, k, key), mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null;
+  return { nama: r.nama.trim(), inst: r.inst, materi: mk ? mk.judul : r.mid === 'manual' ? (r.mtxt.split('\n')[0] || '') : '', kegiatan: k.nama || '', tgl: nrDate(key), tempat: k.tempat || '', kota: k.kota || '', zona: k.zona || 'WIB' };
+}
+async function naraPublish(kid, key, force) { // terbitkan / perbarui info baris di server; lempar error bila gagal
+  const k = KEGS[kid], h = hOf(kid), info = naraInfo(h, k, key), hs = fnv(JSON.stringify(info));
+  if (!force && h.nshared[key] === hs) return info;
+  await window.PicFB.naraPub(kid, key, info); h.nshared[key] = hs; await saveH(kid); return info;
+}
+let naraT = 0;
+function naraRepub(kid) { // nama/materi diubah setelah link dibagikan: perbarui info di server (diam-diam)
+  clearTimeout(naraT);
+  naraT = setTimeout(async () => { const h = H[kid]; if (!h || !KEGS[kid] || !fbOk() || !online()) return; for (const key of Object.keys(h.nshared || {})) { if (!naraInfo(h, KEGS[kid], key).nama) continue; try { await naraPublish(kid, key); } catch (e) { } } }, 2000);
+}
+async function naraReset(kid, key, cabut) { // TTD dihapus di aplikasi: kosongkan juga di server supaya link bisa dipakai lagi (cabut = buang info link sekalian)
+  if (!fbOk() || !online()) { toast('TTD dihapus di HP ini. Hubungkan internet lalu hapus lagi bila link narasumber perlu dibuka kembali.'); return; }
+  try { await (cabut ? window.PicFB.naraCabut(kid, key) : window.PicFB.naraReset(kid, key)); } catch (e) { }
+}
+function copyText(t) {
+  const fb = () => { const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:0;top:0;opacity:0'; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { } ta.remove(); return ok ? Promise.resolve() : Promise.reject(new Error('copy')); };
+  return navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t).catch(fb) : fb();
+}
+async function naraShare(b, a, k, kid) {
+  const key = b.closest('.card2').dataset.day, h = hOf(kid), nm = nrOf(h, k, key).nama.trim();
+  if (!nm) { toast('Pilih narasumber dulu.'); return; }
+  if (!fbOk() || !online()) { toast('Membuat link perlu internet dan login.'); return; }
+  b.disabled = true;
+  try { await naraPublish(kid, key, true); } catch (e) { b.disabled = false; toast('Link belum bisa dibuat. ' + friendlyErr(e)); return; }
+  b.disabled = false;
+  const link = naraLink(kid, key), msg = `Link penandatanganan absensi narasumber – ${k.nama || 'kegiatan'}:\n${link}`;
+  if (a === 'nrcopy') { copyText(link).then(() => toast('Link disalin'), () => toast('Tidak bisa menyalin. Gunakan tombol Bagikan.')); return; }
+  if (navigator.share) navigator.share({ title: 'Absensi Narasumber', text: msg }).catch(() => { });
+  else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+let naraOff = null, naraUid = null;
+async function naraGot(st) { // TTD yang dikirim narasumber lewat link -> masuk ke baris yang sama (ikut terkirim ke admin lewat jalur biasa)
+  for (const kid of Object.keys(st || {})) {
+    const h = H[kid], k = KEGS[kid], sk = st[kid]; if (!h || !k || !sk || typeof sk !== 'object') continue;
+    for (const key of Object.keys(sk)) {
+      const ts = +sk[key] || 1; if (!h.nshared[key] || ts <= (h.naraSeen[key] || 0)) continue;
+      try {
+        const u = await window.PicFB.naraTtd(kid, key);
+        if (typeof u === 'string' && /^data:image\//.test(u)) { h.nrs[key] = u; delete h.sent['nr_' + key]; h.gone = (h.gone || []).filter(x => x !== 'nr_' + key); nrSet(h, k, key); h.naraSeen[key] = ts; touch(kid); render(); toast(`${nrOf(h, k, key).nama || 'Narasumber'} sudah tanda tangan`); }
+        else h.naraSeen[key] = ts;
+      } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
+    }
+  }
+}
+function startNara() {
+  if (!fbOk() || !window.PicFB.watchNara || (naraOff && naraUid === ME.uid)) return;
+  if (naraOff) { try { naraOff(); } catch (e) { } } naraOff = null;
+  const uid = ME.uid; naraUid = uid;
+  try { naraOff = window.PicFB.watchNara(st => { if (ME && ME.uid === uid) naraGot(st).catch(() => { }); }, () => { if (naraUid === uid) { naraOff = null; naraUid = null; } }); } catch (e) { naraOff = null; naraUid = null; }
+}
 function naraPilih(r, kid) {
   if (!kid) { r.kid = r.nama = r.nip = r.inst = r.mid = r.mtxt = ''; return; } // '— Pilih narasumber —': isian baris dikosongkan
   r.kid = kid; const n = naraOf(kid);
@@ -275,7 +331,7 @@ async function sync() {
     syncErr = friendlyErr(e); clearTimeout(retryT); retryT = setTimeout(sync, 30000);
   } finally { syncing = false; renderPill(); if (pending() && !syncErr && online()) setTimeout(sync, 500); }
 }
-function touch(kid) { const h = hOf(kid); h.upd = Date.now(); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); setTimeout(sync, 1200); }
+function touch(kid) { const h = hOf(kid); h.upd = Date.now(); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); setTimeout(sync, 1200); if (Object.keys(h.nshared || {}).length) naraRepub(kid); }
 
 async function restore(kid) { // HP baru / data lokal hilang: ambil kembali hasil yang sudah ada di server
   try {
@@ -343,6 +399,7 @@ async function applyKegs(srv) {
 }
 function stopWatch() { if (watchOff) { try { watchOff(); } catch (e) { } } watchOff = null; watchUid = null; watchGot = 0; }
 function startWatch() {
+  startNara();
   if (!fbOk() || !window.PicFB.watchKegiatan) return;
   if (watchOff && watchUid === ME.uid) return;
   stopWatch();
@@ -374,7 +431,7 @@ async function doLogin(user, pw) {
 }
 async function doLogout(force, msg) {
   if (!force && pending()) { askLogout(); return; }
-  stopWatch(); lastSrv = '';
+  stopWatch(); if (naraOff) { try { naraOff(); } catch (e) { } } naraOff = null; naraUid = null; lastSrv = '';
   try { if (window.PicFB) await window.PicFB.logout(); } catch (e) {}
   ME = null; KEGS = {}; const ks = Object.keys(H); H = {};
   await iDel('me'); await iDel('kegs'); await Promise.all(ks.map(k => iDel('h:' + k)));
@@ -543,9 +600,10 @@ function render() {
       ${r.kid ? `<div class="field"><label for="nm${i}_${n}">Materi</label><select id="nm${i}_${n}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
       ${mk ? `<div class="nbul">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join('')}</div>` : r.mid === 'manual' ? `<div class="field"><label for="nt${i}_${n}">Isi materi (satu baris = satu poin)</label><textarea id="nt${i}_${n}" data-nr="mtxt" rows="4" placeholder="Contoh: Evaluasi Teori">${esc(r.mtxt)}</textarea></div>` : ''}
       ${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
-      <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}${n ? '<button type="button" class="btn" data-act="nrclr">Kosongkan baris</button>' : ''}</div></div>`;
+      <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}${n ? '<button type="button" class="btn" data-act="nrclr">Kosongkan baris</button>' : ''}</div>
+      ${r.nama.trim() ? `<div class="row"><button type="button" class="btn" data-act="nrshare">📤 Bagikan link ke narasumber</button><button type="button" class="btn" data-act="nrcopy">Salin link</button></div><div class="hint">${hh.nshared[d] ? 'Link sudah dibuat. ' : ''}Narasumber membuka link, menandatangani di HP-nya sendiri, lalu tanda tangan masuk otomatis ke baris ini.</div>` : '<div class="hint">Pilih narasumber dulu agar link penandatanganan bisa dibagikan.</div>'}</div>`;
     }).join('') + (ks.length < NR_MAX ? `<button type="button" class="btn" data-act="nradd" data-d="${esc(d0)}">➕ Tambah narasumber di hari ini</button>` : ''); }).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
-      <p class="hint">Pilih nama narasumber: instansi terisi otomatis, lalu pilih materi. Serahkan HP ke narasumber untuk tanda tangan. Hasilnya muncul di pratinjau admin dan di berkas Word Absensi Narasumber.</p></div>`;
+      <p class="hint">Pilih nama narasumber: instansi terisi otomatis, lalu pilih materi. Tanda tangan bisa langsung di HP ini, atau bagikan link ke narasumber agar tanda tangan di HP-nya sendiri. Hasilnya muncul di pratinjau admin dan di berkas Word Absensi Narasumber.</p></div>`;
   } else if (P.screen === 'sfl') {
     const link = `${location.origin}/selfie/?k=${encodeURIComponent(kid)}`;
     h = appbar('Absen Selfie Peserta', k.nama, true) + `<div class="screen">
@@ -856,8 +914,9 @@ document.addEventListener('click', e => {
   else if (a === 'nsigdel' && k) { const h = hOf(kid), n = b.dataset.n; h['n' + n] = ''; delete h.sent['n' + n]; h.gone.includes('n' + n) || h.gone.push('n' + n); touch(kid); render(); }
   else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(nrDate(d))}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
   else if (a === 'nradd' && k) { const d = b.dataset.d, pf = nrPfx(k), h = hOf(kid), ks = nrKeys(h, k, d, pf); if (ks.length >= NR_MAX) return; let n = 2; while (ks.includes(`${pf}${d}_${n}`) || nrOffOf(k, `${pf}${d}_${n}`)) n++; nrSet(h, k, `${pf}${d}_${n}`); touch(kid); render(); toast('Baris narasumber ditambahkan'); }
-  else if (a === 'nrclr' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nr[d] = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }; if (h.nrs[d]) { h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); } touch(kid); render(); toast('Baris dikosongkan (tidak ikut dicetak)'); }
-  else if (a === 'nrsigdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); touch(kid); render(); }
+  else if (a === 'nrclr' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nr[d] = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }; if (h.nrs[d]) { h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); } const wasShared = !!h.nshared[d]; delete h.nshared[d]; touch(kid); render(); if (wasShared) naraReset(kid, d, true); toast('Baris dikosongkan (tidak ikut dicetak)'); }
+  else if (a === 'nrsigdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); touch(kid); render(); naraReset(kid, d, false); }
+  else if ((a === 'nrshare' || a === 'nrcopy') && k) naraShare(b, a, k, kid);
   else if (a === 'camx') camClose();
   else if (a === 'camshot' && CAM) camShot();
   else if (a === 'camretake' && CAM) camRetake();

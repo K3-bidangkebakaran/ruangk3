@@ -173,3 +173,14 @@ Firebase Console → Realtime Database → Rules, di dalam `artifacts → k3-keb
 
 Catatan: peserta dan admin sama-sama login anonim, jadi aturan tidak bisa membedakan; yang dijaga: foto tidak bisa ditimpa (hanya ditulis sekali, boleh dihapus),
 ukuran dibatasi, dan daftar kegiatan tidak bisa dicacah (tidak ada `.read` di `dh_selfie`/`dh_selfie_foto` tingkat atas). Link berisi ID kegiatan acak; siapa pun yang memegang link bisa melihat nama peserta kegiatan itu.
+
+## Link Tanda Tangan Narasumber (halaman `ruangk3.com/narasumber/`)
+
+Di aplikasi Portal PIC → **Absensi Narasumber**, tiap baris narasumber (yang sudah punya nama) punya tombol **Bagikan link ke narasumber** dan **Salin link**.
+Tombol itu menerbitkan `dh_nara/{kid}/{kunciBaris}` (nama, instansi, materi, kegiatan, tanggal, tempat; kunciBaris = `tanggal`, `tanggal_N`, atau `kunciProgram~tanggal` untuk B3)
+dan membuat link `https://ruangk3.com/narasumber/?k={kid}&r={kunciBaris}`. Saat narasumber membuka link, halaman menyapa otomatis
+(Selamat pagi/siang/sore/malam menurut jam HP: pagi 04.00-10.59, siang 11.00-14.59, sore 15.00-17.59, malam 18.00-03.59), menampilkan nama narasumber hari itu,
+lalu kotak tanda tangan. TTD (PNG 600x240) ditulis ke `dh_nara_ttd/{kid}/{kunciBaris}` dan penanda waktu ke `dh_nara_st/{kid}/{kunciBaris}`; setelah terkirim, link terkunci (hanya sekali).
+Aplikasi PIC (pendengar `dh_nara_st`) dan Daftar Hadir admin (`Pic.pullNara`) langsung memasang TTD itu ke baris narasumber yang sama (`lap.nr` / `lap.nrk`), jadi tampil di pratinjau dan Word Absensi Narasumber.
+Bila PIC menghapus TTD, node `dh_nara_ttd` + `dh_nara_st` baris itu ikut dikosongkan supaya link bisa dipakai lagi. Perubahan nama/materi setelah link dibagikan otomatis memperbarui `dh_nara`.
+Teks "Training K3 Kemenaker RI" di kalimat pembuka ada di `narasumber/index.html` (fungsi `helloHtml`). Aturan Firebase tidak perlu diubah (cukup `auth != null` seperti fitur lain). Menghapus kegiatan juga membuang ketiga node ini.

@@ -7,10 +7,11 @@
 //   dh_kegiatan/{kid}         kegiatan dari lembar Input Kegiatan (aplikasi Daftar Hadir) {nama, tgl[], tempat, peserta[{id,nama,instansi,batal}], upd}
 //                             -> SEMUA akun PIC membaca semua kegiatan; hanya aplikasi Daftar Hadir (admin) yang menulisnya
 //   dh_hasil/{kid}/{uid}      hasil kerja satu akun PIC {batal, hadir, foto, ttdPic, ttdPicNama, picNama, upd, rev, picUid}
+//   dh_nara/{kid}/{key}       info baris narasumber untuk halaman tanda tangan (nama, instansi, materi, kegiatan, tgl); dh_nara_ttd = TTD (PNG); dh_nara_st = penanda waktu
 //   dh_media/{kid}/{key}      gambar (dataURL): s_<pid>_<tanggal> = TTD peserta, f_<pid> = foto, pic = TTD PIC
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getDatabase, ref, get, set, onValue } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+import { getDatabase, ref, get, set, remove, onValue } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg',
@@ -90,5 +91,11 @@ window.PicFB = {
   // gambar disimpan dengan kunci tetap, jadi kirim ulang menimpa data yang sama
   async putMedia(kid, key, dataUrl) { await withTimeout(set(ref(db, `${ROOT}/dh_media/${kid}/${key}`), dataUrl), 90000); },
   async putHasil(kid, hasil) { await withTimeout(set(ref(db, `${ROOT}/dh_hasil/${kid}/${auth.currentUser.uid}`), clean({ ...hasil, picUid: auth.currentUser.uid })), 30000); },
+  // Link tanda tangan narasumber (halaman ruangk3.com/narasumber/): info baris -> dh_nara/{kid}/{key}; TTD -> dh_nara_ttd; penanda waktu -> dh_nara_st
+  async naraPub(kid, key, info) { await withTimeout(set(ref(db, `${ROOT}/dh_nara/${kid}/${key}`), clean({ ...info, upd: Date.now() })), 30000); },
+  async naraTtd(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), 40000)).val(); },
+  async naraReset(kid, key) { await Promise.all([remove(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_st/${kid}/${key}`))].map(p => p.catch(() => {}))); },
+  async naraCabut(kid, key) { await Promise.all([remove(ref(db, `${ROOT}/dh_nara/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_st/${kid}/${key}`))].map(p => p.catch(() => {}))); },
+  watchNara(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_nara_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
 };
 window.dispatchEvent(new Event('pic-fb-ready'));
