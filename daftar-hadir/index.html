@@ -3862,10 +3862,11 @@ const Cloud = {
     const b = $("#cloudBtn"); let tip = "Sinkron Google Drive";
     if (!txt) {
       if (!this.ready()) { txt = this.lost ? "⚠️ Drive terlepas – pulihkan" : "☁️ Hubungkan Drive"; st = this.lost ? "err" : ""; if (this.lost) tip = "Koneksi Google Drive hilang dari browser ini. Ketuk untuk memulihkan."; }
-      else if (this.outdated) { txt = "⚠️ Perbarui Apps Script"; st = "err"; }
       else if (this.lastErr) {
-        const soft = /^(net|timeout|badresp)$/.test(this.lastErr.kind);
+        const soft = /^(net|timeout|badresp)$/.test(this.lastErr.kind) || !!this.lastErr.retry; // gangguan sementara (sinyal, Google sibuk/membatasi): bukan "terputus"
         txt = soft ? "☁️ Menunggu sinyal – dicoba lagi otomatis" : "⚠️ Drive bermasalah – ketuk untuk detail"; st = soft ? "wait" : "err"; tip = this.lastErr.msg;
+      } else if (this.outdated) { // Drive MASIH tersambung & jalan; hanya Code.gs di Apps Script yang belum versi terbaru → peringatan kuning, bukan merah
+        txt = `☁️ Tersambung${S.sync && S.sync.at ? " " + hhmm(new Date(S.sync.at)) : ""} · Apps Script perlu diperbarui`; st = "wait"; tip = "Google Drive tetap tersambung dan berjalan. Hanya Code.gs di Apps Script belum versi terbaru (ketuk untuk langkah memperbarui).";
       } else { txt = S.sync && S.sync.at ? `☁️ Tersinkron ${hhmm(new Date(S.sync.at))}` : "☁️ Drive terhubung"; st = "ok"; }
     }
     b.textContent = txt; b.dataset.st = st || ""; b.title = tip;
@@ -3907,7 +3908,9 @@ const Cloud = {
         await new Promise(r => setTimeout(r, i === 1 ? 2500 : 7000));
       }
     }
-    if (own) { this.lastErr = { kind: e1.kind || "other", msg: this.friendly(e1.message) }; if (!this.busy) this.status(); }
+    // Kesalahan khusus satu kegiatan (mis. folder kegiatan sudah dihapus di Drive) bukan tanda Drive terputus: jangan ubah status Drive.
+    const item = e1.kind === "server" && /tidak ditemukan|tidak diizinkan|kegiatan kosong|tidak valid/i.test(String(e1.message || ""));
+    if (own && !item) { this.lastErr = { kind: e1.kind || "other", msg: this.friendly(e1.message), retry: !!e1.retry }; if (!this.busy) this.status(); }
     throw e1;
   },
   friendly(msg) {
@@ -3925,7 +3928,7 @@ const Cloud = {
       this.outdated = (r.ver || 0) < API_VER;
       this.cfg.rootUrl = r.rootUrl || this.cfg.rootUrl; this.cfg.sheetUrl = r.sheetUrl || this.cfg.sheetUrl;
       this.status(); this.heal();
-      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Apps Script Daftar Hadir masih versi lama (hasil APK belum tersimpan otomatis ke Drive; upload & unduhan antar perangkat lebih lambat). Tempel Code.gs terbaru lalu Deploy versi baru."); }
+      if (this.outdated && !this.toldOld) { this.toldOld = true; toast("Google Drive tetap tersambung. Hanya Code.gs di Apps Script masih versi lama (hasil APK belum tersimpan otomatis ke Drive & unduhan antar perangkat lebih lambat). Tempel Code.gs terbaru lalu Deploy versi baru."); }
       else if (!this.outdated && r.pic && r.pic.aktif === false && !this.toldPic) { this.toldPic = true; toast("Penyimpanan otomatis hasil APK ke Drive belum dinyalakan: jalankan fungsi picOtomatisAktifkan di Apps Script (lihat PANDUAN-GOOGLE-DRIVE.md)."); }
     } catch (e) { this.status(); } finally { this.vBusy = false; }
   },
@@ -4141,7 +4144,7 @@ const Cloud = {
       if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah${nLewat ? `, ${nLewat} sudah ada di Drive` : ""}).`);
     } catch (e) {
       if (e && e.message === "GONE") { this.status(); return; } // kegiatan dihapus saat sinkron berjalan: berhenti, jangan buat ulang di Drive
-      if (!this.lastErr) this.lastErr = { kind: e.kind || "other", msg: this.friendly(e.message) };
+      if (!this.lastErr) this.lastErr = { kind: e.kind || "other", msg: this.friendly(e.message), retry: !!e.retry };
       this.status();
       if (manual) toast("Sinkron gagal: " + this.friendly(e.message));
       this.fail = Math.min(this.fail + 1, 6); const wait = Math.min(300000, 15000 * 2 ** (this.fail - 1)); // 15 dtk, 30, 60, 2 mnt … maks 5 mnt
@@ -4158,7 +4161,7 @@ const Cloud = {
     $("#cloudModal").hidden = false;
     $("#cUrl").value = this.cfg.url; $("#cToken").value = this.cfg.token; $("#cAuto").checked = this.cfg.auto; $("#cRecover").value = "";
     if (!this.ready()) this.info(this.lost ? "Koneksi terlepas dari browser ini (data situs dibersihkan). Tempel Tautan Pengaturan di kolom 'Pulihkan' di bawah, atau isi URL & Kode Akses lagi. Data di Google Drive aman." : "Belum terhubung. Isi URL Web App & Kode Akses dari hasil pemasangan Apps Script.", this.lost ? "err" : "");
-    else if (this.lastErr) this.info("Pengaturan tersimpan, tetapi koneksi terakhir bermasalah: " + this.lastErr.msg + (/^(net|timeout|badresp)$/.test(this.lastErr.kind) ? " Aplikasi mencoba lagi otomatis." : ""), "err");
+    else if (this.lastErr) this.info("Pengaturan tersimpan, tetapi koneksi terakhir bermasalah: " + this.lastErr.msg + (/^(net|timeout|badresp)$/.test(this.lastErr.kind) || this.lastErr.retry ? " Aplikasi mencoba lagi otomatis." : ""), "err");
     else this.info(this.cfg.rootUrl ? "Terhubung." : "Tersimpan.", "ok");
     $("#cPersist").textContent = this.ready() ? (this.persisted === false ? "Browser belum menjamin penyimpanan permanen untuk situs ini. Simpan juga 'Tautan Pengaturan' (tombol di bawah) di catatan pribadi sebagai cadangan; bila koneksi terlepas, tinggal ditempel." : "Pengaturan disimpan berlapis di perangkat ini dan dipulihkan otomatis. Tetap simpan 'Tautan Pengaturan' sebagai cadangan.") : "";
     this.links();
@@ -4182,7 +4185,7 @@ const Cloud = {
       const r = await this.api("ping", {}, url, token);
       this.cfg.rootUrl = r.rootUrl || ""; this.cfg.sheetUrl = r.sheetUrl || "";
       this.outdated = (r.ver || 0) < API_VER;
-      this.info(this.outdated ? `Terhubung, tetapi URL ini masih menjalankan Code.gs versi ${r.ver || 1} (aplikasi butuh versi ${API_VER}). Tempel Code.gs terbaru, lalu Terapkan → Kelola deployment → ✏️ → Versi baru → Terapkan.` : "Koneksi berhasil ✓ (Code.gs versi " + r.ver + (r.pic && r.pic.aktif ? ", simpan otomatis hasil APK AKTIF" : r.pic ? ", simpan otomatis hasil APK belum dinyalakan: jalankan picOtomatisAktifkan" : "") + ")", this.outdated ? "err" : "ok"); this.status(); return true;
+      this.info(this.outdated ? `Terhubung ✓ (Drive jalan). Hanya saja URL ini masih menjalankan Code.gs versi ${r.ver || 1}; versi terbaru ${API_VER}. Tempel Code.gs terbaru, lalu Terapkan → Kelola deployment → ✏️ → Versi baru → Terapkan.` : "Koneksi berhasil ✓ (Code.gs versi " + r.ver + (r.pic && r.pic.aktif ? ", simpan otomatis hasil APK AKTIF" : r.pic ? ", simpan otomatis hasil APK belum dinyalakan: jalankan picOtomatisAktifkan" : "") + ")", this.outdated ? "" : "ok"); this.status(); return true;
     } catch (e) { this.info("Gagal: " + e.message, "err"); return false; }
   },
   async saveSettings() {

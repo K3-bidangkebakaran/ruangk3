@@ -196,3 +196,6 @@ TTD (PNG 600x240) ditulis ke `dh_ttdp_ttd/{kid}/{kunciAlat|_}/{pid~tanggal}` + p
 Aplikasi PIC (pendengar `dh_ttdp_st`) memasangnya ke `h.hadir[pid][tanggal]` (tidak menimpa TTD yang sudah ada) sehingga ikut terkirim ke admin lewat jalur biasa;
 Daftar Hadir admin juga menariknya langsung (`Pic.pullTtdp`, penanda terlihat di `ev.pic.tp`) ke `p.ttd[tanggal]`. Menghapus kegiatan membuang ketiga node ini.
 Aturan Firebase tidak perlu diubah (cukup `auth != null` seperti fitur narasumber).
+
+## Sinkron antar akun PIC (v37)
+Semua akun PIC melihat kegiatan yang sama. APK memantau seluruh `dh_hasil` (hanya tanda/teks kecil; gambar tetap di `dh_media`) dan menampilkan hasil akun PIC lain langsung (TTD peserta, foto, TTD PIC, cancel/remedial, nilai, kelulusan, isian laporan & narasumber) tanpa menunggu website admin dibuka. Bila dua akun mengisi hal yang sama, isian yang waktunya (`upd`) lebih baru menang, sama seperti penggabungan di website. Tidak ada perubahan aturan Firebase (hanya baca `dh_hasil`, yang sudah boleh untuk `auth != null`).

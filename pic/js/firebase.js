@@ -100,6 +100,8 @@ window.PicFB = {
   async ttdpPub(kid, kl, info) { await withTimeout(set(ref(db, `${ROOT}/dh_ttdp/${kid}/${kl}`), clean({ ...info, upd: Date.now() })), 30000); },
   async ttdpGet(kid, kl, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_ttdp_ttd/${kid}/${kl}/${key}`)), 40000)).val(); },
   watchTtdp(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_ttdp_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
+  // hasil semua akun PIC (kecil: tanda saja, gambar ada di dh_media): supaya akun PIC lain tampak langsung tanpa menunggu admin membuka website
+  watchHasil(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_hasil`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
   watchNara(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_nara_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
 };
 window.dispatchEvent(new Event('pic-fb-ready'));
