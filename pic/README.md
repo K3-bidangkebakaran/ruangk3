@@ -199,3 +199,7 @@ Aturan Firebase tidak perlu diubah (cukup `auth != null` seperti fitur narasumbe
 
 ## Sinkron antar akun PIC (v37)
 Semua akun PIC melihat kegiatan yang sama. APK memantau seluruh `dh_hasil` (hanya tanda/teks kecil; gambar tetap di `dh_media`) dan menampilkan hasil akun PIC lain langsung (TTD peserta, foto, TTD PIC, cancel/remedial, nilai, kelulusan, isian laporan & narasumber) tanpa menunggu website admin dibuka. Bila dua akun mengisi hal yang sama, isian yang waktunya (`upd`) lebih baru menang, sama seperti penggabungan di website. Tidak ada perubahan aturan Firebase (hanya baca `dh_hasil`, yang sudah boleh untuk `auth != null`).
+
+## Pratinjau Laporan (v40)
+
+Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. Layar ini menampilkan persen kelengkapan laporan dan daftar bagian laporan: Daftar Hadir (TTD peserta), Dokumentasi Peserta, Dokumentasi Harian, Absensi Narasumber, Nilai & Kelulusan, Penandatangan Daftar Nilai, dan TTD PIC. Kegiatan Pesawat Angkat & B3 dipisah per alat/program. Ketuk satu bagian untuk melihat rinciannya (baris merah = masih kurang; foto bisa diketuk untuk diperbesar), lalu ketuk **Lengkapi** untuk langsung ke layar pengisiannya; tombol kembali membawa PIC ke pratinjau lagi. Isian yang sudah diisi di website atau oleh akun PIC lain ikut dihitung. Bagian hanya muncul bila diaktifkan admin pada laporan kegiatan itu.
