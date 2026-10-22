@@ -87,7 +87,8 @@ const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); }; // hari yang tampil di tab absensi: alat selain Kelas 1 hanya 4 hari
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
 const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
-const fotoLengkap = (k, h, p) => fotoAda(h, p, 'foto') && (!(k && k.damkar) || fotoAda(h, p, 'foto2'));
+const fotoDua = k => !!(k && (k.damkar || k.b3)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
+const fotoLengkap = (k, h, p) => fotoAda(h, p, 'foto') && (!fotoDua(k) || fotoAda(h, p, 'foto2'));
 const LAPK = k => (k && k.lap) || {};
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
 // nilai/kelulusan: isian PIC (bila ada) menimpa isian dari admin
@@ -158,7 +159,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v37';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v38';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -696,9 +697,9 @@ function render() {
   } else if (P.screen === 'dok') {
     const s = stat(kid, curKl(k)), hh = hOf(kid);
     h = appbar('Dokumentasi Peserta', subK(k), true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
-      <div class="photos${k.damkar ? ' dk' : ''}">${urutKelas(k, pesKl(k)).map(p => {
-        const cx = isBatal(hh, p), rm = isRem(hh, p), keys = k.damkar ? ['foto', 'foto2'] : ['foto'];
-        const slot = (key, i) => { const f = hh[key] && hh[key][p.id], wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = k.damkar ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}">` : (cx ? 'Batal ikut' : wf ? (webF(p, key) ? '✔ Sudah ada (website)' : '✔ Sudah ada (PIC lain)') : 'Belum ada foto')}</div>${cx ? '' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button>`}</div>`; };
+      <div class="photos${fotoDua(k) ? ' dk' : ''}">${urutKelas(k, pesKl(k)).map(p => {
+        const cx = isBatal(hh, p), rm = isRem(hh, p), keys = fotoDua(k) ? ['foto', 'foto2'] : ['foto'];
+        const slot = (key, i) => { const f = hh[key] && hh[key][p.id], wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = fotoDua(k) ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}">` : (cx ? 'Batal ikut' : wf ? (webF(p, key) ? '✔ Sudah ada (website)' : '✔ Sudah ada (PIC lain)') : 'Belum ada foto')}</div>${cx ? '' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button>`}</div>`; };
         return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
       <p class="hint">Foto diambil langsung dari kamera dan otomatis diberi watermark: nama peserta, kegiatan, titik lokasi (koordinat Google Maps), tanggal, dan jam. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
@@ -953,7 +954,7 @@ function camFallback(msg) {
 function openCam(kid, pid, slot, hari) {
   const k0 = KEGS[kid], p = hari ? { nama: '' } : (k0 && k0.peserta.find(x => x.id === pid)); if (!k0 || !p) return;
   const k = (!hari && papaOf(k0) && p.kelas) ? { ...k0, nama: `${k0.nama} – ${p.kelas}` } : k0; // foto peserta PAPA: nama alat ikut di watermark
-  const judul = hari ? `Dokumentasi Day ${(k.tgl || []).indexOf(hari) + 1} · ${tglPendek(hari)}` : `${p.nama}${k.damkar ? ' · Foto ' + (slot === 'foto2' ? 2 : 1) : ''}`;
+  const judul = hari ? `Dokumentasi Day ${(k.tgl || []).indexOf(hari) + 1} · ${tglPendek(hari)}` : `${p.nama}${fotoDua(k) ? ' · Foto ' + (slot === 'foto2' ? 2 : 1) : ''}`;
   camClose();
   const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
   el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(judul)}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button><small id="camDiag" style="opacity:.7;font-size:10.5px"></small></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>

@@ -4504,6 +4504,7 @@ const Pic = {
     window.addEventListener("pagehide", kirimSkrg);
     setInterval(() => { if (navigator.onLine) { this.flush(); this.pullAll(); } }, 2 * 60000);
     $("#picBtn").onclick = () => this.manual();
+    idbGet("pic-dua").then(v => { if (!v) { EV.filter(e => e.jenis === "b3").forEach(e => this.mark(e.id)); idbPut("pic-dua", 1).catch(() => { }); } }).catch(() => { }); // sekali: kegiatan B3 lama dikirim ulang ke APK (2 foto per peserta)
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
   },
   /** huruf A/B/C kegiatan kembar ikut dikirim ke APK PIC (node.sfx). Bila huruf suatu kegiatan berubah (mis. ada kegiatan kembar baru / yang lama dihapus), kegiatan itu dikirim ulang. */
