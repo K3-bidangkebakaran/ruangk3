@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="id">
 <head>
+<script>/* buka lewat https: penyimpanan browser http & https terpisah (koneksi Drive tidak terbaca di http) */if(location.protocol==='http:'&&/(^|\.)ruangk3\.com$/.test(location.hostname))location.replace('https://'+location.host+location.pathname+location.search+location.hash);</script>
 <script>try{if(Date.now()-(+localStorage.getItem('rk3_admin_at')||0)>12*36e5)location.replace('/');}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1101,6 +1102,7 @@ function b3Rename(ev) {
 }
 const B3_PROG = [B3_RESCUE, "Ahli K3 Kimia", "Teknisi Ruang Terbatas", "Ahli K3 Muda Lingkungan Kerja", "Petugas K3 Kimia", "Teknisi K3 Deteksi Gas"];
 const isB3 = a => !!a && a.jenis === "b3";
+const fotoDua = a => !!a && (!!a.damkar || a.jenis === "b3"); // dokumentasi 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3
 const judulB3Kelas = k => `${J_B3} (${String(k).toUpperCase()})`;
 const ALAT_KELAS = ["Crawler Crane", "Hoist Crane", "Mobile Crane", "Portal Crane", "Truck Crane", "Gantry Crane", "Overhead Traveling Crane", "Overhead Crane"]; // punya Kelas 1, 2, 3
 const ALAT_NON = ["Conveyor", "Rigger"]; // tanpa kelas
@@ -1186,7 +1188,7 @@ const normalize0 = d => {
 const meta = x => {
   const named = x.peserta.filter(p => (p.nama || "").trim() && !p.batal);
   return { id: x.id, created: x.created, updated: Date.now(), kegiatan: x.acara.kegiatan, jenis: jenisOf(x.acara), kelas: x.acara.jenis === "damkar" ? (x.acara.kelasDamkar ? "Kelas " + x.acara.kelasDamkar : "") : kelasList(x.acara).join(", "), tanggal: x.acara.tanggal, tanggal2: x.acara.tanggal2, hari: hariList(x.acara).filter(Boolean),
-           tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, x.acara.damkar)).length, ttd: !!x.acara.ttd,
+           tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, fotoDua(x.acara))).length, ttd: !!x.acara.ttd,
            cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)), ru: (x.sync && x.sync.ru) || 0 }; // ru = waktu 'Diperbarui' di Drive yang terakhir cocok dengan salinan ini
 };
 /* Penanda A/B/C: bila ada lebih dari satu kegiatan dengan nama & tanggal yang sama, daftar/rekap memberi huruf pembeda.
@@ -1456,7 +1458,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
 
 
   // --- dokumentasi chunks (baris Cancel merah & Remedial kuning mengikuti daftar hadir; mode Damkar = 2 kolom foto)
-  const dk = list, dkOn = !!a.damkar;
+  const dk = list, dkOn = fotoDua(a);
   const dch = [];
   for (let j = 0; j < dk.length; j += DK_PER) dch.push(dk.slice(j, j + DK_PER));
   if (!dch.length) dch.push([]);
@@ -1637,9 +1639,9 @@ function renderList() {
 const namaList = () => S.peserta.filter(p => (p.nama || "").trim());
 const fotoList = () => namaList().filter(p => !p.batal);
 const fotoOk = (p, dk) => !!p.foto && (!dk || !!p.foto2);
-const fotoKeys = () => S.acara.damkar ? ["foto", "foto2"] : ["foto"];
+const fotoKeys = () => fotoDua(S.acara) ? ["foto", "foto2"] : ["foto"];
 function renderFoto() {
-  const el = $("#fList"), all = fotoList(), dk = !!S.acara.damkar, done = all.filter(p => fotoOk(p, dk)).length;
+  const el = $("#fList"), all = fotoList(), dk = fotoDua(S.acara), done = all.filter(p => fotoOk(p, dk)).length;
   el.classList.toggle("dk", dk);
   $("#tbPeserta").textContent = all.length;
   $("#tbFoto").textContent = `${done}/${all.length}`;
@@ -1801,7 +1803,7 @@ const Cam = {
     const p = this.person(); if (!p) return;
     const all = fotoList();
     $("#cam").hidden = false; document.body.style.overflow = "hidden";
-    $("#camWho").textContent = `${all.indexOf(p) + 1}. ${p.nama}${S.acara.damkar ? ` · Foto ${this.slot === "foto2" ? 2 : 1}` : ""}`;
+    $("#camWho").textContent = `${all.indexOf(p) + 1}. ${p.nama}${fotoDua(S.acara) ? ` · Foto ${this.slot === "foto2" ? 2 : 1}` : ""}`;
     $("#camLoc").textContent = "📍 " + wmAlamat();
     this.live();
     if (!S.wm.alamat && !Loc.busy) Loc.detect(true);
@@ -1896,7 +1898,7 @@ const Cam = {
     p[this.slot] = this.shot; renderFoto(); changed();
     const nxt = goNext && this.nextEmpty();
     if (nxt) this.open(nxt.id, this.queue, nxt.k);
-    else { this.close(); toast(`Foto ${p.nama}${S.acara.damkar ? ` (foto ${this.slot === "foto2" ? 2 : 1})` : ""} tersimpan.`); }
+    else { this.close(); toast(`Foto ${p.nama}${fotoDua(S.acara) ? ` (foto ${this.slot === "foto2" ? 2 : 1})` : ""} tersimpan.`); }
   }
 };
 $("#camClose").onclick = () => Cam.close();
@@ -3550,7 +3552,7 @@ const Word = (() => {
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }
   function dokumentasi(ev, ctx) {
-    const D = Doc(), a = ev.acara, list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto || p.foto2), PER = 4, dkOn = !!a.damkar;
+    const D = Doc(), a = ev.acara, list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto || p.foto2), PER = 4, dkOn = fotoDua(a);
     const fk = dkOn ? ["foto", "foto2"] : ["foto"];
     const wmm = dkOn ? [9, 32, 32, ...fk.map(() => (CONT_W - 73) / 2)] : [10, 45, 44, CONT_W - 99], widths = wmm.map(tw);
     const RED = "FF6B6B", YEL = "FFF200", pw = dkOn ? 46 : 60, ph = dkOn ? 30.7 : 40; // warna sama dengan daftar hadir
@@ -3853,7 +3855,7 @@ const Cloud = {
     return location.origin + location.pathname + "#cfg=" + b;
   },
   banner() {
-    const on = !this.ready(), html = on ? `<span><b>⚠️ Perangkat ini belum terhubung ke Google Drive.</b> Karena itu daftar kegiatannya bisa berbeda dengan perangkat lain. Hubungkan sekali saja (tempel Tautan Pengaturan dari perangkat yang sudah terhubung), lalu semua kegiatan otomatis sama di semua perangkat.</span><button class="btn sm primary" data-drv>Hubungkan Google Drive</button>` : "";
+    const http = location.protocol === "http:" && !/^(localhost|127\.|\[::1\])/.test(location.hostname), on = !this.ready(), html = on && http ? `<span><b>⚠️ Halaman dibuka lewat http (Tidak Aman).</b> Penyimpanan browser untuk http terpisah dari https, jadi koneksi Drive tidak terbaca. Buka <b>https://${esc(location.host)}${esc(location.pathname)}</b> lalu semuanya muncul kembali.</span><a class="btn sm primary" href="https://${esc(location.host)}${esc(location.pathname)}">Buka versi https</a>` : on ? `<span><b>⚠️ Perangkat ini belum terhubung ke Google Drive.</b> Karena itu daftar kegiatannya bisa berbeda dengan perangkat lain. Hubungkan sekali saja (tempel Tautan Pengaturan dari perangkat yang sudah terhubung), lalu semua kegiatan otomatis sama di semua perangkat.</span><button class="btn sm primary" data-drv>Hubungkan Google Drive</button>` : "";
     if (this._bn === html) return; this._bn = html;
     ["evNoDrive", "lnNoDrive"].forEach(id => { const el = document.getElementById(id); if (!el) return; el.hidden = !on; el.innerHTML = html; });
   },
@@ -4027,8 +4029,8 @@ const Cloud = {
     const out = [], add = (key, path, name, data) => out.push({ key, path, name, data, hash: fnv((ev.acara.papa && kfSet.has(path[0]) ? path.join("/") + "|" : "") + name + "|" + data) }); // folder alat ikut di hash: berkas lama otomatis pindah folder
     ev.peserta.filter(p => (p.nama || "").trim() && !p.batal).forEach(p => {
       const tag = ` [${p.id.slice(0, 5)}]`, kf = kfOf(ksl.includes(p.kelas) ? p.kelas : "");
-      if (p.foto) add("foto:" + p.id, [...kf, "Foto Dokumentasi"], safeName(p.nama) + tag + (ev.acara.damkar ? " (1)" : "") + ".jpg", p.foto);
-      if (p.foto2 && ev.acara.damkar) add("foto2:" + p.id, [...kf, "Foto Dokumentasi"], safeName(p.nama) + tag + " (2).jpg", p.foto2);
+      if (p.foto) add("foto:" + p.id, [...kf, "Foto Dokumentasi"], safeName(p.nama) + tag + (fotoDua(ev.acara) ? " (1)" : "") + ".jpg", p.foto);
+      if (p.foto2 && fotoDua(ev.acara)) add("foto2:" + p.id, [...kf, "Foto Dokumentasi"], safeName(p.nama) + tag + " (2).jpg", p.foto2);
       Object.keys(p.sf || {}).sort().forEach(d => ["p", "s"].forEach(k => { const u = (p.sf[d] || {})[k]; if (u) add(`sf:${p.id}:${d}:${k}`, [...kf, "Selfie Absensi", `${d} (${toD(d) ? new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(toD(d)) : ""})`], safeName(p.nama) + tag + (k === "p" ? " - Pagi" : " - Siang") + ".jpg", u); }));
       Object.keys(p.ttd || {}).forEach(k => { if (p.ttd[k]) add(`ttd:${p.id}:${k}`, [...kf, "Tanda Tangan Peserta", `${k} (${toD(k) ? new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(toD(k)) : ""})`], safeName(p.nama) + tag + ".png", p.ttd[k]); });
     });
@@ -4525,7 +4527,7 @@ const Pic = {
     const hkMap = {}; if (a.papa) kelasList(a).forEach(l => { const hk = hariKelas(ev, l); if (hk) hkMap[kelasKey(l)] = hk; }); // alat dengan hari lebih sedikit (hari ke-5 dst. khusus Kelas 1)
     const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: String(r.kid || "").startsWith("u_") ? "_m" : (r.kid || ""), nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }]));
     return {
-      nama: judulDasar(a), sfx: sufMap().get(ev.id) || "", tgl: hari, tempat: a.tempat || "", damkar: !!a.damkar, papa: !!a.papa, b3: isB3(a), kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
+      nama: judulDasar(a), sfx: sufMap().get(ev.id) || "", tgl: hari, tempat: a.tempat || "", damkar: fotoDua(a), papa: !!a.papa, b3: isB3(a), kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
       ttdWeb: !!a.ttd, hk: hkMap,
       peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => { // wt = tanggal yang sudah ditandatangani di website, wf/wf2 = foto sudah ada di website (supaya APK tidak menampilkan "belum" untuk yang sudah selesai di web)
         const o = { id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" };
