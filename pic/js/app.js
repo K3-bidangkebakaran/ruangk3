@@ -159,7 +159,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v38';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v39';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -506,7 +506,8 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
 /* Kegiatan dari server. Dua jalur memakai fungsi yang sama: pendengar realtime (perubahan dari web tampil dalam hitungan detik)
    dan pull() (cadangan: dipanggil saat dibuka / kembali online / tiap 1 menit bila pendengar putus). */
 let lastSrvObj = {}, goneT = null, lastSrv = '', watchOff = null, watchUid = null, watchGot = 0, pendR = false;
-const busy = () => { const a = document.activeElement; return !!CAM || !!$('#pad') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+let UPL = 0; // pemilih berkas sedang terbuka: jangan render ulang layar (input bisa hilang sebelum berkas terpilih)
+const busy = () => { const a = document.activeElement; return !!CAM || Date.now() < UPL || !!$('#pad') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
 function renderSoft() { if (busy()) { pendR = true; return; } pendR = false; render(); } // jangan merusak layar yang sedang diketik/dipakai kamera
 setInterval(() => { if (pendR && !busy()) renderSoft(); }, 1200);
 document.addEventListener('focusout', () => { if (pendR) setTimeout(() => { if (pendR && !busy()) renderSoft(); }, 300); });
@@ -699,9 +700,9 @@ function render() {
     h = appbar('Dokumentasi Peserta', subK(k), true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
       <div class="photos${fotoDua(k) ? ' dk' : ''}">${urutKelas(k, pesKl(k)).map(p => {
         const cx = isBatal(hh, p), rm = isRem(hh, p), keys = fotoDua(k) ? ['foto', 'foto2'] : ['foto'];
-        const slot = (key, i) => { const f = hh[key] && hh[key][p.id], wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = fotoDua(k) ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}">` : (cx ? 'Batal ikut' : wf ? (webF(p, key) ? '✔ Sudah ada (website)' : '✔ Sudah ada (PIC lain)') : 'Belum ada foto')}</div>${cx ? '' : `<button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button>`}</div>`; };
+        const slot = (key, i) => { const f = hh[key] && hh[key][p.id], wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = fotoDua(k) ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}" data-act="pv" data-pv="p|${esc(p.id)}|${key}" title="Ketuk untuk memperbesar">` : (cx ? 'Batal ikut' : wf ? `<span data-act="pv" data-pv="p|${esc(p.id)}|${key}" style="cursor:pointer">${webF(p, key) ? '✔ Sudah ada (website)' : '✔ Sudah ada (PIC lain)'}<br><small>Ketuk untuk lihat</small></span>` : 'Belum ada foto')}</div>${cx ? '' : `<div class="slbtns"><button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button><label class="btn sm filebtn" data-up-l>⬆ Unggah<input type="file" accept="image/*" data-up="1" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="Unggah ${lb.toLowerCase()} ${esc(p.nama)} dari galeri"></label></div>`}</div>`; };
         return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
-      <p class="hint">Foto diambil langsung dari kamera dan otomatis diberi watermark: nama peserta, kegiatan, titik lokasi (koordinat Google Maps), tanggal, dan jam. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
+      <p class="hint">Foto bisa diambil langsung dari kamera (otomatis diberi watermark: nama peserta, kegiatan, titik lokasi, tanggal, jam) atau <b>diunggah dari galeri HP</b> (tombol ⬆ Unggah; watermark memuat nama, kegiatan, tempat, dan tanggal foto). Ketuk foto untuk memperbesar. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
   else if (P.screen === 'nil') {
     const ln = LAPK(k);
@@ -752,9 +753,9 @@ function render() {
     const hh = hOf(kid), days = k.tgl || [];
     h = appbar('Dokumentasi Harian', k.nama, true) + `<div class="screen">${days.map((d, i) => `<div class="card2" data-day="${esc(d)}"><b>Day ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
       <div class="field"><label for="in_m${i}">Materi</label><input id="in_m${i}" data-materi="${esc(d)}" value="${esc(materiOf(hh, k, d))}" autocomplete="off" placeholder="Contoh: Regulasi Online"></div>
-      <div class="hfotos">${(hh.hfoto[d] || []).map(f => `<div class="hf"><img src="${f.u}" alt="Foto dokumentasi"><button type="button" data-act="hdel" data-i="${esc(f.i)}" aria-label="Hapus foto">✕</button></div>`).join('')}</div>
-      <button type="button" class="btn pri" data-act="hfoto" data-d="${esc(d)}">${I.cam} Ambil foto</button></div>`).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
-      <p class="hint">Foto diambil dari kamera aplikasi, diberi watermark (kegiatan, tempat, lokasi, tanggal &amp; jam) tanpa nama peserta, dan dipotong rasio 3:2. Tiap halaman laporan memuat 2 foto.</p></div>`;
+      <div class="hfotos">${(hh.hfoto[d] || []).map(f => `<div class="hf"><img src="${f.u}" alt="Foto dokumentasi" data-act="pv" data-pv="d|${esc(d)}|${esc(f.i)}" title="Ketuk untuk memperbesar"><button type="button" data-act="hdel" data-i="${esc(f.i)}" aria-label="Hapus foto">✕</button></div>`).join('')}</div>
+      <div class="row"><button type="button" class="btn pri" data-act="hfoto" data-d="${esc(d)}">${I.cam} Ambil foto</button><label class="btn filebtn" data-up-l>⬆ Unggah dari galeri<input type="file" accept="image/*" multiple data-up="1" data-hari="${esc(d)}" aria-label="Unggah foto dokumentasi hari ${i + 1} dari galeri"></label></div></div>`).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
+      <p class="hint">Foto diambil dari kamera aplikasi atau diunggah dari galeri HP (boleh pilih banyak sekaligus), diberi watermark (kegiatan, tempat, lokasi/tanggal) tanpa nama peserta, dan dipotong rasio 3:2. Ketuk foto untuk memperbesar. Tiap halaman laporan memuat 2 foto.</p></div>`;
   }
   app.innerHTML = h + '<div id="ovl"></div>';
   if (P.screen === 'nil') renderNil();
@@ -818,10 +819,10 @@ function openPad(title, sub, onSave, existing) {
 let POS = null;
 const zonaOf = k => (k && k.zona) || 'WIB';
 const pad2 = n => String(n).padStart(2, '0');
-function wmLines(k, nama, pos, d) {
+function wmLines(k, nama, pos, d, up) {
   const tgl = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
   const jam = pad2(d.getHours()) + '.' + pad2(d.getMinutes()) + '.' + pad2(d.getSeconds());
-  const lok = pos ? `Lokasi (Maps): ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}${pos.acc ? ' (±' + Math.round(pos.acc) + ' m)' : ''}` : 'Lokasi (Maps): tidak tersedia';
+  const lok = up ? 'Foto diunggah dari galeri HP' : pos ? `Lokasi (Maps): ${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}${pos.acc ? ' (±' + Math.round(pos.acc) + ' m)' : ''}` : 'Lokasi (Maps): tidak tersedia';
   const tmp = [k.tempat, k.kota].map(x => String(x || '').trim()).filter((x, i, a) => x && a.indexOf(x) === i).join(', '); // nama tempat dari Input Kegiatan
   return [nama, k.nama, tmp ? `Tempat: ${tmp}` : '', lok, `${tgl} · ${jam} ${zonaOf(k)}`].filter(Boolean);
 }
@@ -839,7 +840,7 @@ function stamp(x, w, h, lines) {
   rows.forEach(([t, fs, b]) => { x.font = (b ? '700 ' : '') + fs + 'px Arial, sans-serif'; x.fillText(t, pad, y, maxW); y += fs + gap; });
 }
 const tidyPos = p => ({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() });
-function toJpeg(src, sw, sh, k, nama, pos, ratio, rot) { // src: video/image/bitmap; ratio: potong tengah ke rasio lebar:tinggi (mis. 1.5 = 3:2, 16/9 = landscape; 0/false = tanpa potong); rot: putaran searah jarum jam (0/90/180/270) agar gambar tegak
+function toJpeg(src, sw, sh, k, nama, pos, ratio, rot, when) { // src: video/image/bitmap; ratio: potong tengah ke rasio lebar:tinggi (mis. 1.5 = 3:2, 16/9 = landscape; 0/false = tanpa potong); rot: putaran searah jarum jam (0/90/180/270) agar gambar tegak
   rot = rot || 0; ratio = ratio === true ? 1.5 : (+ratio || 0);
   const q = rot === 90 || rot === 270, uw = q ? sh : sw, uh = q ? sw : sh; // ukuran gambar setelah ditegakkan
   let cx = 0, cy = 0, cw = uw, ch = uh;
@@ -852,10 +853,10 @@ function toJpeg(src, sw, sh, k, nama, pos, ratio, rot) { // src: video/image/bit
   else if (rot === 180) x.setTransform(-s, 0, 0, -s, s * (sw - cx), s * (sh - cy));
   else x.setTransform(s, 0, 0, s, -s * cx, -s * cy);
   x.drawImage(src, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0);
-  stamp(x, w, h, wmLines(k, nama, pos, new Date())); // watermark selalu di tepi bawah gambar yang sudah tegak
+  stamp(x, w, h, wmLines(k, nama, pos, when || new Date(), !!when)); // watermark selalu di tepi bawah gambar yang sudah tegak
   return c.toDataURL('image/jpeg', .72);
 }
-async function prosesFoto(file, k, nama, pos, crop) { // cadangan bila kamera langsung tidak bisa dipakai: kamera bawaan HP
+async function prosesFoto(file, k, nama, pos, crop, up) { // cadangan bila kamera langsung tidak bisa dipakai: kamera bawaan HP
   let src, sw, sh, rev = null;
   try {
     if (window.createImageBitmap) { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); sw = src.width; sh = src.height; }
@@ -865,7 +866,7 @@ async function prosesFoto(file, k, nama, pos, crop) { // cadangan bila kamera la
     src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = rev; });
     sw = src.naturalWidth || src.width; sh = src.naturalHeight || src.height;
   }
-  try { return toJpeg(src, sw, sh, k, nama, pos, sw >= sh ? LAND_RATIO : (crop ? 1.5 : 0)); } finally { if (rev) URL.revokeObjectURL(rev); if (src.close) src.close(); }
+  try { return toJpeg(src, sw, sh, k, nama, up ? null : pos, sw >= sh ? LAND_RATIO : (crop ? 1.5 : 0), 0, up ? new Date(file.lastModified || Date.now()) : null); } finally { if (rev) URL.revokeObjectURL(rev); if (src.close) src.close(); }
 }
 
 let CAM = null;
@@ -1000,6 +1001,63 @@ function camSave(url) {
 }
 
 /* ---------- aksi ---------- */
+
+/* ---------- unggah foto dari galeri + pratinjau ---------- */
+async function uploadFoto(inp) {
+  const kid = P.kid, k0 = kid && KEGS[kid], files = [...(inp.files || [])].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name || ''));
+  const hari = inp.dataset.hari || '', pid = inp.dataset.pid || '', slot = inp.dataset.slot === 'foto2' ? 'foto2' : 'foto';
+  inp.value = ''; UPL = 0;
+  if (!k0 || !files.length) { if (k0) toast('Berkas bukan gambar. Pilih foto (JPG/PNG).'); return; }
+  const p = hari ? { nama: '' } : k0.peserta.find(x => x.id === pid); if (!p) return;
+  const k = (!hari && papaOf(k0) && p.kelas) ? { ...k0, nama: `${k0.nama} – ${p.kelas}` } : k0, h = hOf(kid);
+  toast(files.length > 1 ? `Memproses ${files.length} foto…` : 'Memproses foto…');
+  let n = 0, bad = 0;
+  for (const f of (hari ? files : files.slice(0, 1))) {
+    try {
+      const url = await prosesFoto(f, k, p.nama, null, !!hari, true);
+      if (hari) (h.hfoto[hari] = h.hfoto[hari] || []).push({ i: Date.now().toString(36) + (n++).toString(36), u: url });
+      else { h[slot][pid] = url; n++; }
+    } catch (err) { bad++; }
+  }
+  if (n) { touch(kid); render(); }
+  toast(n ? (n === 1 ? 'Foto diunggah' : `${n} foto diunggah`) + (bad ? `, ${bad} gagal dibaca` : '') : 'Foto tidak bisa dibaca. Coba pilih foto lain.');
+}
+let PV = null;
+function pvKeys() { return $$('[data-pv]').map(el => el.dataset.pv).filter((x, i, a) => a.indexOf(x) === i); }
+function pvInfo(key) { // judul + gambar (bila ada di HP ini)
+  const [t, a, b] = key.split('|'), kid = P.kid, k = KEGS[kid], h = hOf(kid);
+  if (t === 'd') { const f = (h.hfoto[a] || []).find(x => String(x.i) === b), i = ((k && k.tgl) || []).indexOf(a); return { src: f ? f.u : '', cap: `Dokumentasi Day ${i + 1} · ${tglPendek(a)}` }; }
+  const p = k && k.peserta.find(x => x.id === a);
+  return { src: (h[b] && h[b][a]) || '', cap: `${p ? p.nama : ''}${fotoDua(k) ? ' · Foto ' + (b === 'foto2' ? 2 : 1) : ''}`, remote: p ? { pid: a, slot: b } : null };
+}
+function pvClose() { if (PV) { PV.el.remove(); PV = null; } }
+async function pvShow(i) {
+  if (!PV) return; PV.i = (i + PV.keys.length) % PV.keys.length; const key = PV.keys[PV.i], inf = pvInfo(key), el = PV.el, mine = ++PV.seq;
+  $('#pvCap', el).textContent = inf.cap; $('#pvN', el).textContent = `${PV.i + 1}/${PV.keys.length}`;
+  const im = $('#pvImg', el), msg = $('#pvMsg', el); im.classList.remove('z'); im.hidden = true; msg.hidden = true;
+  $('#pvPrev', el).hidden = $('#pvNext', el).hidden = PV.keys.length < 2;
+  let src = inf.src;
+  if (!src && inf.remote && fbOk() && window.PicFB.mediaOne && online()) { // foto dari akun PIC lain: ambil dari server
+    msg.hidden = false; msg.textContent = 'Memuat foto…';
+    try { src = await window.PicFB.mediaOne(P.kid, (inf.remote.slot === 'foto2' ? 'f2_' : 'f_') + inf.remote.pid); } catch (e) { src = ''; }
+    if (!PV || PV.seq !== mine) return;
+  }
+  if (src && typeof src === 'string') { im.src = src; im.hidden = false; msg.hidden = true; }
+  else { msg.hidden = false; msg.textContent = inf.remote ? 'Foto ini ada di website / akun PIC lain dan tidak bisa ditampilkan di sini (sudah tercatat lengkap di laporan).' : 'Foto tidak ditemukan.'; }
+}
+function pvOpen(key) {
+  pvClose(); const keys = pvKeys(), i = Math.max(0, keys.indexOf(key));
+  const el = document.createElement('div'); el.className = 'pv'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Pratinjau foto');
+  el.innerHTML = `<div class="pvtop"><button type="button" class="btn sm" data-act="pvx">✕ Tutup</button><b id="pvCap"></b><span id="pvN"></span></div><div class="pvstage"><button type="button" class="pvnav" id="pvPrev" data-act="pvprev" aria-label="Foto sebelumnya">‹</button><div class="pvbox"><img id="pvImg" alt="Pratinjau foto" hidden><p id="pvMsg" hidden></p></div><button type="button" class="pvnav" id="pvNext" data-act="pvnext" aria-label="Foto berikutnya">›</button></div><small class="pvhint">Ketuk foto untuk zoom · geser kiri/kanan untuk foto lain</small>`;
+  document.body.appendChild(el); PV = { el, keys, i, seq: 0, x0: null };
+  el.addEventListener('touchstart', ev => { PV.x0 = ev.touches.length === 1 ? ev.touches[0].clientX : null; }, { passive: true });
+  el.addEventListener('touchend', ev => { if (PV && PV.x0 != null && !$('#pvImg', el).classList.contains('z')) { const dx = ev.changedTouches[0].clientX - PV.x0; if (Math.abs(dx) > 60) pvShow(PV.i + (dx < 0 ? 1 : -1)); } if (PV) PV.x0 = null; }, { passive: true });
+  $('#pvImg', el).addEventListener('click', ev => { ev.currentTarget.classList.toggle('z'); });
+  pvShow(i);
+}
+document.addEventListener('keydown', e => { if (!PV) return; if (e.key === 'Escape') pvClose(); else if (e.key === 'ArrowRight') pvShow(PV.i + 1); else if (e.key === 'ArrowLeft') pvShow(PV.i - 1); });
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-up-l]')) UPL = Date.now() + 180000; }, true); // pemilih berkas dibuka
+window.addEventListener('focus', () => setTimeout(() => { if (UPL) UPL = Math.min(UPL, Date.now() + 4000); }, 0)); // pemilih tertutup (dipilih / dibatalkan): sisakan beberapa detik untuk menerima berkas
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, kid = P.kid, k = kid && KEGS[kid];
   if (a === 'selesai' && k) { const s = stat(kid), sisa = (s.ttdTotal - s.ttd) + (s.aktif - s.foto) + (s.ttdPic ? 0 : 1); if (!confirm(sisa > 0 ? `Masih ada isian yang belum lengkap (${s.ttdTotal - s.ttd} TTD peserta, ${s.aktif - s.foto} foto${s.ttdPic ? '' : ', TTD PIC'}).\n\nTetap tandai SELESAI? Kegiatan disembunyikan dari daftar (bisa dibuka lagi).` : 'Semua isian sudah lengkap.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)')) return; const h = hOf(kid); h.selesai = true; touch(kid); P.screen = 'home'; P.kid = null; P.kl = null; render(); toast('Kegiatan ditandai selesai.'); return; }
@@ -1053,6 +1111,10 @@ document.addEventListener('click', e => {
   else if (a === 'nrclr' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nr[d] = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }; if (h.nrs[d]) { h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); } const wasShared = !!h.nshared[d]; delete h.nshared[d]; touch(kid); render(); if (wasShared) naraReset(kid, d, true); toast('Baris dikosongkan (tidak ikut dicetak)'); }
   else if (a === 'nrsigdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); touch(kid); render(); naraReset(kid, d, false); }
   else if ((a === 'nrshare' || a === 'nrcopy') && k) naraShare(b, a, k, kid);
+  else if (a === 'pv') pvOpen(b.dataset.pv);
+  else if (a === 'pvx') pvClose();
+  else if (a === 'pvprev') pvShow(PV.i - 1);
+  else if (a === 'pvnext') pvShow(PV.i + 1);
   else if (a === 'camx') camClose();
   else if (a === 'camshot' && CAM) camShot();
   else if (a === 'camretake' && CAM) camRetake();
@@ -1068,6 +1130,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', async e => {
   const kid = P.kid, k = kid && KEGS[kid];
+  if (e.target.dataset && e.target.dataset.up) { await uploadFoto(e.target); return; }
   if (e.target.tagName === 'SELECT' && e.target.dataset.nr && k) { const d = e.target.closest('.card2').dataset.day, h = hOf(kid), r = nrSet(h, k, d); if (e.target.dataset.nr === 'kid') naraPilih(r, e.target.value); else materiPilih(r, e.target.value); touch(kid); render(); return; }
   if (e.target.id === 'camFile' && CAM) {
     const f = e.target.files[0]; if (!f) return;

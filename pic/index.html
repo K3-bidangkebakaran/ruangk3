@@ -133,6 +133,19 @@ b.kls{display:inline-block;padding:0 6px;border-radius:99px;background:#ffedd5;c
 .photos.dk .slots{grid-template-columns:1fr 1fr}
 .ph .pill.warn{background:#fff200;color:#000}
 .filebtn{position:relative;overflow:hidden;text-align:center}
+.slbtns{display:flex;gap:6px}.slbtns .btn{flex:1;min-width:0;padding-left:6px;padding-right:6px}
+.hfotos+.row{margin-top:8px}.card2 .row .filebtn{flex:1}
+.ph .img img,.hf img{cursor:zoom-in}
+.pv{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.98);color:#fff;display:flex;flex-direction:column}
+.pvtop{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px}.pvtop b{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere;text-align:center}.pvtop span{font-size:12px;opacity:.75;min-width:42px;text-align:right}
+.pvtop .btn{background:#222;color:#fff;border-color:#555}
+.pvstage{flex:1;min-height:0;display:flex;align-items:center;gap:4px;padding:0 6px}
+.pvbox{flex:1;min-width:0;height:100%;overflow:auto;display:flex;align-items:center;justify-content:center}
+.pvbox img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in}.pvbox img.z{max-width:none;max-height:none;width:220%;cursor:zoom-out}
+.pvbox p{max-width:280px;text-align:center;font-size:13px;opacity:.85;padding:16px}
+.pvnav{flex:none;width:40px;height:64px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font-size:30px;line-height:1}
+.pvhint{text-align:center;opacity:.6;padding:8px 12px calc(10px + env(safe-area-inset-bottom,0px));font-size:11px}
+
 .filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
 .cam{position:fixed;inset:0;z-index:60;background:#000;color:#fff;display:flex;flex-direction:column}
 .camtop{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:rgba(0,0,0,.7)}

@@ -87,6 +87,7 @@ window.PicFB = {
     return onValue(ref(db, `${ROOT}/dh_kegiatan`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); });
   },
   async hasil(kid) { const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.'); return (await withTimeout(get(ref(db, `${ROOT}/dh_hasil/${kid}/${u.uid}`)), 20000)).val(); },
+  async mediaOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}/${key}`)), 60000)).val() || ''; }, // satu gambar (pratinjau foto dari akun PIC lain)
   async media(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}`)), 120000)).val() || {}; },
   // gambar disimpan dengan kunci tetap, jadi kirim ulang menimpa data yang sama
   async putMedia(kid, key, dataUrl) { await withTimeout(set(ref(db, `${ROOT}/dh_media/${kid}/${key}`), dataUrl), 90000); },
