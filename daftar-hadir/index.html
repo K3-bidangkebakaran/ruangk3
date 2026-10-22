@@ -4506,6 +4506,7 @@ const Pic = {
     $("#picBtn").onclick = () => this.manual();
     idbGet("pic-dua").then(v => { if (!v) { EV.filter(e => e.jenis === "b3").forEach(e => this.mark(e.id)); idbPut("pic-dua", 1).catch(() => { }); } }).catch(() => { }); // sekali: kegiatan B3 lama dikirim ulang ke APK (2 foto per peserta)
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
+    idbGet("pic-force1").then(v => { if (!v) setTimeout(async () => { if (!navigator.onLine) return; await this.pullAll(false, true); idbPut("pic-force1", 1).catch(() => { }); }, 15000); }).catch(() => { }); // sekali setelah pembaruan: tarik ulang hasil semua PIC untuk semua kegiatan
   },
   /** huruf A/B/C kegiatan kembar ikut dikirim ke APK PIC (node.sfx). Bila huruf suatu kegiatan berubah (mis. ada kegiatan kembar baru / yang lama dihapus), kegiatan itu dikirim ulang. */
   sfxSync() {
@@ -4568,24 +4569,26 @@ const Pic = {
     this.flush();
   },
   pullSoon(ms) { clearTimeout(this.pt); this.pt = setTimeout(() => this.pullAll(), ms || 3000); },
-  async pullAll(manual) {
+  async pullAll(manual, force) { // force: gabungkan ULANG hasil semua PIC ke semua kegiatan (abaikan tanda "sudah digabung"); laporan ringkas di this.rep
+    if (force) for (let i = 0; i < 120 && this.pulling; i++) await new Promise(r => setTimeout(r, 500)); // tunggu penarikan yang sedang berjalan
     if (this.pulling || !navigator.onLine) return 0;
     if (!(await this.load())) return 0;
     this.pulling = true; let total = 0;
+    const rep = this.rep = { periksa: 0, ubah: 0, jenis: {}, tanpaPerangkat: 0 };
     try {
       const all = (await this.d.get(this.r("dh_hasil"))).val() || {};
       for (const kid of Object.keys(all)) {
         const nodes = Object.values(all[kid] || {}).filter(x => x && typeof x === "object");
         const upd = Math.max(0, ...nodes.map(x => x.upd || 0)); if (!upd) continue;
-        if (!EV.some(e => e.id === kid)) continue;                     // kegiatan ini tidak ada di perangkat ini
+        if (!EV.some(e => e.id === kid)) { rep.tanpaPerangkat++; continue; }  // kegiatan ini tidak ada di perangkat ini
         const cur = kid === S.id ? S : await idbGet("event:" + kid);
-        if (cur && cur.pic && (cur.pic.merged || 0) >= upd) continue;  // sudah digabung
+        if (!force && cur && cur.pic && (cur.pic.merged || 0) >= upd) continue;  // sudah digabung
         const media = (await this.d.get(this.r("dh_media/" + kid))).val() || {};
         const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid));
         const n = this.merge(ev, all[kid], media, upd);
-        total += n;
+        total += n; rep.periksa++; if (n) { rep.ubah++; const jk = jenisOf(ev.acara) || "lain"; rep.jenis[jk] = (rep.jenis[jk] || 0) + 1; }
         if (kid === S.id) { if (n) changed(); else save(); renderTtdTab(); renderFoto(); renderTtd(); if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest("#lapBox")) fillLap(); }
-        else {
+        else if (!(force && !n)) { // penarikan paksa tanpa data baru: jangan tulis ulang (urutan "terakhir diubah" tidak berubah)
           if (n) ev.sync.v = (ev.sync.v || 0) + 1;
           await idbPut("event:" + kid, JSON.parse(JSON.stringify(ev)));
           const i = EV.findIndex(e => e.id === kid); if (i >= 0) { EV[i] = meta(ev); await idbPut(IDX, EV); }
@@ -4599,7 +4602,8 @@ const Pic = {
     total += await this.pullNara();
     total += await this.pullTtdp();
     this.pulling = false; this.status();
-    if (manual) toast(total ? "Hasil PIC diperbarui." : (this.err ? "Gagal memeriksa hasil PIC." : "Belum ada hasil baru dari PIC."));
+    if (manual && !force) toast(total ? "Hasil PIC diperbarui." : (this.err ? "Gagal memeriksa hasil PIC." : "Belum ada hasil baru dari PIC."));
+    else if (manual && this.err) toast("Gagal memeriksa hasil PIC (cek koneksi / aturan Firebase).");
     return total;
   },
   /* --- Absen Selfie: halaman peserta (ruangk3.com/selfie/) membaca dh_selfie/{kid} dan menulis foto ke dh_selfie_foto/{kid}/{pid~tanggal~p|s} + penanda waktu di dh_selfie_st --- */
@@ -4842,7 +4846,10 @@ const Pic = {
   async manual() {
     if (!navigator.onLine) { toast("Tidak ada internet."); return; }
     this.hash = {}; await idbPut("pic-hash", this.hash); this.mark(S.id);
-    toast("Memeriksa Portal PIC…"); await this.flush(); const bn = await this.bersihkan(true); const n = await this.pullAll(true);
+    toast("Menarik semua hasil & dokumentasi dari PIC…"); await this.flush(); const bn = await this.bersihkan(true);
+    if (Cloud.ready()) { try { await Cloud.reconcile(true); await new Promise(r => setTimeout(r, 300)); for (let i = 0; i < 240 && Cloud.alBusy; i++) await new Promise(r => setTimeout(r, 500)); } catch (_) { } } // semua kegiatan di Drive ikut diunduh dulu supaya hasil PIC bisa digabung ke semuanya
+    const n = await this.pullAll(true, true), r = this.rep || {};
+    if (r.periksa != null && !this.err) { const NM = { damkar: "Penanggulangan Kebakaran", angkat: "PAPA", b3: "Lingkungan Kerja B3", lain: "Lainnya" }; toast(`Selesai menarik hasil PIC: ${r.periksa} kegiatan diperiksa, ${r.ubah} mendapat data baru` + (r.ubah ? " (" + Object.keys(r.jenis).map(k => `${NM[k] || k} ${r.jenis[k]}`).join(", ") + ")" : "") + (r.tanpaPerangkat ? `. ${r.tanpaPerangkat} kegiatan punya hasil PIC tetapi belum ada di perangkat ini.` : ".")); }
     if (bn) toast(bn === 1 ? "Satu kegiatan lama/ganda dibuang dari aplikasi PIC." : `${bn} kegiatan lama/ganda dibuang dari aplikasi PIC.`);
     if (!n && !this.err) toast(S.acara.kegiatan ? "Kegiatan terkirim ke aplikasi PIC. Belum ada hasil baru dari PIC." : "Belum ada hasil baru dari PIC.");
   }
