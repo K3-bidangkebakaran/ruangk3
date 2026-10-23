@@ -4540,7 +4540,7 @@ const Pic = {
     const kirimSkrg = () => { if (this.dirty.size && navigator.onLine) { clearTimeout(this.t); this.flush(); } }; // tab ditutup/disembunyikan: kirim sekarang juga
     document.addEventListener("visibilitychange", () => { if (document.hidden) kirimSkrg(); else if (navigator.onLine) { this.flush(); this.pullAll(); } });
     window.addEventListener("pagehide", kirimSkrg);
-    setInterval(() => { if (navigator.onLine) { this.flush(); this.pullAll(); } }, 2 * 60000);
+    setInterval(() => { if (navigator.onLine) { this.flush(); this.pullAll(); } }, 60000);
     $("#picBtn").onclick = () => this.manual();
     idbGet("pic-dua").then(v => { if (!v) { EV.filter(e => e.jenis === "b3").forEach(e => this.mark(e.id)); idbPut("pic-dua", 1).catch(() => { }); } }).catch(() => { }); // sekali: kegiatan B3 lama dikirim ulang ke APK (2 foto per peserta)
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
@@ -4566,7 +4566,7 @@ const Pic = {
     const b3Off = e => isB3(e.acara) ? Object.fromEntries(Object.entries(e.lap.nrOffK || {}).flatMap(([kk, M]) => Object.entries(M || {}).filter(([, v]) => v).map(([key]) => [kk + "~" + key, true]))) : { ...(e.lap.nrOff || {}) };
     const a = ev.acara, hari = hariList(a).filter(Boolean);
     const hkMap = {}; if (a.papa) kelasList(a).forEach(l => { const hk = hariKelas(ev, l); if (hk) hkMap[kelasKey(l)] = hk; }); // alat dengan hari lebih sedikit (hari ke-5 dst. khusus Kelas 1)
-    const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: String(r.kid || "").startsWith("u_") ? "_m" : (r.kid || ""), nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }]));
+    const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: String(r.kid || "").startsWith("u_") ? "_m" : (r.kid || ""), nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "", ttd: r.ttd ? 1 : 0 }]));
     return {
       nama: judulDasar(a), sfx: sufMap().get(ev.id) || "", tgl: hari, tempat: a.tempat || "", damkar: fotoDua(a), papa: !!a.papa, b3: isB3(a), kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
       ttdWeb: !!a.ttd, hk: hkMap, tglTtd: a.tglTtd || "", jabTtd: a.jabatanTtd || "", namaTtd: a.namaTtd || "",
@@ -4574,7 +4574,7 @@ const Pic = {
         const o = { id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" };
         const wt = {}; Object.keys(p.ttd || {}).forEach(d => { if (p.ttd[d] && hari.includes(d)) wt[d] = 1; }); if (Object.keys(wt).length) o.wt = wt;
         if (p.foto) o.wf = 1; if (p.foto2) o.wf2 = 1; return o; }), dibuat: ev.created,
-      lap: { selfie: !!ev.lap.selfie, nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: nrPic(ev.lap.nr), nrOff: b3Off(ev), nrk: isB3(a) ? Object.fromEntries(Object.entries(ev.lap.nrk || {}).map(([kk, D]) => [kk, nrPic(D)])) : {}, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", nTgl: ev.lap.nTgl || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
+      lap: { selfie: !!ev.lap.selfie, nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: nrPic(ev.lap.nr), nrOff: b3Off(ev), nrk: isB3(a) ? Object.fromEntries(Object.entries(ev.lap.nrk || {}).map(([kk, D]) => [kk, nrPic(D)])) : {}, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", nTgl: ev.lap.nTgl || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", s1ttd: ev.lap.s1.ttd ? 1 : 0, s2ttd: ev.lap.s2.ttd ? 1 : 0, materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
     };
   },
   async flush() {
@@ -4607,10 +4607,25 @@ const Pic = {
     idbPut("pic-del", this.drops).catch(() => { }); idbPut("pic-pub", [...this.dirty]).catch(() => { });
     this.flush();
   },
-  pullSoon(ms) { clearTimeout(this.pt); this.pt = setTimeout(() => this.pullAll(), ms || 3000); },
+  pullSoon(ms) { clearTimeout(this.pt); this.pt = setTimeout(() => this.pullAll(), ms || 800); },
+  /* gambar dari PIC: hanya yang berubah yang diunduh (sidik `mh` dari tiap akun PIC); tanpa `mh` (APK lama) / pertama kali: unduh semua */
+  async mediaFor(kid, byPic, full) {
+    const nodes = Object.values(byPic || {}).filter(x => x && typeof x === "object");
+    const C = (this.mc = this.mc || {})[kid] || (this.mc[kid] = { h: {}, v: {}, full: false });
+    const allMh = nodes.length > 0 && nodes.every(x => x.mh && typeof x.mh === "object"), mh = {};
+    if (allMh) nodes.forEach(x => Object.keys(x.mh).forEach(k => { (mh[k] = mh[k] || []).push(String(x.mh[k])); }));
+    Object.keys(mh).forEach(k => { mh[k] = mh[k].sort().join("+"); });
+    const semua = async () => { const m = (await this.d.get(this.r("dh_media/" + kid))).val() || {}; C.v = m; C.h = allMh ? { ...mh } : {}; C.full = allMh; return m; };
+    if (full || !allMh || !C.full) return semua();
+    const perlu = Object.keys(mh).filter(k => C.h[k] !== mh[k]);
+    if (perlu.length > 8) return semua();
+    Object.keys(C.v).forEach(k => { if (!(k in mh)) delete C.v[k]; });
+    for (let i = 0; i < perlu.length; i += 4) await Promise.all(perlu.slice(i, i + 4).map(async k => { C.v[k] = (await this.d.get(this.r(`dh_media/${kid}/${k}`))).val() || ""; C.h[k] = mh[k]; }));
+    return C.v;
+  },
   async pullAll(manual, force) { // force: gabungkan ULANG hasil semua PIC ke semua kegiatan (abaikan tanda "sudah digabung"); laporan ringkas di this.rep
     if (force) for (let i = 0; i < 120 && this.pulling; i++) await new Promise(r => setTimeout(r, 500)); // tunggu penarikan yang sedang berjalan
-    if (this.pulling || !navigator.onLine) return 0;
+    if (this.pulling || !navigator.onLine) { if (this.pulling && !force) this.again = true; return 0; } // perubahan yang masuk saat penarikan berjalan: diulang setelah selesai (jangan terlewat)
     if (!(await this.load())) return 0;
     this.pulling = true; let total = 0;
     const rep = this.rep = { periksa: 0, ubah: 0, jenis: {}, tanpaPerangkat: 0 };
@@ -4621,10 +4636,11 @@ const Pic = {
         const upd = Math.max(0, ...nodes.map(x => x.upd || 0)); if (!upd) continue;
         if (!EV.some(e => e.id === kid)) { rep.tanpaPerangkat++; continue; }  // kegiatan ini tidak ada di perangkat ini
         const cur = kid === S.id ? S : await idbGet("event:" + kid);
-        if (!force && cur && cur.pic && (cur.pic.merged || 0) >= upd) continue;  // sudah digabung
-        const media = (await this.d.get(this.r("dh_media/" + kid))).val() || {};
+        const sig = Object.entries(all[kid] || {}).filter(([, x]) => x && typeof x === "object").map(([u, x]) => `${u}:${x.upd || 0}:${x.rev || 0}:${x.dev || ""}`).sort().join("|"); // sidik semua akun PIC (bukan hanya jam): HP dengan jam lebih lambat tidak terlewat
+        if (!force && cur && cur.pic && (cur.pic.msig ? cur.pic.msig === sig : (cur.pic.merged || 0) >= upd)) continue;  // sudah digabung
+        const media = await this.mediaFor(kid, all[kid], force);
         const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid));
-        const n = this.merge(ev, all[kid], media, upd);
+        const n = this.merge(ev, all[kid], media, upd); ev.pic = { ...(ev.pic || {}), msig: sig };
         total += n; rep.periksa++; if (n) { rep.ubah++; const jk = jenisOf(ev.acara) || "lain"; rep.jenis[jk] = (rep.jenis[jk] || 0) + 1; }
         if (kid === S.id) { if (n) changed(); else save(); renderTtdTab(); renderFoto(); renderTtd(); if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest("#lapBox")) fillLap(); }
         else if (!(force && !n)) { // penarikan paksa tanpa data baru: jangan tulis ulang (urutan "terakhir diubah" tidak berubah)
@@ -4640,7 +4656,7 @@ const Pic = {
     total += await this.pullSelfie();
     total += await this.pullNara();
     total += await this.pullTtdp();
-    this.pulling = false; this.status();
+    this.pulling = false; this.status(); if (this.again) { this.again = false; this.pullSoon(300); }
     if (manual && !force) toast(total ? "Hasil PIC diperbarui." : (this.err ? "Gagal memeriksa hasil PIC." : "Belum ada hasil baru dari PIC."));
     else if (manual && this.err) toast("Gagal memeriksa hasil PIC (cek koneksi / aturan Firebase).");
     return total;

@@ -86,6 +86,8 @@ window.PicFB = {
     if (!auth.currentUser) throw fail('session', 'Sesi berakhir.');
     return onValue(ref(db, `${ROOT}/dh_kegiatan`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); });
   },
+  // selisih jam server dengan jam HP (ms): dipakai agar penanda waktu isian dari HP / akun berbeda sebanding (jam HP sering meleset)
+  offset() { return new Promise(res => { let done = false; const t = setTimeout(() => { if (!done) { done = true; res(0); } }, 4000); try { onValue(ref(db, '.info/serverTimeOffset'), s => { if (!done) { done = true; clearTimeout(t); res(+s.val() || 0); } }, () => { if (!done) { done = true; clearTimeout(t); res(0); } }, { onlyOnce: true }); } catch (e) { if (!done) { done = true; clearTimeout(t); res(0); } } }); },
   async hasil(kid) { const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.'); return (await withTimeout(get(ref(db, `${ROOT}/dh_hasil/${kid}/${u.uid}`)), 20000)).val(); },
   async mediaOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}/${key}`)), 60000)).val() || ''; }, // satu gambar (pratinjau foto dari akun PIC lain)
   async media(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}`)), 120000)).val() || {}; },
@@ -103,6 +105,12 @@ window.PicFB = {
   watchTtdp(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_ttdp_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
   // hasil semua akun PIC (kecil: tanda saja, gambar ada di dh_media): supaya akun PIC lain tampak langsung tanpa menunggu admin membuka website
   watchHasil(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_hasil`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
+  // cadangan bila aturan Firebase tidak mengizinkan membaca hasil akun lain: pantau hanya hasil akun ini (HP lain dengan akun yang sama tetap sinkron)
+  watchHasilOwn(kids, cb) {
+    const u = auth.currentUser; if (!u) return () => {}; const acc = {};
+    const offs = (kids || []).map(k => onValue(ref(db, `${ROOT}/dh_hasil/${k}/${u.uid}`), (snap) => { const v = snap.val(); if (v) acc[k] = { [u.uid]: v }; else delete acc[k]; cb({ ...acc }); }, () => { }));
+    return () => offs.forEach(f => { try { f(); } catch (e) { } });
+  },
   watchNara(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_nara_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
 };
 window.dispatchEvent(new Event('pic-fb-ready'));

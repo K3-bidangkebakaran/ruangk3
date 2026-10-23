@@ -59,7 +59,7 @@ Firebase Console → Realtime Database → **Rules**. Tambahkan blok berikut di 
   ".write": "auth != null && auth.token.firebase.sign_in_provider == 'anonymous'"
 },
 "dh_hasil": {
-  ".read": "auth != null && auth.token.firebase.sign_in_provider == 'anonymous'",
+  ".read": "auth != null && (auth.token.firebase.sign_in_provider == 'anonymous' || (root.child('artifacts/k3-kebakaran-app-v5/public/data/dh_pic/' + auth.uid).exists() && root.child('artifacts/k3-kebakaran-app-v5/public/data/dh_pic/' + auth.uid + '/aktif').val() != false))",
   ".write": "auth != null && auth.token.firebase.sign_in_provider == 'anonymous'",
   "$kid": {
     "$uid": {
@@ -198,7 +198,7 @@ Daftar Hadir admin juga menariknya langsung (`Pic.pullTtdp`, penanda terlihat di
 Aturan Firebase tidak perlu diubah (cukup `auth != null` seperti fitur narasumber).
 
 ## Sinkron antar akun PIC (v37)
-Semua akun PIC melihat kegiatan yang sama. APK memantau seluruh `dh_hasil` (hanya tanda/teks kecil; gambar tetap di `dh_media`) dan menampilkan hasil akun PIC lain langsung (TTD peserta, foto, TTD PIC, cancel/remedial, nilai, kelulusan, isian laporan & narasumber) tanpa menunggu website admin dibuka. Bila dua akun mengisi hal yang sama, isian yang waktunya (`upd`) lebih baru menang, sama seperti penggabungan di website. Tidak ada perubahan aturan Firebase (hanya baca `dh_hasil`, yang sudah boleh untuk `auth != null`).
+Semua akun PIC melihat kegiatan yang sama. APK memantau seluruh `dh_hasil` (hanya tanda/teks kecil; gambar tetap di `dh_media`) dan menampilkan hasil akun PIC lain langsung (TTD peserta, foto, TTD PIC, cancel/remedial, nilai, kelulusan, isian laporan & narasumber) tanpa menunggu website admin dibuka. Bila dua akun mengisi hal yang sama, isian yang waktunya (`upd`) lebih baru menang, sama seperti penggabungan di website. Sejak v44 aturan `dh_hasil` (baca seluruh node) harus mengizinkan PIC terdaftar & aktif (lihat blok aturan di atas); bila belum diganti, APK menampilkan kartu peringatan di layar utama dan hanya menampilkan hasil akun sendiri.
 
 ## Pratinjau Laporan (v40)
 
@@ -217,3 +217,5 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 **Link darurat:** setelah tanggal kegiatan lewat, layar *Absensi TTD Peserta* dan *Absen Selfie Peserta* menampilkan kartu **Darurat: peserta belum TTD / selfie** dengan tombol Bagikan dan Salin link darurat (link biasa ditambah `&darurat=1`). Peserta membuka link, memilih namanya (tampil nama yang masih punya hari/sesi kosong), lalu tanda tangan atau selfie **satu kali**; hasilnya otomatis dicatat ke semua tanggal yang belum diselesaikan. Selfie darurat diberi watermark "ABSEN DARURAT" beserta waktu foto sebenarnya. Link darurat tidak aktif selama kegiatan masih berjalan. Halaman TTD dan selfie yang dibuka tanpa `&darurat=1` setelah kegiatan selesai juga menampilkan tombol darurat.
 
 **Perbaikan link darurat (v43):** daftar nama di halaman darurat hanya memuat peserta yang masih punya tanggal kosong, dengan tanggalnya. Peserta Remedial hanya diminta tanda tangan di hari terakhir (tanggal ujian); hari berwarna kuning tidak perlu. Selfie darurat dihitung per tanggal: satu foto otomatis menjadi satu foto untuk tiap tanggal yang belum selfie, dengan watermark nama, perusahaan, "ABSEN DARURAT" + tanggal itu, dan lokasi baku "Morowali, IMIP".
+
+**Sinkron antar HP/akun (v44):** (1) Dua HP dengan akun PIC yang sama tidak lagi saling menimpa: sebelum mengirim, APK menggabungkan dulu isian yang sudah ada di server (hanya menambah). (2) Website Daftar Hadir tidak lagi melewatkan penarikan data bila ada penarikan lain yang sedang berjalan, tidak lagi salah menilai HP yang jamnya lambat, dan hanya mengunduh gambar yang berubah. (3) Layar *Narasumber* dan *Penandatangan Nilai* memberi keterangan **✓ Sudah TTD** (diisi di HP ini / diisi PIC lain / sudah ada di website) atau **Belum TTD**, supaya PIC lain tahu. (4) Sinkron lebih cepat: kirim ±0,4 detik setelah isian, tarik berkala 20 detik di APK dan 60 detik di website, unggah gambar 4 sekaligus. (5) Aturan Firebase `dh_hasil` perlu diganti (lihat blok aturan di atas).

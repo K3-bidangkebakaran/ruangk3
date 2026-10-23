@@ -8,6 +8,11 @@
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* Jam server: penanda waktu isian (h.upd) memakai jam server supaya HP / akun yang jamnya berbeda tetap sebanding (menentukan isian siapa yang terbaru). */
+let SOFF = 0, soffAt = 0;
+const nowS = () => Date.now() + SOFF;
+async function soffUpdate() { if (!window.PicFB || !window.PicFB.offset || Date.now() - soffAt < 300000) return; soffAt = Date.now(); try { const o = await window.PicFB.offset(); if (typeof o === 'number' && isFinite(o) && Math.abs(o) < 864e5 * 400) SOFF = o; } catch (e) { } }
+const DEV = (() => { try { let v = localStorage.getItem('pic-dev'); if (!v) { v = Math.random().toString(36).slice(2, 10); localStorage.setItem('pic-dev', v); } return v; } catch (e) { return Math.random().toString(36).slice(2, 10); } })(); // penanda HP ini (akun yang sama bisa dipakai di beberapa HP)
 const fnv = str => { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ':' + str.length; };
 const LOGO = 'icons/icon-192.png';
 
@@ -75,8 +80,12 @@ const xT = (h, pid, d) => { const o = ovOf(h); return !!(o && o.hadir[pid] && o.
 const xF = (h, pid, key) => { const o = ovOf(h); return !!(o && o[key === 'foto2' ? 'foto2' : 'foto'][pid]); }; // foto sudah ada dari akun PIC lain
 const xPic = h => { const o = ovOf(h); return !!(o && o.ttdPic); };
 const xNrT = (h, key) => { const o = ovOf(h); return !!(o && o.nrT[key]); };     // TTD narasumber sudah ada dari akun PIC lain
-const nrTtd = (h, key) => !!(h.nrs && h.nrs[key]) || xNrT(h, key);
-const nTtd = (h, n) => !!h['n' + n] || !!(ovOf(h) && ovOf(h)['n' + n]);           // TTD penandatangan daftar nilai (sendiri / PIC lain)
+const nrTtdSrc = (h, k, key) => (h.nrs && h.nrs[key]) ? 'own' : xNrT(h, key) ? 'pic' : (k && nrAdmin(k, key).ttd) ? 'web' : ''; // asal TTD narasumber: HP ini / PIC lain / website
+const nrTtd = (h, key, k) => !!nrTtdSrc(h, k, key);
+const nTtdSrc = (h, k, n) => h['n' + n] ? 'own' : (ovOf(h) && ovOf(h)['n' + n]) ? 'pic' : (k && LAPK(k)['s' + n + 'ttd']) ? 'web' : ''; // asal TTD penandatangan daftar nilai
+const nTtd = (h, n, k) => !!nTtdSrc(h, k, n);           // TTD penandatangan daftar nilai (sendiri / PIC lain / website)
+const TTD_TXT = { own: '✓ Sudah TTD', pic: '✓ Sudah TTD · diisi PIC lain', web: '✓ Sudah TTD · sudah ada di website' };
+const ttdBadge = src => src ? `<span class="tgd ok">${TTD_TXT[src]}</span>` : '<span class="tgd no">Belum TTD</span>';
 const hfN = (h, d) => ((h.hfoto && h.hfoto[d]) || []).length + (() => { const o = ovOf(h), st = o && o.hf[d]; return st ? st.size : 0; })(); // foto dokumentasi harian (sendiri + PIC lain)
 const isBatal = (h, p) => { const o = ovOf(h), x = o && o.batal[p.id]; if ((p.id in h.batal) && ownWins(h, x)) return !!h.batal[p.id]; return x ? x.v : !!p.batal; };
 // Remedial (baris kuning di daftar hadir): hanya tanda tangan di HARI TERAKHIR; Cancel (merah) tidak ikut absensi.
@@ -165,7 +174,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v43';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v44';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -204,7 +213,7 @@ function nrGabung(h, k) { if (k && k.b3) return; // B3 memang per program: janga
   let ch = false;
   [h.nr, h.nrs].forEach(M => { if (!M) return; Object.keys(M).forEach(key => { const i = key.indexOf('~'); if (i < 0) return; const pl = key.slice(i + 1), kosong = !(pl in M) || (M === h.nr ? !(M[pl] && M[pl].kid) : !M[pl]); if (kosong) M[pl] = M[key]; delete M[key]; ch = true; }); });
   if (h.sent) Object.keys(h.sent).forEach(key => { if (/^nr_k[0-9a-z]+~/.test(key)) delete h.sent[key]; });
-  if (ch) { h.dirty = true; h.upd = Date.now(); h.rev = (h.rev || 0) + 1; }
+  if (ch) { h.dirty = true; h.upd = Math.max(nowS(), (h.upd || 0) + 1); h.rev = (h.rev || 0) + 1; }
 }
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
 /* ---- Link tanda tangan narasumber: halaman ruangk3.com/narasumber/?k=<kegiatan>&r=<kunci baris> ---- */
@@ -356,13 +365,21 @@ function startTtdp() {
   const uid = ME.uid; ttdpUid = uid;
   try { ttdpOff = window.PicFB.watchTtdp(st => { if (ME && ME.uid === uid) ttdpGot(st).catch(() => { }); }, () => { if (ttdpUid === uid) { ttdpOff = null; ttdpUid = null; } }); } catch (e) { ttdpOff = null; ttdpUid = null; }
 }
-let hasilOff = null, hasilUid = null, hasilSig = '', restoring = new Set();
-function stopHasil() { if (hasilOff) { try { hasilOff(); } catch (e) { } } hasilOff = null; hasilUid = null; hasilSig = ''; OH = {}; OHV++; }
+let hasilOff = null, hasilUid = null, hasilSig = '', restoring = new Set(), hasilDenied = 0; // hasilDenied: aturan Firebase menolak membaca hasil akun PIC lain
+function stopHasil() { if (ownOff) { try { ownOff(); } catch (e) { } } ownOff = null; ownSig = ''; if (hasilOff) { try { hasilOff(); } catch (e) { } } hasilOff = null; hasilUid = null; hasilSig = ''; OH = {}; OHV++; }
+let ownOff = null, ownSig = '';
+function startHasilOwn() { // aturan menolak baca hasil akun lain: tetap pantau hasil akun ini (sinkron antar HP dengan akun yang sama)
+  if (!hasilDenied || !fbOk() || !window.PicFB.watchHasilOwn) return;
+  const kids = Object.keys(KEGS).sort(), sg = ME.uid + '|' + kids.join(','); if (ownOff && sg === ownSig) return;
+  if (ownOff) { try { ownOff(); } catch (e) { } } ownSig = sg; const uid = ME.uid;
+  try { ownOff = window.PicFB.watchHasilOwn(kids, obj => { if (ME && ME.uid === uid) hasilGot(obj || {}); }); } catch (e) { ownOff = null; }
+}
 function startHasil() { // hasil semua akun PIC (dh_hasil): akun lain tampak di sini; kerja akun ini dari HP lain ikut terambil
   if (!fbOk() || !window.PicFB.watchHasil || (hasilOff && hasilUid === ME.uid)) return;
+  if (hasilDenied && Date.now() - hasilDenied < 600000) return; // ditolak aturan: coba lagi tiap 10 menit saja
   if (hasilOff) { try { hasilOff(); } catch (e) { } } hasilOff = null;
   const uid = ME.uid; hasilUid = uid;
-  try { hasilOff = window.PicFB.watchHasil(obj => { if (ME && ME.uid === uid) hasilGot(obj || {}); }, () => { if (hasilUid === uid) { hasilOff = null; hasilUid = null; } }); } catch (e) { hasilOff = null; hasilUid = null; }
+  try { hasilOff = window.PicFB.watchHasil(obj => { if (ME && ME.uid === uid) if (hasilDenied) { hasilDenied = 0; if (ownOff) { try { ownOff(); } catch (e) { } } ownOff = null; ownSig = ''; renderSoft(); } hasilGot(obj || {}); }, e => { if (/permission/i.test(String((e && (e.code || e.message)) || e || ''))) { const baru = !hasilDenied; hasilDenied = Date.now(); if (baru) renderSoft(); startHasilOwn(); } if (hasilUid === uid) { hasilOff = null; hasilUid = null; } }); } catch (e) { hasilOff = null; hasilUid = null; }
 }
 function hasilGot(obj) {
   OH = obj; OHV++; // OVC dibangun ulang per kegiatan saat dibaca
@@ -457,7 +474,8 @@ const flags = h => {
   const hari = {}; new Set([...Object.keys(h.materi || {}), ...Object.keys(h.hfoto || {})]).forEach(d => { hari[d] = { ids: ((h.hfoto || {})[d] || []).map(f => f.i) }; if (d in (h.materi || {})) hari[d].materi = String(h.materi[d] || ''); });
   const nr = {}, nrk = {}; new Set([...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})]).forEach(d => { const o = { ...((h.nr || {})[d] || {}) }; if ((h.nrs || {})[d]) o.ttd = 1; const m = NRK_RE.exec(d); if (m[1]) (nrk[m[1]] = nrk[m[1]] || {})[m[2]] = o; else nr[d] = o; });
   const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari, nr, nrk }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
-  return { nilai: h.nilai || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, foto2, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
+  const mh = {}; mediaList(h).forEach(([k]) => { if (h.sent[k]) mh[k] = h.sent[k]; }); // sidik gambar yang sudah terkirim: website hanya mengunduh gambar yang berubah
+  return { dev: DEV, mh, nilai: h.nilai || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, foto2, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
 /* ---------- toast ---------- */
@@ -472,6 +490,36 @@ function friendlyErr(e) {
   if (/network|timeout|terputus|lambat|fetch/i.test(m)) return 'Sinyal lemah. Akan dicoba lagi.';
   return 'Belum terkirim. Akan dicoba lagi.';
 }
+/* Hasil satu akun disimpan sebagai SATU berkas di server. Bila akun yang sama dipakai di dua HP, HP yang mengirim belakangan akan menimpa isian HP lain.
+   svMerge: sebelum mengirim, baca berkas di server; isian dari HP lain yang belum ada di sini ditambahkan (isian di HP ini menang bila sama), gambarnya diunduh. */
+async function svMerge(kid, h) {
+  if (!window.PicFB.hasil) return;
+  const sv = await window.PicFB.hasil(kid); if (!sv || typeof sv !== 'object' || !sv.dev || sv.dev === DEV) return;
+  const sig = sv.dev + ':' + (sv.upd || 0) + ':' + (sv.rev || 0); if (h.svSig === sig) return;
+  const add = (t, s) => { Object.keys(s || {}).forEach(k => { if (!(k in t)) t[k] = s[k]; }); };
+  h.remedial = h.remedial || {}; add(h.batal, sv.batal); add(h.remedial, sv.remedial); add(h.kel, sv.kel);
+  Object.entries(sv.nilai || {}).forEach(([pid, y]) => { if (y && typeof y === 'object') add(h.nilai[pid] = h.nilai[pid] || {}, y); });
+  const l = sv.lap || {}; h.lapN = h.lapN || {};
+  ['s1', 's2'].forEach(w => add(h.lapN[w] = h.lapN[w] || {}, l[w]));
+  if (l.nKota != null && !('nKota' in h.lapN)) h.lapN.nKota = l.nKota;
+  Object.entries(l.hari || {}).forEach(([d, hh]) => { if (hh && hh.materi != null && !(d in h.materi)) h.materi[d] = hh.materi; });
+  const nrRow = (key, r) => { if (!r || typeof r !== 'object') return; const { ttd, ...x } = r; if (Object.keys(x).length && !(key in h.nr)) h.nr[key] = x; };
+  Object.entries(l.nr || {}).forEach(([d, r]) => nrRow(d, r));
+  Object.entries(l.nrk || {}).forEach(([kk, D]) => Object.entries(D || {}).forEach(([d, r]) => nrRow(kk + '~' + d, r)));
+  const jobs = [], gone = h.gone || [], want = (key, ada, set) => { if (!ada && !gone.includes(key)) jobs.push([key, set]); };
+  Object.entries(sv.hadir || {}).forEach(([pid, days]) => Object.keys(days || {}).forEach(d => want(`s_${pid}_${d}`, h.hadir[pid] && h.hadir[pid][d], u => { (h.hadir[pid] = h.hadir[pid] || {})[d] = u; })));
+  Object.keys(sv.foto || {}).forEach(pid => want(`f_${pid}`, h.foto[pid], u => { h.foto[pid] = u; }));
+  Object.keys(sv.foto2 || {}).forEach(pid => want(`f2_${pid}`, (h.foto2 || {})[pid], u => { (h.foto2 = h.foto2 || {})[pid] = u; }));
+  if (sv.ttdPic) { want('pic', h.ttdPic, u => { h.ttdPic = u; if (!h.ttdPicNama) h.ttdPicNama = sv.ttdPicNama || ''; }); }
+  if (sv.ttdN1) want('n1', h.n1, u => { h.n1 = u; }); if (sv.ttdN2) want('n2', h.n2, u => { h.n2 = u; });
+  const nrT = (key, r) => { if (r && r.ttd) want('nr_' + key, (h.nrs || {})[key], u => { (h.nrs = h.nrs || {})[key] = u; }); };
+  Object.entries(l.nr || {}).forEach(([d, r]) => nrT(d, r)); Object.entries(l.nrk || {}).forEach(([kk, D]) => Object.entries(D || {}).forEach(([d, r]) => nrT(kk + '~' + d, r)));
+  Object.entries(l.hari || {}).forEach(([d, hh]) => ((hh && hh.ids) || []).forEach(i => { if (!((h.hfoto[d] || []).some(f => f.i === i))) want(`d_${d}_${me4()}_${i}`, false, u => { (h.hfoto[d] = h.hfoto[d] || []).push({ i, u }); }); }));
+  const key = ([k]) => k; let nx = 0, gagal = null;
+  await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, async () => { while (!gagal && nx < jobs.length) { const j = jobs[nx++]; try { const u = await window.PicFB.mediaOne(kid, key(j)); if (typeof u === 'string' && u) { j[1](u); h.sent[key(j)] = fnv(u); } } catch (e) { gagal = gagal || e; } } }));
+  if (gagal) throw gagal;
+  h.svSig = sig; h.rev = (h.rev || 0) + 1; await saveH(kid);
+}
 let retryT = 0;
 async function sync() {
   if (ME && window.PicFB && !window.PicFB.uid() && online() && pending()) { syncErr = 'Sesi login berakhir. Hubungi admin atau masuk ulang.'; renderPill(); return; }
@@ -485,7 +533,7 @@ async function sync() {
       { // gambar dikirim 3 sekaligus (kualitas/ukuran gambar tidak diubah); bila satu gagal, yang lain dituntaskan lalu error dilempar → dicoba lagi otomatis
         const todo = []; for (const [key, data] of mediaList(h)) { const hs = fnv(data); if (h.sent[key] !== hs) todo.push([key, data, hs]); }
         let nx = 0, gagal = null;
-        await Promise.all(Array.from({ length: Math.min(3, todo.length) }, async () => {
+        await Promise.all(Array.from({ length: Math.min(4, todo.length) }, async () => {
           while (!gagal && nx < todo.length) {
             const [key, data, hs] = todo[nx++];
             try { await window.PicFB.putMedia(kid, key, data); h.sent[key] = hs; await saveH(kid); renderPill(); } catch (e) { gagal = gagal || e; }
@@ -495,6 +543,7 @@ async function sync() {
       }
       for (const key of [...(h.gone || [])]) { await window.PicFB.putMedia(kid, key, ''); h.gone = h.gone.filter(x => x !== key); await saveH(kid); renderPill(); }
       if (h.dirty) {
+        try { await svMerge(kid, h); } catch (e) { if (!/permission/i.test(String((e && (e.code || e.message)) || e))) throw e; } // HP lain dengan akun yang sama sudah menulis lebih dulu: gabungkan dulu agar isiannya tidak tertimpa
         const upd = h.upd;
         await window.PicFB.putHasil(kid, flags(h));
         if (h.upd === upd) h.dirty = false;
@@ -506,7 +555,8 @@ async function sync() {
     syncErr = friendlyErr(e); clearTimeout(retryT); retryT = setTimeout(sync, 30000);
   } finally { syncing = false; renderPill(); if (pending() && !syncErr && online()) setTimeout(sync, 500); }
 }
-function touch(kid) { const h = hOf(kid); h.upd = Date.now(); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); setTimeout(sync, 1200); if (Object.keys(h.nshared || {}).length) naraRepub(kid); if (Object.keys(h.tshared || {}).length) ttdpRepub(kid); if (Object.keys(h.tnShared || {}).length) ttnRepub(kid); }
+let syncT = 0;
+function touch(kid) { const h = hOf(kid); h.upd = Math.max(nowS(), (h.upd || 0) + 1); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); clearTimeout(syncT); syncT = setTimeout(sync, 400); if (Object.keys(h.nshared || {}).length) naraRepub(kid); if (Object.keys(h.tshared || {}).length) ttdpRepub(kid); if (Object.keys(h.tnShared || {}).length) ttnRepub(kid); }
 
 async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali hasil yang sudah ada di server. old: HP lain dengan akun yang sama sudah mengirim yang lebih baru → gantikan salinan ini
   if (restoring.has(kid)) return; restoring.add(kid);
@@ -515,7 +565,7 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
     if (old && (H[kid] !== old || old.dirty || (sv.upd || 0) <= (old.upd || 0))) return;
     const upd0 = old && old.upd;
     const media = await window.PicFB.media(kid);
-    const h = newH(); h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0; h.selesai = !!sv.selesai;
+    const h = newH(); h.svSig = sv.dev ? sv.dev + ':' + (sv.upd || 0) + ':' + (sv.rev || 0) : ''; h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0; h.selesai = !!sv.selesai;
     h.nilai = sv.nilai || {}; h.kel = sv.kel || {}; { const l = sv.lap || {}; h.lapN = { s1: l.s1 || {}, s2: l.s2 || {} }; if (l.nKota != null) h.lapN.nKota = l.nKota; Object.keys(l.hari || {}).forEach(d => { if (l.hari[d].materi != null) h.materi[d] = l.hari[d].materi; }); }
     Object.keys((sv.lap || {}).nr || {}).forEach(d => { const { ttd, ...r } = sv.lap.nr[d] || {}; if (Object.keys(r).length) h.nr[d] = r; });
     Object.keys((sv.lap || {}).nrk || {}).forEach(kk => Object.keys(sv.lap.nrk[kk] || {}).forEach(d => { const { ttd, ...r } = sv.lap.nrk[kk][d] || {}; if (Object.keys(r).length) h.nr[kk + '~' + d] = r; }));
@@ -555,8 +605,8 @@ let lastSrvObj = {}, goneT = null, lastSrv = '', watchOff = null, watchUid = nul
 let UPL = 0; // pemilih berkas sedang terbuka: jangan render ulang layar (input bisa hilang sebelum berkas terpilih)
 const busy = () => { const a = document.activeElement; return !!CAM || Date.now() < UPL || !!$('#pad') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
 function renderSoft() { if (busy()) { pendR = true; return; } pendR = false; render(); } // jangan merusak layar yang sedang diketik/dipakai kamera
-setInterval(() => { if (pendR && !busy()) renderSoft(); }, 1200);
-document.addEventListener('focusout', () => { if (pendR) setTimeout(() => { if (pendR && !busy()) renderSoft(); }, 300); });
+setInterval(() => { if (pendR && !busy()) renderSoft(); }, 500);
+document.addEventListener('focusout', () => { if (pendR) setTimeout(() => { if (pendR && !busy()) renderSoft(); }, 150); });
 async function applyKegs(srv) {
   const sg = fnv(JSON.stringify(srv)); if (sg === lastSrv) return false; lastSrv = sg;
   const baru = [];
@@ -575,7 +625,7 @@ async function applyKegs(srv) {
   if (tunggu) { clearTimeout(goneT); goneT = setTimeout(() => { lastSrv = ''; applyKegs(lastSrvObj); }, 610000); }
   await saveK(); pullErr = '';
   baru.forEach(kid => { if (!H[kid]) restore(kid); });
-  ttdpRepubAll(); renderSoft(); return true;
+  ttdpRepubAll(); startHasilOwn(); renderSoft(); return true;
 }
 function stopWatch() { if (watchOff) { try { watchOff(); } catch (e) { } } watchOff = null; watchUid = null; watchGot = 0; }
 function startWatch() {
@@ -590,7 +640,7 @@ function startWatch() {
 }
 async function pull(force) {
   if (!fbOk() || !online()) return;
-  startWatch();
+  startWatch(); soffUpdate();
   try {
     const live = !force && watchOff && watchGot; // pendengar realtime hidup: tak perlu unduh ulang seluruh daftar
     const [srv, prof] = await Promise.all([live ? null : window.PicFB.kegiatan(), window.PicFB.profile(ME.uid)]);
@@ -705,7 +755,7 @@ function lapCek(kid) {
       ds.forEach(d0 => {
         const i = days.indexOf(d0);
         nrKeys(h, k, d0, pf).forEach((key, n) => {
-          const r = nrOf(h, k, key), ttd = nrTtd(h, key), nama = r.nama.trim(); if (n && !nama && !ttd) return; // baris tambahan yang kosong tidak dicetak
+          const r = nrOf(h, k, key), ttd = nrTtd(h, key, k), nama = r.nama.trim(); if (n && !nama && !ttd) return; // baris tambahan yang kosong tidak dicetak
           const ok = !!nama && ttd, mat = !!(r.mid || r.mtxt.trim()); if (ok && !mat) kosongMateri++;
           s.total++; if (ok) s.ok++;
           s.rows.push({ t: `Hari ${i + 1}${n ? ' · narasumber ke-' + (n + 1) : ''} · ${tglPendek(d0)}`, s: nama ? nama + (r.inst ? ' · ' + r.inst : '') : 'Narasumber belum dipilih', st: ok ? 'ok' : 'bad', chips: [['Nama', nama ? 'ok' : 'bad'], ['Materi', mat ? 'ok' : 'warn'], ['TTD', ttd ? 'ok' : 'bad']] });
@@ -732,7 +782,7 @@ function lapCek(kid) {
   // 6. Penandatangan Daftar Nilai
   if (ln.nilai) {
     const s = base('ttn', 'Penandatangan Daftar Nilai', 'ttn', null), jab = x => String(ln[x] || '').replace(/\n/g, ' ') || (x === 's1jab' ? 'Pengawas' : 'Ahli K3');
-    [['Kota (baris tanggal)', kotaOf(h, k).trim()], ['Nama ' + jab('s1jab'), lapNama(h, k, 's1', 'nama').trim()], ['TTD ' + jab('s1jab'), nTtd(h, 1)], ['Nama ' + jab('s2jab'), lapNama(h, k, 's2', 'nama').trim()], ['TTD ' + jab('s2jab'), nTtd(h, 2)]]
+    [['Kota (baris tanggal)', kotaOf(h, k).trim()], ['Nama ' + jab('s1jab'), lapNama(h, k, 's1', 'nama').trim()], ['TTD ' + jab('s1jab'), nTtd(h, 1, k)], ['Nama ' + jab('s2jab'), lapNama(h, k, 's2', 'nama').trim()], ['TTD ' + jab('s2jab'), nTtd(h, 2, k)]]
       .forEach(([t, v]) => { s.total++; if (v) s.ok++; s.rows.push({ t, st: v ? 'ok' : 'bad', s: typeof v === 'string' ? v : '' }); });
     if (s.total > s.ok) s.kurang = `${s.total - s.ok} isian belum`;
     add(s);
@@ -816,7 +866,7 @@ function wDk(kid, k, g) {
 function wNilaiTtd(kid, k, n) {
   const h = hOf(kid), ln = LAPK(k), jab = String(ln['s' + n + 'jab'] || '').split('\n'); while (jab.length < 2) jab.push('');
   const nm = lapNama(h, k, 's' + n, 'nama').trim(), nip = lapNama(h, k, 's' + n, 'nip').trim();
-  return `<td class="wsc">${jab.map(l => `<div>${esc(l) || '&nbsp;'}</div>`).join('')}<div class="wsg">${wSig(h['n' + n], nTtd(h, n))}</div><div>${nm ? `<b><u>${esc(nm)}</u></b>` : '&nbsp;'}</div>${nip ? `<div class="sm">NIP. ${esc(nip)}</div>` : ''}</td>`;
+  return `<td class="wsc">${jab.map(l => `<div>${esc(l) || '&nbsp;'}</div>`).join('')}<div class="wsg">${wSig(h['n' + n], nTtd(h, n, k))}</div><div>${nm ? `<b><u>${esc(nm)}</u></b>` : '&nbsp;'}</div>${nip ? `<div class="sm">NIP. ${esc(nip)}</div>` : ''}</td>`;
 }
 function wNl(kid, k, g) {
   const h = hOf(kid), ln = LAPK(k), days = k.tgl || [], ps = urutKelas(k, pesByKl(k, g.kl)).filter(p => (p.nama || '').trim() && !isBatal(h, p));
@@ -851,7 +901,7 @@ function wHr(kid, k) {
 function wNr(kid, k, g) {
   const h = hOf(kid), days = k.tgl || [], pf = (k.b3 && papaOf(k) && g.kl) ? kelasKey(g.kl) + '~' : '', ds = k.b3 ? withKl(g.kl, () => absDays(k)) : days; let rows = '';
   ds.forEach(d0 => nrKeys(h, k, d0, pf).forEach((key, n) => {
-    const r = nrOf(h, k, key), ttd = nrTtd(h, key), nama = r.nama.trim(); if (n && !nama && !ttd) return;
+    const r = nrOf(h, k, key), ttd = nrTtd(h, key, k), nama = r.nama.trim(); if (n && !nama && !ttd) return;
     const x = new Date(d0 + 'T00:00:00'), nip = (r.kid && r.kid !== '_m') || r.nip ? `<div class="sm">NIP : ${esc(r.nip || '')}</div>` : '', lines = String(r.mtxt || '').split('\n').map(t => t.trim()).filter(Boolean);
     rows += `<tr><td class="c">${n ? '' : `<div>${esc(hariNama(d0))}</div><div>${x.getDate()} ${esc(fm(d0, { month: 'long' }))} ${x.getFullYear()}</div>`}</td><td>${esc(r.nama)}${nip}</td><td class="c">${esc(r.inst)}</td><td class="sm">${lines.map(t => `<div class="wbul">↓ ${esc(t)}</div>`).join('')}</td><td class="c wsgc">${wSig(h.nrs[key], ttd)}</td></tr>`;
   }));
@@ -911,7 +961,7 @@ function render() {
     // yang sedang/akan berlangsung di atas (terdekat dulu), lalu yang sudah lewat (terbaru dulu)
     const list = all.filter(x => !qq || String(x.nama).toLowerCase().includes(qq) || String(x.tempat || '').toLowerCase().includes(qq))
       .sort((a, b) => { const ua = akhir(a) >= hari, ub = akhir(b) >= hari; if (ua !== ub) return ua ? -1 : 1; return ua ? awal(a).localeCompare(awal(b)) : awal(b).localeCompare(awal(a)); });
-    h = appbar('Portal PIC', ME.nama, false) + `<div class="screen"><div class="hello"><h2>Daftar kegiatan</h2><p class="hint" style="margin:4px 0 0">${qq ? `${list.length} dari ${all.length} kegiatan` : `${all.length} kegiatan ${P.showDone ? 'yang sudah selesai' : 'dari admin utama'}`}.</p></div>
+    h = appbar('Portal PIC', ME.nama, false) + `<div class="screen">${hasilDenied ? `<div class="card2" style="border-color:var(--warn)"><b>⚠ Data akun PIC lain belum bisa dibaca</b><div class="hint">Aturan Firebase belum mengizinkan akun PIC membaca hasil akun PIC lain, jadi tanda "sudah TTD oleh PIC lain" belum muncul. Minta admin memperbarui aturan <b>dh_hasil</b> (lihat pic/README.md). Data Anda sendiri tetap tersimpan dan terkirim.</div></div>` : ''}<div class="hello"><h2>Daftar kegiatan</h2><p class="hint" style="margin:4px 0 0">${qq ? `${list.length} dari ${all.length} kegiatan` : `${all.length} kegiatan ${P.showDone ? 'yang sudah selesai' : 'dari admin utama'}`}.</p></div>
       ${all.length > 4 ? `<div class="field"><input id="homeQ" type="search" placeholder="Cari nama kegiatan atau tempat" aria-label="Cari kegiatan" value="${esc(P.hq || '')}"></div>` : ''}
       ${list.length ? list.map(x => { const s = stat(x.id), st = statusKeg(x.id); return `<button type="button" class="kcard" data-act="open" data-id="${esc(x.id)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(x.nama)}${x.sfx ? ` <span style="display:inline-block;font-size:12px;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:6px;padding:0 7px;vertical-align:2px" title="Ada kegiatan lain dengan nama & tanggal yang sama">${esc(x.sfx)}</span>` : ''}</h3><span class="pill ${st[1]}">${st[0]}</span></div>
         <div class="meta"><span>${esc(rentang(x.tgl))}</span><span>${esc(x.tempat || '')}</span><span>${(x.peserta || []).length} peserta</span></div>
@@ -930,8 +980,8 @@ function render() {
     const tDok = `<button type="button" class="tile" data-act="go" data-to="dok"><span class="ic">${I.cam}</span><span><b>Dokumentasi Peserta</b><small>${s.foto}/${s.aktif} foto diambil</small></span>${I.chev}</button>`;
     const tNil = ln.nilai || ln.hasil ? (() => { const ps = pesByKl(k, kl).filter(p => !isBatal(hh, p)), isi = ps.filter(p => nilaiLengkap(hh, ln, p)).length;
       return `<button type="button" class="tile" data-act="go" data-to="nil"><span class="ic">${I.list}</span><span><b>Nilai &amp; Kelulusan</b><small>${isi}/${ps.length} peserta terisi</small></span>${I.chev}</button>`; })() : '';
-    const tTtn = ln.nilai ? `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>${hh.n1 || lapNama(hh, k, 's1', 'nama') ? 'Pengawas ' + (hh.n1 ? '✔' : '–') : 'Pengawas –'} · Ahli ${hh.n2 ? '✔' : '–'}</small></span>${I.chev}</button>` : '';
-    const tNar = (ln.nara && (!k.b3 || alat)) ? (() => { const ds = (k.b3 ? absDays(k) : (k.tgl || [])).filter(d => !nrOffOf(k, nrPfx(k) + d)), pf = nrPfx(k), n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && nrTtd(hh, pf + d); }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
+    const tTtn = ln.nilai ? `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>Pengawas ${nTtd(hh, 1, k) ? '✔ sudah TTD' : '– belum TTD'} · Ahli K3 ${nTtd(hh, 2, k) ? '✔ sudah TTD' : '– belum TTD'}</small></span>${I.chev}</button>` : '';
+    const tNar = (ln.nara && (!k.b3 || alat)) ? (() => { const ds = (k.b3 ? absDays(k) : (k.tgl || [])).filter(d => !nrOffOf(k, nrPfx(k) + d)), pf = nrPfx(k), n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && nrTtd(hh, pf + d, k); }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
     const tSf = ln.selfie && !alat ? `<button type="button" class="tile" data-act="go" data-to="sfl"><span class="ic">${I.cam}</span><span><b>Link Absen Selfie Peserta</b><small>Bagikan ke peserta · pagi &amp; siang</small></span>${I.chev}</button>` : '';
     const tLap = (() => { const c = lapCek(kid); return `<button type="button" class="tile lap${c.all ? ' ok' : ''}" data-act="go" data-to="lap"><span class="ic">${I.list}</span><span><b>Pratinjau Laporan</b><small>${c.all ? 'Laporan lengkap ✔' : c.pct + '% lengkap · ' + (c.secs.length - c.nOk) + ' bagian masih kurang'} — cek sebelum selesai</small></span>${I.chev}</button>`; })();
     const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
@@ -996,10 +1046,10 @@ function render() {
       <div class="nlist" id="nilList"></div>
       <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
   } else if (P.screen === 'ttn') {
-    const hh = hOf(kid), ln = LAPK(k), sg = (w, n, jab, nip) => `<div class="card2"><b>${esc(jab || '')}</b>
+    const hh = hOf(kid), ln = LAPK(k), sg = (w, n, jab, nip) => `<div class="card2"><b>${esc(jab || '')}</b>${ttdBadge(nTtdSrc(hh, k, n))}
       <div class="field"><label for="in_${w}nama">Nama</label><input id="in_${w}nama" data-lap="${w}.nama" value="${esc(lapNama(hh, k, w, 'nama'))}" autocomplete="off" placeholder="Contoh: REPY, ST"></div>
       ${nip ? `<div class="field"><label for="in_${w}nip">NIP</label><input id="in_${w}nip" data-lap="${w}.nip" value="${esc(lapNama(hh, k, w, 'nip'))}" autocomplete="off" placeholder="Contoh: 198512192015041009"></div>` : ''}
-      ${hh['n' + n] ? `<div class="sigbtn done" style="margin:4px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${hh['n' + n]}" alt="TTD" style="max-height:84px"></div>` : '<div class="hint">Belum ada tanda tangan.</div>'}
+      ${hh['n' + n] ? `<div class="sigbtn done" style="margin:4px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${hh['n' + n]}" alt="TTD" style="max-height:84px"></div>` : nTtdSrc(hh, k, n) ? `<div class="hint"><b>Tanda tangan sudah ada (${nTtdSrc(hh, k, n) === 'pic' ? 'diisi PIC lain' : 'di website'}).</b> Tidak perlu tanda tangan lagi; boleh tanda tangan ulang bila ingin mengganti.</div>` : '<div class="hint">Belum ada tanda tangan.</div>'}
       <div class="row"><button type="button" class="btn pri" data-act="nsig" data-n="${n}">${hh['n' + n] ? 'Ganti tanda tangan' : 'Tanda tangan'}</button>${hh['n' + n] ? `<button type="button" class="btn" data-act="nsigdel" data-n="${n}">Hapus</button>` : ''}</div>
       ${lapNama(hh, k, w, 'nama').trim() ? `<div class="row"><button type="button" class="btn" data-act="ttnshare" data-n="${n}">📤 Bagikan link TTD</button><button type="button" class="btn" data-act="ttncopy" data-n="${n}">Salin link</button></div><div class="hint">${hh.tnShared[n] ? 'Link sudah dibuat. ' : ''}Penandatangan membuka link, menandatangani di HP-nya sendiri, lalu tanda tangan masuk otomatis ke sini dan ke Daftar Nilai.</div>` : '<div class="hint">Isi nama dulu agar link tanda tangan bisa dibagikan.</div>'}</div>`;
     h = appbar('Penandatangan Daftar Nilai', k.nama, true) + `<div class="screen">
@@ -1010,8 +1060,8 @@ function render() {
     const hh = hOf(kid), days = k.b3 ? absDays(k) : (k.tgl || []);
     const brt = !k.b3 && days.length > 4 && kelasArr(k).filter(Boolean).length > 0 && k.hk && Object.keys(k.hk).length, hk0 = (() => { const v = k.hk && Object.values(k.hk)[0]; return v ? (Array.isArray(v) ? v : Object.values(v)) : []; })();
     h = appbar('Absensi Narasumber', subK(k), true) + `<div class="screen">${days.map((d0, i) => { const ks = nrKeys(hh, k, d0, nrPfx(k)); if (!ks.length) return `<div class="card2"><b>Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}</b><div class="hint">Hari ini tidak ada narasumber (dihapus admin).</div></div>`; return ks.map((d, n) => {
-      const r = nrOf(hh, k, d), man = r.kid === '_m', mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null, sg = hh.nrs[d];
-      return `<div class="card2" data-day="${esc(d)}"><b>${n ? `Narasumber ke-${n + 1} · Hari ${i + 1}` : `Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}`}</b>${brt ? `<small>${hk0.includes(d0) ? 'Semua alat/kelas' : 'Libur Kelas 2/3 & Rigger'}</small>` : ''}
+      const r = nrOf(hh, k, d), man = r.kid === '_m', mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null, sg = hh.nrs[d], src = nrTtdSrc(hh, k, d);
+      return `<div class="card2" data-day="${esc(d)}"><b>${n ? `Narasumber ke-${n + 1} · Hari ${i + 1}` : `Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}`}</b>${ttdBadge(src)}${brt ? `<small>${hk0.includes(d0) ? 'Semua alat/kelas' : 'Libur Kelas 2/3 & Rigger'}</small>` : ''}
       <div class="field"><label for="nk${i}_${n}">Narasumber</label><select id="nk${i}_${n}" data-nr="kid"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(n => `<option value="${n.id}"${r.kid === n.id ? ' selected' : ''}>${esc(n.nama)}</option>`).join('')}<option value="_m"${man ? ' selected' : ''}>✍️ Isi manual (kosong)</option></select></div>
       ${man ? `<div class="field"><label for="nn${i}_${n}">Nama narasumber</label><input id="nn${i}_${n}" data-nr="nama" value="${esc(r.nama)}" autocomplete="off" placeholder="Contoh: Fido Rinekas, S.T"></div>
         <div class="field"><label for="np${i}_${n}">NIP (boleh kosong)</label><input id="np${i}_${n}" data-nr="nip" value="${esc(r.nip)}" autocomplete="off"></div>
@@ -1019,7 +1069,7 @@ function render() {
         : r.kid ? `<div class="nauto"><small>Instansi (otomatis)</small><b>${esc(r.inst)}</b><small>NIP: ${esc(r.nip) || '–'}</small></div>` : ''}
       ${r.kid ? `<div class="field"><label for="nm${i}_${n}">Materi</label><select id="nm${i}_${n}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
       ${mk ? `<div class="nbul">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join('')}</div>` : r.mid === 'manual' ? `<div class="field"><label for="nt${i}_${n}">Isi materi (satu baris = satu poin)</label><textarea id="nt${i}_${n}" data-nr="mtxt" rows="4" placeholder="Contoh: Evaluasi Teori">${esc(r.mtxt)}</textarea></div>` : ''}
-      ${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
+      ${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : src ? `<div class="hint"><b>Tanda tangan narasumber sudah ada (${src === 'pic' ? 'diisi PIC lain' : 'di website'}).</b> Tidak perlu tanda tangan lagi; boleh tanda tangan ulang bila ingin mengganti.</div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
       <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}${n ? '<button type="button" class="btn" data-act="nrclr">Kosongkan baris</button>' : ''}</div>
       ${r.nama.trim() ? `<div class="row"><button type="button" class="btn" data-act="nrshare">📤 Bagikan link ke narasumber</button><button type="button" class="btn" data-act="nrcopy">Salin link</button></div><div class="hint">${hh.nshared[d] ? 'Link sudah dibuat. ' : ''}Narasumber membuka link, menandatangani di HP-nya sendiri, lalu tanda tangan masuk otomatis ke baris ini.</div>` : '<div class="hint">Pilih narasumber dulu agar link penandatanganan bisa dibagikan.</div>'}</div>`;
     }).join('') + (ks.length < NR_MAX ? `<button type="button" class="btn" data-act="nradd" data-d="${esc(d0)}">➕ Tambah narasumber di hari ini</button>` : ''); }).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
@@ -1467,7 +1517,7 @@ document.addEventListener('submit', async e => {
 window.addEventListener('online', () => { renderPill(); pull(true); sync(); });
 window.addEventListener('offline', () => renderPill());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderPill(); pull(true); sync(); } });
-setInterval(() => { if (ME && online()) { pull(); sync(); } }, 60000); // cadangan bila pendengar realtime putus
+setInterval(() => { if (ME && online()) { pull(); sync(); } }, 20000); // cadangan bila pendengar realtime putus
 window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
 
 /* ---------- pembaruan aplikasi ----------
