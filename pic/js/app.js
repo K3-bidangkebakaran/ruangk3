@@ -165,7 +165,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v42';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v43';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -312,11 +312,12 @@ async function ttdpPublish(kid, kl, force) { // terbitkan / perbarui daftar nama
   if (!force && h.tshared[klk] && h.tshared[klk].hs === hs) return info;
   await window.PicFB.ttdpPub(kid, klk, info); h.tshared[klk] = { kl: kl == null ? null : kl, hs }; await saveH(kid); return info;
 }
-let ttdpT = 0;
+let ttdpT = 0; const ttdpPend = new Set();
 function ttdpRepub(kid) { // peserta cancel / remedial / daftar peserta berubah setelah link dibagikan: perbarui daftar nama di server (diam-diam)
-  clearTimeout(ttdpT);
-  ttdpT = setTimeout(async () => { const h = H[kid]; if (!h || !KEGS[kid] || !fbOk() || !online()) return; for (const klk of Object.keys(h.tshared || {})) { try { await ttdpPublish(kid, (h.tshared[klk] || {}).kl == null ? undefined : h.tshared[klk].kl); } catch (e) { } } }, 2500);
+  ttdpPend.add(kid); clearTimeout(ttdpT);
+  ttdpT = setTimeout(async () => { const ids = [...ttdpPend]; ttdpPend.clear(); for (const id of ids) { const h = H[id]; if (!h || !KEGS[id] || !fbOk() || !online()) continue; for (const klk of Object.keys(h.tshared || {})) { try { await ttdpPublish(id, (h.tshared[klk] || {}).kl == null ? undefined : h.tshared[klk].kl); } catch (e) { } } } }, 2500);
 }
+const ttdpRepubAll = () => Object.keys(KEGS).forEach(kid => { const h = H[kid]; if (h && Object.keys(h.tshared || {}).length) ttdpRepub(kid); }); // data kegiatan / akun PIC lain berubah (mis. Remedial dari website): daftar hari di link TTD ikut diperbarui
 async function ttdpShare(b, a, k, kid) {
   if (!fbOk() || !online()) { toast('Membuat link perlu internet dan login.'); return; }
   const kl = curKl(k), klk = ttdpKl(kl); b.disabled = true;
@@ -370,7 +371,7 @@ function hasilGot(obj) {
     const sv = obj[kid] && obj[kid][me], h = H[kid];
     if (sv && h && (sv.upd || 0) > (h.upd || 0) && !h.dirty && !mediaList(h).some(([k, d]) => h.sent[k] !== fnv(d))) restore(kid, h);
   });
-  if (sg !== hasilSig) { hasilSig = sg; renderSoft(); }
+  if (sg !== hasilSig) { hasilSig = sg; ttdpRepubAll(); renderSoft(); }
 }
 function startNara() {
   if (!fbOk() || !window.PicFB.watchNara || (naraOff && naraUid === ME.uid)) return;
@@ -574,7 +575,7 @@ async function applyKegs(srv) {
   if (tunggu) { clearTimeout(goneT); goneT = setTimeout(() => { lastSrv = ''; applyKegs(lastSrvObj); }, 610000); }
   await saveK(); pullErr = '';
   baru.forEach(kid => { if (!H[kid]) restore(kid); });
-  renderSoft(); return true;
+  ttdpRepubAll(); renderSoft(); return true;
 }
 function stopWatch() { if (watchOff) { try { watchOff(); } catch (e) { } } watchOff = null; watchUid = null; watchGot = 0; }
 function startWatch() {
@@ -963,7 +964,7 @@ function render() {
       ${days.length > 1 ? `<div class="chips" role="tablist">${days.map((t, i) => `<button type="button" role="tab" data-act="day" data-i="${i}" aria-selected="${i === P.day}">Hari ${i + 1} · ${esc(tglPendek(t))}</button>`).join('')}</div>` : (d ? `<div class="hint">${esc(hariNama(d))}, ${esc(tglPanjang(d))}</div>` : '')}
       <div class="card2"><b>Link TTD peserta</b><div class="hint">Bagikan ke peserta${curKl(k) != null ? ' kelas/alat ini' : ''} (mis. lewat grup WhatsApp). Peserta membuka link, memilih namanya sendiri, lalu langsung tanda tangan di HP-nya. Hasilnya masuk otomatis ke daftar di bawah.</div>
         <div class="row"><button type="button" class="btn pri" data-act="tpshare">📤 Bagikan link</button><button type="button" class="btn" data-act="tpcopy">Salin link</button></div><div class="hint" id="tpNote">${hOf(P.kid).tshared[ttdpKl(curKl(k))] ? 'Link sudah dibuat. Peserta tinggal memilih nama dan tanda tangan.' : ''}</div></div>
-      ${kegOver(k, curKl(k)) ? `<div class="card2"><b>🚨 Darurat: peserta belum TTD</b><div class="hint">Tanggal kegiatan sudah lewat. Bagikan link darurat ke peserta yang belum tanda tangan. Peserta memilih namanya, tanda tangan sekali, dan tanda tangannya otomatis dicatat ke <b>semua hari yang belum diisi</b>. Peserta yang sudah lengkap tidak bisa memilih namanya lagi.</div>
+      ${kegOver(k, curKl(k)) ? `<div class="card2"><b>🚨 Darurat: peserta belum TTD</b><div class="hint">Tanggal kegiatan sudah lewat. Bagikan link darurat ke peserta yang belum tanda tangan. Peserta memilih namanya, tanda tangan sekali, dan tanda tangannya otomatis dicatat ke <b>semua hari yang belum diisi</b>. Yang tampil di daftar hanya peserta yang masih punya tanggal kosong. Peserta Remedial hanya diminta tanda tangan di hari terakhir (tanggal ujian); hari berwarna kuning di Word tidak perlu tanda tangan.</div>
         <div class="row"><button type="button" class="btn pri" data-act="tpdshare">🚨 Bagikan link darurat</button><button type="button" class="btn" data-act="tpdcopy">Salin link darurat</button></div><div class="hint" id="tpdNote"></div></div>` : ''}
       <div class="counter" id="absCount"></div>
       <div class="field"><input id="absQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
@@ -1035,7 +1036,7 @@ function render() {
       <button type="button" class="btn pri" data-act="sfcopy">Salin link</button>
       <button type="button" class="btn" data-act="sfshare">Bagikan (WhatsApp, dll.)</button>
       <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman selfie (uji)</a>
-      ${kegOver(k) ? `<div class="card2"><b>🚨 Darurat: peserta belum selfie</b><div class="hint">Tanggal kegiatan sudah lewat. Bagikan link darurat ke peserta yang belum selfie. Peserta memilih namanya, selfie sekali, dan fotonya otomatis dicatat ke <b>semua hari/sesi yang belum diisi</b> (watermark tertulis "ABSEN DARURAT" beserta waktu foto sebenarnya).</div>
+      ${kegOver(k) ? `<div class="card2"><b>🚨 Darurat: peserta belum selfie</b><div class="hint">Tanggal kegiatan sudah lewat. Bagikan link darurat ke peserta yang belum selfie. Peserta memilih namanya, selfie sekali, dan fotonya otomatis dicatat ke <b>semua tanggal yang belum selfie</b>. Watermark tiap foto: nama, perusahaan, "ABSEN DARURAT" + tanggal yang diisi, dan lokasi baku "Morowali, IMIP".</div>
         <div class="field"><label for="sfLinkD">Link darurat selfie</label><input id="sfLinkD" readonly value="${esc(link + '&darurat=1')}" onfocus="this.select()"></div>
         <div class="row"><button type="button" class="btn pri" data-act="sfdcopy">Salin link darurat</button><button type="button" class="btn" data-act="sfdshare">🚨 Bagikan link darurat</button></div></div>` : ''}
       <p class="hint">Absen <b>pagi</b> sebelum jam 12.00 dan absen <b>siang</b> jam 12.00 ke atas (mengikuti zona waktu kegiatan). Link hanya berlaku pada hari kegiatan. Setiap peserta hanya bisa sekali per sesi; bila salah foto, minta admin menghapusnya di Daftar Hadir (tab Laporan) agar bisa mengulang. Hasilnya otomatis masuk ke laporan setelah Daftar Hadir.</p></div>`;

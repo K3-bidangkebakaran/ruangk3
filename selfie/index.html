@@ -57,7 +57,8 @@ h2{font-size:20px}
 .note.okk{background:var(--ok-soft);color:var(--ok)}
 .empty{color:var(--muted);text-align:center;padding:22px 8px}
 .pill.dar{background:var(--bad-soft);color:var(--bad);align-self:flex-start;justify-self:start}
-.nm .mis{grid-column:1;color:var(--warn);font-size:12.5px;font-weight:600}
+.nm .dl{grid-column:1/3;display:flex;flex-wrap:wrap;gap:5px;align-items:center;color:var(--muted);font-size:12.5px;margin-top:3px}.nm .dl span{background:var(--warn-soft);color:var(--warn);border-radius:99px;padding:1px 9px;font-weight:700}
+.thumbs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}.thumbs figure{margin:0;position:relative;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:#000}.thumbs img{width:100%;height:100%;object-fit:cover;display:block}.thumbs figcaption{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.65);color:#fff;border-radius:99px;padding:1px 9px;font-size:12px;font-weight:700}
 .btn.dar{color:var(--bad);border-color:var(--bad)}
 .dlist{display:flex;flex-wrap:wrap;gap:6px}
 .dlist span{background:var(--warn-soft);color:var(--warn);border-radius:99px;padding:2px 10px;font-size:13px;font-weight:600}
@@ -142,19 +143,20 @@ function ctx() {
 const DRon = () => DR && ctx().over;
 const tglPendek = iso => { const [, m, d] = iso.split("-").map(Number); return `${d} ${BLN[m - 1].slice(0, 3)}`; };
 const miss = p => { const out = []; ctx().tgl.slice().sort().forEach(d => ["p", "s"].forEach(s => { if (!ST[`${p.id}~${d}~${s}`]) out.push({ d, s, key: `${p.id}~${d}~${s}` }); })); return out; };
-const missTxt = m => { const by = {}; m.forEach(x => { (by[x.d] = by[x.d] || []).push(x.s); }); return Object.keys(by).map(d => `${tglPendek(d)}${by[d].length === 2 ? "" : " " + (by[d][0] === "p" ? "pagi" : "siang")}`); };
+const missDays = p => [...new Set(miss(p).map(x => x.d))];
+const missTxt = m => [...new Set(m.map(x => x.d))].map(tglPendek);
 function head(c) {
   const lk = lokasi(INFO.tempat, INFO.kota), meta = lk ? `📍 ${lk}` : "";
   return `<div class="card"><h1>${esc(INFO.nama)}</h1><div class="meta"><span>${esc(tglPanjang(c.z.iso))}</span>${meta ? `<span>${esc(meta)}</span>` : ""}</div>`
     + (c.idx >= 0 ? `<span class="pill ${c.ses === "s" ? "siang" : ""}">Hari ke-${c.idx + 1} · Absen ${sesiNama(c.ses)}</span>` : "") + `</div>`;
 }
 function dlist(q, c) {
-  const all = INFO.peserta, need = all.filter(p => miss(p).length), ps = all.filter(p => !q || (p.nama + " " + p.instansi).toLowerCase().includes(q.toLowerCase()));
+  const all = INFO.peserta, need = all.filter(p => miss(p).length), ps = need.filter(p => !q || (p.nama + " " + p.instansi).toLowerCase().includes(q.toLowerCase()));
   show(head(c) + `<span class="pill dar">🚨 Mode darurat</span>
-    <div class="note warn">Khusus peserta yang <b>belum selfie</b> saat kegiatan berlangsung. Pilih nama Anda, ambil satu selfie, dan foto itu otomatis dicatat untuk <b>semua hari/sesi yang belum Anda isi</b>. Watermark akan menuliskan bahwa ini absen darurat beserta waktu foto sebenarnya.</div>
-    <div class="note okk" id="prog">${all.length - need.length} dari ${all.length} peserta sudah lengkap.</div>
+    <div class="note warn">Khusus peserta yang <b>belum selfie</b> saat kegiatan berlangsung. Pilih nama Anda, ambil satu selfie, dan foto itu otomatis dicatat untuk <b>semua tanggal yang belum Anda isi</b>. Watermark tiap foto bertuliskan "ABSEN DARURAT", tanggal yang diisi, dan lokasi (Morowali, IMIP).</div>
+    <div class="note ${need.length ? "warn" : "okk"}" id="prog">${need.length ? `${need.length} peserta masih ada tanggal yang belum selfie.` : "Semua peserta sudah lengkap selfie-nya."} Nama yang tidak tampil di bawah berarti sudah lengkap.</div>
     <h2>Pilih nama Anda</h2><input class="search" id="q" type="search" placeholder="Cari nama atau perusahaan" aria-label="Cari nama atau perusahaan" autocomplete="off" value="${esc(q || "")}">
-    <ul class="names">${ps.map(p => { const m = miss(p); return `<li><button class="nm" data-id="${esc(p.id)}"${m.length ? "" : " disabled"}><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small>${m.length ? `<small class="mis">Belum selfie: ${esc(missTxt(m).join(" · "))}</small>` : `<span class="ok">✓ Lengkap</span>`}</button></li>`; }).join("") || `<li class="empty">${all.length ? "Nama tidak ditemukan." : "Belum ada peserta di kegiatan ini."}</li>`}</ul>`, "dlist");
+    <ul class="names">${ps.map(p => `<li><button class="nm" data-id="${esc(p.id)}"><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small><span class="dl">Belum selfie tanggal:${missDays(p).map(d => `<span>${esc(tglPendek(d))}</span>`).join("")}</span></button></li>`).join("") || `<li class="empty">${need.length ? "Nama tidak ditemukan." : "Tidak ada peserta yang perlu selfie darurat."}</li>`}</ul>`, "dlist");
   const qi = $("#q"); qi.oninput = () => { const v = qi.value, pos = qi.selectionStart; list(v); const q2 = $("#q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (_) { } };
   main.querySelectorAll(".nm").forEach(b => { b.onclick = () => pilih(b.dataset.id); });
 }
@@ -187,7 +189,7 @@ function konfirmasi() {
   const c = ctx(), dr = DRon(), M = dr ? miss(CHOSEN) : [];
   show(head(c) + `<div class="who"><span>Anda memilih:</span><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi)}</span></div>
     <div class="note warn">Bukan nama Anda? Tekan <b>Kembali</b>. ${dr ? "Selfie hanya bisa dikirim <b>satu kali</b>." : "Selfie hanya bisa dikirim <b>satu kali</b> untuk tiap sesi (pagi / siang)."} Wajah harus terlihat jelas.</div>
-    ${dr ? `<div class="note warn">🚨 Mode darurat. Selfie ini akan dicatat untuk <b>${M.length} sesi</b> yang belum Anda isi:<div class="dlist" style="margin-top:6px">${missTxt(M).map(t => `<span>${esc(t)}</span>`).join("")}</div></div>` : ""}
+    ${dr ? `<div class="note warn">🚨 Mode darurat. Selfie ini akan dicatat untuk <b>${missDays(CHOSEN).length} tanggal</b> yang belum Anda isi:<div class="dlist" style="margin-top:6px">${missTxt(M).map(t => `<span>${esc(t)}</span>`).join("")}</div></div>` : ""}
     <div class="row two"><button class="btn" id="back">Kembali</button><button class="btn pri" id="go">📸 Buka kamera</button></div>`);
   $("#back").onclick = () => { CHOSEN = null; list(); };
   $("#go").onclick = bukaKamera;
@@ -215,34 +217,42 @@ function toastMsg(m) { const el = $("#camMsg"); if (el) el.innerHTML = `<div cla
 
 /* ---------- ambil gambar + watermark ---------- */
 function wrap(ctx2, text, maxW) { const w = String(text || "").split(/\s+/), out = []; let cur = ""; w.forEach(x => { const t = cur ? cur + " " + x : x; if (ctx2.measureText(t).width > maxW && cur) { out.push(cur); cur = x; } else cur = t; }); if (cur) out.push(cur); return out; }
-async function ambil(src, sw, sh, mirror) {
-  const z = nowZ(INFO.zona), ses = sesiOf(z), dr = DRon(), W = 600, H = 800, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
-  const g = cv.getContext("2d"), r = Math.max(W / sw, H / sh), dw = sw * r, dh = sh * r;
-  g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
-  if (mirror) { g.save(); g.translate(W, 0); g.scale(-1, 1); }
-  g.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
-  if (mirror) g.restore();
-  // watermark: nama, perusahaan, tanggal & jam, lokasi kegiatan
+/* watermark pada salinan foto: nama, perusahaan, keterangan waktu, lokasi */
+function pasangWm(base, when, lok) {
+  const W = base.width, H = base.height, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const g = cv.getContext("2d"); g.drawImage(base, 0, 0);
   const px = Math.round(W * 0.042), pad = Math.round(W * 0.035), lines = [];
   g.font = `700 ${Math.round(px * 1.15)}px system-ui,Arial,sans-serif`; wrap(g, CHOSEN.nama, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 700, 1.15]));
   g.font = `500 ${px}px system-ui,Arial,sans-serif`; wrap(g, CHOSEN.instansi, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 1]));
   g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`;
-  wrap(g, dr ? `ABSEN DARURAT · difoto ${tglPanjang(z.iso)} · ${p2(z.h)}:${p2(z.m)} ${z.zn}` : `${tglPanjang(z.iso)} · ${p2(z.h)}:${p2(z.m)} ${z.zn} · Absen ${sesiNama(ses)}`, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92]));
-  const lok = lokasi(INFO.tempat, INFO.kota);
+  wrap(g, when, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92]));
   if (lok) { g.font = `500 ${Math.round(px * 0.92)}px system-ui,Arial,sans-serif`; wrap(g, "📍 " + lok, W - pad * 2).slice(0, 2).forEach(t => lines.push([t, 500, 0.92])); }
   const lh = l => Math.round(px * l[2] * 1.28), total = lines.reduce((s, l) => s + lh(l), 0) + pad * 1.4, y0 = H - total;
   const gr = g.createLinearGradient(0, y0 - px, 0, H); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(0.28, "rgba(0,0,0,.62)"); gr.addColorStop(1, "rgba(0,0,0,.82)");
   g.fillStyle = gr; g.fillRect(0, y0 - px, W, total + px);
   let y = y0 + pad * 0.7; g.textBaseline = "top"; g.shadowColor = "rgba(0,0,0,.7)"; g.shadowBlur = 4;
   lines.forEach(l => { g.font = `${l[1]} ${Math.round(px * l[2])}px system-ui,Arial,sans-serif`; g.fillStyle = "#fff"; g.fillText(l[0], pad, y); y += lh(l); });
+  return cv.toDataURL("image/jpeg", 0.72);
+}
+const LOK_DARURAT = "Morowali, IMIP"; /* lokasi baku untuk foto selfie darurat */
+async function ambil(src, sw, sh, mirror) {
+  const z = nowZ(INFO.zona), ses = sesiOf(z), dr = DRon(), W = 600, H = 800, base = document.createElement("canvas"); base.width = W; base.height = H;
+  const g = base.getContext("2d"), r = Math.max(W / sw, H / sh), dw = sw * r, dh = sh * r;
+  g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+  if (mirror) { g.save(); g.translate(W, 0); g.scale(-1, 1); }
+  g.drawImage(src, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  if (mirror) g.restore();
   await stopCam();
-  SHOT = { url: cv.toDataURL("image/jpeg", 0.72), ses, iso: z.iso, dr };
+  if (dr) { /* satu foto -> satu salinan per tanggal yang belum selfie; watermark: nama, perusahaan, "ABSEN DARURAT" + tanggal itu, lokasi baku */
+    const urls = {}; missDays(CHOSEN).forEach(d => { urls[d] = pasangWm(base, `ABSEN DARURAT · ${tglPanjang(d)}`, LOK_DARURAT); });
+    SHOT = { urls, dr, ses, iso: z.iso };
+  } else SHOT = { url: pasangWm(base, `${tglPanjang(z.iso)} · ${p2(z.h)}:${p2(z.m)} ${z.zn} · Absen ${sesiNama(ses)}`, lokasi(INFO.tempat, INFO.kota)), ses, iso: z.iso, dr };
   preview();
 }
 function preview() {
   const c = ctx();
   show(head(c) + `<div class="who"><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi)}</span></div>
-    <div class="cam"><img src="${SHOT.url}" alt="Hasil selfie"></div><div id="sendMsg"></div>
+    ${SHOT.urls ? `<div class="note warn">🚨 Foto ini dicatat untuk ${Object.keys(SHOT.urls).length} tanggal. Watermark di tiap foto mengikuti tanggalnya.</div><div class="thumbs">${Object.keys(SHOT.urls).map(d => `<figure><img src="${SHOT.urls[d]}" alt="Selfie ${esc(tglPendek(d))}"><figcaption>${esc(tglPendek(d))}</figcaption></figure>`).join("")}</div>` : `<div class="cam"><img src="${SHOT.url}" alt="Hasil selfie"></div>`}<div id="sendMsg"></div>
     <div class="row two"><button class="btn" id="again">Ulangi foto</button><button class="btn pri" id="send">✓ Kirim absen</button></div>`);
   $("#again").onclick = bukaKamera; $("#send").onclick = kirim;
 }
@@ -257,7 +267,7 @@ async function kirim() {
       const slots = [];
       for (const x of miss(CHOSEN)) { if (FB.has && await FB.has(KID, x.key)) ST[x.key] = ST[x.key] || 1; else slots.push(x); }
       if (!slots.length) throw Object.assign(new Error("dup"), { dup: true });
-      let n = 0; for (const x of slots) { b.textContent = `Mengirim… (${++n}/${slots.length})`; await FB.put(KID, x.key, SHOT.url); ST[x.key] = Date.now(); }
+      let n = 0; for (const x of slots) { b.textContent = `Mengirim… (${++n}/${slots.length})`; await FB.put(KID, x.key, SHOT.urls[x.d] || Object.values(SHOT.urls)[0]); ST[x.key] = Date.now(); }
       return selesai(slots);
     }
     if (ST[key] || (FB.has && await FB.has(KID, key))) throw Object.assign(new Error("dup"), { dup: true });
@@ -272,9 +282,9 @@ async function kirim() {
   } finally { busy = false; }
 }
 function selesai(slots) {
-  show(`<div class="big">✅</div><h2 class="center">${slots ? "Absen darurat berhasil" : "Absen " + esc(sesiNama(SHOT.ses).toLowerCase()) + " berhasil"}</h2>${slots ? `<div class="note okk center">Dicatat untuk ${slots.length} sesi: ${esc(missTxt(slots).join(" · "))}</div>` : ""}
+  show(`<div class="big">✅</div><h2 class="center">${slots ? "Absen darurat berhasil" : "Absen " + esc(sesiNama(SHOT.ses).toLowerCase()) + " berhasil"}</h2>${slots ? `<div class="note okk center">Dicatat untuk ${missTxt(slots).length} tanggal: ${esc(missTxt(slots).join(" · "))}</div>` : ""}
     <div class="who center"><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi)}</span></div>
-    <div class="cam"><img src="${SHOT.url}" alt="Selfie terkirim"></div>
+    ${slots ? `<div class="thumbs">${[...new Set(slots.map(x => x.d))].map(d => `<figure><img src="${SHOT.urls[d]}" alt="Selfie ${esc(tglPendek(d))}"><figcaption>${esc(tglPendek(d))}</figcaption></figure>`).join("")}</div>` : `<div class="cam"><img src="${SHOT.url}" alt="Selfie terkirim"></div>`}
     <button class="btn pri" id="done">Selesai</button>`);
   $("#done").onclick = () => { CHOSEN = null; SHOT = null; list(); };
 }
