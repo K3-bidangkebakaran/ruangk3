@@ -90,6 +90,8 @@ window.PicFB = {
   offset() { return new Promise(res => { let done = false; const t = setTimeout(() => { if (!done) { done = true; res(0); } }, 4000); try { onValue(ref(db, '.info/serverTimeOffset'), s => { if (!done) { done = true; clearTimeout(t); res(+s.val() || 0); } }, () => { if (!done) { done = true; clearTimeout(t); res(0); } }, { onlyOnce: true }); } catch (e) { if (!done) { done = true; clearTimeout(t); res(0); } } }); },
   async hasil(kid) { const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.'); return (await withTimeout(get(ref(db, `${ROOT}/dh_hasil/${kid}/${u.uid}`)), 20000)).val(); },
   async mediaOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}/${key}`)), 60000)).val() || ''; }, // satu gambar (pratinjau foto dari akun PIC lain)
+  async selfieSt(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_selfie_st/${kid}`)), 30000)).val() || {}; }, // penanda selfie peserta (untuk pratinjau Word)
+  async selfieOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_selfie_foto/${kid}/${key}`)), 60000)).val() || ''; },
   async media(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}`)), 120000)).val() || {}; },
   // gambar disimpan dengan kunci tetap, jadi kirim ulang menimpa data yang sama
   async putMedia(kid, key, dataUrl) { await withTimeout(set(ref(db, `${ROOT}/dh_media/${kid}/${key}`), dataUrl), 90000); },

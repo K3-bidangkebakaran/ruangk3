@@ -219,3 +219,12 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 **Perbaikan link darurat (v43):** daftar nama di halaman darurat hanya memuat peserta yang masih punya tanggal kosong, dengan tanggalnya. Peserta Remedial hanya diminta tanda tangan di hari terakhir (tanggal ujian); hari berwarna kuning tidak perlu. Selfie darurat dihitung per tanggal: satu foto otomatis menjadi satu foto untuk tiap tanggal yang belum selfie, dengan watermark nama, perusahaan, "ABSEN DARURAT" + tanggal itu, dan lokasi baku "Morowali, IMIP".
 
 **Sinkron antar HP/akun (v44):** (1) Dua HP dengan akun PIC yang sama tidak lagi saling menimpa: sebelum mengirim, APK menggabungkan dulu isian yang sudah ada di server (hanya menambah). (2) Website Daftar Hadir tidak lagi melewatkan penarikan data bila ada penarikan lain yang sedang berjalan, tidak lagi salah menilai HP yang jamnya lambat, dan hanya mengunduh gambar yang berubah. (3) Layar *Narasumber* dan *Penandatangan Nilai* memberi keterangan **✓ Sudah TTD** (diisi di HP ini / diisi PIC lain / sudah ada di website) atau **Belum TTD**, supaya PIC lain tahu. (4) Sinkron lebih cepat: kirim ±0,4 detik setelah isian, tarik berkala 20 detik di APK dan 60 detik di website, unggah gambar 4 sekaligus. (5) Aturan Firebase `dh_hasil` perlu diganti (lihat blok aturan di atas).
+
+## v45
+- Foto, TTD, dan tanda tangan narasumber dari akun PIC lain diunduh dan disimpan di cache (IDB `x:<kid>`), tampil dengan label "Oleh: <nama akun>".
+- Pratinjau Word APK memakai kode laporan web sendiri: `pic/js/wrd.js` DIHASILKAN oleh `pic/tools/build-wrd.js` (butuh `npm i acorn`; jalankan `node pic/tools/build-wrd.js`). Jalankan ulang tiap kali kode laporan web (renderSet/kelasGroups/rundown) berubah.
+- Gambar yang hanya ada di web (diketik/digambar di web, bukan dari PIC) tampil sebagai placeholder ✔ karena web hanya mengirim penanda/jumlah.
+- `Pic.node` bertambah: `jenis`, `kegiatan`, `bk`, `lap.rundown`, `lap.hn`.
+- Kegiatan yang diunduh dari Drive (mis. admin LPMI01) ikut dikirim ke APK (`storeEv` -> `Pic.mark`, reseed sekali `pic-lpmi1`).
+- Aturan Firebase sebenarnya terbuka (`auth != null`); tidak perlu ubah aturan.
+- APP_VER v45, sw.js VERSION pic-v45.
