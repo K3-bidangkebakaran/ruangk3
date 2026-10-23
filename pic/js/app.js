@@ -126,7 +126,31 @@ async function xmLoad(kid) {
   } catch (e) { gagal = true; }
   finally { xmBusy = false; if (!gagal) xmSig[kid] = sg; if (n) renderSoft(); if (P.kid && P.kid !== kid) xmKick(); else if (!gagal && xmSig[kid] !== OHV + '|' + kid) xmKick(); }
 }
-function xmKick() { if (P.kid && KEGS[P.kid] && ME) xmLoad(P.kid).catch(() => { }); }
+/* WM = gambar yang hanya dikerjakan di WEBSITE (admin utama / LPMI01): website mengunggahnya ke dh_wmedia/{kid}/{kunci} + sidik di dh_wmedia_st; dikirim ke semua APK lewat tanda `wm` di data kegiatan. */
+const WM = {}, WH = {}; let wmBusy = false; const wmSig = {};
+const wmGet = (kid, key) => (WM[kid] && WM[kid][key]) || '';
+const wmDay = (kid, d) => Object.keys(WM[kid] || {}).filter(x => x.startsWith('wd_' + d + '_')).sort((a, b) => (+a.split('_').pop() || 0) - (+b.split('_').pop() || 0));
+async function wmLoad(kid) {
+  const k = KEGS[kid]; if (wmBusy || !k || !fbOk() || !window.PicFB.wmOne || !online()) return;
+  const sg = String(k.wm || ''); if (wmSig[kid] === sg) return;
+  wmBusy = true; let gagal = false, n = 0;
+  try {
+    let c = null; if (!WM[kid]) { c = await iGet('w:' + kid); WM[kid] = (c && c.m) || {}; WH[kid] = (c && c.h) || {}; if (c && (c.sig || '') === sg) { wmSig[kid] = sg; return; } }
+    if (!sg) { if (Object.keys(WM[kid]).length) { WM[kid] = {}; WH[kid] = {}; iPut('w:' + kid, { m: {}, h: {}, sig: '' }); renderSoft(); } wmSig[kid] = sg; return; }
+    const st = await window.PicFB.wmSt(kid); let dirty = false;
+    Object.keys(WM[kid]).forEach(x => { if (!(x in st)) { delete WM[kid][x]; delete WH[kid][x]; dirty = true; } });
+    const need = Object.keys(st).filter(x => !WM[kid][x] || WH[kid][x] !== String(st[x])); let nx = 0;
+    await Promise.all(Array.from({ length: Math.min(3, need.length) }, async () => {
+      while (nx < need.length) {
+        const key = need[nx++];
+        try { const u = await window.PicFB.wmOne(kid, key); if (typeof u === 'string' && u) { WM[kid][key] = u; WH[kid][key] = String(st[key]); dirty = true; if (++n % (P.screen === 'wrd' ? 12 : 3) === 0) renderSoft(); } } catch (e) { gagal = true; }
+      }
+    }));
+    if (dirty || !c || c.sig !== sg) iPut('w:' + kid, { m: WM[kid], h: WH[kid], sig: gagal ? '' : sg });
+  } catch (e) { gagal = true; }
+  finally { wmBusy = false; if (!gagal) wmSig[kid] = sg; if (n) renderSoft(); }
+}
+function xmKick() { if (P.kid && KEGS[P.kid] && ME) { xmLoad(P.kid).catch(() => { }); wmLoad(P.kid).catch(() => { }); } }
 const isBatal = (h, p) => { const o = ovOf(h), x = o && o.batal[p.id]; if ((p.id in h.batal) && ownWins(h, x)) return !!h.batal[p.id]; return x ? x.v : !!p.batal; };
 // Remedial (baris kuning di daftar hadir): hanya tanda tangan di HARI TERAKHIR; Cancel (merah) tidak ikut absensi.
 const isRem = (h, p) => { if (isBatal(h, p)) return false; const o = ovOf(h), x = o && o.remedial[p.id]; if (h.remedial && (p.id in h.remedial) && ownWins(h, x)) return !!h.remedial[p.id]; return x ? x.v : !!p.remedial; };
@@ -214,7 +238,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v45';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v46';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -661,7 +685,7 @@ async function applyKegs(srv) {
       if (!h.goneAt) { h.goneAt = Date.now(); saveH(kid); }
       if (Date.now() - h.goneAt < 600000) { tunggu = true; return; }
     }
-    delete KEGS[kid]; delete H[kid]; iDel('h:' + kid);
+    delete KEGS[kid]; delete H[kid]; iDel('h:' + kid); iDel('w:' + kid); delete WM[kid]; delete WH[kid]; delete wmSig[kid];
   });
   if (tunggu) { clearTimeout(goneT); goneT = setTimeout(() => { lastSrv = ''; applyKegs(lastSrvObj); }, 610000); }
   await saveK(); pullErr = '';
@@ -871,22 +895,22 @@ async function sfLoad(kid) { // selfie dibaca dari server hanya saat tab "Absen 
 function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin + isian PIC (HP ini & akun lain) + gambar
   const h = hOf(kid), ov = ovOf(h), ln = LAPK(k), days = (k.tgl || []).slice(), arr = v => Array.isArray(v) ? v : Object.values(v || {});
   const b3 = !!k.b3 || k.jenis === 'b3', jenis = k.jenis || (b3 ? 'b3' : (k.papa ? 'angkat' : '')), kls = kelasArr(k).filter(Boolean), sfd = SFD[kid] || {};
-  const n1 = h.n1 || xmGet(kid, 'n1') || (ln.s1ttd ? FLAG.sig : ''), n2 = h.n2 || xmGet(kid, 'n2') || (ln.s2ttd ? FLAG.sig : '');
+  const n1 = h.n1 || xmGet(kid, 'n1') || wmGet(kid, 'n1') || (ln.s1ttd ? FLAG.sig : ''), n2 = h.n2 || xmGet(kid, 'n2') || wmGet(kid, 'n2') || (ln.s2ttd ? FLAG.sig : '');
   const a = { kegiatan: k.kegiatan || k.nama || '', jenis, papa: !!k.papa, kelas: kls, hari: days, tanggal: days[0] || '', tanggal2: days[days.length - 1] || '', jamMulai: k.jamMulai || '', jamSelesai: k.jamSelesai || '', zona: k.zona || 'WIB', tempat: k.tempat || '', kota: k.kota || '',
-    tglTtd: k.tglTtd || '', jabatanTtd: k.jabTtd || '', namaTtd: k.namaTtd || h.ttdPicNama || (ov && ov.ttdNama) || '', ttd: h.ttdPic || xmGet(kid, 'pic') || (k.ttdWeb ? FLAG.sig : ''), barisKosong: k.bk || 0, damkar: !!k.damkar };
+    tglTtd: k.tglTtd || '', jabatanTtd: k.jabTtd || '', namaTtd: k.namaTtd || h.ttdPicNama || (ov && ov.ttdNama) || '', ttd: h.ttdPic || xmGet(kid, 'pic') || wmGet(kid, 'pic') || (k.ttdWeb ? FLAG.sig : ''), barisKosong: k.bk || 0, damkar: !!k.damkar };
   const peserta = (k.peserta || []).filter(p => (p.nama || '').trim()).map(p => {
-    const ttd = {}; days.forEach(d => { const u = (h.hadir[p.id] && h.hadir[p.id][d]) || xmGet(kid, `s_${p.id}_${d}`); if (u) ttd[d] = u; else if (webT(p, d) || xT(h, p.id, d)) ttd[d] = FLAG.sig; });
-    const fo = key => (h[key] && h[key][p.id]) || xmGet(kid, (key === 'foto2' ? 'f2_' : 'f_') + p.id) || ((webF(p, key) || xF(h, p.id, key)) ? FLAG.foto : '');
+    const ttd = {}; days.forEach(d => { const u = (h.hadir[p.id] && h.hadir[p.id][d]) || xmGet(kid, `s_${p.id}_${d}`) || wmGet(kid, `s_${p.id}_${d}`); if (u) ttd[d] = u; else if (webT(p, d) || xT(h, p.id, d)) ttd[d] = FLAG.sig; });
+    const fo = key => (h[key] && h[key][p.id]) || xmGet(kid, (key === 'foto2' ? 'f2_' : 'f_') + p.id) || wmGet(kid, (key === 'foto2' ? 'f2_' : 'f_') + p.id) || ((webF(p, key) || xF(h, p.id, key)) ? FLAG.foto : '');
     const sf = {}; days.forEach(d => ['p', 's'].forEach(s => { const u = sfd[`${p.id}~${d}~${s}`]; if (u) (sf[d] = sf[d] || {})[s] = u; }));
     return { id: p.id, nama: p.nama, instansi: p.instansi || '', kelas: p.kelas || '', batal: isBatal(h, p), remedial: isRem(h, p), ut: nilaiOf(h, p, 'ut'), up: nilaiOf(h, p, 'up'), hasil: kelOf(h, p), foto: fo('foto'), foto2: fo('foto2'), ttd, sf };
   });
   const hari = {}, px = xmPlan(kid);
   days.forEach(d => {
-    const own = (h.hfoto[d] || []).map(f => f.u), oth = px.filter(x => x.key.startsWith('d_' + d + '_')).sort((p, q) => p.key < q.key ? -1 : 1).map(x => xmGet(kid, x.key) || FLAG.foto), fotos = own.concat(oth), tot = Math.max(+((ln.hn || {})[d]) || 0, fotos.length);
+    const own = (h.hfoto[d] || []).map(f => f.u), oth = px.filter(x => x.key.startsWith('d_' + d + '_')).sort((p, q) => p.key < q.key ? -1 : 1).map(x => xmGet(kid, x.key) || FLAG.foto), fotos = own.concat(oth, wmDay(kid, d).map(x => wmGet(kid, x))), tot = Math.max(+((ln.hn || {})[d]) || 0, fotos.length);
     while (fotos.length < tot) fotos.push(FLAG.foto);
     hari[d] = { materi: materiOf(h, k, d), fotos };
   });
-  const row = (key) => { const r = nrOf(h, k, key, true), adm = nrAdmin(k, key); return { ...r, ttd: (h.nrs && h.nrs[key]) || xmGet(kid, 'nr_' + key) || (adm.ttd ? FLAG.sig : '') }; };
+  const row = (key) => { const r = nrOf(h, k, key, true), adm = nrAdmin(k, key); return { ...r, ttd: (h.nrs && h.nrs[key]) || xmGet(kid, 'nr_' + key) || wmGet(kid, 'nr_' + key) || (adm.ttd ? FLAG.sig : '') }; };
   const keysOf = (pfx, adm) => { const s = new Set(adm.map(x => pfx + x)); [h.nr, h.nrs, ov && ov.nr].forEach(o => Object.keys(o || {}).forEach(x => { if (pfx ? x.startsWith(pfx) : !x.includes('~')) s.add(x); })); return [...s]; };
   const nr = {}, nrk = {}, nrOff = {}, nrOffK = {};
   if (b3) {
@@ -1038,7 +1062,7 @@ function render() {
     h = appbar('Dokumentasi Peserta', subK(k), true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
       <div class="photos${fotoDua(k) ? ' dk' : ''}">${urutKelas(k, pesKl(k)).map(p => {
         const cx = isBatal(hh, p), rm = isRem(hh, p), keys = fotoDua(k) ? ['foto', 'foto2'] : ['foto'];
-        const slot = (key, i) => { const f0 = hh[key] && hh[key][p.id], xk = (key === 'foto2' ? 'f2_' : 'f_') + p.id, xo = !f0 && xmGet(kid, xk), f = f0 || xo, xi = xo ? xmPlan(kid).find(x => x.key === xk) : null, wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = fotoDua(k) ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}" data-act="pv" data-pv="p|${esc(p.id)}|${key}" title="Ketuk untuk memperbesar">${xi ? `<span class="by">Oleh: ${esc(xi.nama)}</span>` : f0 && ME && ME.nama ? `<span class="by">Oleh: Anda (${esc(ME.nama)})</span>` : ''}` : (cx ? 'Batal ikut' : wf ? `<span data-act="pv" data-pv="p|${esc(p.id)}|${key}" style="cursor:pointer">${webF(p, key) ? '✔ Sudah ada (website)' : xF(hh, p.id, key) ? (online() ? '✔ Sudah ada (PIC lain)<br><small>Memuat foto…</small>' : '✔ Sudah ada (PIC lain)<br><small>Butuh sinyal untuk melihat</small>') : '✔ Sudah ada'}<br><small>Ketuk untuk lihat</small></span>` : 'Belum ada foto')}</div>${cx ? '' : `<div class="slbtns"><button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button><label class="btn sm filebtn" data-up-l>⬆ Unggah<input type="file" accept="image/*" data-up="1" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="Unggah ${lb.toLowerCase()} ${esc(p.nama)} dari galeri"></label></div>`}</div>`; };
+        const slot = (key, i) => { const f0 = hh[key] && hh[key][p.id], xk = (key === 'foto2' ? 'f2_' : 'f_') + p.id, wo = !f0 && !xmGet(kid, xk) && wmGet(kid, xk), xo = !f0 && (xmGet(kid, xk) || wo), f = f0 || xo, xi = xo ? xmPlan(kid).find(x => x.key === xk) : null, wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = fotoDua(k) ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}" data-act="pv" data-pv="p|${esc(p.id)}|${key}" title="Ketuk untuk memperbesar">${xi ? `<span class="by">Oleh: ${esc(xi.nama)}</span>` : wo ? '<span class="by">Dari website</span>' : f0 && ME && ME.nama ? `<span class="by">Oleh: Anda (${esc(ME.nama)})</span>` : ''}` : (cx ? 'Batal ikut' : wf ? `<span data-act="pv" data-pv="p|${esc(p.id)}|${key}" style="cursor:pointer">${webF(p, key) ? '✔ Sudah ada (website)' : xF(hh, p.id, key) ? (online() ? '✔ Sudah ada (PIC lain)<br><small>Memuat foto…</small>' : '✔ Sudah ada (PIC lain)<br><small>Butuh sinyal untuk melihat</small>') : '✔ Sudah ada'}<br><small>Ketuk untuk lihat</small></span>` : 'Belum ada foto')}</div>${cx ? '' : `<div class="slbtns"><button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button><label class="btn sm filebtn" data-up-l>⬆ Unggah<input type="file" accept="image/*" data-up="1" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="Unggah ${lb.toLowerCase()} ${esc(p.nama)} dari galeri"></label></div>`}</div>`; };
         return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
       <p class="hint">Foto bisa diambil langsung dari kamera (otomatis diberi watermark: nama peserta, kegiatan, titik lokasi, tanggal, jam) atau <b>diunggah dari galeri HP</b> (tombol ⬆ Unggah; watermark memuat nama, kegiatan, tempat, dan tanggal foto). Ketuk foto untuk memperbesar. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
@@ -1099,7 +1123,7 @@ function render() {
     const hh = hOf(kid), days = k.tgl || [];
     h = appbar('Dokumentasi Harian', k.nama, true) + `<div class="screen">${days.map((d, i) => `<div class="card2" data-day="${esc(d)}"><b>Day ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
       <div class="field"><label for="in_m${i}">Materi</label><input id="in_m${i}" data-materi="${esc(d)}" value="${esc(materiOf(hh, k, d))}" autocomplete="off" placeholder="Contoh: Regulasi Online"></div>
-      <div class="hfotos">${(hh.hfoto[d] || []).map(f => `<div class="hf"><img src="${f.u}" alt="Foto dokumentasi" data-act="pv" data-pv="d|${esc(d)}|${esc(f.i)}" title="Ketuk untuk memperbesar"><button type="button" data-act="hdel" data-i="${esc(f.i)}" aria-label="Hapus foto">✕</button><span class="by">Oleh: Anda${ME && ME.nama ? ' (' + esc(ME.nama) + ')' : ''}</span></div>`).join('')}${xmPlan(kid).filter(x => x.key.startsWith('d_' + d + '_')).sort((a, b) => a.key < b.key ? -1 : 1).map(x => { const u = xmGet(kid, x.key); return u ? `<div class="hf"><img src="${u}" alt="Foto dokumentasi dari ${esc(x.nama)}" data-act="pv" data-pv="x|${esc(x.key)}" title="Ketuk untuk memperbesar"><span class="by">Oleh: ${esc(x.nama)}</span></div>` : `<div class="hf ph0">${online() ? 'Memuat foto…' : 'Foto belum termuat<br><small>butuh sinyal</small>'}<span class="by">Oleh: ${esc(x.nama)}</span></div>`; }).join('')}</div>
+      <div class="hfotos">${(hh.hfoto[d] || []).map(f => `<div class="hf"><img src="${f.u}" alt="Foto dokumentasi" data-act="pv" data-pv="d|${esc(d)}|${esc(f.i)}" title="Ketuk untuk memperbesar"><button type="button" data-act="hdel" data-i="${esc(f.i)}" aria-label="Hapus foto">✕</button><span class="by">Oleh: Anda${ME && ME.nama ? ' (' + esc(ME.nama) + ')' : ''}</span></div>`).join('')}${wmDay(kid, d).map(x => `<div class="hf"><img src="${wmGet(kid, x)}" alt="Foto dokumentasi dari website" data-act="pv" data-pv="x|${esc(x)}" title="Ketuk untuk memperbesar"><span class="by">Dari website</span></div>`).join('')}${xmPlan(kid).filter(x => x.key.startsWith('d_' + d + '_')).sort((a, b) => a.key < b.key ? -1 : 1).map(x => { const u = xmGet(kid, x.key); return u ? `<div class="hf"><img src="${u}" alt="Foto dokumentasi dari ${esc(x.nama)}" data-act="pv" data-pv="x|${esc(x.key)}" title="Ketuk untuk memperbesar"><span class="by">Oleh: ${esc(x.nama)}</span></div>` : `<div class="hf ph0">${online() ? 'Memuat foto…' : 'Foto belum termuat<br><small>butuh sinyal</small>'}<span class="by">Oleh: ${esc(x.nama)}</span></div>`; }).join('')}</div>
       <div class="row"><button type="button" class="btn pri" data-act="hfoto" data-d="${esc(d)}">${I.cam} Ambil foto</button><label class="btn filebtn" data-up-l>⬆ Unggah dari galeri<input type="file" accept="image/*" multiple data-up="1" data-hari="${esc(d)}" aria-label="Unggah foto dokumentasi hari ${i + 1} dari galeri"></label></div></div>`).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
       <p class="hint">Foto diambil dari kamera aplikasi atau diunggah dari galeri HP (boleh pilih banyak sekaligus), diberi watermark (kegiatan, tempat, lokasi/tanggal) tanpa nama peserta, dan dipotong rasio 3:2. Ketuk foto untuk memperbesar. Tiap halaman laporan memuat 2 foto.</p></div>`;
   }
@@ -1377,10 +1401,10 @@ let PV = null;
 function pvKeys() { return $$('[data-pv]').map(el => el.dataset.pv).filter((x, i, a) => a.indexOf(x) === i); }
 function pvInfo(key) { // judul + gambar (bila ada di HP ini)
   const [t, a, b] = key.split('|'), kid = P.kid, k = KEGS[kid], h = hOf(kid);
-  if (t === 'x') { const x = xmPlan(kid).find(y => y.key === a), m = /^d_(\d{4}-\d{2}-\d{2})_/.exec(a), i = m ? ((k && k.tgl) || []).indexOf(m[1]) : -1; return { src: xmGet(kid, a), cap: `Dokumentasi${i >= 0 ? ' Day ' + (i + 1) + ' · ' + tglPendek(m[1]) : ''}${x ? ' · oleh ' + x.nama : ''}`, remoteKey: a }; }
+  if (t === 'x') { const x = xmPlan(kid).find(y => y.key === a), m = /^d_(\d{4}-\d{2}-\d{2})_/.exec(a), i = m ? ((k && k.tgl) || []).indexOf(m[1]) : -1; const w = !x && /^wd_(\d{4}-\d{2}-\d{2})_/.exec(a), j = w ? ((k && k.tgl) || []).indexOf(w[1]) : i; return { src: xmGet(kid, a) || wmGet(kid, a), cap: `Dokumentasi${j >= 0 ? ' Day ' + (j + 1) + ' · ' + tglPendek((m || w)[1]) : ''}${x ? ' · oleh ' + x.nama : w ? ' · dari website' : ''}`, remoteKey: w ? '' : a }; }
   if (t === 'd') { const f = (h.hfoto[a] || []).find(x => String(x.i) === b), i = ((k && k.tgl) || []).indexOf(a); return { src: f ? f.u : '', cap: `Dokumentasi Day ${i + 1} · ${tglPendek(a)} · oleh Anda` }; }
   const p = k && k.peserta.find(x => x.id === a), xk = (b === 'foto2' ? 'f2_' : 'f_') + a, own = (h[b] && h[b][a]) || '', xi = !own && xmPlan(kid).find(y => y.key === xk);
-  return { src: own || xmGet(kid, xk), cap: `${p ? p.nama : ''}${fotoDua(k) ? ' · Foto ' + (b === 'foto2' ? 2 : 1) : ''}${xi ? ' · oleh ' + xi.nama : own ? ' · oleh Anda' : ''}`, remote: p ? { pid: a, slot: b } : null };
+  return { src: own || xmGet(kid, xk) || wmGet(kid, xk), cap: `${p ? p.nama : ''}${fotoDua(k) ? ' · Foto ' + (b === 'foto2' ? 2 : 1) : ''}${xi ? ' · oleh ' + xi.nama : own ? ' · oleh Anda' : ''}`, remote: p ? { pid: a, slot: b } : null };
 }
 function pvClose() { if (PV) { PV.el.remove(); PV = null; } }
 async function pvShow(i) {

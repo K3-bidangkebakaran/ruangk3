@@ -3952,6 +3952,7 @@
             if (isUtama && typeof window.perbaruiInfoOptimasi === 'function') setTimeout(() => window.perbaruiInfoOptimasi(), 3000);
             // Penanda sesi Admin Pusat untuk halaman /daftar-hadir/ (pengaman tampilan saja; pengaman data = Kode Akses Apps Script)
             if (isUtama || isLpmi) { try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} }
+            if (isUtama || isLpmi) { const pw = window.__pinMasuk; window.__pinMasuk = null; if (pw && typeof window.dhDriveMulai === 'function') window.dhDriveMulai(isUtama ? 'pusat' : 'lpmi', pw); }
             
             document.querySelectorAll('.admin-utama-only').forEach(el => {
                 if (isUtama) { el.classList.remove('hidden'); } 
@@ -5090,6 +5091,7 @@
         document.getElementById('form-login-admin')?.addEventListener('submit', async (e) => {
             e.preventDefault(); 
             const pin = document.getElementById('input-pin-admin').value; 
+            window.__pinMasuk = pin; // dipakai setupAdminUI untuk memulihkan koneksi Google Drive Daftar Hadir (salinan terenkripsi di Firebase)
             const btnSubmit = document.getElementById('btn-submit-admin'); 
             const oriText = btnSubmit.innerText; 
             btnSubmit.innerText = "Memeriksa...";
@@ -5218,6 +5220,75 @@
             const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pw));
             return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
         };
+        /* ===== Koneksi Google Drive Daftar Hadir tidak perlu diisi ulang di perangkat baru =====
+           URL Web App + Kode Akses disimpan di Firebase (pengaturan_drive_dh/<pusat|lpmi>) dalam bentuk TERENKRIPSI (AES-GCM, kunci dari PBKDF2 atas password login admin itu).
+           Setelah admin berhasil login di perangkat yang belum terhubung, salinan dibuka dengan password yang baru diketik lalu ditulis ke localStorage rk3_dh_cfg
+           (aplikasi Daftar Hadir & panel admin langsung memakainya). Perangkat yang sudah terhubung menyimpan/memperbarui salinannya (yang cap waktunya terbaru menang).
+           Catatan keamanan: password Admin Pusat tertanam di kode situs, jadi perlindungan untuk slot "pusat" hanya sebatas menyamarkan; slot "lpmi" sekuat password Admin LPMI. */
+        const pathDhDrive = (slot) => `artifacts/${cleanAppId}/public/data/pengaturan_drive_dh/${slot}`;
+        const DHD_LS = 'rk3_dh_cfg', DHD_URL = /^https:\/\/script\.google(usercontent)?\.com\//;
+        const dhdB64 = (u) => { let s = ''; u.forEach(c => { s += String.fromCharCode(c); }); return btoa(s); };
+        const dhdUn = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+        const dhdKey = async (pw, salt) => {
+            const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(pw)), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        };
+        const dhdSeal = async (cfg, pw) => {
+            const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), key = await dhdKey(pw, salt);
+            const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify({ u: cfg.url, t: cfg.token, ts: cfg.ts || 0 }))));
+            return { v: 1, s: dhdB64(salt), i: dhdB64(iv), c: dhdB64(ct), ts: cfg.ts || 0, upd: Date.now() };
+        };
+        const dhdOpen = async (b, pw) => {
+            try {
+                if (!b || !b.s || !b.i || !b.c) return null;
+                const key = await dhdKey(pw, dhdUn(b.s)), j = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: dhdUn(b.i) }, key, dhdUn(b.c))));
+                return j && typeof j.u === 'string' && DHD_URL.test(j.u) && j.t ? { url: j.u, token: j.t, ts: j.ts || 0 } : null;
+            } catch (e) { return null; }
+        };
+        const dhdLocal = () => { try { const c = JSON.parse(localStorage.getItem(DHD_LS) || 'null'); return c && typeof c.url === 'string' && DHD_URL.test(c.url) && c.token ? c : null; } catch (e) { return null; } };
+        const dhdWrite = (c) => { try { const j = JSON.stringify({ url: c.url, token: c.token, ts: c.ts || Date.now() }); localStorage.setItem(DHD_LS, j); localStorage.setItem('rk3_dh_bak', j); localStorage.setItem('rk3_dh_had', '1'); } catch (e) {} };
+        const dhdGet = async (slot) => { const snap = await window.withTimeout(get(ref(db, pathDhDrive(slot))), 9000); return snap && snap.val ? snap.val() : null; };
+        window.dhDriveSinkron = async function(slot, pw) { // -> true bila perangkat ini baru saja dihubungkan otomatis
+            if (!pw || !(window.crypto && crypto.subtle)) return false;
+            try {
+                const loc = dhdLocal(), b = await dhdGet(slot), rem = b ? await dhdOpen(b, pw) : null;
+                if (rem && (!loc || (rem.ts || 0) > (loc.ts || 0))) {
+                    if (!loc || rem.url !== loc.url || rem.token !== loc.token) { dhdWrite(rem); window.showToast('Google Drive terhubung otomatis di perangkat ini ✓', 'success'); return true; }
+                    return false;
+                }
+                if (loc && (!rem || (loc.ts || 0) > (rem.ts || 0) || rem.url !== loc.url || rem.token !== loc.token)) await window.withTimeout(set(ref(db, pathDhDrive(slot)), await dhdSeal(loc, pw)), 9000);
+            } catch (e) { /* offline / aturan Firebase: abaikan, koneksi lokal tidak berubah */ }
+            return false;
+        };
+        window.dhDriveMulai = function(slot, pw) {
+            window.__dhd = { slot, pw };
+            window.__dhDriveP = (async () => {
+                await window.dhDriveSinkron(slot, pw);
+                if (slot === 'pusat') { // Admin LPMI yang belum pernah mengganti password: siapkan salinan dengan password bawaan, supaya LPMI01 di perangkat baru juga langsung terhubung
+                    try {
+                        const loc = dhdLocal(), snap = await window.withTimeout(get(ref(db, pathAdminLpmi)), 9000), lv = snap && snap.val ? snap.val() : null;
+                        if (loc && (!lv || !lv.hash)) {
+                            const b = await dhdGet('lpmi'), rem = b ? await dhdOpen(b, LPMI_PW_DEFAULT) : null;
+                            if (!rem || (loc.ts || 0) > (rem.ts || 0) || rem.url !== loc.url || rem.token !== loc.token) await window.withTimeout(set(ref(db, pathDhDrive('lpmi')), await dhdSeal(loc, LPMI_PW_DEFAULT)), 9000);
+                        }
+                    } catch (e) {}
+                }
+            })();
+            return window.__dhDriveP;
+        };
+        let dhdT = null;
+        window.dhDriveSimpanSoon = function() { clearTimeout(dhdT); dhdT = setTimeout(() => { const d = window.__dhd; if (d) window.dhDriveMulai(d.slot, d.pw); }, 1200); };
+        window.dhDriveHapus = async function() { // tombol "Putuskan": salinan di Firebase ikut dibuang agar tidak memulihkan koneksi lama
+            const d = window.__dhd; if (!d) return;
+            try {
+                await window.withTimeout(remove(ref(db, pathDhDrive(d.slot))), 9000);
+                if (d.slot === 'pusat') { const snap = await window.withTimeout(get(ref(db, pathAdminLpmi)), 9000), lv = snap && snap.val ? snap.val() : null; if (!lv || !lv.hash) await window.withTimeout(remove(ref(db, pathDhDrive('lpmi'))), 9000); }
+            } catch (e) {}
+        };
+        window.addEventListener('storage', (e) => { // aplikasi Daftar Hadir (iframe) menyimpan / memutus koneksi Drive
+            if (e.key !== DHD_LS || !window.__dhd) return;
+            clearTimeout(dhdT); dhdT = setTimeout(() => { if (e.newValue) window.dhDriveMulai(window.__dhd.slot, window.__dhd.pw); else window.dhDriveHapus(); }, 1500);
+        });
         // -> { ok:true } | { ok:false } | { ok:false, net:true } (gagal membaca = jangan bilang "salah")
         window.cekLoginLpmi = async function(pw) {
             let v = null;
@@ -5267,6 +5338,7 @@
                 const salt = Array.from(crypto.getRandomValues(new Uint8Array(12))).map(b => b.toString(16).padStart(2, '0')).join('');
                 const hash = await lpmiHash(salt, baru);
                 await window.withTimeout(set(ref(db, pathAdminLpmi), { hash, salt, nama: 'Faros', upd: Date.now() }));
+                try { const loc = dhdLocal(); if (loc) await window.withTimeout(set(ref(db, pathDhDrive('lpmi')), await dhdSeal(loc, baru)), 9000); else await window.withTimeout(remove(ref(db, pathDhDrive('lpmi'))), 9000); if (window.__dhd && window.__dhd.slot === 'lpmi') window.__dhd.pw = baru; } catch (e) {} // salinan Drive ikut memakai password baru
                 window.showToast('Password login berhasil diubah. Pakai yang baru saat login berikutnya.', 'success');
                 window.closeModal();
             } catch (err) {
@@ -5293,6 +5365,7 @@
                 clearTimeout(t); armed = false; b.disabled = true; b.innerText = 'Mereset...';
                 try {
                     await window.withTimeout(remove(ref(db, pathAdminLpmi)));
+                    try { const loc = dhdLocal(); if (loc) await window.withTimeout(set(ref(db, pathDhDrive('lpmi')), await dhdSeal(loc, LPMI_PW_DEFAULT)), 9000); else await window.withTimeout(remove(ref(db, pathDhDrive('lpmi'))), 9000); } catch (e) {} // salinan Drive Admin LPMI kembali memakai password bawaan
                     window.showToast('Password Admin LPMI dikembalikan ke bawaan (' + LPMI_PW_DEFAULT + ').', 'success');
                 } catch (err) {
                     window.showToast('Gagal mereset password Admin LPMI.', 'error');
@@ -8509,8 +8582,8 @@
         const dhLinkDrive = (u) => /^https:\/\/(drive|docs)\.google\.com\//.test(String(u || '')) ? String(u) : '';
         const dhLinkFile = (id) => /^[\w-]+$/.test(String(id || '')) ? 'https://drive.google.com/file/d/' + id + '/view' : '';
         const dhCfg = () => { try { const c = JSON.parse(localStorage.getItem(DH_CFG_KEY) || 'null'); return c && DH_URL_OK.test(c.url || '') && c.token ? c : null; } catch (e) { return null; } };
-        const dhSimpanCfg = (c) => { try { localStorage.setItem(DH_CFG_KEY, JSON.stringify({ url: c.url, token: c.token, ts: c.ts || Date.now() })); } catch (e) {} };
-        const dhHapusCfg = () => { try { localStorage.removeItem(DH_CFG_KEY); localStorage.removeItem(DH_CACHE_KEY); } catch (e) {} };
+        const dhSimpanCfg = (c) => { try { localStorage.setItem(DH_CFG_KEY, JSON.stringify({ url: c.url, token: c.token, ts: c.ts || Date.now() })); } catch (e) {} try { window.dhDriveSimpanSoon && window.dhDriveSimpanSoon(); } catch (e) {} };
+        const dhHapusCfg = () => { try { localStorage.removeItem(DH_CFG_KEY); localStorage.removeItem(DH_CACHE_KEY); } catch (e) {} try { window.dhDriveHapus && window.dhDriveHapus(); } catch (e) {} };
         const dhTgl = (d) => { const t = new Date(String(d) + 'T00:00:00'); return isNaN(t) ? String(d || '–') : t.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); };
         const dhWaktu = (v) => { const t = typeof v === 'number' ? v : Date.parse(v); return t ? new Date(t).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–'; };
         const dhMs = (v) => (typeof v === 'number' ? v : (Date.parse(v) || 0));
@@ -8689,6 +8762,7 @@
 
         window.dhBukaPanel = async function() {
             if (!dhIsAdmin()) return;
+            try { if (!dhCfg() && window.__dhDriveP) await Promise.race([window.__dhDriveP, new Promise(r => setTimeout(r, 7000))]); } catch (e) {} // perangkat baru: tunggu koneksi Drive dipulihkan dari Firebase sebelum aplikasi dimuat
             let tab = 'rekap'; try { const tv = localStorage.getItem('rk3_dh_view'); tab = (tv === 'app' || tv === 'pic') ? tv : 'rekap'; } catch (e) {}
             window.dhTampilView(tab);
             try { const f = document.getElementById('dh-frame'); if (f && !f.getAttribute('src')) { localStorage.setItem('rk3_admin_at', String(Date.now())); f.src = '/daftar-hadir/'; } } catch (e) {} // muat di latar: kirim kegiatan ke PIC + tarik hasil PIC

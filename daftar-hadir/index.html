@@ -4547,6 +4547,7 @@ const Pic = {
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
     idbGet("pic-wrd1").then(v => { if (!v) { EV.forEach(e => this.mark(e.id)); idbPut("pic-wrd1", 1).catch(() => { }); } }).catch(() => { }); // sekali: semua kegiatan dikirim ulang ke APK (data tambahan untuk Pratinjau Word: tanggal & penandatangan)
     idbGet("pic-lpmi1").then(v => { if (!v) { EV.forEach(e => this.mark(e.id)); idbPut("pic-lpmi1", 1).catch(() => { }); } }).catch(() => { }); // sekali: semua kegiatan (termasuk yang diunduh dari Drive / dibuat di admin LPMI01) dikirim ulang ke APK
+    idbGet("pic-wm1").then(v => { if (!v) { const batas = Date.now() - 60 * 864e5; EV.forEach(e => { const l = (e.hari && e.hari[e.hari.length - 1]) || e.tanggal2 || e.tanggal; if (e.kegiatan && (!l || new Date(l + "T00:00:00").getTime() >= batas)) this.mark(e.id); }); idbPut("pic-wm1", 1).catch(() => { }); } }).catch(() => { }); // sekali: gambar yang hanya ada di website (kegiatan 60 hari terakhir) dikirim ke APK
     idbGet("pic-force1").then(v => { if (!v) setTimeout(async () => { if (!navigator.onLine) return; await this.pullAll(false, true); idbPut("pic-force1", 1).catch(() => { }); }, 15000); }).catch(() => { }); // sekali setelah pembaruan: tarik ulang hasil semua PIC untuk semua kegiatan
   },
   /** huruf A/B/C kegiatan kembar ikut dikirim ke APK PIC (node.sfx). Bila huruf suatu kegiatan berubah (mis. ada kegiatan kembar baru / yang lama dihapus), kegiatan itu dikirim ulang. */
@@ -4584,7 +4585,8 @@ const Pic = {
     if (!(await this.load())) { this.status(); clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 30000); return; }
     try {
       for (const id of [...this.drops]) { // kegiatan yang dihapus: buang juga dari aplikasi PIC
-        await Promise.all(["dh_kegiatan", "dh_hasil", "dh_media"].map(n => this.d.remove(this.r(`${n}/${id}`))));
+        await Promise.all(["dh_kegiatan", "dh_hasil", "dh_media", "dh_wmedia", "dh_wmedia_st"].map(n => this.d.remove(this.r(`${n}/${id}`))));
+        if (this.wmine) { delete this.wmine[id]; await idbPut("pic-wmine", this.wmine).catch(() => { }); } delete this.hash["wm:" + id]; delete this.hash["wms:" + id];
         await this.hapusSelfieSemua(id);
         this.drops = this.drops.filter(x => x !== id); await idbPut("pic-del", this.drops);
       }
@@ -4592,10 +4594,13 @@ const Pic = {
         const ev = id === S.id ? S : (await idbGet("event:" + id));
         if (!ev) { this.dirty.delete(id); continue; }
         const n = this.node(ev); if (!n.nama || !n.tgl.length) { this.dirty.delete(id); continue; } // belum layak dikirim: butuh nama + tanggal (peserta boleh kosong, kegiatan tetap tampil di APK; dikirim lagi otomatis saat diubah)
+        let wmGagal = false;
+        try { n.wm = await this.pubWeb(id, ev); } catch (e) { n.wm = this.hash["wms:" + id] || ""; wmGagal = true; } // gambar yang hanya ada di website ikut dikirim (supaya Word & foto di APK sama dengan website); gagal = dicoba lagi otomatis
+        if (!n.wm) delete n.wm;
         const h = fnv(JSON.stringify(n));
         if (this.hash[id] !== h) { await this.d.set(this.r(`dh_kegiatan/${id}`), { ...n, upd: Date.now() }); this.hash[id] = h; await idbPut("pic-hash", this.hash); }
         await this.pubSelfie(id, ev, n);
-        this.dirty.delete(id);
+        if (!wmGagal) this.dirty.delete(id);
       }
       this.err = "";
     } catch (e) { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 60000); }
@@ -4667,6 +4672,39 @@ const Pic = {
   selfieNode(ev, n) {
     return { nama: n.nama, tgl: n.tgl, tempat: n.tempat, kota: n.kota, zona: n.zona, jamMulai: n.jamMulai, jamSelesai: n.jamSelesai,
       peserta: ev.peserta.filter(p => (p.nama || "").trim() && !p.batal).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || "" })) };
+  },
+  /* --- Gambar yang hanya ada di WEBSITE (diambil/diketik di web atau lewat Drive/akun admin lain): diunggah ke dh_wmedia/{kid}/{kunci} + sidik di dh_wmedia_st/{kid}.
+         Kunci sama dengan dh_media (s_{pid}_{tgl}, f_/f2_{pid}, pic, n1, n2, nr_{kunci}) + wd_{tgl}_{i} untuk foto dokumentasi harian. Gambar kiriman PIC (sudah ada di dh_media) dilewati.
+         Hanya kunci yang dulu diunggah perangkat ini yang bisa dihapus (admin lain / LPMI01 yang belum sinkron tidak saling menghapus). Hasil = sidik gabungan untuk `wm` di data kegiatan. --- */
+  webMedia(ev) {
+    const m = new Map(), a = ev.acara, hari = hariList(a).filter(Boolean), add = (k, u) => { if (typeof u === "string" && /^data:image\//.test(u)) m.set(k, u); };
+    (ev.peserta || []).forEach(p => { if (!(p.nama || "").trim()) return; add("f_" + p.id, p.foto); add("f2_" + p.id, p.foto2); Object.keys(p.ttd || {}).forEach(d => { if (hari.includes(d)) add(`s_${p.id}_${d}`, p.ttd[d]); }); });
+    const L = ev.lap || {};
+    add("pic", a.ttd); add("n1", L.s1 && L.s1.ttd); add("n2", L.s2 && L.s2.ttd);
+    Object.entries(L.nr || {}).forEach(([d, r]) => { if (r) add("nr_" + d, r.ttd); });
+    Object.entries(L.nrk || {}).forEach(([kk, D]) => Object.entries(D || {}).forEach(([d, r]) => { if (r) add(`nr_${kk}~${d}`, r.ttd); }));
+    Object.entries(L.hari || {}).forEach(([d, h]) => ((h && h.fotos) || []).forEach((u, i) => add(`wd_${d}_${i}`, u)));
+    return m;
+  },
+  quickH(u) { const c = (this.qh = this.qh || new Map()), n = u.length, k = n + ":" + u.slice(0, 48) + u.slice(-48) + u.slice(n >> 1, (n >> 1) + 48); let v = c.get(k); if (!v) { v = fnv(u); if (c.size > 4000) c.clear(); c.set(k, v); } return v; },
+  async pubWeb(id, ev) {
+    const items = [...this.webMedia(ev)].map(([k, u]) => [k, u, this.quickH(u)]);
+    const sigL = fnv(items.map(x => x[0] + "=" + x[1].length + ":" + x[2]).sort().join("|")), hk = "wm:" + id;
+    if (this.hash[hk] === sigL) return this.hash["wms:" + id] || "";
+    const mine = this.wmine = this.wmine || ((await idbGet("pic-wmine")) || {}), was = new Set(mine[id] || []);
+    if (!items.length && !was.size) { this.hash[hk] = sigL; this.hash["wms:" + id] = ""; await idbPut("pic-hash", this.hash); return ""; }
+    const picH = new Set();
+    if (items.length) { const all = (await this.d.get(this.r("dh_hasil/" + id))).val() || {}; Object.values(all).forEach(x => { if (x && typeof x === "object" && x.mh) Object.values(x.mh).forEach(v => picH.add(String(v))); }); }
+    const st = { ...((await this.d.get(this.r("dh_wmedia_st/" + id))).val() || {}) }, up = items.filter(x => !picH.has(x[2])), upd = {}, put = up.filter(x => st[x[0]] !== x[2]);
+    let nx = 0;
+    await Promise.all(Array.from({ length: Math.min(3, put.length) }, async () => { while (nx < put.length) { const [k, u, h] = put[nx++]; await this.d.set(this.r(`dh_wmedia/${id}/${k}`), u); upd[k] = h; st[k] = h; } }));
+    const keep = new Set(up.map(x => x[0]));
+    for (const k of was) if (!keep.has(k) && k in st) { await this.d.remove(this.r(`dh_wmedia/${id}/${k}`)); upd[k] = null; delete st[k]; }
+    if (Object.keys(upd).length) await this.d.update(this.r("dh_wmedia_st/" + id), upd);
+    mine[id] = [...keep]; await idbPut("pic-wmine", mine).catch(() => { });
+    const sig = Object.keys(st).length ? fnv(Object.keys(st).sort().map(k => k + "=" + st[k]).join("|")) : "";
+    this.hash[hk] = sigL; this.hash["wms:" + id] = sig; await idbPut("pic-hash", this.hash);
+    return sig;
   },
   async pubSelfie(id, ev, n) { // aktif -> terbit/perbarui dh_selfie/{id}; dimatikan -> dicabut (foto yang sudah masuk tetap)
     const key = "sf:" + id;

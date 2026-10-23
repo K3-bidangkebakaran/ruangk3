@@ -228,3 +228,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Kegiatan yang diunduh dari Drive (mis. admin LPMI01) ikut dikirim ke APK (`storeEv` -> `Pic.mark`, reseed sekali `pic-lpmi1`).
 - Aturan Firebase sebenarnya terbuka (`auth != null`); tidak perlu ubah aturan.
 - APP_VER v45, sw.js VERSION pic-v45.
+
+## v46
+- Gambar yang hanya ada di WEBSITE (foto/TTD peserta, TTD PIC, TTD pengawas/ahli, TTD narasumber, foto dokumentasi harian) diunggah web ke node baru `dh_wmedia/{kid}/{kunci}` + sidik di `dh_wmedia_st/{kid}` (`Pic.pubWeb`). Kunci sama dengan `dh_media` (`s_{pid}_{tgl}`, `f_/f2_{pid}`, `pic`, `n1`, `n2`, `nr_{kunci}`) + `wd_{tgl}_{i}` untuk foto harian. Gambar kiriman PIC (sidik ada di `mh` dh_hasil) dilewati. Hanya kunci yang diunggah perangkat itu yang bisa dihapusnya (admin utama & LPMI01 tidak saling menghapus). Tanda `wm` (sidik gabungan) ada di `dh_kegiatan/{kid}`; APK mengunduh hanya yang berubah (`wmLoad`, cache IDB `w:<kid>`), tampil di Word, foto peserta, dokumentasi harian ("Dari website"). Tanda ✔ tinggal untuk gambar yang belum sempat terkirim.
+- Aturan Firebase tetap `auth != null` (tidak perlu diubah); node baru: `dh_wmedia`, `dh_wmedia_st`, `pengaturan_drive_dh`.
+- APP_VER v46, sw.js VERSION pic-v46.

@@ -104,3 +104,7 @@ Hapus bagian ini setelah APK selesai dan assetlinks.json terpasang.
 - `pic/js/wrd.js` dihasilkan otomatis dari `daftar-hadir/index.html` oleh `pic/tools/build-wrd.js`; ubah kode laporan web -> jalankan ulang generator, lalu naikkan APP_VER (app.js) dan VERSION (sw.js) bersamaan.
 - Foto/TTD akun PIC lain diunduh ke cache XM dan diberi label "Oleh: ...". Gambar yang hanya ada di web tampil sebagai ✔.
 - Kegiatan dari Drive (LPMI01) ditandai `Pic.mark` lewat `storeEv`.
+
+## v46
+- Koneksi Google Drive Daftar Hadir tidak perlu diisi ulang di perangkat baru: `index.html` (root) menyimpan salinan TERENKRIPSI (AES-GCM, kunci PBKDF2 dari password login admin) di Firebase `pengaturan_drive_dh/<pusat|lpmi>`. Setelah login Admin Pusat/LPMI01 di perangkat yang belum terhubung, `dhDriveMulai` membuka salinan dengan password yang baru diketik dan menulis `rk3_dh_cfg` (aplikasi memakainya lewat `storage` event / saat dimuat; `dhBukaPanel` menunggu hingga 7 dtk sebelum memuat frame). Perangkat terhubung menyimpan/menyegarkan salinan (cap waktu `ts` terbaru menang); tombol Putuskan menghapus salinan. Admin Pusat juga menyiapkan slot `lpmi` dengan password bawaan LPMI01 selama password LPMI belum diganti; ganti/reset password LPMI mengenkripsi ulang. CATATAN KEAMANAN: password Admin Pusat (`admin123`) tertanam di kode, jadi slot `pusat` hanya tersamar; slot `lpmi` sekuat password Admin LPMI.
+- Gambar yang hanya ada di website ikut ke APK (`dh_wmedia`, lihat `pic/README.md` v46).
