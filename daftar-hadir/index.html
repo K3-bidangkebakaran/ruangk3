@@ -253,6 +253,7 @@ body.landing .tabs,body.landing .layout,body.landing #btnPrint{display:none!impo
 .t-rm input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
 .t-row.rm .t-item{background:#fffbd0;border-color:#eab308}
 .t-row.cx .t-item .sg{opacity:.35}
+.t-up{flex:none;display:grid;place-items:center;width:38px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;color:var(--accent);font-weight:800}.t-up:hover{border-color:var(--accent);background:#fffaf5}.t-up input{position:absolute;opacity:0;width:0;height:0}.t-up:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .t-item{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;text-align:left;flex:1;min-width:0}
 .t-item:hover{border-color:var(--accent);background:#fffaf5}
 .t-item .no{font-weight:700;color:var(--muted);min-width:20px;font-size:12px}
@@ -671,7 +672,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
       </div>
       <div class="f-prog" style="margin-bottom:12px"><span class="hint" id="tProgTxt"></span><div class="bar2"><i id="tProgBar"></i></div></div>
       <div class="t-list" id="tList"></div>
-      <p class="hint" style="margin-top:12px">Pilih hari, lalu peserta mengetuk namanya sendiri dan menggoreskan tanda tangan di layar HP/tablet. Tanda tangan langsung masuk ke kolom hari tersebut di daftar hadir. Hari yang belum tiba terkunci.</p>
+      <p class="hint" style="margin-top:12px">Pilih hari, lalu peserta mengetuk namanya sendiri dan menggoreskan tanda tangan di layar HP/tablet. Tanda tangan langsung masuk ke kolom hari tersebut di daftar hadir. Bila tanda tangan sudah berupa gambar, ketuk tombol <b>⬆</b> di sebelah kanan nama untuk mengunggah berkas PNG (latar putih otomatis dibuat transparan); langsung tampil sudah TTD. Hari yang belum tiba terkunci.</p>
     </section>
 
     <section class="card" data-pane="foto">
@@ -864,6 +865,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
     <div class="sheet-tools">
       <button class="btn" id="sigClear">Bersihkan</button>
       <button class="btn danger" id="sigRemove">Hapus TTD</button>
+      <label class="btn" id="sigUpL" title="Unggah gambar tanda tangan (PNG)">⬆ Unggah PNG<input type="file" id="sigUp" accept="image/png,image/*" hidden></label>
       <span class="grow"></span>
       <button class="btn" id="sigCancel">Batal</button>
       <button class="btn primary" id="sigSave">Simpan</button>
@@ -2717,7 +2719,29 @@ const Sig = {
     if (!url) { toast("Belum ada goresan tanda tangan."); return; }
     const T = this.T; this.close(); T.onSave(url); changed();
   },
-  remove() { const T = this.T; this.close(); T.onRemove(); changed(); }
+  remove() { const T = this.T; this.close(); T.onRemove(); changed(); },
+  /* Unggah gambar tanda tangan (PNG / gambar lain): latar putih dibuat transparan, tepi kosong dipotong, hasil PNG seperti goresan di kotak */
+  async fromFile(file) {
+    if (!file || !(/^image\//.test(file.type) || /\.(png|jpe?g|webp|gif)$/i.test(file.name || ""))) throw new Error("Pilih berkas gambar (PNG).");
+    const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(new Error("Berkas tidak bisa dibaca.")); fr.readAsDataURL(file); });
+    const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error("Gambar tidak bisa dibuka. Pakai berkas PNG.")); im.src = url; });
+    if (!img.width || !img.height) throw new Error("Gambar kosong.");
+    const r = Math.min(1, 900 / img.width, 400 / img.height), w = Math.max(1, Math.round(img.width * r)), h = Math.max(1, Math.round(img.height * r));
+    const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+    const id = x.getImageData(0, 0, w, h), d = id.data; let trans = false;
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 250) { trans = true; break; }
+    if (!trans) for (let i = 0; i < d.length; i += 4) { // tanpa transparansi (foto / JPG / PNG berlatar putih): putih -> transparan, abu-abu terang memudar
+      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      if (lum >= 245) d[i + 3] = 0; else if (lum > 200) d[i + 3] = Math.round(255 * (245 - lum) / 45);
+    }
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) if (d[(yy * w + xx) * 4 + 3] > 8) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    if (x1 < 0) throw new Error("Gambar tampak kosong (tidak ada tanda tangan).");
+    x.putImageData(id, 0, 0);
+    const pad = 6; x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+    const o = document.createElement("canvas"); o.width = x1 - x0 + 1; o.height = y1 - y0 + 1; o.getContext("2d").drawImage(c, x0, y0, o.width, o.height, 0, 0, o.width, o.height);
+    return o.toDataURL("image/png");
+  }
 };
 {
   const c = $("#sigPad");
@@ -2728,6 +2752,10 @@ const Sig = {
 $("#sigClear").onclick = () => Sig.clear();
 $("#sigSave").onclick = () => Sig.save();
 $("#sigRemove").onclick = () => Sig.remove();
+$("#sigUp").onchange = async e => { // unggah PNG dari dalam kotak tanda tangan: langsung disimpan
+  const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f || !Sig.T) return;
+  try { const url = await Sig.fromFile(f), T = Sig.T; Sig.close(); T.onSave(url); changed(); } catch (err) { toast(err.message || "Gagal membaca gambar."); }
+};
 $("#sigCancel").onclick = $("#sigClose").onclick = () => Sig.close();
 /* ---------- aturan tanggal ---------- */
 function todayIso() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
@@ -2988,7 +3016,7 @@ function renderTtdTab() {
       <span class="no">${semua.indexOf(p) + 1}.</span>
       <span class="who"><span class="nm">${esc(p.nama)}</span><br><span class="in">${esc(p.instansi || "-")}${kls(p)}</span></span>
       <span class="sg" ${sg ? `style="background-image:url('${sg}')"` : ""}>${sg ? "" : (p.batal ? "Cancel" : skip ? (p.remedial && pH(p).includes(key) ? "Hari terakhir" : "Bukan hari kelas ini") : "Belum TTD")}</span>
-    </button></div>`;
+    </button>${cur.locked || !S.acara.tanggal || p.batal || skip ? "" : `<label class="t-up" title="Unggah tanda tangan peserta (PNG) — langsung tampil sudah TTD"><input type="file" accept="image/png,image/*" data-up="${p.id}" aria-label="Unggah tanda tangan ${esc(p.nama)} (PNG)"><span>⬆</span></label>`}</div>`;
   }).join("");
 }
 $("#tDays").addEventListener("click", e => { const b = e.target.closest(".day-chip"); if (!b || b.disabled) return; T_DAY = +b.dataset.k; renderTtdTab(); });
@@ -3002,6 +3030,16 @@ $("#tList").addEventListener("change", e => {
   toast(p.batal ? `${p.nama} ditandai Cancel. Barisnya diberi warna merah sampai kolom Keterangan.`
     : p.remedial ? `${p.nama} ditandai Remedial. Barisnya diberi warna kuning; tanda tangan hanya di hari terakhir.`
     : `${p.nama} dikembalikan sebagai peserta biasa.`);
+});
+$("#tList").addEventListener("change", async e => { // unggah gambar tanda tangan (PNG) langsung dari baris peserta
+  const inp = e.target.closest("[data-up]"); if (!inp) return;
+  const f = inp.files && inp.files[0]; inp.value = ""; if (!f) return;
+  const p = S.peserta.find(x => x.id === inp.dataset.up), ds = ttdDays(), d = ds[T_DAY], key = d && d.iso; if (!p || !key || d.locked) return;
+  try {
+    const url = await Sig.fromFile(f), had = !!(p.ttd && p.ttd[key]);
+    p.ttd = p.ttd || {}; p.ttd[key] = url; changed(); renderTtdTab(); renderTtd && renderTtd();
+    toast(`${had ? "Tanda tangan diganti" : "Tanda tangan diunggah"}: ${p.nama} (Hari ${T_DAY + 1}). Sudah tampil di daftar hadir.`);
+  } catch (err) { toast(err.message || "Gagal membaca gambar."); }
 });
 $("#tList").addEventListener("click", e => {
   const b = e.target.closest(".t-item"); if (!b || b.disabled) return;
