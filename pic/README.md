@@ -209,3 +209,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 **Pratinjau Word:** tombol di menu kegiatan (dan di layar Pratinjau Laporan) menampilkan tampilan seperti berkas Word: Daftar Hadir, Dokumentasi Peserta, Daftar Nilai, Lulus / Tidak Lulus, Dokumentasi Harian, dan Absensi Narasumber, lengkap dengan kop surat. Untuk Pesawat Angkat & B3 ada pilihan alat/program. Tanda ✔ berarti TTD atau foto itu sudah ada di website atau akun PIC lain. Susunan halaman Word asli bisa sedikit berbeda.
 
 **Link TTD Daftar Nilai:** di layar *Penandatangan Daftar Nilai*, setelah nama Pengawas / Ahli K3 diisi, ketuk **Bagikan link TTD** (atau Salin link). Penandatangan membuka link di HP-nya dan menandatangani; hasilnya masuk otomatis ke APK, ke Daftar Nilai, dan ke website. Bila TTD dihapus di APK, link bisa dipakai lagi.
+
+## Link darurat TTD / selfie & layar tidak lagi tergulir sendiri (v42)
+
+**Layar tergulir ke atas sendiri (diperbaiki):** saat mengisi data, pembaruan dari server (TTD peserta, narasumber, hasil akun PIC lain) atau memilih isian dulu memuat ulang layar dan membuatnya kembali ke atas. Sekarang posisi gulir dipertahankan (termasuk di Pratinjau Word), dan pembaruan di latar menunggu sampai Anda selesai mengetik.
+
+**Link darurat:** setelah tanggal kegiatan lewat, layar *Absensi TTD Peserta* dan *Absen Selfie Peserta* menampilkan kartu **Darurat: peserta belum TTD / selfie** dengan tombol Bagikan dan Salin link darurat (link biasa ditambah `&darurat=1`). Peserta membuka link, memilih namanya (tampil nama yang masih punya hari/sesi kosong), lalu tanda tangan atau selfie **satu kali**; hasilnya otomatis dicatat ke semua tanggal yang belum diselesaikan. Selfie darurat diberi watermark "ABSEN DARURAT" beserta waktu foto sebenarnya. Link darurat tidak aktif selama kegiatan masih berjalan. Halaman TTD dan selfie yang dibuka tanpa `&darurat=1` setelah kegiatan selesai juga menampilkan tombol darurat.

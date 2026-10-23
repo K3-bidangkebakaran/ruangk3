@@ -165,7 +165,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v41';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v42';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -280,7 +280,7 @@ async function naraGot(st) { // TTD yang dikirim narasumber lewat link -> masuk 
         const n = key.slice(3), ts = +sk[key] || 1; if (!h.tnShared[n] || ts <= (h.naraSeen[key] || 0)) continue;
         try {
           const u = await window.PicFB.naraTtd(kid, key);
-          if (typeof u === 'string' && /^data:image\//.test(u)) { h['n' + n] = u; delete h.sent['n' + n]; h.gone = (h.gone || []).filter(x => x !== 'n' + n); h.naraSeen[key] = ts; touch(kid); render(); toast(`${lapNama(h, k, 's' + n, 'nama') || (n === '1' ? 'Pengawas' : 'Ahli K3')} sudah tanda tangan`); }
+          if (typeof u === 'string' && /^data:image\//.test(u)) { h['n' + n] = u; delete h.sent['n' + n]; h.gone = (h.gone || []).filter(x => x !== 'n' + n); h.naraSeen[key] = ts; touch(kid); renderSoft(); toast(`${lapNama(h, k, 's' + n, 'nama') || (n === '1' ? 'Pengawas' : 'Ahli K3')} sudah tanda tangan`); }
           else h.naraSeen[key] = ts;
         } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
         continue;
@@ -288,7 +288,7 @@ async function naraGot(st) { // TTD yang dikirim narasumber lewat link -> masuk 
       const ts = +sk[key] || 1; if (!h.nshared[key] || ts <= (h.naraSeen[key] || 0)) continue;
       try {
         const u = await window.PicFB.naraTtd(kid, key);
-        if (typeof u === 'string' && /^data:image\//.test(u)) { h.nrs[key] = u; delete h.sent['nr_' + key]; h.gone = (h.gone || []).filter(x => x !== 'nr_' + key); nrSet(h, k, key); h.naraSeen[key] = ts; touch(kid); render(); toast(`${nrOf(h, k, key).nama || 'Narasumber'} sudah tanda tangan`); }
+        if (typeof u === 'string' && /^data:image\//.test(u)) { h.nrs[key] = u; delete h.sent['nr_' + key]; h.gone = (h.gone || []).filter(x => x !== 'nr_' + key); nrSet(h, k, key); h.naraSeen[key] = ts; touch(kid); renderSoft(); toast(`${nrOf(h, k, key).nama || 'Narasumber'} sudah tanda tangan`); }
         else h.naraSeen[key] = ts;
       } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
     }
@@ -299,6 +299,8 @@ async function naraGot(st) { // TTD yang dikirim narasumber lewat link -> masuk 
    TTD masuk ke dh_ttdp_ttd + penanda waktu dh_ttdp_st, lalu dipasang ke h.hadir (ikut terkirim ke admin lewat jalur biasa). */
 const ttdpKl = kl => (kl != null ? kelasKey(kl) : '_');
 const ttdpLink = (kid, klk) => `${location.origin}/ttd/?k=${encodeURIComponent(kid)}${klk && klk !== '_' ? '&kl=' + encodeURIComponent(klk) : ''}`;
+const ttdpLinkDar = (kid, klk) => ttdpLink(kid, klk) + '&darurat=1'; // link darurat: peserta yang belum TTD saat kegiatan, hanya aktif setelah tanggal kegiatan lewat
+const kegOver = (k, kl) => { const d = daysKl(k, kl).slice().sort(); return d.length > 0 && todayIso() > d[d.length - 1]; };
 const daysKl = (k, kl) => { const hk = kl != null && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); };
 function ttdpInfo(h, k, kl) { // isi yang dibaca halaman peserta: hanya yang ikut (bukan cancel) dan hari wajib TTD-nya
   const days = daysKl(k, kl);
@@ -320,9 +322,9 @@ async function ttdpShare(b, a, k, kid) {
   const kl = curKl(k), klk = ttdpKl(kl); b.disabled = true;
   try { await ttdpPublish(kid, kl, true); } catch (e) { b.disabled = false; toast('Link belum bisa dibuat. ' + friendlyErr(e)); return; }
   b.disabled = false;
-  const link = ttdpLink(kid, klk), msg = `Link tanda tangan peserta – ${k.nama || 'kegiatan'}${kl != null ? ' (' + klLabel(kl) + ')' : ''}:\n${link}`;
-  const nt = $('#tpNote'); if (nt) nt.textContent = 'Link sudah dibuat. Peserta tinggal memilih nama dan tanda tangan.';
-  if (a === 'tpcopy') { copyText(link).then(() => toast('Link disalin'), () => toast('Tidak bisa menyalin. Gunakan tombol Bagikan.')); return; }
+  const dar = a === 'tpdshare' || a === 'tpdcopy', link = dar ? ttdpLinkDar(kid, klk) : ttdpLink(kid, klk), msg = `Link ${dar ? 'DARURAT ' : ''}tanda tangan peserta${dar ? ' (untuk yang belum tanda tangan)' : ''} – ${k.nama || 'kegiatan'}${kl != null ? ' (' + klLabel(kl) + ')' : ''}:\n${link}`;
+  const nt = $(dar ? '#tpdNote' : '#tpNote'); if (nt) nt.textContent = dar ? 'Link darurat sudah dibuat. Peserta memilih nama dan tanda tangan sekali; hasilnya masuk ke semua hari yang belum diisi.' : 'Link sudah dibuat. Peserta tinggal memilih nama dan tanda tangan.';
+  if (a === 'tpcopy' || a === 'tpdcopy') { copyText(link).then(() => toast('Link disalin'), () => toast('Tidak bisa menyalin. Gunakan tombol Bagikan.')); return; }
   if (navigator.share) navigator.share({ title: 'TTD Peserta', text: msg }).catch(() => { });
   else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -339,7 +341,7 @@ async function ttdpGot(st) { // TTD yang dikirim peserta lewat link -> masuk ke 
         try {
           const u = await window.PicFB.ttdpGet(kid, klk, key);
           if (typeof u === 'string' && /^data:image\//.test(u)) {
-            if (!sudahTtd(h, p, day)) { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][day] = u; h.ttdpSeen[sk2] = ts; touch(kid); render(); toast(`${p.nama} sudah tanda tangan`); }
+            if (!sudahTtd(h, p, day)) { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][day] = u; h.ttdpSeen[sk2] = ts; touch(kid); renderSoft(); toast(`${p.nama} sudah tanda tangan`); }
             else { h.ttdpSeen[sk2] = ts; saveH(kid); }
           } else { h.ttdpSeen[sk2] = ts; }
         } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
@@ -542,7 +544,7 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
       h.sent[key] = fnv(d);
     });
     if (old) { if (H[kid] !== old || old.dirty || old.upd !== upd0) return; ['nshared', 'naraSeen', 'tshared', 'ttdpSeen', 'tnShared'].forEach(f => { h[f] = old[f] || {}; }); if (old.goneAt) h.goneAt = old.goneAt; }
-    nrGabung(h, KEGS[kid]); H[kid] = h; await saveH(kid); render();
+    nrGabung(h, KEGS[kid]); H[kid] = h; await saveH(kid); renderSoft();
   } catch (e) { /* dicoba lagi saat tarik data berikutnya */ } finally { restoring.delete(kid); }
 }
 
@@ -869,11 +871,21 @@ function wrdHtml(kid, k) {
   const html = cur[0] === 'hr' ? wHr(kid, k) : body(kid, k, g);
   return `<div class="chips" role="tablist">${docs.map(d => `<button type="button" role="tab" data-act="wtab" data-d="${d[0]}" aria-selected="${d[0] === cur[0]}">${esc(d[1])}</button>`).join('')}</div>
     ${perG ? `<div class="chips" role="tablist" aria-label="Alat / program">${grp.map((x, i) => `<button type="button" role="tab" data-act="wgrp" data-i="${i}" aria-selected="${i === gi}">${esc(klLabel(x.kl))}</button>`).join('')}</div>` : ''}
-    <div class="row" style="align-items:center"><button type="button" class="btn sm" data-act="wz">${P.wz === 'full' ? '🔍 Pas layar' : '🔍 Ukuran asli (geser)'}</button><span class="hint" style="flex:1">Tampilan seperti berkas Word. Tanda ✔ = sudah ada di website / akun PIC lain.</span></div>
+    <div class="row" style="align-items:center;flex-wrap:wrap"><button type="button" class="btn sm" data-act="wz">${P.wz === 'full' ? '🔍 Pas layar' : '🔍 Ukuran asli (geser)'}</button><span class="hint" style="flex:1 1 180px">Tampilan seperti berkas Word. Tanda ✔ = sudah ada di website / akun PIC lain.</span></div>
     <div class="wwrap">${html}</div>
     <p class="hint">Ini pratinjau di HP: susunan halaman di berkas Word asli bisa sedikit berbeda. Berkas Word dibuat dari website Daftar Hadir.</p>`;
 }
 
+let lastRK = '';
+function scrollSnap(app) { // posisi gulir layar + kotak gulir di dalamnya (pratinjau Word, deret tab)
+  const sc = $('.screen', app), w = $('.wwrap', app);
+  return { t: sc ? sc.scrollTop : 0, w: w ? [w.scrollTop, w.scrollLeft] : null, c: $$('.chips', app).map(x => x.scrollLeft) };
+}
+function scrollBack(app, sn) {
+  const sc = $('.screen', app), w = $('.wwrap', app); if (sc) sc.scrollTop = sn.t;
+  if (w && sn.w) { w.scrollTop = sn.w[0]; w.scrollLeft = sn.w[1]; }
+  $$('.chips', app).forEach((x, i) => { if (sn.c[i]) x.scrollLeft = sn.c[i]; });
+}
 function render() {
   const app = $('#app'); if (!app) return;
   if (!ME) P.screen = 'login';
@@ -951,6 +963,8 @@ function render() {
       ${days.length > 1 ? `<div class="chips" role="tablist">${days.map((t, i) => `<button type="button" role="tab" data-act="day" data-i="${i}" aria-selected="${i === P.day}">Hari ${i + 1} · ${esc(tglPendek(t))}</button>`).join('')}</div>` : (d ? `<div class="hint">${esc(hariNama(d))}, ${esc(tglPanjang(d))}</div>` : '')}
       <div class="card2"><b>Link TTD peserta</b><div class="hint">Bagikan ke peserta${curKl(k) != null ? ' kelas/alat ini' : ''} (mis. lewat grup WhatsApp). Peserta membuka link, memilih namanya sendiri, lalu langsung tanda tangan di HP-nya. Hasilnya masuk otomatis ke daftar di bawah.</div>
         <div class="row"><button type="button" class="btn pri" data-act="tpshare">📤 Bagikan link</button><button type="button" class="btn" data-act="tpcopy">Salin link</button></div><div class="hint" id="tpNote">${hOf(P.kid).tshared[ttdpKl(curKl(k))] ? 'Link sudah dibuat. Peserta tinggal memilih nama dan tanda tangan.' : ''}</div></div>
+      ${kegOver(k, curKl(k)) ? `<div class="card2"><b>🚨 Darurat: peserta belum TTD</b><div class="hint">Tanggal kegiatan sudah lewat. Bagikan link darurat ke peserta yang belum tanda tangan. Peserta memilih namanya, tanda tangan sekali, dan tanda tangannya otomatis dicatat ke <b>semua hari yang belum diisi</b>. Peserta yang sudah lengkap tidak bisa memilih namanya lagi.</div>
+        <div class="row"><button type="button" class="btn pri" data-act="tpdshare">🚨 Bagikan link darurat</button><button type="button" class="btn" data-act="tpdcopy">Salin link darurat</button></div><div class="hint" id="tpdNote"></div></div>` : ''}
       <div class="counter" id="absCount"></div>
       <div class="field"><input id="absQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
       <div class="ahead"><span>Status</span><span>Peserta</span><span style="text-align:center">TTD</span></div>
@@ -1021,6 +1035,9 @@ function render() {
       <button type="button" class="btn pri" data-act="sfcopy">Salin link</button>
       <button type="button" class="btn" data-act="sfshare">Bagikan (WhatsApp, dll.)</button>
       <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman selfie (uji)</a>
+      ${kegOver(k) ? `<div class="card2"><b>🚨 Darurat: peserta belum selfie</b><div class="hint">Tanggal kegiatan sudah lewat. Bagikan link darurat ke peserta yang belum selfie. Peserta memilih namanya, selfie sekali, dan fotonya otomatis dicatat ke <b>semua hari/sesi yang belum diisi</b> (watermark tertulis "ABSEN DARURAT" beserta waktu foto sebenarnya).</div>
+        <div class="field"><label for="sfLinkD">Link darurat selfie</label><input id="sfLinkD" readonly value="${esc(link + '&darurat=1')}" onfocus="this.select()"></div>
+        <div class="row"><button type="button" class="btn pri" data-act="sfdcopy">Salin link darurat</button><button type="button" class="btn" data-act="sfdshare">🚨 Bagikan link darurat</button></div></div>` : ''}
       <p class="hint">Absen <b>pagi</b> sebelum jam 12.00 dan absen <b>siang</b> jam 12.00 ke atas (mengikuti zona waktu kegiatan). Link hanya berlaku pada hari kegiatan. Setiap peserta hanya bisa sekali per sesi; bila salah foto, minta admin menghapusnya di Daftar Hadir (tab Laporan) agar bisa mengulang. Hasilnya otomatis masuk ke laporan setelah Daftar Hadir.</p></div>`;
   } else if (P.screen === 'dhr') {
     const hh = hOf(kid), days = k.tgl || [];
@@ -1030,9 +1047,12 @@ function render() {
       <div class="row"><button type="button" class="btn pri" data-act="hfoto" data-d="${esc(d)}">${I.cam} Ambil foto</button><label class="btn filebtn" data-up-l>⬆ Unggah dari galeri<input type="file" accept="image/*" multiple data-up="1" data-hari="${esc(d)}" aria-label="Unggah foto dokumentasi hari ${i + 1} dari galeri"></label></div></div>`).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
       <p class="hint">Foto diambil dari kamera aplikasi atau diunggah dari galeri HP (boleh pilih banyak sekaligus), diberi watermark (kegiatan, tempat, lokasi/tanggal) tanpa nama peserta, dan dipotong rasio 3:2. Ketuk foto untuk memperbesar. Tiap halaman laporan memuat 2 foto.</p></div>`;
   }
+  const rk = [P.screen, P.kid, P.kl == null ? '' : P.kl, P.screen === 'wrd' ? (P.wd || '') + '|' + (P.wk || 0) : ''].join('|'); // layar yang sama dirender ulang (mis. setelah memilih isian / data dari server): posisi gulir dipertahankan
+  const snap = rk === lastRK ? scrollSnap(app) : null; lastRK = rk;
   app.innerHTML = h + '<div id="ovl"></div>';
   if (P.screen === 'nil') renderNil();
   if (P.screen === 'wrd') wrdFit();
+  if (snap) scrollBack(app, snap);
   if (P.screen === 'abs') renderAbs();
   if (P.screen === 'login') $('#lUser').focus();
 }
@@ -1348,8 +1368,10 @@ document.addEventListener('click', e => {
     else P.screen = 'keg';
     P.q = ''; render();
   }
-  else if ((a === 'tpshare' || a === 'tpcopy') && k) ttdpShare(b, a, k, kid);
+  else if ((a === 'tpshare' || a === 'tpcopy' || a === 'tpdshare' || a === 'tpdcopy') && k) ttdpShare(b, a, k, kid);
   else if (a === 'sfcopy') { const t = $('#sfLink').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link disalin'), () => { $('#sfLink').select(); toast('Tahan lalu pilih Salin'); }); }
+  else if (a === 'sfdcopy') { const t = $('#sfLinkD').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link darurat disalin'), () => { $('#sfLinkD').select(); toast('Tahan lalu pilih Salin'); }); }
+  else if (a === 'sfdshare') { const t = $('#sfLinkD').value, msg = `Link DARURAT absen selfie (untuk yang belum selfie) ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Absen Selfie Darurat', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
   else if (a === 'sfshare') { const t = $('#sfLink').value, msg = `Absen selfie ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Absen Selfie', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
   else if (a === 'alat') { P.kl = b.dataset.kl; P.screen = 'alat'; P.q = ''; render(); }
   else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; P.from = null; render(); }

@@ -74,6 +74,11 @@ h2{margin:0;font-size:20px;line-height:1.25}
 .who{display:grid;gap:2px}
 .who b{font-size:18px}.who span{color:var(--muted)}
 .empty{color:var(--muted);text-align:center;padding:22px 8px}
+.pill.dar{background:var(--bad-soft);color:var(--bad);align-self:flex-start;justify-self:start}
+.nmb .mis{grid-column:1;color:var(--warn);font-size:12.5px;font-weight:600}
+.btn.dar{color:var(--bad);border-color:var(--bad)}
+.dlist{display:flex;flex-wrap:wrap;gap:6px}
+.dlist span{background:var(--warn-soft);color:var(--warn);border-radius:99px;padding:2px 10px;font-size:13px;font-weight:600}
 h2{margin:0;font-size:20px;line-height:1.2}
 </style>
 </head>
@@ -116,7 +121,7 @@ const nowZ = zona => { const zn = zonaHP() || (ZONA[zona] ? zona : "WIB"), t = n
 const tglPanjang = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); if (!m) return ""; const y = +m[1], mo = +m[2], d = +m[3], w = new Date(Date.UTC(y, mo - 1, d)).getUTCDay(); return `${HARI[w]}, ${d} ${BLN[mo - 1]} ${y}`; };
 
 /* ---------- state ---------- */
-let FB = null, INFO = null, ST = {}, CHOSEN = null, busy = false, INK = false, SCREEN = "", LASTDAY = "";
+let FB = null, INFO = null, ST = {}, CHOSEN = null, busy = false, INK = false, SCREEN = "", LASTDAY = "", DR = QS.get("darurat") === "1";
 const main = $("#main");
 const show = (html, scr) => { SCREEN = scr || ""; main.innerHTML = html; };
 const fail = (msg) => { $("#barSub").textContent = ""; show(`<div class="note err">${esc(msg)}</div><button class="btn" id="reload">Muat ulang</button>`); $("#reload").onclick = () => location.reload(); };
@@ -136,19 +141,36 @@ async function boot() {
 async function refreshSt() { try { ST = await FB.status(KID, KL); } catch (_) { /* pakai data terakhir */ } }
 
 /* ---------- daftar nama ---------- */
-function ctx() { const z = nowZ(INFO.zona), tgl = tglList(); return { z, tgl, idx: tgl.indexOf(z.iso) }; }
+function ctx() { const z = nowZ(INFO.zona), tgl = tglList(); return { z, tgl, idx: tgl.indexOf(z.iso), over: tgl.length > 0 && z.iso > tgl.slice().sort().pop() }; }
+/* ---------- mode darurat: hanya setelah kegiatan selesai; satu tanda tangan dicatat untuk semua hari yang belum diisi ---------- */
+const DRon = () => DR && ctx().over;
+const tglPendek = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); return m ? `${+m[3]} ${BLN[+m[2] - 1].slice(0, 3)}` : iso; };
+const miss = p => { const t = tglList(); return [...new Set(hrOf(p).filter(d => t.includes(d) && !ST[`${p.id}~${d}`]))].sort(); };
 function head(c) {
   const lk = lokasi(INFO.tempat, INFO.kota);
   return `<div class="card" style="gap:6px;padding:14px"><div style="font-size:18px;font-weight:800;line-height:1.25">${esc(INFO.kegiatan)}</div>${INFO.kelas ? `<div class="meta"><b>${esc(INFO.kelas)}</b></div>` : ""}<div class="meta"><span>${esc(tglPanjang(c.z.iso))}</span>${lk ? `<span>📍 ${esc(lk)}</span>` : ""}</div>`
     + (c.idx >= 0 ? `<span class="pill">Hari ke-${c.idx + 1} · Tanda tangan hari ini</span>` : "") + `</div>`;
 }
+function dlist(q, c) {
+  const all = pesList().filter(p => hrOf(p).some(d => c.tgl.includes(d))), need = all.filter(p => miss(p).length);
+  const ps = all.filter(p => !q || (p.nama + " " + (p.instansi || "")).toLowerCase().includes(q.toLowerCase()));
+  show(head(c) + `<span class="pill dar">🚨 Mode darurat</span>
+    <div class="note warn">Khusus peserta yang <b>belum tanda tangan</b> saat kegiatan berlangsung. Pilih nama Anda, tanda tangan sekali, dan tanda tangan itu otomatis dicatat untuk <b>semua hari yang belum Anda isi</b>.</div>
+    <div class="note okk" id="prog">${all.length - need.length} dari ${all.length} peserta sudah lengkap.</div>
+    <h2>Pilih nama Anda</h2><input class="search" id="q" type="search" placeholder="Cari nama atau perusahaan" aria-label="Cari nama atau perusahaan" autocomplete="off" value="${esc(q || "")}">
+    <ul class="names">${ps.map(p => { const m = miss(p); return `<li><button class="nmb" data-id="${esc(p.id)}"${m.length ? "" : " disabled"}><b>${esc(p.nama)}</b><small>${esc(p.instansi || "")}</small>${m.length ? `<small class="mis">Belum TTD: ${esc(m.map(tglPendek).join(" · "))}</small>` : `<span class="ok">✓ Lengkap</span>`}</button></li>`; }).join("") || `<li class="empty">${all.length ? "Tidak ada nama yang cocok." : "Belum ada nama peserta."}</li>`}</ul>`, "dlist");
+  const qi = $("#q"); qi.oninput = () => { const v = qi.value, pos = qi.selectionStart; list(v); const q2 = $("#q"); q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (_) { } };
+  main.querySelectorAll(".nmb").forEach(b => { b.onclick = () => pilih(b.dataset.id); });
+}
 function list(q) {
   const c = ctx(); LASTDAY = c.z.iso;
+  if (DR && c.over) return dlist(q, c);
   if (c.idx < 0) {
     const awal = c.tgl.length && c.z.iso < c.tgl[0], akhir = c.tgl.length && c.z.iso > c.tgl[c.tgl.length - 1];
     show(head(c) + `<div class="note warn">${awal ? "Kegiatan belum dimulai." : akhir ? "Kegiatan sudah selesai." : "Hari ini bukan hari kegiatan."} Tanda tangan hanya bisa dilakukan pada hari kegiatan.</div>`
-      + `<div class="meta">Jadwal: ${esc(c.tgl.map(tglPanjang).join(" · "))}</div><button class="btn" id="reload">Periksa lagi</button>`, "off");
-    $("#reload").onclick = () => location.reload(); return;
+      + `<div class="meta">Jadwal: ${esc(c.tgl.map(tglPanjang).join(" · "))}</div><button class="btn" id="reload">Periksa lagi</button>`
+      + (akhir ? `<div class="note warn">Belum sempat tanda tangan? Tekan tombol darurat di bawah. Tanda tangan Anda akan dicatat untuk hari kegiatan yang belum Anda isi.</div><button class="btn dar" id="dar">🚨 Darurat: saya belum tanda tangan</button>` : ""), "off");
+    $("#reload").onclick = () => location.reload(); const db = $("#dar"); if (db) db.onclick = () => { DR = true; list(); }; return;
   }
   const all = pesList().filter(p => hrOf(p).includes(c.z.iso)), done = id => !!ST[`${id}~${c.z.iso}`];
   const ps = all.filter(p => !q || (p.nama + " " + (p.instansi || "")).toLowerCase().includes(q.toLowerCase()));
@@ -163,9 +185,10 @@ function list(q) {
 /* ---------- pilih nama -> langsung kotak tanda tangan ---------- */
 function pilih(id) { CHOSEN = pesList().find(p => p.id === id); if (CHOSEN) pad(); }
 function pad() {
-  INK = false; const c0 = ctx();
+  INK = false; const c0 = ctx(), dr = DRon(), M = dr ? miss(CHOSEN) : [];
   show(head(c0) + `<div class="who"><span>Anda memilih:</span><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi || "")}</span></div>
-    <div class="padwrap"><label for="pad">Tanda tangan di kotak ini</label><canvas class="pad" id="pad" aria-label="Kotak tanda tangan"></canvas><div class="hint">Gunakan jari atau pena layar. Bukan nama Anda? Tekan <b>Kembali</b>. Tanda tangan hanya bisa dikirim <b>satu kali</b> per hari.</div></div>
+    <div class="padwrap"><label for="pad">Tanda tangan di kotak ini</label><canvas class="pad" id="pad" aria-label="Kotak tanda tangan"></canvas><div class="hint">Gunakan jari atau pena layar. Bukan nama Anda? Tekan <b>Kembali</b>. ${dr ? "Tanda tangan hanya bisa dikirim <b>satu kali</b>." : "Tanda tangan hanya bisa dikirim <b>satu kali</b> per hari."}</div></div>
+    ${dr ? `<div class="note warn">🚨 Mode darurat. Tanda tangan ini akan dicatat untuk <b>${M.length} hari</b> yang belum Anda isi:<div class="dlist" style="margin-top:6px">${M.map(d => `<span>${esc(tglPendek(d))}</span>`).join("")}</div></div>` : ""}
     <div id="sendMsg"></div>
     <div class="row two"><button class="btn" id="back" type="button">Kembali</button><button class="btn" id="clr" type="button">Hapus</button></div>
     <button class="btn pri" id="send" type="button" disabled>✓ Kirim tanda tangan</button>`, "pad");
@@ -184,28 +207,35 @@ function pad() {
 async function kirim(c) {
   if (busy || !INK || !CHOSEN) return; busy = true;
   const b = $("#send"), cl = $("#clr"), bk = $("#back"), msg = $("#sendMsg"); b.disabled = cl.disabled = bk.disabled = true; b.textContent = "Mengirim…"; msg.innerHTML = "";
-  const url = c.toDataURL("image/png"), z = nowZ(INFO.zona), iso = z.iso, key = `${CHOSEN.id}~${iso}`;
+  const url = c.toDataURL("image/png"), z = nowZ(INFO.zona), iso = z.iso, key = `${CHOSEN.id}~${iso}`, dr = DRon();
   try {
+    if (dr) {
+      const days = [];
+      for (const d of miss(CHOSEN)) { const k2 = `${CHOSEN.id}~${d}`; if (await FB.has(KID, KL, k2)) ST[k2] = ST[k2] || 1; else days.push(d); }
+      if (!days.length) throw Object.assign(new Error("dup"), { dup: true });
+      let n = 0; for (const d of days) { b.textContent = `Mengirim… (${++n}/${days.length})`; const k2 = `${CHOSEN.id}~${d}`; await FB.put(KID, KL, k2, url); ST[k2] = Date.now(); }
+      return selesai(url, days);
+    }
     if (!tglList().includes(iso) || !hrOf(CHOSEN).includes(iso)) throw Object.assign(new Error("Hari ini bukan jadwal tanda tangan untuk nama ini."), { hari: true });
     if (ST[key] || await FB.has(KID, KL, key)) throw Object.assign(new Error("dup"), { dup: true });
     await FB.put(KID, KL, key, url);
     ST[key] = Date.now(); selesai(url);
   } catch (e) {
-    if (e && e.dup) { ST[key] = ST[key] || 1; msg.innerHTML = `<div class="note err">Nama ini sudah tercatat tanda tangan hari ini. Jika tanda tangan sebelumnya salah, minta PIC menggantinya di aplikasi PIC.</div>`; b.textContent = "Kembali ke daftar"; b.disabled = false; b.onclick = () => { CHOSEN = null; list(); }; cl.hidden = bk.hidden = true; }
+    if (e && e.dup) { ST[key] = ST[key] || 1; msg.innerHTML = `<div class="note err">${dr ? "Semua hari Anda sudah tercatat tanda tangan." : "Nama ini sudah tercatat tanda tangan hari ini."} Jika tanda tangan sebelumnya salah, minta PIC menggantinya di aplikasi PIC.</div>`; b.textContent = "Kembali ke daftar"; b.disabled = false; b.onclick = () => { CHOSEN = null; list(); }; cl.hidden = bk.hidden = true; }
     else { msg.innerHTML = `<div class="note err">Gagal mengirim: ${esc((e && e.message) || "cek internet")}.${e && e.hari ? "" : " Tanda tangan Anda masih ada di kotak, tekan Kirim lagi."}</div>`; b.disabled = cl.disabled = bk.disabled = false; b.textContent = "✓ Kirim lagi"; }
   } finally { busy = false; }
 }
-function selesai(url) {
-  show(`<div class="big">✅</div><h2 class="center">Tanda tangan berhasil dikirim</h2>
+function selesai(url, days) {
+  show(`<div class="big">✅</div><h2 class="center">Tanda tangan berhasil dikirim</h2>${days ? `<div class="note okk center">Dicatat untuk ${days.length} hari: ${esc(days.map(tglPendek).join(" · "))}</div>` : ""}
     <div class="who center"><b>${esc(CHOSEN.nama)}</b><span>${esc(CHOSEN.instansi || "")}</span></div>
     <div class="sigshow"><img src="${url}" alt="Tanda tangan terkirim"></div>
     <button class="btn pri" id="done" type="button">Selesai</button>`, "done");
   $("#done").onclick = () => { CHOSEN = null; list(); };
 }
 /* Hari berganti saat halaman masih terbuka: perbarui daftar (bila sedang di daftar) */
-function tick() { if (!INFO) return; const c = ctx(); if (c.z.iso === LASTDAY) return; LASTDAY = c.z.iso; if (SCREEN === "list" || SCREEN === "off") refreshSt().then(() => { if (SCREEN === "list" || SCREEN === "off") list(($("#q") || {}).value); }); }
+function tick() { if (!INFO) return; const c = ctx(); if (c.z.iso === LASTDAY) return; LASTDAY = c.z.iso; if (SCREEN === "list" || SCREEN === "off" || SCREEN === "dlist") refreshSt().then(() => { if (SCREEN === "list" || SCREEN === "off" || SCREEN === "dlist") list(($("#q") || {}).value); }); }
 setInterval(tick, 10000); window.__tpTick = tick;
-document.addEventListener("visibilitychange", () => { if (!document.hidden && !CHOSEN && FB && INFO && SCREEN === "list") refreshSt().then(() => { if (!CHOSEN) list(($("#q") || {}).value); }); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !CHOSEN && FB && INFO && (SCREEN === "list" || SCREEN === "dlist")) refreshSt().then(() => { if (!CHOSEN) list(($("#q") || {}).value); }); });
 boot();
 </script>
 </body>
