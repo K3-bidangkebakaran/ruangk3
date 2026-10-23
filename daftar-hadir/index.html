@@ -4370,7 +4370,7 @@ const Cloud = {
       if (loc && !loc.cloud) return false; // ada perubahan baru di perangkat ini selagi mengunduh: jangan ditimpa
       if (id === S.id && (saveT || this.dirty(S) || Date.now() - lastEditAt < 10000)) return false; // sedang diedit: coba lagi nanti
     }
-    if (old && old.pic) ev.pic = old.pic; // catatan PIC milik perangkat ini dipertahankan
+    if (old && old.pic) ev.pic = { ...old.pic, msig: "x", merged: 0 }; // catatan PIC milik perangkat ini dipertahankan; tanda "sudah digabung" dicabut: versi Drive bisa belum memuat foto/TTD dari PIC, jadi hasil PIC digabung ulang pada penarikan berikutnya
     if (id === S.id) { S = ev; await doSave(); applyState(); }
     else await this.storeEv(ev);
     return true;
@@ -4491,7 +4491,7 @@ window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDelet
 const Pic = {
   CFG: { apiKey: "AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg", authDomain: "portal-k3-bidang-kebakaran.firebaseapp.com", databaseURL: "https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "portal-k3-bidang-kebakaran", storageBucket: "portal-k3-bidang-kebakaran.firebasestorage.app", messagingSenderId: "497833559757", appId: "1:497833559757:web:01c2de15cd5f56dbb18b84" },
   ROOT: "artifacts/k3-kebakaran-app-v5/public/data",
-  ready: false, initP: null, d: null, db: null, dirty: new Set(), hash: {}, drops: [], err: "", pulling: false, t: null, pt: null, q: Promise.resolve(), nPull: 0,
+  healed: new Set(), mTry: {}, mMiss: 0, mOrphan: 0, ready: false, initP: null, d: null, db: null, dirty: new Set(), hash: {}, drops: [], err: "", pulling: false, t: null, pt: null, q: Promise.resolve(), nPull: 0,
   r(p) { return this.d.ref(this.db, `${this.ROOT}/${p}`); },
   async load() {
     if (this.initP) return this.initP;
@@ -4622,12 +4622,12 @@ const Pic = {
     const allMh = nodes.length > 0 && nodes.every(x => x.mh && typeof x.mh === "object"), mh = {};
     if (allMh) nodes.forEach(x => Object.keys(x.mh).forEach(k => { (mh[k] = mh[k] || []).push(String(x.mh[k])); }));
     Object.keys(mh).forEach(k => { mh[k] = mh[k].sort().join("+"); });
-    const semua = async () => { const m = (await this.d.get(this.r("dh_media/" + kid))).val() || {}; C.v = m; C.h = allMh ? { ...mh } : {}; C.full = allMh; return m; };
+    const semua = async () => { const m = (await this.d.get(this.r("dh_media/" + kid))).val() || {}; C.v = m; C.h = allMh ? Object.fromEntries(Object.entries(mh).filter(([k]) => m[k])) : {}; C.full = allMh; return m; }; // gambar yang tercatat tetapi belum ada di server tidak dianggap sudah diunduh
     if (full || !allMh || !C.full) return semua();
     const perlu = Object.keys(mh).filter(k => C.h[k] !== mh[k]);
     if (perlu.length > 8) return semua();
     Object.keys(C.v).forEach(k => { if (!(k in mh)) delete C.v[k]; });
-    for (let i = 0; i < perlu.length; i += 4) await Promise.all(perlu.slice(i, i + 4).map(async k => { C.v[k] = (await this.d.get(this.r(`dh_media/${kid}/${k}`))).val() || ""; C.h[k] = mh[k]; }));
+    for (let i = 0; i < perlu.length; i += 4) await Promise.all(perlu.slice(i, i + 4).map(async k => { const v = (await this.d.get(this.r(`dh_media/${kid}/${k}`))).val() || ""; C.v[k] = v; if (v) C.h[k] = mh[k]; else delete C.h[k]; })); // gambar yang belum terbaca (kosong) dicoba lagi pada penarikan berikutnya
     return C.v;
   },
   async pullAll(manual, force) { // force: gabungkan ULANG hasil semua PIC ke semua kegiatan (abaikan tanda "sudah digabung"); laporan ringkas di this.rep
@@ -4644,10 +4644,13 @@ const Pic = {
         if (!EV.some(e => e.id === kid)) { rep.tanpaPerangkat++; continue; }  // kegiatan ini tidak ada di perangkat ini
         const cur = kid === S.id ? S : await idbGet("event:" + kid);
         const sig = Object.entries(all[kid] || {}).filter(([, x]) => x && typeof x === "object").map(([u, x]) => `${u}:${x.upd || 0}:${x.rev || 0}:${x.dev || ""}`).sort().join("|"); // sidik semua akun PIC (bukan hanya jam): HP dengan jam lebih lambat tidak terlewat
-        if (!force && cur && cur.pic && (cur.pic.msig ? cur.pic.msig === sig : (cur.pic.merged || 0) >= upd)) continue;  // sudah digabung
+        const sudah = !!(cur && cur.pic && (cur.pic.msig ? cur.pic.msig === sig : (cur.pic.merged || 0) >= upd));
+        const cek = sudah && !this.healed.has(kid); this.healed.add(kid);
+        if (!force && sudah && !(cek && this.picGaps(kid === S.id ? S : normalize(cur), all[kid]) > 0)) continue;  // sudah digabung (sekali per sesi diperiksa: foto/TTD yang dicatat PIC tetapi tidak ada di kegiatan ini ikut digabung ulang)
         const media = await this.mediaFor(kid, all[kid], force);
         const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid));
-        const n = this.merge(ev, all[kid], media, upd); ev.pic = { ...(ev.pic || {}), msig: sig };
+        this.mMiss = 0; this.mOrphan = 0; const n = this.merge(ev, all[kid], media, upd); rep.orphan = (rep.orphan || 0) + this.mOrphan;
+        ev.pic = { ...(ev.pic || {}), msig: this.mMiss && ((this.mTry[kid] = (this.mTry[kid] || 0) + 1) <= 4) ? "x" : sig }; // ada gambar tercatat PIC yang belum terbaca dari server: dicoba lagi (maks. 4x) pada penarikan berikutnya
         total += n; rep.periksa++; if (n) { rep.ubah++; const jk = jenisOf(ev.acara) || "lain"; rep.jenis[jk] = (rep.jenis[jk] || 0) + 1; }
         if (kid === S.id) { if (n) changed(); else save(); renderTtdTab(); renderFoto(); renderTtd(); if (!document.activeElement || !document.activeElement.closest || !document.activeElement.closest("#lapBox")) fillLap(); }
         else if (!(force && !n)) { // penarikan paksa tanpa data baru: jangan tulis ulang (urutan "terakhir diubah" tidak berubah)
@@ -4860,6 +4863,18 @@ const Pic = {
     } catch (_) { /* aturan Firebase selfie belum dipasang / offline: abaikan */ }
     return total;
   },
+  /* foto/TTD yang dicatat akun PIC (flag di dh_hasil) tetapi tidak ada di kegiatan ini (mis. tertimpa versi Drive yang lebih lama): jumlahnya */
+  picGaps(ev, byPic) {
+    let g = 0; const a = ev.acara, hari = hariList(a).filter(Boolean), by = new Map(ev.peserta.map(p => [p.id, p])), L = ev.lap || {};
+    Object.values(byPic || {}).filter(x => x && typeof x === "object").forEach(h => {
+      Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (p) Object.keys(days || {}).forEach(d => { if (hari.includes(d) && !(p.ttd && p.ttd[d])) g++; }); });
+      Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid); if (p && !p.foto) g++; });
+      Object.keys(h.foto2 || {}).forEach(pid => { const p = by.get(pid); if (p && !p.foto2) g++; });
+      if (h.ttdN1 && !(L.s1 && L.s1.ttd)) g++; if (h.ttdN2 && !(L.s2 && L.s2.ttd)) g++; if (h.ttdPic && !a.ttd) g++;
+      Object.entries((h.lap && h.lap.hari) || {}).forEach(([d, hh]) => { if (hari.includes(d) && ((hh && hh.ids) || []).length && !(((L.hari || {})[d] || {}).fotos || []).length) g++; });
+    });
+    return g;
+  },
   merge(ev, byPic, media, upd) { // gabungkan hasil PIC ke kegiatan; mengembalikan jumlah isian yang berubah
     const a = ev.acara, hari = hariList(a).filter(Boolean), by = new Map(ev.peserta.map(p => [p.id, p]));
     let n = 0;
@@ -4886,9 +4901,9 @@ const Pic = {
         Object.entries(x.nr || {}).forEach(([d, rr]) => nrSet(LP.nr, d, rr));
         Object.entries(x.nrk || {}).forEach(([kk0, D]) => { const kk = B3_KK[kk0] || kk0, kl = kelasList(a).find(l => kelasKey(l) === kk); if (kl) Object.entries(D || {}).forEach(([d, rr]) => nrSet(nrD(LP, kl), d, rr)); }); // narasumber per alat
       }
-      Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) return; Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
-      Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (p && u && p.foto !== u) { p.foto = u; n++; } });
-      Object.keys(h.foto2 || {}).forEach(pid => { const p = by.get(pid), u = media["f2_" + pid]; if (p && u && p.foto2 !== u) { p.foto2 = u; n++; } });
+      Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) { this.mOrphan++; return; } Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (!u && hari.includes(d) && !(p.ttd && p.ttd[d])) this.mMiss++; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
+      Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (!p) this.mOrphan++; if (p && !u && !p.foto) this.mMiss++; if (p && u && p.foto !== u) { p.foto = u; n++; } });
+      Object.keys(h.foto2 || {}).forEach(pid => { const p = by.get(pid), u = media["f2_" + pid]; if (p && !u && !p.foto2) this.mMiss++; if (p && u && p.foto2 !== u) { p.foto2 = u; n++; } });
       if (h.ttdPic) last = h;
     }
     { // tanda tangan pengawas/ahli & foto dokumentasi harian dari PIC
@@ -4949,7 +4964,7 @@ const Pic = {
     toast("Menarik semua hasil & dokumentasi dari PIC…"); await this.flush(); const bn = await this.bersihkan(true);
     if (Cloud.ready()) { try { await Cloud.reconcile(true); await new Promise(r => setTimeout(r, 300)); for (let i = 0; i < 240 && Cloud.alBusy; i++) await new Promise(r => setTimeout(r, 500)); } catch (_) { } } // semua kegiatan di Drive ikut diunduh dulu supaya hasil PIC bisa digabung ke semuanya
     const n = await this.pullAll(true, true), r = this.rep || {};
-    if (r.periksa != null && !this.err) { const NM = { damkar: "Penanggulangan Kebakaran", angkat: "PAPA", b3: "Lingkungan Kerja B3", lain: "Lainnya" }; toast(`Selesai menarik hasil PIC: ${r.periksa} kegiatan diperiksa, ${r.ubah} mendapat data baru` + (r.ubah ? " (" + Object.keys(r.jenis).map(k => `${NM[k] || k} ${r.jenis[k]}`).join(", ") + ")" : "") + (r.tanpaPerangkat ? `. ${r.tanpaPerangkat} kegiatan punya hasil PIC tetapi belum ada di perangkat ini (dibuat di admin lain, mis. LPMI01). Hubungkan Google Drive yang sama lalu tekan “Samakan sekarang”, supaya kegiatannya terunduh dan hasil PIC bisa digabung.` : ".")); }
+    if (r.periksa != null && !this.err) { const NM = { damkar: "Penanggulangan Kebakaran", angkat: "PAPA", b3: "Lingkungan Kerja B3", lain: "Lainnya" }; toast(`Selesai menarik hasil PIC: ${r.periksa} kegiatan diperiksa, ${r.ubah} mendapat data baru` + (r.ubah ? " (" + Object.keys(r.jenis).map(k => `${NM[k] || k} ${r.jenis[k]}`).join(", ") + ")" : "") + (r.tanpaPerangkat ? `. ${r.tanpaPerangkat} kegiatan punya hasil PIC tetapi belum ada di perangkat ini (dibuat di admin lain, mis. LPMI01). Hubungkan Google Drive yang sama lalu tekan “Samakan sekarang”, supaya kegiatannya terunduh dan hasil PIC bisa digabung.` : ".")); if (r.orphan) toast(`Perhatian: ${r.orphan} foto/TTD dari PIC tidak cocok dengan daftar peserta di perangkat ini (daftar peserta berbeda dengan yang dilihat PIC, mis. diimpor ulang di admin lain). Samakan Drive lalu kirim ulang kegiatan ke PIC.`); }
     if (bn) toast(bn === 1 ? "Satu kegiatan lama/ganda dibuang dari aplikasi PIC." : `${bn} kegiatan lama/ganda dibuang dari aplikasi PIC.`);
     if (!n && !this.err) toast(S.acara.kegiatan ? "Kegiatan terkirim ke aplikasi PIC. Belum ada hasil baru dari PIC." : "Belum ada hasil baru dari PIC.");
   }
