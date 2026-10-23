@@ -203,3 +203,9 @@ Semua akun PIC melihat kegiatan yang sama. APK memantau seluruh `dh_hasil` (hany
 ## Pratinjau Laporan (v40)
 
 Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. Layar ini menampilkan persen kelengkapan laporan dan daftar bagian laporan: Daftar Hadir (TTD peserta), Dokumentasi Peserta, Dokumentasi Harian, Absensi Narasumber, Nilai & Kelulusan, Penandatangan Daftar Nilai, dan TTD PIC. Kegiatan Pesawat Angkat & B3 dipisah per alat/program. Ketuk satu bagian untuk melihat rinciannya (baris merah = masih kurang; foto bisa diketuk untuk diperbesar), lalu ketuk **Lengkapi** untuk langsung ke layar pengisiannya; tombol kembali membawa PIC ke pratinjau lagi. Isian yang sudah diisi di website atau oleh akun PIC lain ikut dihitung. Bagian hanya muncul bila diaktifkan admin pada laporan kegiatan itu.
+
+## Pratinjau Word & link TTD Daftar Nilai (v41)
+
+**Pratinjau Word:** tombol di menu kegiatan (dan di layar Pratinjau Laporan) menampilkan tampilan seperti berkas Word: Daftar Hadir, Dokumentasi Peserta, Daftar Nilai, Lulus / Tidak Lulus, Dokumentasi Harian, dan Absensi Narasumber, lengkap dengan kop surat. Untuk Pesawat Angkat & B3 ada pilihan alat/program. Tanda ✔ berarti TTD atau foto itu sudah ada di website atau akun PIC lain. Susunan halaman Word asli bisa sedikit berbeda.
+
+**Link TTD Daftar Nilai:** di layar *Penandatangan Daftar Nilai*, setelah nama Pengawas / Ahli K3 diisi, ketuk **Bagikan link TTD** (atau Salin link). Penandatangan membuka link di HP-nya dan menandatangani; hasilnya masuk otomatis ke APK, ke Daftar Nilai, dan ke website. Bila TTD dihapus di APK, link bisa dipakai lagi.

@@ -31,7 +31,7 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, kl: null, day: 0, q: '', err: '' }; // kl: alat/kelas yang sedang dibuka (kegiatan PAPA)
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, selesai: false });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 /* ---------- hasil akun PIC lain (sinkron antar akun) ----------
    Semua akun PIC melihat kegiatan yang sama, jadi hasil kerja satu akun harus tampak di akun lain TANPA menunggu admin membuka website.
@@ -91,7 +91,7 @@ const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kela
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); }; // hari yang tampil di tab absensi: alat selain Kelas 1 hanya 4 hari
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const fotoDua = k => !!(k && (k.damkar || k.b3)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
 const fotoLengkap = (k, h, p) => fotoAda(h, p, 'foto') && (!fotoDua(k) || fotoAda(h, p, 'foto2'));
 const LAPK = k => (k && k.lap) || {};
@@ -165,7 +165,7 @@ const nrOf = (h, k, d) => { const o = { kid: '', nama: '', nip: '', inst: '', mi
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v40';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v41';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -243,11 +243,48 @@ async function naraShare(b, a, k, kid) {
   if (navigator.share) navigator.share({ title: 'Absensi Narasumber', text: msg }).catch(() => { });
   else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 }
+/* ---- Link tanda tangan penandatangan Daftar Nilai (Pengawas = 1, Ahli K3 = 2): memakai halaman ruangk3.com/narasumber/ dengan kunci 'ttn1' / 'ttn2' ---- */
+const ttnLink = (kid, n) => naraLink(kid, 'ttn' + n);
+function ttnInfo(h, k, n) {
+  const days = k.tgl || [];
+  return { jenis: 'ttn', nama: lapNama(h, k, 's' + n, 'nama').trim(), inst: String(LAPK(k)['s' + n + 'jab'] || '').replace(/\n/g, ' '), materi: '', kegiatan: k.nama || '', tgl: days[days.length - 1] || '', rentang: rentang(days), tempat: k.tempat || '', kota: k.kota || '', zona: k.zona || 'WIB' };
+}
+async function ttnPublish(kid, n, force) {
+  const k = KEGS[kid], h = hOf(kid), info = ttnInfo(h, k, n), hs = fnv(JSON.stringify(info));
+  if (!force && h.tnShared[n] === hs) return info;
+  await window.PicFB.naraPub(kid, 'ttn' + n, info); h.tnShared[n] = hs; await saveH(kid); return info;
+}
+let ttnT = 0;
+function ttnRepub(kid) { // nama / tanggal diubah setelah link dibagikan: perbarui info di server (diam-diam)
+  clearTimeout(ttnT);
+  ttnT = setTimeout(async () => { const h = H[kid]; if (!h || !KEGS[kid] || !fbOk() || !online()) return; for (const n of Object.keys(h.tnShared || {})) { if (!ttnInfo(h, KEGS[kid], n).nama) continue; try { await ttnPublish(kid, n); } catch (e) { } } }, 2000);
+}
+async function ttnShare(b, a, k, kid) {
+  const n = b.dataset.n, h = hOf(kid), nm = lapNama(h, k, 's' + n, 'nama').trim();
+  if (!nm) { toast('Isi nama penandatangan dulu.'); return; }
+  if (!fbOk() || !online()) { toast('Membuat link perlu internet dan login.'); return; }
+  b.disabled = true;
+  try { await ttnPublish(kid, n, true); } catch (e) { b.disabled = false; toast('Link belum bisa dibuat. ' + friendlyErr(e)); return; }
+  b.disabled = false;
+  const link = ttnLink(kid, n), msg = `Link penandatanganan Daftar Nilai – ${k.nama || 'kegiatan'}:\n${link}`;
+  if (a === 'ttncopy') { copyText(link).then(() => toast('Link disalin'), () => toast('Tidak bisa menyalin. Gunakan tombol Bagikan.')); return; }
+  if (navigator.share) navigator.share({ title: 'TTD Daftar Nilai', text: msg }).catch(() => { });
+  else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
 let naraOff = null, naraUid = null;
 async function naraGot(st) { // TTD yang dikirim narasumber lewat link -> masuk ke baris yang sama (ikut terkirim ke admin lewat jalur biasa)
   for (const kid of Object.keys(st || {})) {
     const h = H[kid], k = KEGS[kid], sk = st[kid]; if (!h || !k || !sk || typeof sk !== 'object') continue;
     for (const key of Object.keys(sk)) {
+      if (key === 'ttn1' || key === 'ttn2') { // TTD penandatangan Daftar Nilai lewat link
+        const n = key.slice(3), ts = +sk[key] || 1; if (!h.tnShared[n] || ts <= (h.naraSeen[key] || 0)) continue;
+        try {
+          const u = await window.PicFB.naraTtd(kid, key);
+          if (typeof u === 'string' && /^data:image\//.test(u)) { h['n' + n] = u; delete h.sent['n' + n]; h.gone = (h.gone || []).filter(x => x !== 'n' + n); h.naraSeen[key] = ts; touch(kid); render(); toast(`${lapNama(h, k, 's' + n, 'nama') || (n === '1' ? 'Pengawas' : 'Ahli K3')} sudah tanda tangan`); }
+          else h.naraSeen[key] = ts;
+        } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
+        continue;
+      }
       const ts = +sk[key] || 1; if (!h.nshared[key] || ts <= (h.naraSeen[key] || 0)) continue;
       try {
         const u = await window.PicFB.naraTtd(kid, key);
@@ -466,7 +503,7 @@ async function sync() {
     syncErr = friendlyErr(e); clearTimeout(retryT); retryT = setTimeout(sync, 30000);
   } finally { syncing = false; renderPill(); if (pending() && !syncErr && online()) setTimeout(sync, 500); }
 }
-function touch(kid) { const h = hOf(kid); h.upd = Date.now(); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); setTimeout(sync, 1200); if (Object.keys(h.nshared || {}).length) naraRepub(kid); if (Object.keys(h.tshared || {}).length) ttdpRepub(kid); }
+function touch(kid) { const h = hOf(kid); h.upd = Date.now(); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); setTimeout(sync, 1200); if (Object.keys(h.nshared || {}).length) naraRepub(kid); if (Object.keys(h.tshared || {}).length) ttdpRepub(kid); if (Object.keys(h.tnShared || {}).length) ttnRepub(kid); }
 
 async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali hasil yang sudah ada di server. old: HP lain dengan akun yang sama sudah mengirim yang lebih baru → gantikan salinan ini
   if (restoring.has(kid)) return; restoring.add(kid);
@@ -504,7 +541,7 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
       else { const date = key.slice(-10), pid = key.slice(2, -11); (h.hadir[pid] = h.hadir[pid] || {})[date] = d; }
       h.sent[key] = fnv(d);
     });
-    if (old) { if (H[kid] !== old || old.dirty || old.upd !== upd0) return; ['nshared', 'naraSeen', 'tshared', 'ttdpSeen'].forEach(f => { h[f] = old[f] || {}; }); if (old.goneAt) h.goneAt = old.goneAt; }
+    if (old) { if (H[kid] !== old || old.dirty || old.upd !== upd0) return; ['nshared', 'naraSeen', 'tshared', 'ttdpSeen', 'tnShared'].forEach(f => { h[f] = old[f] || {}; }); if (old.goneAt) h.goneAt = old.goneAt; }
     nrGabung(h, KEGS[kid]); H[kid] = h; await saveH(kid); render();
   } catch (e) { /* dicoba lagi saat tarik data berikutnya */ } finally { restoring.delete(kid); }
 }
@@ -718,11 +755,130 @@ function lapHtml(kid, k) {
     <p class="hint">Persen = rata-rata kelengkapan semua bagian. Ketuk satu bagian untuk melihat rinciannya (baris merah = masih kurang), lalu ketuk <b>Lengkapi</b> untuk langsung mengisinya. Isian yang sudah diisi di website atau akun PIC lain ikut dihitung.</p>`;
 }
 
+/* ---------- Pratinjau Word: tampilan seperti berkas Word laporan (kop surat, tabel, tanda tangan) ---------- */
+const wUp = s => String(s == null ? '' : s).toUpperCase();
+const BLN_UP = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI', 'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+function wRentangUp(days) {
+  const ds = (days || []).map(x => new Date(x + 'T00:00:00')); if (!ds.length) return '';
+  const s = ds[0], e = ds[ds.length - 1], B = d => BLN_UP[d.getMonth()];
+  if (+s === +e) return `${s.getDate()} ${B(s)} ${s.getFullYear()}`;
+  if (s.getFullYear() !== e.getFullYear()) return `${s.getDate()} ${B(s)} ${s.getFullYear()} – ${e.getDate()} ${B(e)} ${e.getFullYear()}`;
+  if (s.getMonth() !== e.getMonth()) return `${s.getDate()} ${B(s)} – ${e.getDate()} ${B(e)} ${e.getFullYear()}`;
+  return `${s.getDate()} – ${e.getDate()} ${B(e)} ${e.getFullYear()}`;
+}
+const wJam = t => String(t || '').replace(':', '.');
+const wWaktu = k => (!k.jamMulai && !k.jamSelesai) ? '' : `${wJam(k.jamMulai)} – ${k.jamSelesai ? wJam(k.jamSelesai) : 'selesai'} ${k.zona || ''}`.trim();
+const wPage = inner => `<section class="wp"><img class="kh" src="img/kop-head.png" alt=""><div class="ct">${inner}</div><img class="kf" src="img/kop-foot.png" alt=""></section>`;
+const wTitle = (t, o = '') => `<div class="wtt ${o}">${esc(t)}</div>`;
+const wSig = (u, ok) => u ? `<img src="${u}" alt="TTD">` : ok ? '<i class="wck" title="Sudah ada di website / akun PIC lain">✔</i>' : '';
+const wKota = (k, h) => (kotaOf(h, k) || k.kota || '').trim();
+function wTtdBlok(kid, k) { // blok "Kota, tanggal / jabatan / TTD / nama" di bawah Daftar Hadir & Absensi Narasumber
+  const h = hOf(kid), tg = k.tglTtd ? tglPanjang(k.tglTtd) : '', kt = (k.kota || '').trim(), nm = k.namaTtd || h.ttdPicNama || '';
+  const ttd = h.ttdPic ? `<img src="${h.ttdPic}" alt="TTD PIC">` : ttdOrgOk(h, k) ? '<i class="wck">✔</i>' : '';
+  return `<div class="wsign"><div>${esc(kt)}${kt && tg ? ', ' : ''}${esc(tg)}</div><div>${k.jabTtd ? esc(k.jabTtd) + ',' : '&nbsp;'}</div><div class="wsg">${ttd}</div><div>${nm ? '( <b><u>' + esc(nm) + '</u></b> )' : '( ................................ )'}</div></div>`;
+}
+const wInfo = rows => `<table class="winf">${rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td>:</td><td>${esc(b || '')}</td></tr>`).join('')}</table>`;
+function wDh(kid, k, g) {
+  const h = hOf(kid), days = daysKl(k, g.kl), nd = days.length, multi = nd > 1, dense = multi && nd > 7;
+  const ps = urutKelas(k, pesByKl(k, g.kl)).filter(p => (p.nama || '').trim());
+  const nm = k.nama + (papaOf(k) ? ' – ' + klLabel(g.kl) : '');
+  const pend = d => { const x = new Date(d + 'T00:00:00'); return x.getDate() + '/' + (x.getMonth() + 1) + '/' + String(x.getFullYear()).slice(2); };
+  const w0 = dense ? 8 : 9, w1 = dense ? 31 : nd > 4 ? 40 : 46, w2 = dense ? 26 : nd > 4 ? 30 : 34, wk = dense ? 17 : multi ? (nd > 4 ? 22 : 24) : 26;
+  const cols = multi ? [w0, w1, w2, ...days.map(() => (174 - w0 - w1 - w2 - wk) / nd), wk] : [9, 174 - 9 - 46 - 42 - 26, 46, 42, 26];
+  const head = multi ? `<tr><th rowspan="2">No</th><th rowspan="2">Nama Peserta</th><th rowspan="2">Instansi / Perusahaan</th><th colspan="${nd}">Tanda Tangan</th><th rowspan="2" class="sm">Keterangan</th></tr><tr>${days.map((d, i) => `<th class="sm">${dense ? i + 1 : 'Hari ' + (i + 1)}<br><span>${esc(pend(d))}</span></th>`).join('')}</tr>`
+    : '<tr><th>No</th><th>Nama Peserta</th><th>Instansi / Perusahaan</th><th>Tanda Tangan</th><th class="sm">Keterangan</th></tr>';
+  const body = ps.map((p, i) => {
+    const bt = isBatal(h, p), rem = isRem(h, p), c = bt ? 'bt' : rem ? 'rem' : '';
+    const tds = (multi ? days : [days[0]]).map((d, j) => (bt || (rem && multi && j < nd - 1)) ? `<td class="${c}"></td>` : `<td class="sg ${rem ? '' : c}"><span class="no">${i + 1}.</span> ${wSig(h.hadir[p.id] && h.hadir[p.id][d], sudahTtd(h, p, d))}</td>`).join('');
+    return `<tr><td class="c ${c}">${i + 1}</td><td class="${c}">${esc(p.nama)}</td><td class="${c}">${esc(p.instansi || '')}</td>${tds}<td class="c ${bt ? 'bt' : ''}"><b>${bt ? 'Cancel' : rem ? 'Remedial' : ''}</b></td></tr>`;
+  }).join('') || `<tr><td colspan="${cols.length}" class="c wnil">Belum ada peserta</td></tr>`;
+  return wPage(wTitle('DAFTAR HADIR PESERTA', 'u') + wInfo([['Kegiatan', nm], ['Tanggal', rentang(k.tgl)], ['Waktu', wWaktu(k)], ['Tempat', k.tempat]])
+    + `<table class="wt dh${dense ? ' dn' : ''}"><colgroup>${cols.map(x => `<col style="width:${x}mm">`).join('')}</colgroup><thead>${head}</thead><tbody>${body}</tbody></table>` + wTtdBlok(kid, k));
+}
+function wDk(kid, k, g) {
+  const h = hOf(kid), two = fotoDua(k), keys = two ? ['foto', 'foto2'] : ['foto'], ps = urutKelas(k, pesByKl(k, g.kl)).filter(p => (p.nama || '').trim());
+  const nm = k.nama + (papaOf(k) ? ' – ' + klLabel(g.kl) : ''), cols = two ? [9, 32, 32, 50.5, 50.5] : [10, 45, 44, 75];
+  let out = '';
+  for (let j = 0, pi = 0; j < Math.max(ps.length, 1); j += 4, pi++) {
+    const rows = ps.slice(j, j + 4).map((p, i) => {
+      const bt = isBatal(h, p), rem = isRem(h, p), c = bt ? 'bt' : rem ? 'rem' : '';
+      const fs = keys.map(key => { const u = h[key] && h[key][p.id]; return `<td class="c ${bt ? 'bt' : ''}">${bt ? '' : u ? `<img class="wf" src="${u}" alt="Foto ${esc(p.nama)}">` : (webF(p, key) || xF(h, p.id, key)) ? '<i class="wck">✔ foto ada (website / PIC lain)</i>' : '<span class="wnil">Belum ada foto</span>'}</td>`; }).join('');
+      return `<tr style="height:${two ? 30 : 40}mm"><td class="c ${c}">${j + i + 1}</td><td class="${c}">${esc(p.nama)}</td><td class="sm ${c}">${esc(p.instansi || '')}</td>${fs}</tr>`;
+    }).join('') || `<tr><td colspan="${cols.length}" class="c wnil">Belum ada peserta</td></tr>`;
+    out += wPage(wTitle('DOKUMENTASI PESERTA' + (pi ? ' (lanjutan)' : ''), 'u') + wInfo([['Nama Kegiatan', nm]])
+      + `<table class="wt"><colgroup>${cols.map(x => `<col style="width:${x}mm">`).join('')}</colgroup><thead><tr><th>No</th><th>Nama Peserta</th><th>Instansi / Perusahaan</th>${two ? '<th>Foto 1</th><th>Foto 2</th>' : '<th>Foto</th>'}</tr></thead><tbody>${rows}</tbody></table>`);
+  }
+  return out;
+}
+function wNilaiTtd(kid, k, n) {
+  const h = hOf(kid), ln = LAPK(k), jab = String(ln['s' + n + 'jab'] || '').split('\n'); while (jab.length < 2) jab.push('');
+  const nm = lapNama(h, k, 's' + n, 'nama').trim(), nip = lapNama(h, k, 's' + n, 'nip').trim();
+  return `<td class="wsc">${jab.map(l => `<div>${esc(l) || '&nbsp;'}</div>`).join('')}<div class="wsg">${wSig(h['n' + n], nTtd(h, n))}</div><div>${nm ? `<b><u>${esc(nm)}</u></b>` : '&nbsp;'}</div>${nip ? `<div class="sm">NIP. ${esc(nip)}</div>` : ''}</td>`;
+}
+function wNl(kid, k, g) {
+  const h = hOf(kid), ln = LAPK(k), days = k.tgl || [], ps = urutKelas(k, pesByKl(k, g.kl)).filter(p => (p.nama || '').trim() && !isBatal(h, p));
+  const iso = ln.nTgl || days[days.length - 1] || '', kt = wKota(k, h), tg = iso ? hariNama(iso).toLowerCase() + ' ' + tglPanjang(iso) : '';
+  const tgl1 = days.length ? wUp(rentang(days)).replace(/ – /g, '-') + ` (${days.length} HARI)` : '', batch = wUp(ln.batch || '').trim();
+  const body = ps.map((p, i) => `<tr><td class="c">${i + 1}</td><td>${esc(wUp(p.nama))}</td><td>${esc(wUp(p.instansi))}</td><td class="c">${esc(nilaiOf(h, p, 'ut'))}</td><td class="c">${esc(nilaiOf(h, p, 'up'))}</td></tr>`).join('') || '<tr><td colspan="5" class="c wnil">Belum ada peserta</td></tr>';
+  return wPage(wTitle('DAFTAR NILAI PESERTA') + wTitle(wUp(k.nama + (papaOf(k) ? ' – ' + klLabel(g.kl) : ''))) + wTitle('TANGGAL : ' + tgl1 + (batch ? ` (${batch})` : ''), 'md')
+    + `<table class="wt lp"><colgroup>${[10, 46, 64, 35, 35].map(x => `<col style="width:${x}mm">`).join('')}</colgroup><thead><tr class="y1"><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th></tr></thead><tbody>${body}</tbody></table>`
+    + `<div class="wtgl">${esc(kt)}${kt && tg ? ', ' : ''}${esc(tg)}</div><table class="wss"><tr>${wNilaiTtd(kid, k, 1)}${wNilaiTtd(kid, k, 2)}</tr></table>`);
+}
+function wLn(kid, k, g) {
+  const h = hOf(kid), ln = LAPK(k), days = k.tgl || [], ps = urutKelas(k, pesByKl(k, g.kl)).filter(p => (p.nama || '').trim()), batch = wUp(ln.batch || '').trim();
+  const body = ps.map((p, i) => { const cx = isBatal(h, p), kv = kelOf(h, p), red = cx || kv === 'tidak', t = cx ? 'CANCEL' : kv === 'tidak' ? 'TIDAK LULUS' : kv === 'lulus' ? 'LULUS' : '';
+    return `<tr class="${red ? 'bt' : ''}"><td class="c">${i + 1}</td><td>${esc(wUp(p.nama))}</td><td class="c">${esc(wUp(p.instansi))}</td><td class="c">${t}</td></tr>`; }).join('') || '<tr><td colspan="4" class="c wnil">Belum ada peserta</td></tr>';
+  return wPage(wTitle('DAFTAR NAMA PESERTA ' + wUp(k.nama + (papaOf(k) ? ' – ' + klLabel(g.kl) : ''))) + wTitle((batch ? `(BATCH ${batch}) ` : '') + wRentangUp(days), 'md')
+    + `<table class="wt lp"><colgroup>${[10.5, 64, 89, 26.5].map(x => `<col style="width:${x}mm">`).join('')}</colgroup><thead><tr class="y2"><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>KETERANGAN</th></tr></thead><tbody>${body}</tbody></table>`
+    + `<div class="wpen"><div>E.&nbsp;&nbsp;&nbsp;PENUTUP</div><div>Demikian Laporan ini kami sampaikan dengan data yang sebenar benarnya</div></div><div class="wsign wr"><div>HORMAT KAMI,</div><div>LINTAS PENGEMBANGAN MANAJEMEN INDONESIA</div><div class="wsg qr">&nbsp;</div><div><b><u>CHRISTIEN CHANDRA PANCA</u></b></div><div>DIREKTUR UTAMA</div></div>`);
+}
+function wHr(kid, k) {
+  const h = hOf(kid), ln = LAPK(k), days = k.tgl || [], batch = wUp(ln.batch || '').trim(); let out = '';
+  days.forEach((d, i) => {
+    const own = h.hfoto[d] || [], lain = Math.max(0, hfN(h, d) - own.length), items = [...own.map(f => `<img class="wh" src="${f.u}" alt="Foto dokumentasi">`), ...Array.from({ length: lain }, () => '<div class="wh ph">Foto dari akun PIC lain<br><small>ada di laporan</small></div>')];
+    const x = new Date(d + 'T00:00:00'), np = Math.max(1, Math.ceil(items.length / 2)), mt = materiOf(h, k, d).trim();
+    for (let pg = 0; pg < np; pg++) {
+      const sl = items.slice(pg * 2, pg * 2 + 2);
+      out += wPage(wTitle('DOKUMENTASI ' + wUp(k.nama)) + wTitle(wRentangUp(days) + (batch ? ` (BATCH ${batch})` : ''), 'md') + wTitle(`DAY ${i + 1} (${x.getDate()} ${BLN_UP[x.getMonth()]} ${x.getFullYear()})`, 'md')
+        + wTitle('MATERI' + (mt ? '  ' + wUp(mt) : ''), 'md') + (sl.length ? sl.map(t => `<div class="whw">${t}</div>`).join('') : '<div class="c wnil" style="padding:40px 0">(Belum ada foto)</div>'));
+    }
+  });
+  return out || wPage('<div class="c wnil">Belum ada tanggal kegiatan</div>');
+}
+function wNr(kid, k, g) {
+  const h = hOf(kid), days = k.tgl || [], pf = (k.b3 && papaOf(k) && g.kl) ? kelasKey(g.kl) + '~' : '', ds = k.b3 ? withKl(g.kl, () => absDays(k)) : days; let rows = '';
+  ds.forEach(d0 => nrKeys(h, k, d0, pf).forEach((key, n) => {
+    const r = nrOf(h, k, key), ttd = nrTtd(h, key), nama = r.nama.trim(); if (n && !nama && !ttd) return;
+    const x = new Date(d0 + 'T00:00:00'), nip = (r.kid && r.kid !== '_m') || r.nip ? `<div class="sm">NIP : ${esc(r.nip || '')}</div>` : '', lines = String(r.mtxt || '').split('\n').map(t => t.trim()).filter(Boolean);
+    rows += `<tr><td class="c">${n ? '' : `<div>${esc(hariNama(d0))}</div><div>${x.getDate()} ${esc(fm(d0, { month: 'long' }))} ${x.getFullYear()}</div>`}</td><td>${esc(r.nama)}${nip}</td><td class="c">${esc(r.inst)}</td><td class="sm">${lines.map(t => `<div class="wbul">↓ ${esc(t)}</div>`).join('')}</td><td class="c wsgc">${wSig(h.nrs[key], ttd)}</td></tr>`;
+  }));
+  return wPage(wTitle('ABSENSI NARASUMBER') + wTitle(wUp(k.nama + (k.b3 && papaOf(k) ? ' – ' + klLabel(g.kl) : ''))) + wTitle('TANGGAL : ' + wRentangUp(days) + (LAPK(k).batch ? ` (BATCH ${wUp(LAPK(k).batch)})` : ''), 'md')
+    + `<table class="wt lp"><colgroup>${[27, 50, 31, 52, 30].map(x => `<col style="width:${x}mm">`).join('')}</colgroup><thead><tr class="gr"><th>Hari / Tanggal</th><th>Narasumber</th><th>Instansi</th><th>Materi</th><th>Tanda Tangan</th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="c wnil">Belum ada narasumber</td></tr>'}</tbody></table>` + wTtdBlok(kid, k));
+}
+function wrdDocs(k) {
+  const ln = LAPK(k), a = [['dh', 'Daftar Hadir', 1], ['dk', 'Dokumentasi Peserta', 1]];
+  if (ln.nilai) a.push(['nl', 'Daftar Nilai', 1]); if (ln.hasil) a.push(['ln', 'Lulus / Tidak Lulus', 1]);
+  if (ln.harian) a.push(['hr', 'Dokumentasi Harian', 0]); if (ln.nara) a.push(['nr', 'Absensi Narasumber', (k.b3 && papaOf(k)) ? 1 : 0]);
+  return a;
+}
+function wrdFit() { const w = $('.wwrap'); if (!w) return; const z = P.wz === 'full' ? 1 : Math.max(.3, Math.min(1, (w.clientWidth - 20) / 794)); w.style.setProperty('--wz', z.toFixed(3)); }
+window.addEventListener('resize', () => { if (P.screen === 'wrd') wrdFit(); });
+function wrdHtml(kid, k) {
+  const docs = wrdDocs(k), cur = docs.find(d => d[0] === P.wd) || docs[0], grp = papaOf(k) ? klGroups(k) : [{ kl: undefined }], gi = Math.min(P.wk || 0, grp.length - 1), g = grp[gi], perG = cur[2] && grp.length > 1;
+  const body = { dh: wDh, dk: wDk, nl: wNl, ln: wLn, nr: wNr }[cur[0]];
+  const html = cur[0] === 'hr' ? wHr(kid, k) : body(kid, k, g);
+  return `<div class="chips" role="tablist">${docs.map(d => `<button type="button" role="tab" data-act="wtab" data-d="${d[0]}" aria-selected="${d[0] === cur[0]}">${esc(d[1])}</button>`).join('')}</div>
+    ${perG ? `<div class="chips" role="tablist" aria-label="Alat / program">${grp.map((x, i) => `<button type="button" role="tab" data-act="wgrp" data-i="${i}" aria-selected="${i === gi}">${esc(klLabel(x.kl))}</button>`).join('')}</div>` : ''}
+    <div class="row" style="align-items:center"><button type="button" class="btn sm" data-act="wz">${P.wz === 'full' ? '🔍 Pas layar' : '🔍 Ukuran asli (geser)'}</button><span class="hint" style="flex:1">Tampilan seperti berkas Word. Tanda ✔ = sudah ada di website / akun PIC lain.</span></div>
+    <div class="wwrap">${html}</div>
+    <p class="hint">Ini pratinjau di HP: susunan halaman di berkas Word asli bisa sedikit berbeda. Berkas Word dibuat dari website Daftar Hadir.</p>`;
+}
+
 function render() {
   const app = $('#app'); if (!app) return;
   if (!ME) P.screen = 'login';
   const kid = P.kid, k = kid && KEGS[kid];
-  if (['keg', 'alat', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr', 'nar', 'sfl', 'lap'].includes(P.screen) && !k) P.screen = 'home';
+  if (['keg', 'alat', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr', 'nar', 'sfl', 'lap', 'wrd'].includes(P.screen) && !k) P.screen = 'home';
   if (k && P.screen === 'alat' && !papaOf(k)) P.screen = 'keg';
   if (k && papaOf(k) && P.kl == null && ['abs', 'dok', 'nil'].includes(P.screen)) P.screen = 'keg'; // layar per alat butuh alat terpilih (narasumber = satu untuk semua alat, boleh dibuka dari daftar alat)
   let h = '';
@@ -765,12 +921,13 @@ function render() {
     const tNar = (ln.nara && (!k.b3 || alat)) ? (() => { const ds = (k.b3 ? absDays(k) : (k.tgl || [])).filter(d => !nrOffOf(k, nrPfx(k) + d)), pf = nrPfx(k), n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && nrTtd(hh, pf + d); }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
     const tSf = ln.selfie && !alat ? `<button type="button" class="tile" data-act="go" data-to="sfl"><span class="ic">${I.cam}</span><span><b>Link Absen Selfie Peserta</b><small>Bagikan ke peserta · pagi &amp; siang</small></span>${I.chev}</button>` : '';
     const tLap = (() => { const c = lapCek(kid); return `<button type="button" class="tile lap${c.all ? ' ok' : ''}" data-act="go" data-to="lap"><span class="ic">${I.list}</span><span><b>Pratinjau Laporan</b><small>${c.all ? 'Laporan lengkap ✔' : c.pct + '% lengkap · ' + (c.secs.length - c.nOk) + ' bagian masih kurang'} — cek sebelum selesai</small></span>${I.chev}</button>`; })();
+    const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
     const btnSelesai = alat ? '' : `<button class="btn" type="button" data-act="selesai" style="margin-top:6px">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">Tekan setelah SEMUA isian selesai. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.</p>`;
     const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua ' + (k.b3 ? 'program' : 'alat') : ''}</small></span>${I.chev}</button>`; })() : '';
     if (alat) {
       h = appbar(klLabel(P.kl), k.nama, true) + `<div class="screen">
       <div class="hint">${k.b3 ? 'Program' : 'Alat'}: <b>${esc(klLabel(P.kl))}</b> · ${s.aktif + s.batal} peserta. Semua isian di bawah ini khusus ${k.b3 ? 'program' : 'alat'} ini.</div>
-      ${tAbs}${tDok}${tNil}${k.b3 ? tNar : ''}${tLap}
+      ${tAbs}${tDok}${tNil}${k.b3 ? tNar : ''}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}</div>
       <p class="hint">Isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p></div>`;
     } else if (papa) {
@@ -779,12 +936,12 @@ function render() {
       ${klGroups(k).map(g => { const sg = stat(kid, g.kl); return `<button type="button" class="kcard" data-act="alat" data-kl="${esc(g.kl)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(klLabel(g.kl))}</h3></div>
         <div class="meta"><span>${g.n} peserta</span></div><div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
       <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua ${k.b3 ? 'program' : 'alat'}</h2></div>
-      ${tSf}${tDhr}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}
+      ${tSf}${tDhr}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">${k.b3 ? 'Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua program. Absensi Narasumber ada di dalam tiap program.' : 'Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1.'} Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
     } else {
       h = appbar(kNama(k), rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
-      ${tAbs}${tSf}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}${tLap}
+      ${tAbs}${tSf}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
     }
@@ -828,11 +985,12 @@ function render() {
       <div class="field"><label for="in_${w}nama">Nama</label><input id="in_${w}nama" data-lap="${w}.nama" value="${esc(lapNama(hh, k, w, 'nama'))}" autocomplete="off" placeholder="Contoh: REPY, ST"></div>
       ${nip ? `<div class="field"><label for="in_${w}nip">NIP</label><input id="in_${w}nip" data-lap="${w}.nip" value="${esc(lapNama(hh, k, w, 'nip'))}" autocomplete="off" placeholder="Contoh: 198512192015041009"></div>` : ''}
       ${hh['n' + n] ? `<div class="sigbtn done" style="margin:4px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${hh['n' + n]}" alt="TTD" style="max-height:84px"></div>` : '<div class="hint">Belum ada tanda tangan.</div>'}
-      <div class="row"><button type="button" class="btn pri" data-act="nsig" data-n="${n}">${hh['n' + n] ? 'Ganti tanda tangan' : 'Tanda tangan'}</button>${hh['n' + n] ? `<button type="button" class="btn" data-act="nsigdel" data-n="${n}">Hapus</button>` : ''}</div></div>`;
+      <div class="row"><button type="button" class="btn pri" data-act="nsig" data-n="${n}">${hh['n' + n] ? 'Ganti tanda tangan' : 'Tanda tangan'}</button>${hh['n' + n] ? `<button type="button" class="btn" data-act="nsigdel" data-n="${n}">Hapus</button>` : ''}</div>
+      ${lapNama(hh, k, w, 'nama').trim() ? `<div class="row"><button type="button" class="btn" data-act="ttnshare" data-n="${n}">📤 Bagikan link TTD</button><button type="button" class="btn" data-act="ttncopy" data-n="${n}">Salin link</button></div><div class="hint">${hh.tnShared[n] ? 'Link sudah dibuat. ' : ''}Penandatangan membuka link, menandatangani di HP-nya sendiri, lalu tanda tangan masuk otomatis ke sini dan ke Daftar Nilai.</div>` : '<div class="hint">Isi nama dulu agar link tanda tangan bisa dibagikan.</div>'}</div>`;
     h = appbar('Penandatangan Daftar Nilai', k.nama, true) + `<div class="screen">
       <div class="field"><label for="in_kota">Kota (untuk baris tanggal)</label><input id="in_kota" data-lap="kota" value="${esc(kotaOf(hh, k))}" autocomplete="off" placeholder="Contoh: Morowali"></div>
       ${sg('s1', 1, (ln.s1jab || '').replace(/\n/g, ' '), true)}${sg('s2', 2, (ln.s2jab || '').replace(/\n/g, ' '), false)}
-      <p class="hint">Nama dan tanda tangan ini tercetak di bagian bawah Daftar Nilai. Bisa juga diisi lewat aplikasi web Daftar Hadir.</p></div>`;
+      <p class="hint">Nama dan tanda tangan ini tercetak di bagian bawah Daftar Nilai. Tanda tangan bisa langsung di HP ini, lewat link yang dibagikan ke penandatangan, atau lewat aplikasi web Daftar Hadir.</p></div>`;
   } else if (P.screen === 'nar') {
     const hh = hOf(kid), days = k.b3 ? absDays(k) : (k.tgl || []);
     const brt = !k.b3 && days.length > 4 && kelasArr(k).filter(Boolean).length > 0 && k.hk && Object.keys(k.hk).length, hk0 = (() => { const v = k.hk && Object.values(k.hk)[0]; return v ? (Array.isArray(v) ? v : Object.values(v)) : []; })();
@@ -852,7 +1010,9 @@ function render() {
     }).join('') + (ks.length < NR_MAX ? `<button type="button" class="btn" data-act="nradd" data-d="${esc(d0)}">➕ Tambah narasumber di hari ini</button>` : ''); }).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
       <p class="hint">Pilih nama narasumber: instansi terisi otomatis, lalu pilih materi. Tanda tangan bisa langsung di HP ini, atau bagikan link ke narasumber agar tanda tangan di HP-nya sendiri. Hasilnya muncul di pratinjau admin dan di berkas Word Absensi Narasumber.</p></div>`;
   } else if (P.screen === 'lap') {
-    h = appbar('Pratinjau Laporan', kNama(k), true) + `<div class="screen">${lapHtml(kid, k)}</div>`;
+    h = appbar('Pratinjau Laporan', kNama(k), true) + `<div class="screen">${lapHtml(kid, k)}<button type="button" class="btn" data-act="wrdgo">📄 Lihat pratinjau Word</button></div>`;
+  } else if (P.screen === 'wrd') {
+    h = appbar('Pratinjau Word', kNama(k), true) + `<div class="screen wscr">${wrdHtml(kid, k)}</div>`;
   } else if (P.screen === 'sfl') {
     const link = `${location.origin}/selfie/?k=${encodeURIComponent(kid)}`;
     h = appbar('Absen Selfie Peserta', k.nama, true) + `<div class="screen">
@@ -872,6 +1032,7 @@ function render() {
   }
   app.innerHTML = h + '<div id="ovl"></div>';
   if (P.screen === 'nil') renderNil();
+  if (P.screen === 'wrd') wrdFit();
   if (P.screen === 'abs') renderAbs();
   if (P.screen === 'login') $('#lUser').focus();
 }
@@ -1177,10 +1338,10 @@ document.addEventListener('click', e => {
   if (a === 'bukalagi') { const id = b.dataset.id, h = hOf(id); h.selesai = false; touch(id); render(); toast('Kegiatan dibuka lagi.'); return; }
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { syncErr = ''; sync(); pull(true); toast('Memeriksa dan mengirim data…'); } }
-  else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
+  else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = 0; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'back') { // dari layar per alat (abs/dok/nil/nar) kembali ke menu alat; dari menu alat ke daftar alat
     if (P.from === 'lap' && P.screen !== 'lap') { P.screen = 'lap'; P.kl = null; P.from = null; }
-    else if (P.screen === 'lap') { P.screen = 'keg'; P.kl = null; P.from = null; }
+    else if (P.screen === 'lap' || P.screen === 'wrd') { P.screen = 'keg'; P.kl = null; P.from = null; }
     else if (P.screen === 'keg') P.screen = 'home';
     else if (P.screen === 'alat') { P.screen = 'keg'; P.kl = null; }
     else if (k && papaOf(k) && P.kl != null && ['abs', 'dok', 'nil', 'nar'].includes(P.screen)) P.screen = 'alat';
@@ -1192,6 +1353,11 @@ document.addEventListener('click', e => {
   else if (a === 'sfshare') { const t = $('#sfLink').value, msg = `Absen selfie ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Absen Selfie', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
   else if (a === 'alat') { P.kl = b.dataset.kl; P.screen = 'alat'; P.q = ''; render(); }
   else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; P.from = null; render(); }
+  else if (a === 'wrdgo' && k) { P.screen = 'wrd'; P.from = 'lap'; P.kl = null; render(); }
+  else if (a === 'wtab') { P.wd = b.dataset.d; render(); }
+  else if (a === 'wgrp') { P.wk = +b.dataset.i; render(); }
+  else if (a === 'wz') { P.wz = P.wz === 'full' ? 'fit' : 'full'; render(); }
+  else if ((a === 'ttnshare' || a === 'ttncopy') && k) ttnShare(b, a, k, kid);
   else if (a === 'lapt') { P.lapOpen = P.lapOpen || {}; P.lapOpen[b.dataset.s] = !P.lapOpen[b.dataset.s]; render(); }
   else if (a === 'lapgo' && k) { P.kl = b.hasAttribute('data-kl') ? b.dataset.kl : null; P.screen = b.dataset.to; P.from = 'lap'; P.q = ''; P.day = 0; render(); }
   else if (a === 'logout') doLogout(false);
@@ -1222,7 +1388,7 @@ document.addEventListener('click', e => {
   }
   else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; pesKl(k).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
   else if (a === 'nsig' && k) { const h = hOf(kid), n = b.dataset.n, ln = LAPK(k), nm = lapNama(h, k, 's' + n, 'nama'); openPad('Tanda tangan penandatangan', `${nm || (ln['s' + n + 'jab'] || '').replace(/\n/g, ' ')} · ${k.nama}`, u => { h['n' + n] = u; delete h.sent['n' + n]; touch(kid); render(); }, h['n' + n]); }
-  else if (a === 'nsigdel' && k) { const h = hOf(kid), n = b.dataset.n; h['n' + n] = ''; delete h.sent['n' + n]; h.gone.includes('n' + n) || h.gone.push('n' + n); touch(kid); render(); }
+  else if (a === 'nsigdel' && k) { const h = hOf(kid), n = b.dataset.n; h['n' + n] = ''; delete h.sent['n' + n]; h.gone.includes('n' + n) || h.gone.push('n' + n); touch(kid); render(); if (h.tnShared && h.tnShared[n]) naraReset(kid, 'ttn' + n, false); }
   else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(nrDate(d))}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
   else if (a === 'nradd' && k) { const d = b.dataset.d, pf = nrPfx(k), h = hOf(kid), ks = nrKeys(h, k, d, pf); if (ks.length >= NR_MAX) return; let n = 2; while (ks.includes(`${pf}${d}_${n}`) || nrOffOf(k, `${pf}${d}_${n}`)) n++; nrSet(h, k, `${pf}${d}_${n}`); touch(kid); render(); toast('Baris narasumber ditambahkan'); }
   else if (a === 'nrclr' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nr[d] = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }; if (h.nrs[d]) { h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); } const wasShared = !!h.nshared[d]; delete h.nshared[d]; touch(kid); render(); if (wasShared) naraReset(kid, d, true); toast('Baris dikosongkan (tidak ikut dicetak)'); }

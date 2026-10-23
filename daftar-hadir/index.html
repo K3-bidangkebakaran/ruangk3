@@ -4506,6 +4506,7 @@ const Pic = {
     $("#picBtn").onclick = () => this.manual();
     idbGet("pic-dua").then(v => { if (!v) { EV.filter(e => e.jenis === "b3").forEach(e => this.mark(e.id)); idbPut("pic-dua", 1).catch(() => { }); } }).catch(() => { }); // sekali: kegiatan B3 lama dikirim ulang ke APK (2 foto per peserta)
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
+    idbGet("pic-wrd1").then(v => { if (!v) { EV.forEach(e => this.mark(e.id)); idbPut("pic-wrd1", 1).catch(() => { }); } }).catch(() => { }); // sekali: semua kegiatan dikirim ulang ke APK (data tambahan untuk Pratinjau Word: tanggal & penandatangan)
     idbGet("pic-force1").then(v => { if (!v) setTimeout(async () => { if (!navigator.onLine) return; await this.pullAll(false, true); idbPut("pic-force1", 1).catch(() => { }); }, 15000); }).catch(() => { }); // sekali setelah pembaruan: tarik ulang hasil semua PIC untuk semua kegiatan
   },
   /** huruf A/B/C kegiatan kembar ikut dikirim ke APK PIC (node.sfx). Bila huruf suatu kegiatan berubah (mis. ada kegiatan kembar baru / yang lama dihapus), kegiatan itu dikirim ulang. */
@@ -4530,12 +4531,12 @@ const Pic = {
     const nrPic = D => Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { kid: String(r.kid || "").startsWith("u_") ? "_m" : (r.kid || ""), nama: r.nama || "", nip: r.nip || "", inst: r.inst || "", mid: r.mid || "", mtxt: r.mtxt || "" }]));
     return {
       nama: judulDasar(a), sfx: sufMap().get(ev.id) || "", tgl: hari, tempat: a.tempat || "", damkar: fotoDua(a), papa: !!a.papa, b3: isB3(a), kelas: kelasList(a), kota: a.kota || "", jamMulai: a.jamMulai || "", jamSelesai: a.jamSelesai || "", zona: a.zona || "WIB",
-      ttdWeb: !!a.ttd, hk: hkMap,
+      ttdWeb: !!a.ttd, hk: hkMap, tglTtd: a.tglTtd || "", jabTtd: a.jabatanTtd || "", namaTtd: a.namaTtd || "",
       peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => { // wt = tanggal yang sudah ditandatangani di website, wf/wf2 = foto sudah ada di website (supaya APK tidak menampilkan "belum" untuk yang sudah selesai di web)
         const o = { id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", hasil: p.hasil || "" };
         const wt = {}; Object.keys(p.ttd || {}).forEach(d => { if (p.ttd[d] && hari.includes(d)) wt[d] = 1; }); if (Object.keys(wt).length) o.wt = wt;
         if (p.foto) o.wf = 1; if (p.foto2) o.wf2 = 1; return o; }), dibuat: ev.created,
-      lap: { selfie: !!ev.lap.selfie, nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: nrPic(ev.lap.nr), nrOff: b3Off(ev), nrk: isB3(a) ? Object.fromEntries(Object.entries(ev.lap.nrk || {}).map(([kk, D]) => [kk, nrPic(D)])) : {}, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
+      lap: { selfie: !!ev.lap.selfie, nilai: !!ev.lap.nilai, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: nrPic(ev.lap.nr), nrOff: b3Off(ev), nrk: isB3(a) ? Object.fromEntries(Object.entries(ev.lap.nrk || {}).map(([kk, D]) => [kk, nrPic(D)])) : {}, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", nTgl: ev.lap.nTgl || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
     };
   },
   async flush() {
@@ -4656,6 +4657,11 @@ const Pic = {
         const baru = Object.keys(sk).filter(k => (+sk[k] || 0) > (seen[k] || 0)); if (!baru.length) continue;
         let n = 0; const nama = [];
         for (const key of baru) {
+          if (key === "ttn1" || key === "ttn2") { // tanda tangan penandatangan Daftar Nilai lewat link (dibagikan dari APK PIC)
+            const u = (await this.d.get(this.r(`dh_nara_ttd/${kid}/${key}`))).val(), w = ev.lap[key === "ttn1" ? "s1" : "s2"];
+            if (w && typeof u === "string" && /^data:image\//.test(u) && w.ttd !== u) { w.ttd = u; n++; nama.push(w.nama || (key === "ttn1" ? "pengawas" : "ahli K3")); }
+            seen[key] = +sk[key] || 1; continue;
+          }
           const m = /^(?:(k[0-9a-z]+)~)?(.+)$/.exec(key), d = m && m[2], ts = +sk[key] || 1; if (m && m[1] && B3_KK[m[1]]) m[1] = B3_KK[m[1]];
           if (!m || !NR_KEY.test(d) || !hari.includes(nrIso(d))) { seen[key] = ts; continue; }
           let D = (ev.lap.nr = ev.lap.nr || {}); if (m[1]) { const kl = kelasList(a).find(l => kelasKey(l) === m[1]); if (!kl) { seen[key] = ts; continue; } D = nrD(ev.lap, kl); }
@@ -4671,7 +4677,7 @@ const Pic = {
           const i = EV.findIndex(e => e.id === kid); if (i >= 0) { EV[i] = meta(ev); await idbPut(IDX, EV); }
           if (n && Cloud.ready()) this.q = this.q.then(async () => { for (let i = 0; i < 300 && Cloud.busy; i++) await new Promise(r => setTimeout(r, 200)); await Cloud.sync(false, ev); });
         }
-        if (n) toast(`Tanda tangan narasumber masuk: ${nama.join(", ")}.`);
+        if (n) toast(`Tanda tangan masuk: ${nama.join(", ")}.`);
       }
     } catch (_) { /* offline / aturan Firebase: abaikan */ }
     return total;
