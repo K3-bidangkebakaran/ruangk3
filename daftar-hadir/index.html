@@ -4729,7 +4729,7 @@ const Pic = {
   },
   async hapusSelfieSemua(id) { // kegiatan dihapus: buang info + semua foto selfie (tiap kunci, sesuai aturan Firebase); gagal = diabaikan
     try {
-      await Promise.all(["dh_nara", "dh_nara_ttd", "dh_nara_st", "dh_ttdp", "dh_ttdp_ttd", "dh_ttdp_st"].map(n => this.d.remove(this.r(`${n}/${id}`)).catch(() => { }))); // link tanda tangan narasumber ikut dibuang
+      await Promise.all(["dh_nara", "dh_nara_ttd", "dh_nara_st", "dh_ttdp", "dh_ttdp_ttd", "dh_ttdp_st", "dh_selfie_del"].map(n => this.d.remove(this.r(`${n}/${id}`)).catch(() => { }))); // link tanda tangan narasumber ikut dibuang
       await this.d.remove(this.r(`dh_selfie/${id}`)).catch(() => { });
       const st = (await this.d.get(this.r(`dh_selfie_st/${id}`))).val() || {};
       await Promise.all(Object.keys(st).flatMap(k => [this.d.remove(this.r(`dh_selfie_foto/${id}/${k}`)).catch(() => { }), this.d.remove(this.r(`dh_selfie_st/${id}/${k}`)).catch(() => { })]));
@@ -4739,7 +4739,7 @@ const Pic = {
     const p = ev.peserta.find(x => x.id === pid); if (!p || !p.sf || !p.sf[d]) return false;
     delete p.sf[d][ses]; if (!Object.keys(p.sf[d]).length) delete p.sf[d];
     const key = `${pid}~${d}~${ses}`;
-    if (navigator.onLine && (await this.load())) { try { await Promise.all([this.d.remove(this.r(`dh_selfie_foto/${ev.id}/${key}`)), this.d.remove(this.r(`dh_selfie_st/${ev.id}/${key}`))]); } catch (e) { toast("Selfie dihapus di sini, tetapi belum terhapus di server (cek koneksi/aturan Firebase)."); } }
+    if (navigator.onLine && (await this.load())) { try { await this.d.set(this.r(`dh_selfie_del/${ev.id}/${key}`), Date.now()).catch(() => { }); await Promise.all([this.d.remove(this.r(`dh_selfie_foto/${ev.id}/${key}`)), this.d.remove(this.r(`dh_selfie_st/${ev.id}/${key}`))]); } catch (e) { toast("Selfie dihapus di sini, tetapi belum terhapus di server (cek koneksi/aturan Firebase)."); } }
     return true;
   },
   /* --- Tanda tangan narasumber lewat link (ruangk3.com/narasumber/): PIC menerbitkan dh_nara/{kid}/{kunciBaris}; narasumber menulis TTD ke dh_nara_ttd + penanda waktu dh_nara_st.
@@ -4851,16 +4851,25 @@ const Pic = {
     try {
       if (!this.ready) return 0;
       const st = this.sfSt || (await this.d.get(this.r("dh_selfie_st"))).val() || {}; this.sfSt = null;
-      for (const kid of Object.keys(st)) {
-        const sk = st[kid]; if (!sk || typeof sk !== "object" || !EV.some(e => e.id === kid)) continue;
+      let del = {}; try { del = (await this.d.get(this.r("dh_selfie_del"))).val() || {}; } catch (_) { } // catatan selfie yang dihapus PIC (APK) / admin lain
+      for (const kid of [...new Set([...Object.keys(st), ...Object.keys(del)])]) {
+        const sk = st[kid] || {}; if (typeof sk !== "object" || !EV.some(e => e.id === kid)) continue;
         total += await this.lock(kid, async () => {
           const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid)); if (!ev || !ev.lap) return 0;
-          let fix = 0;
-          if (!ev.lap.selfie) { // salinan kegiatan ini belum menyalakan Absen Selfie padahal halamannya aktif di server (mis. tertimpa versi Drive lama): ikuti server
-            const on = (await this.d.get(this.r(`dh_selfie/${kid}`))).val(); if (!on) return 0;
-            ev.lap.selfie = true; fix = 1;
-          }
+          let fix = 0, gone = 0; const namaDel = [];
           const seen = { ...((ev.pic && ev.pic.sf) || {}) }, hari = hariList(ev.acara).filter(Boolean), by = new Map(ev.peserta.map(p => [p.id, p]));
+          for (const key of Object.keys(del[kid] && typeof del[kid] === "object" ? del[kid] : {})) { // selfie yang dihapus PIC / admin lain (salah foto): buang salinannya di sini juga. Hanya yang dulu ditarik dari server (seen) dan benar-benar sudah tidak ada di server (dicek ulang)
+            const [pid, d, ses] = key.split("~"), p = by.get(pid);
+            if (key in sk || !seen[key] || !p || !(p.sf && p.sf[d] && p.sf[d][ses])) continue;
+            let masih; try { masih = (await this.d.get(this.r(`dh_selfie_st/${kid}/${key}`))).val(); } catch (_) { continue; }
+            if (masih) continue;
+            delete p.sf[d][ses]; if (!Object.keys(p.sf[d]).length) delete p.sf[d]; delete seen[key]; gone++; namaDel.push(p.nama);
+          }
+          fix += gone;
+          if (!ev.lap.selfie) { // salinan kegiatan ini belum menyalakan Absen Selfie padahal halamannya aktif di server (mis. tertimpa versi Drive lama): ikuti server
+            const on = (await this.d.get(this.r(`dh_selfie/${kid}`))).val();
+            if (on) { ev.lap.selfie = true; fix++; } else if (!fix) return 0;
+          }
           const baru = Object.keys(sk).filter(k => {
             const [pid, d, ses] = k.split("~"), p = by.get(pid), ts = +sk[k] || 0;
             if (!p || !hari.includes(d) || (ses !== "p" && ses !== "s")) return ts > (seen[k] || 0);
@@ -4887,6 +4896,7 @@ const Pic = {
             const i = EV.findIndex(e => e.id === kid); if (i >= 0) { EV[i] = meta(ev); await idbPut(IDX, EV); }
             if ((n || fix) && Cloud.ready()) this.q = this.q.then(async () => { for (let i = 0; i < 300 && Cloud.busy; i++) await new Promise(r => setTimeout(r, 200)); await Cloud.sync(false, ev); });
           }
+          if (gone) toast(`${gone} selfie dihapus oleh PIC (diulang peserta): ${namaDel.slice(0, 3).join(", ")}${namaDel.length > 3 ? ` +${namaDel.length - 3}` : ""}.`);
           if (n) toast(`${n} selfie peserta masuk: ${ev.acara.kegiatan || "kegiatan"}.`);
           return n;
         });

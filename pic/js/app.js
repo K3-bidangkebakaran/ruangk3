@@ -238,7 +238,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v48';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v49';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -882,15 +882,47 @@ const FLAG = {
   sig: svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36"><text x="30" y="27" text-anchor="middle" font-family="Arial" font-size="26" fill="#2e7d5b">✔</text></svg>'),
   foto: svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200"><rect width="300" height="200" fill="#eef5f1"/><text x="150" y="95" text-anchor="middle" font-family="Arial" font-size="30" fill="#2e7d5b">✔ Foto sudah ada</text><text x="150" y="130" text-anchor="middle" font-family="Arial" font-size="20" fill="#5b7f6d">(website / PIC lain)</text></svg>')
 };
-const SFD = {}, SFP = {}; let sfBusy = false; // selfie peserta untuk pratinjau: SFD[kid][pid~tgl~p|s] = gambar
-async function sfLoad(kid) { // selfie dibaca dari server hanya saat tab "Absen Selfie" dibuka
-  if (sfBusy || !fbOk() || !window.PicFB.selfieSt || !online()) return; sfBusy = true; const D = SFD[kid] = SFD[kid] || {};
+const SFD = {}, SFP = {}, SFS = {}, SFT = {}; let sfBusy = false; // selfie peserta untuk pratinjau: SFD[kid][pid~tgl~p|s] = gambar; SFS = penanda di server; SFT = penanda waktu gambar yang sudah dibaca
+async function sfLoad(kid) { // selfie dibaca dari server hanya saat tab "Absen Selfie" / layar "Hasil Selfie" dibuka
+  if (sfBusy || !fbOk() || !window.PicFB.selfieSt || !online()) return false; sfBusy = true; const D = SFD[kid] = SFD[kid] || {}, T = SFT[kid] = SFT[kid] || {};
   try {
-    const st = await window.PicFB.selfieSt(kid), need = Object.keys(st).filter(x => !D[x]); let nx = 0, n = 0; SFP[kid] = { n: 0, t: need.length };
-    await Promise.all(Array.from({ length: Math.min(3, need.length) }, async () => { while (nx < need.length) { const key = need[nx++]; try { const u = await window.PicFB.selfieOne(kid, key); if (typeof u === 'string' && u) D[key] = u; } catch (e) { } SFP[kid].n = ++n; if (n % 4 === 0) renderSoft(); } }));
-    SFP[kid] = null; if (need.length) renderSoft();
-  } catch (e) { SFP[kid] = null; }
+    const st = await window.PicFB.selfieSt(kid); SFS[kid] = st;
+    Object.keys(D).forEach(x => { if (!(x in st)) { delete D[x]; delete T[x]; } }); // sudah dihapus (di website / akun PIC lain)
+    const need = Object.keys(st).filter(x => !D[x] || T[x] !== st[x]); let nx = 0, n = 0; SFP[kid] = { n: 0, t: need.length };
+    await Promise.all(Array.from({ length: Math.min(3, need.length) }, async () => { while (nx < need.length) { const key = need[nx++]; try { const u = await window.PicFB.selfieOne(kid, key); if (typeof u === 'string' && u) { D[key] = u; T[key] = st[key]; } } catch (e) { } SFP[kid].n = ++n; if (n % 4 === 0) renderSoft(); } }));
+    SFP[kid] = null; renderSoft(); return true;
+  } catch (e) { SFP[kid] = null; return false; }
   finally { sfBusy = false; }
+}
+const SFSES = { p: 'Pagi', s: 'Siang' };
+async function sfDelete(kid, key) { // PIC menghapus satu selfie peserta (server: foto + penanda), supaya peserta bisa selfie ulang lewat link
+  const k = KEGS[kid], [pid, d, ses] = key.split('~'), p = k && k.peserta.find(x => x.id === pid);
+  if (!online() || !fbOk() || !window.PicFB.selfieDel) { toast('Butuh internet untuk menghapus selfie.'); return false; }
+  if (!confirm(`Hapus selfie ${p ? p.nama : 'peserta'} (${SFSES[ses] || ses}, ${tglPendek(d)})?\n\nFoto dihapus dari server dan website, lalu peserta bisa selfie ulang lewat link yang sama.`)) return false;
+  try { await window.PicFB.selfieDel(kid, key); }
+  catch (e) { toast('Gagal menghapus selfie. Periksa sinyal lalu coba lagi.'); return false; }
+  if (SFD[kid]) delete SFD[kid][key]; if (SFT[kid]) delete SFT[kid][key]; if (SFS[kid]) delete SFS[kid][key];
+  toast('Selfie dihapus. Minta peserta selfie ulang lewat link.'); return true;
+}
+function sfmHtml(kid, k) { // layar "Hasil Selfie Peserta": pratinjau + hapus (hanya akun PIC)
+  const h = hOf(kid), days = k.tgl || [], di = Math.min(Math.max(+P.sd || 0, 0), Math.max(0, days.length - 1)), d = days[di] || '', st = SFS[kid], D = SFD[kid] || {}, sp = SFP[kid];
+  const ps = (k.peserta || []).filter(p => !isBatal(h, p));
+  const has = (p, ses) => st ? (`${p.id}~${d}~${ses}` in st) : false;
+  const nP = ps.filter(p => has(p, 'p')).length, nS = ps.filter(p => has(p, 's')).length;
+  const tabs = days.length > 1 ? `<div class="row" style="flex-wrap:wrap">${days.map((x, i) => `<button type="button" class="btn sm${i === di ? ' pri' : ''}" data-act="sfday" data-i="${i}">Day ${i + 1} · ${esc(tglPendek(x))}</button>`).join('')}</div>` : '';
+  const slot = (p, ses) => {
+    const key = `${p.id}~${d}~${ses}`, lb = SFSES[ses];
+    if (!st) return `<div class="sfs"><small>${lb}</small><span class="lc">…</span></div>`;
+    if (!(key in st)) return `<div class="sfs"><small>${lb}</small><span class="lc bad">Belum ✖</span></div>`;
+    const u = D[key];
+    return `<div class="sfs"><small>${lb}</small>${u ? `<img class="lth" src="${u}" alt="Selfie ${esc(p.nama)} ${lb}" data-act="pv" data-pv="s|${esc(key)}" title="Ketuk untuk memperbesar">` : `<span class="lc">${sp ? 'Memuat…' : 'Belum termuat'}</span>`}<button type="button" class="btn sm bad" data-act="sfdel" data-key="${esc(key)}">Hapus</button></div>`;
+  };
+  return `<div class="screen"><div class="hint">Cek hasil selfie peserta. Bila ada yang salah foto (wajah tidak jelas, bukan peserta, dll.), ketuk <b>Hapus</b>, lalu minta peserta selfie ulang lewat link yang sama. Hanya akun PIC yang bisa menghapus.</div>
+    ${tabs}
+    <div class="row"><span class="lc ok">Pagi: ${st ? `${nP}/${ps.length}` : '…'}</span><span class="lc ok">Siang: ${st ? `${nS}/${ps.length}` : '…'}</span><button type="button" class="btn sm" data-act="sfreload">${sp ? `Memuat ${sp.n}/${sp.t}…` : 'Muat ulang'}</button></div>
+    ${!st && !sp ? '<div class="empty">Memuat daftar selfie dari server… (butuh internet)</div>' : ''}
+    <div class="lrows">${ps.map(p => `<div class="lrow"><div class="lw"><b>${esc(p.nama)}</b>${p.instansi ? `<small>${esc(p.instansi)}</small>` : ''}</div><div class="lch sfsl">${slot(p, 'p')}${slot(p, 's')}</div></div>`).join('') || '<div class="empty">Belum ada peserta.</div>'}</div>
+    <button type="button" class="btn pri" data-act="go" data-to="sfl">Bagikan link selfie ke peserta</button></div>`;
 }
 function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin + isian PIC (HP ini & akun lain) + gambar
   const h = hOf(kid), ov = ovOf(h), ln = LAPK(k), days = (k.tgl || []).slice(), arr = v => Array.isArray(v) ? v : Object.values(v || {});
@@ -925,7 +957,7 @@ function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin 
 const WRD_DOCS = [['rd', 'Rundown'], ['dh', 'Daftar Hadir'], ['sf', 'Absen Selfie'], ['nl', 'Daftar Nilai'], ['nr', 'Absensi Narasumber'], ['dy', 'Dokumentasi Harian'], ['dk', 'Dokumentasi Peserta'], ['ln', 'Lulus / Tidak Lulus']]; // urutan halaman = urutan pratinjau/Word di website
 const WRC = {}; let wrdPages = '';
 function wrdBuild(kid, k) { // semua halaman (per kelompok alat/program) -> {groups:[{label, secs:{rd:[html],..}}]}; disimpan selama datanya tidak berubah
-  const h = hOf(kid), sig = [OHV, h.rev || 0, h.upd || 0, fnv(JSON.stringify(k)), Object.keys(XM[kid] || {}).length, Object.keys(SFD[kid] || {}).length, DEV].join('|');
+  const h = hOf(kid), sig = [OHV, h.rev || 0, h.upd || 0, fnv(JSON.stringify(k)), Object.keys(XM[kid] || {}).length, Object.keys(SFD[kid] || {}).length, Object.values(SFT[kid] || {}).reduce((a, b) => a + (+b || 0), 0), DEV].join('|');
   if (WRC[kid] && WRC[kid].sig === sig) return WRC[kid];
   const ev = wrdEv(kid, k), groups = [];
   Wrd.kelasGroups(ev).forEach(g => {
@@ -970,7 +1002,7 @@ function render() {
   const app = $('#app'); if (!app) return;
   if (!ME) P.screen = 'login';
   const kid = P.kid, k = kid && KEGS[kid];
-  if (['keg', 'alat', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr', 'nar', 'sfl', 'lap', 'wrd'].includes(P.screen) && !k) P.screen = 'home';
+  if (['keg', 'alat', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr', 'nar', 'sfl', 'sfm', 'lap', 'wrd'].includes(P.screen) && !k) P.screen = 'home';
   if (k && P.screen === 'alat' && !papaOf(k)) P.screen = 'keg';
   if (k && papaOf(k) && P.kl == null && ['abs', 'dok', 'nil'].includes(P.screen)) P.screen = 'keg'; // layar per alat butuh alat terpilih (narasumber = satu untuk semua alat, boleh dibuka dari daftar alat)
   let h = '';
@@ -1011,7 +1043,7 @@ function render() {
       return `<button type="button" class="tile" data-act="go" data-to="nil"><span class="ic">${I.list}</span><span><b>Nilai &amp; Kelulusan</b><small>${isi}/${ps.length} peserta terisi</small></span>${I.chev}</button>`; })() : '';
     const tTtn = ln.nilai ? `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>Pengawas ${nTtd(hh, 1, k) ? '✔ sudah TTD' : '– belum TTD'} · Ahli K3 ${nTtd(hh, 2, k) ? '✔ sudah TTD' : '– belum TTD'}</small></span>${I.chev}</button>` : '';
     const tNar = (ln.nara && (!k.b3 || alat)) ? (() => { const ds = (k.b3 ? absDays(k) : (k.tgl || [])).filter(d => !nrOffOf(k, nrPfx(k) + d)), pf = nrPfx(k), n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && nrTtd(hh, pf + d, k); }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
-    const tSf = ln.selfie && !alat ? `<button type="button" class="tile" data-act="go" data-to="sfl"><span class="ic">${I.cam}</span><span><b>Link Absen Selfie Peserta</b><small>Bagikan ke peserta · pagi &amp; siang</small></span>${I.chev}</button>` : '';
+    const tSf = ln.selfie && !alat ? `<button type="button" class="tile" data-act="go" data-to="sfl"><span class="ic">${I.cam}</span><span><b>Link Absen Selfie Peserta</b><small>Bagikan ke peserta · pagi &amp; siang</small></span>${I.chev}</button><button type="button" class="tile" data-act="go" data-to="sfm"><span class="ic">${I.cam}</span><span><b>Hasil Selfie Peserta</b><small>Lihat foto · hapus bila salah, peserta selfie ulang</small></span>${I.chev}</button>` : '';
     const tLap = (() => { const c = lapCek(kid); return `<button type="button" class="tile lap${c.all ? ' ok' : ''}" data-act="go" data-to="lap"><span class="ic">${I.list}</span><span><b>Pratinjau Laporan</b><small>${c.all ? 'Laporan lengkap ✔' : c.pct + '% lengkap · ' + (c.secs.length - c.nOk) + ' bagian masih kurang'} — cek sebelum selesai</small></span>${I.chev}</button>`; })();
     const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
     const btnSelesai = alat ? '' : `<button class="btn" type="button" data-act="selesai" style="margin-top:6px">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">Tekan setelah SEMUA isian selesai. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.</p>`;
@@ -1107,6 +1139,8 @@ function render() {
     h = appbar('Pratinjau Laporan', kNama(k), true) + `<div class="screen">${lapHtml(kid, k)}<button type="button" class="btn" data-act="wrdgo">📄 Lihat pratinjau Word</button></div>`;
   } else if (P.screen === 'wrd') {
     h = appbar('Pratinjau Word', kNama(k), true) + `<div class="screen wscr">${wrdHtml(kid, k)}</div>`;
+  } else if (P.screen === 'sfm') {
+    h = appbar('Hasil Selfie Peserta', k.nama, true) + sfmHtml(kid, k);
   } else if (P.screen === 'sfl') {
     const link = `${location.origin}/selfie/?k=${encodeURIComponent(kid)}`;
     h = appbar('Absen Selfie Peserta', k.nama, true) + `<div class="screen">
@@ -1114,11 +1148,12 @@ function render() {
       <div class="field"><label for="sfLink">Link selfie peserta</label><input id="sfLink" readonly value="${esc(link)}" onfocus="this.select()"></div>
       <button type="button" class="btn pri" data-act="sfcopy">Salin link</button>
       <button type="button" class="btn" data-act="sfshare">Bagikan (WhatsApp, dll.)</button>
+      <button type="button" class="btn" data-act="go" data-to="sfm">Lihat / hapus hasil selfie peserta</button>
       <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman selfie (uji)</a>
       ${kegOver(k) ? `<div class="card2"><b>🚨 Darurat: peserta belum selfie</b><div class="hint">Tanggal kegiatan sudah lewat. Bagikan link darurat ke peserta yang belum selfie. Peserta memilih namanya, selfie sekali, dan fotonya otomatis dicatat ke <b>semua tanggal yang belum selfie</b>. Watermark tiap foto: nama, perusahaan, "ABSEN DARURAT" + tanggal yang diisi, dan lokasi baku "Morowali, IMIP".</div>
         <div class="field"><label for="sfLinkD">Link darurat selfie</label><input id="sfLinkD" readonly value="${esc(link + '&darurat=1')}" onfocus="this.select()"></div>
         <div class="row"><button type="button" class="btn pri" data-act="sfdcopy">Salin link darurat</button><button type="button" class="btn" data-act="sfdshare">🚨 Bagikan link darurat</button></div></div>` : ''}
-      <p class="hint">Absen <b>pagi</b> sebelum jam 12.00 dan absen <b>siang</b> jam 12.00 ke atas (mengikuti zona waktu kegiatan). Link hanya berlaku pada hari kegiatan. Setiap peserta hanya bisa sekali per sesi; bila salah foto, minta admin menghapusnya di Daftar Hadir (tab Laporan) agar bisa mengulang. Hasilnya otomatis masuk ke laporan setelah Daftar Hadir.</p></div>`;
+      <p class="hint">Absen <b>pagi</b> sebelum jam 12.00 dan absen <b>siang</b> jam 12.00 ke atas (mengikuti zona waktu kegiatan). Link hanya berlaku pada hari kegiatan. Setiap peserta hanya bisa sekali per sesi; bila salah foto, hapus selfie-nya lewat <b>Hasil Selfie Peserta</b> (atau admin di Daftar Hadir) agar peserta bisa mengulang. Hasilnya otomatis masuk ke laporan setelah Daftar Hadir.</p></div>`;
   } else if (P.screen === 'dhr') {
     const hh = hOf(kid), days = k.tgl || [];
     h = appbar('Dokumentasi Harian', k.nama, true) + `<div class="screen">${days.map((d, i) => `<div class="card2" data-day="${esc(d)}"><b>Day ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
@@ -1132,6 +1167,7 @@ function render() {
   app.innerHTML = h + '<div id="ovl"></div>';
   if (P.screen === 'nil') renderNil();
   if (P.screen === 'wrd') { wrdMount(); wrdFit(); if (P.wd === 'sf' && P.kid) sfLoad(P.kid).catch(() => { }); }
+  if (P.screen === 'sfm' && P.kid && !SFS[P.kid]) sfLoad(P.kid).catch(() => { });
   if (snap) scrollBack(app, snap);
   if (P.screen === 'abs') renderAbs();
   if (P.screen === 'login') $('#lUser').focus();
@@ -1402,6 +1438,7 @@ function pvKeys() { return $$('[data-pv]').map(el => el.dataset.pv).filter((x, i
 function pvInfo(key) { // judul + gambar (bila ada di HP ini)
   const [t, a, b] = key.split('|'), kid = P.kid, k = KEGS[kid], h = hOf(kid);
   if (t === 'x') { const x = xmPlan(kid).find(y => y.key === a), m = /^d_(\d{4}-\d{2}-\d{2})_/.exec(a), i = m ? ((k && k.tgl) || []).indexOf(m[1]) : -1; const w = !x && /^wd_(\d{4}-\d{2}-\d{2})_/.exec(a), j = w ? ((k && k.tgl) || []).indexOf(w[1]) : i; return { src: xmGet(kid, a) || wmGet(kid, a), cap: `Dokumentasi${j >= 0 ? ' Day ' + (j + 1) + ' · ' + tglPendek((m || w)[1]) : ''}${x ? ' · oleh ' + x.nama : w ? ' · dari website' : ''}`, remoteKey: w ? '' : a }; }
+  if (t === 's') { const [pid, d, ses] = a.split('~'), p = k && k.peserta.find(x => x.id === pid), i = ((k && k.tgl) || []).indexOf(d); return { src: (SFD[kid] || {})[a] || '', cap: `${p ? p.nama : 'Peserta'} · Selfie ${SFSES[ses] || ses}${i >= 0 ? ' · Day ' + (i + 1) + ' · ' + tglPendek(d) : ''}`, remoteSf: a, sfKey: a }; }
   if (t === 'd') { const f = (h.hfoto[a] || []).find(x => String(x.i) === b), i = ((k && k.tgl) || []).indexOf(a); return { src: f ? f.u : '', cap: `Dokumentasi Day ${i + 1} · ${tglPendek(a)} · oleh Anda` }; }
   const p = k && k.peserta.find(x => x.id === a), xk = (b === 'foto2' ? 'f2_' : 'f_') + a, own = (h[b] && h[b][a]) || '', xi = !own && xmPlan(kid).find(y => y.key === xk);
   return { src: own || xmGet(kid, xk) || wmGet(kid, xk), cap: `${p ? p.nama : ''}${fotoDua(k) ? ' · Foto ' + (b === 'foto2' ? 2 : 1) : ''}${xi ? ' · oleh ' + xi.nama : own ? ' · oleh Anda' : ''}`, remote: p ? { pid: a, slot: b } : null };
@@ -1412,7 +1449,8 @@ async function pvShow(i) {
   $('#pvCap', el).textContent = inf.cap; $('#pvN', el).textContent = `${PV.i + 1}/${PV.keys.length}`;
   const im = $('#pvImg', el), msg = $('#pvMsg', el); im.classList.remove('z'); im.hidden = true; msg.hidden = true;
   $('#pvPrev', el).hidden = $('#pvNext', el).hidden = PV.keys.length < 2;
-  let src = inf.src;
+  let src = inf.src; const dl = $('#pvDel', el); if (dl) dl.hidden = !inf.sfKey;
+  if (!src && inf.remoteSf && fbOk() && window.PicFB.selfieOne && online()) { msg.hidden = false; msg.textContent = 'Memuat selfie…'; try { src = await window.PicFB.selfieOne(P.kid, inf.remoteSf); } catch (e) { src = ''; } if (!PV || PV.seq !== mine) return; if (src && typeof src === 'string') { (SFD[P.kid] = SFD[P.kid] || {})[inf.remoteSf] = src; } }
   if (!src && (inf.remote || inf.remoteKey) && fbOk() && window.PicFB.mediaOne && online()) { // foto dari akun PIC lain: ambil dari server
     msg.hidden = false; msg.textContent = 'Memuat foto…';
     try { src = await window.PicFB.mediaOne(P.kid, inf.remoteKey || ((inf.remote.slot === 'foto2' ? 'f2_' : 'f_') + inf.remote.pid)); } catch (e) { src = ''; }
@@ -1424,7 +1462,7 @@ async function pvShow(i) {
 function pvOpen(key) {
   pvClose(); const keys = pvKeys(), i = Math.max(0, keys.indexOf(key));
   const el = document.createElement('div'); el.className = 'pv'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Pratinjau foto');
-  el.innerHTML = `<div class="pvtop"><button type="button" class="btn sm" data-act="pvx">✕ Tutup</button><b id="pvCap"></b><span id="pvN"></span></div><div class="pvstage"><button type="button" class="pvnav" id="pvPrev" data-act="pvprev" aria-label="Foto sebelumnya">‹</button><div class="pvbox"><img id="pvImg" alt="Pratinjau foto" hidden><p id="pvMsg" hidden></p></div><button type="button" class="pvnav" id="pvNext" data-act="pvnext" aria-label="Foto berikutnya">›</button></div><small class="pvhint">Ketuk foto untuk zoom · geser kiri/kanan untuk foto lain</small>`;
+  el.innerHTML = `<div class="pvtop"><button type="button" class="btn sm" data-act="pvx">✕ Tutup</button><b id="pvCap"></b><span id="pvN"></span></div><div class="pvstage"><button type="button" class="pvnav" id="pvPrev" data-act="pvprev" aria-label="Foto sebelumnya">‹</button><div class="pvbox"><img id="pvImg" alt="Pratinjau foto" hidden><p id="pvMsg" hidden></p></div><button type="button" class="pvnav" id="pvNext" data-act="pvnext" aria-label="Foto berikutnya">›</button></div><div class="pvact"><button type="button" class="btn sm bad" id="pvDel" data-act="pvdel" hidden>🗑 Hapus selfie ini</button></div><small class="pvhint">Ketuk foto untuk zoom · geser kiri/kanan untuk foto lain</small>`;
   document.body.appendChild(el); PV = { el, keys, i, seq: 0, x0: null };
   el.addEventListener('touchstart', ev => { PV.x0 = ev.touches.length === 1 ? ev.touches[0].clientX : null; }, { passive: true });
   el.addEventListener('touchend', ev => { if (PV && PV.x0 != null && !$('#pvImg', el).classList.contains('z')) { const dx = ev.changedTouches[0].clientX - PV.x0; if (Math.abs(dx) > 60) pvShow(PV.i + (dx < 0 ? 1 : -1)); } if (PV) PV.x0 = null; }, { passive: true });
@@ -1440,7 +1478,7 @@ document.addEventListener('click', e => {
   if (a === 'bukalagi') { const id = b.dataset.id, h = hOf(id); h.selesai = false; touch(id); render(); toast('Kegiatan dibuka lagi.'); return; }
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { syncErr = ''; sync(); pull(true); toast('Memeriksa dan mengirim data…'); } }
-  else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
+  else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'back') { // dari layar per alat (abs/dok/nil/nar) kembali ke menu alat; dari menu alat ke daftar alat
     if (P.from === 'lap' && P.screen !== 'lap') { P.screen = 'lap'; P.kl = null; P.from = null; }
     else if (P.screen === 'lap' || P.screen === 'wrd') { P.screen = 'keg'; P.kl = null; P.from = null; }
@@ -1500,6 +1538,10 @@ document.addEventListener('click', e => {
   else if ((a === 'nrshare' || a === 'nrcopy') && k) naraShare(b, a, k, kid);
   else if (a === 'pv') pvOpen(b.dataset.pv);
   else if (a === 'pvx') pvClose();
+  else if (a === 'pvdel' && PV) { const key = PV.keys[PV.i], inf = pvInfo(key); if (inf.sfKey) sfDelete(P.kid, inf.sfKey).then(ok => { if (ok) { pvClose(); render(); } }); }
+  else if (a === 'sfdel' && k) { sfDelete(kid, b.dataset.key).then(ok => { if (ok) render(); }); }
+  else if (a === 'sfday') { P.sd = +b.dataset.i || 0; render(); }
+  else if (a === 'sfreload') { if (sfBusy) toast('Sedang memuat…'); else { if (!online()) toast('Belum ada sinyal.'); else { sfLoad(kid).then(ok => toast(ok ? 'Selfie diperbarui.' : 'Gagal memuat. Coba lagi.')); render(); } } }
   else if (a === 'pvprev') pvShow(PV.i - 1);
   else if (a === 'pvnext') pvShow(PV.i + 1);
   else if (a === 'camx') camClose();

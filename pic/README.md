@@ -242,3 +242,11 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Selfie / TTD lewat link (peserta & narasumber) tahan hilang di web: `pullSelfie1`, `pullNara1`, `pullTtdp1` kini memeriksa ISI kegiatan (bukan hanya tanda "sudah dilihat"): yang tercatat di server tetapi tidak ada di kegiatan (mis. tertimpa versi Drive lama) ditarik lagi (maks. 3-4x per sesi per item); hanya gambar yang benar-benar terbaca ditandai selesai. Bila `lap.selfie` mati di salinan kegiatan tetapi `dh_selfie/{kid}` aktif di server, Absen Selfie dinyalakan kembali.
 - `Pic.lock(kid, fn)`: baca-ubah-simpan kegiatan oleh `pullAll`, selfie, TTD link, dan narasumber dijalankan satu per satu per kegiatan (sebelumnya bisa saling menimpa sehingga foto/TTD yang baru digabung hilang).
 - APP_VER v48, sw.js VERSION pic-v48.
+
+## v49
+- APK PIC: layar baru **Hasil Selfie Peserta** (menu di kegiatan yang Absen Selfie-nya aktif, juga tombol di layar link selfie). Per hari: daftar peserta (tanpa yang batal) dengan foto selfie Pagi/Siang, ketuk foto untuk preview (bisa geser, zoom), tombol **Hapus** (dengan konfirmasi) di daftar dan di preview. Hanya akun PIC yang login yang bisa menghapus. Ringkasan Pagi x/y, Siang x/y; tombol Muat ulang (selfie yang dihapus pihak lain hilang, selfie ulang peserta muncul).
+- Hapus = `PicFB.selfieDel(kid, key)`: tulis catatan `dh_selfie_del/{kid}/{pid~tgl~p|s}`, lalu hapus `dh_selfie_st` (peserta langsung bisa selfie ulang di link yang sama) dan `dh_selfie_foto`. Node baru: `dh_selfie_del` (aturan Firebase tetap `auth != null`).
+- Web: `Pic.pullSelfie1` membaca `dh_selfie_del`; selfie yang dulu ditarik dari server (`ev.pic.sf`), kini tidak ada lagi di `dh_selfie_st` (dicek ulang langsung ke server) ikut dihapus dari Daftar Hadir (dan terkirim ke Drive). Selfie manual admin & selfie ulang peserta tidak ikut terhapus. `Pic.hapusSelfie` (web) juga menulis catatan hapus; `hapusSelfieSemua` membuang `dh_selfie_del`.
+- Word APK tab Absen Selfie: gambar selfie yang diulang ikut diperbarui (SFT).
+- APP_VER v49, sw.js VERSION pic-v49.
+

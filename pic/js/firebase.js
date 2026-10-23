@@ -93,6 +93,8 @@ window.PicFB = {
   async wmOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_wmedia/${kid}/${key}`)), 60000)).val() || ''; },
   async mediaOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}/${key}`)), 60000)).val() || ''; }, // satu gambar (pratinjau foto dari akun PIC lain)
   async selfieSt(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_selfie_st/${kid}`)), 30000)).val() || {}; }, // penanda selfie peserta (untuk pratinjau Word)
+  // PIC menghapus selfie peserta: penanda dibuang lebih dulu (peserta langsung bisa selfie ulang), lalu fotonya; catatan hapus dibaca website agar salinan di Daftar Hadir ikut terhapus
+  async selfieDel(kid, key) { await withTimeout(set(ref(db, `${ROOT}/dh_selfie_del/${kid}/${key}`), Date.now()), 20000); await withTimeout(remove(ref(db, `${ROOT}/dh_selfie_st/${kid}/${key}`)), 30000); await withTimeout(remove(ref(db, `${ROOT}/dh_selfie_foto/${kid}/${key}`)), 30000); },
   async selfieOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_selfie_foto/${kid}/${key}`)), 60000)).val() || ''; },
   async media(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}`)), 120000)).val() || {}; },
   // gambar disimpan dengan kunci tetap, jadi kirim ulang menimpa data yang sama
