@@ -1,6 +1,6 @@
 // Service worker Portal PIC (ruangk3.com/pic/).
 // Naikkan VERSION setiap kali file aplikasi diubah supaya HP PIC mengambil versi baru.
-const VERSION = 'pic-v47';
+const VERSION = 'pic-v48';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './js/app.js', './js/wrd.js', './js/firebase.js', './icons/icon-192.png', './icons/icon-512.png', './img/kop-head.png', './img/kop-foot.png'];
 const FIREBASE = [
   'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js',

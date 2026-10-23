@@ -237,3 +237,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v47
 - Web: hasil PIC lebih tahan hilang. (1) `Cloud.refresh` (kegiatan diganti dari Drive) mencabut tanda "sudah digabung" (`ev.pic.msig`) agar foto/TTD PIC digabung ulang. (2) `mediaFor`: gambar tercatat tetapi kosong di server tidak dianggap sudah diunduh. (3) `Pic.picGaps`: sekali per sesi per kegiatan, foto/TTD yang tercatat PIC tetapi tidak ada di kegiatan digabung ulang. (4) `merge` menghitung gambar belum terbaca (`mMiss`, dicoba lagi maks. 4x) dan flag tanpa peserta cocok (`mOrphan`, ditampilkan oleh tombol 📲 PIC).
 - APP_VER v47, sw.js VERSION pic-v47.
+
+## v48
+- Selfie / TTD lewat link (peserta & narasumber) tahan hilang di web: `pullSelfie1`, `pullNara1`, `pullTtdp1` kini memeriksa ISI kegiatan (bukan hanya tanda "sudah dilihat"): yang tercatat di server tetapi tidak ada di kegiatan (mis. tertimpa versi Drive lama) ditarik lagi (maks. 3-4x per sesi per item); hanya gambar yang benar-benar terbaca ditandai selesai. Bila `lap.selfie` mati di salinan kegiatan tetapi `dh_selfie/{kid}` aktif di server, Absen Selfie dinyalakan kembali.
+- `Pic.lock(kid, fn)`: baca-ubah-simpan kegiatan oleh `pullAll`, selfie, TTD link, dan narasumber dijalankan satu per satu per kegiatan (sebelumnya bisa saling menimpa sehingga foto/TTD yang baru digabung hilang).
+- APP_VER v48, sw.js VERSION pic-v48.
