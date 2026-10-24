@@ -290,3 +290,10 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Membuka kegiatan (klik di daftar) kini menampilkan pesan bila gagal (sebelumnya diam saja), tidak menunggu tanpa batas, dan membuang baris peserta rusak. Kesalahan JavaScript tak terduga juga ditampilkan sebagai pesan "Terjadi kesalahan: …".
 - Pemulihan otomatis dari Drive membaca ulang data terbaru tepat sebelum menulis (tidak menimpa perubahan dari tab lain, mis. tab Daftar Hadir + bingkai di panel admin).
 
+
+## v60 — Input Kegiatan: kegiatan lama bisa dibuka & pesan galat pasti terlihat
+- Pesan (toast) di dalam halaman admin sekarang tampil di **atas** layar (sebelumnya di bawah iframe sehingga bisa tidak kelihatan).
+- Klik kegiatan lama: langsung muncul "Membuka kegiatan…" dan status di bar atas; kalau gagal, alasannya ditampilkan.
+- Kegiatan yang tercatat di daftar tetapi isinya tidak ada di perangkat: diunduh otomatis dari Google Drive (bila terhubung).
+- Daftar dropdown tidak ditulis ulang bila isinya sama (tombol yang sedang diklik tidak diganti di tengah klik).
+- Klik kegiatan yang sudah terisi di memori saat layar awal masih tampil: layar awal ditutup.

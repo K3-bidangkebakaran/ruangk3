@@ -325,6 +325,8 @@ details.paste textarea{width:100%;min-height:110px;margin:8px 0;border:1px solid
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(20px);opacity:0;background:#111827;color:#fff;padding:10px 14px;border-radius:10px;font-size:13px;display:flex;gap:12px;align-items:center;transition:.2s;z-index:120;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
 .toast button{background:none;border:0;color:#fdba74;font-weight:700}
+html.infr .toast{top:12px;bottom:auto;transform:translateX(-50%) translateY(-20px)}
+html.infr .toast.show{transform:translateX(-50%)}
 
 /* ---------- A4 pages (output) ---------- */
 #pages{--z:1;zoom:var(--z);width:210mm;margin:0 auto}
@@ -2066,11 +2068,12 @@ function parsePaste(txt) {
 
 /* ---------- toast ---------- */
 let tT = null;
+try { if (window.parent && window.parent !== window) document.documentElement.classList.add("infr"); } catch (e) { document.documentElement.classList.add("infr"); } // di dalam halaman admin (iframe): pesan tampil di ATAS supaya pasti kelihatan
 function toast(msg, btnLabel, fn) {
   const t = $("#toast"), b = $("#toastBtn");
   $("#toastMsg").textContent = msg;
   b.hidden = !btnLabel; b.textContent = btnLabel || ""; b.onclick = () => { fn && fn(); t.classList.remove("show"); };
-  t.classList.add("show"); clearTimeout(tT); tT = setTimeout(() => t.classList.remove("show"), btnLabel ? 6000 : 3500);
+  t.classList.add("show"); clearTimeout(tT); tT = setTimeout(() => t.classList.remove("show"), btnLabel ? 6000 : /^(gagal|terjadi|penyimpanan|data kegiatan|tidak )/i.test(String(msg)) ? 9000 : 3500);
 }
 
 /* ---------- daftar tanggal kegiatan ---------- */
@@ -2567,14 +2570,18 @@ const Ev = {
   async load(id) {
     const tunggu = (pr, ms) => Promise.race([pr, new Promise(r => setTimeout(() => r("__lambat"), ms))]);
     try {
+      $("#saveSt").textContent = "Membuka kegiatan…"; toast("Membuka kegiatan…");
       if ((await tunggu(flush(), 5000)) === "__lambat") console.warn("flush lambat");
       const d = await tunggu(idbGet("event:" + id), 10000);
-      if (d === "__lambat") { toast("Penyimpanan browser tidak merespons. Tutup tab Daftar Hadir yang lain, muat ulang halaman, lalu coba lagi."); return; }
-      if (!d) { toast("Data kegiatan tidak ditemukan."); return; }
+      if (d === "__lambat") { $("#saveSt").textContent = "Gagal membuka kegiatan"; toast("Penyimpanan browser tidak merespons. Tutup tab Daftar Hadir yang lain, muat ulang halaman, lalu coba lagi."); return; }
+      if (!d) { // tercatat di daftar tetapi isinya tidak ada di perangkat ini: ambil dari Google Drive bila terhubung
+        if (Cloud.ready() && navigator.onLine) { $("#saveSt").textContent = "Mengunduh dari Drive…"; toast("Data kegiatan belum ada di perangkat ini. Mengunduh dari Google Drive…"); await Cloud.pull(id); $("#saveSt").textContent = "Tersimpan otomatis"; return; }
+        $("#saveSt").textContent = "Gagal membuka kegiatan"; toast("Data kegiatan tidak ditemukan di perangkat ini. Hubungkan Google Drive lalu coba lagi."); return;
+      }
       if (Array.isArray(d.peserta)) d.peserta = d.peserta.filter(p => p && typeof p === "object"); // baris peserta rusak (kosong) dibuang supaya kegiatan tetap bisa dibuka
       S = normalize(d); idbPut(CUR, S.id).catch(() => { });
-      applyState(); setTab("data");
-    } catch (e) { console.error(e); toast("Gagal membuka kegiatan: " + String((e && e.message) || e).slice(0, 160)); }
+      applyState(); setTab("data"); $("#saveSt").textContent = "Tersimpan otomatis"; toast("Kegiatan dibuka.");
+    } catch (e) { console.error(e); $("#saveSt").textContent = "Gagal membuka kegiatan"; toast("Gagal membuka kegiatan: " + String((e && e.message) || e).slice(0, 160)); }
   },
   async create(from) {
     await flush();
@@ -2639,10 +2646,11 @@ Ev.quick = function () {
   Object.keys(grup).forEach(j => {
     const btn = document.querySelector(`.qbtn[data-q="${j}"]`), menu = document.querySelector(`.qmenu[data-m="${j}"]`); if (!btn || !menu) return;
     btn.querySelector(".cnt").textContent = grup[j].length;
-    menu.innerHTML = (j === "lain" ? "" : `<button class="qnew" data-new="${j}">＋ Buat kegiatan ${j === "damkar" ? "Damkar" : j === "b3" ? "B3" : "PAPA"} baru</button>`) +
+    const html = (j === "lain" ? "" : `<button class="qnew" data-new="${j}">＋ Buat kegiatan ${j === "damkar" ? "Damkar" : j === "b3" ? "B3" : "PAPA"} baru</button>`) +
       `<div class="qh">${NAMA[j]} – pilih tanggal</div>` +
       (grup[j].length ? grup[j].map(e => `<button ${e.remote ? "data-remote" : "data-open"}="${esc(e.id)}" class="${e.id === S.id ? "cur" : ""}"><div class="qn">${e.remote ? "☁️ " : ""}${esc(this.tgl(e))}${sfxTag(sm, e.id)}${e.id === S.id ? ' <span class="tag" style="font-size:10.5px;color:#9a3412">dibuka</span>' : ""}</div><div class="qd">${esc(e.kelas ? e.kelas + " · " : "")}${esc(e.tempat || e.kegiatan || "(tanpa nama)")} · ${e.n || 0} peserta${e.remote ? " · dari Google Drive, klik untuk mengunduh" : ""}</div></button>`).join("")
         : `<div class="qe">Belum ada kegiatan ${NAMA[j]} yang pernah diinput.</div>`);
+    if (menu._h !== html) { menu._h = html; menu.innerHTML = html; } // isi sama: jangan ditulis ulang (tombol yang sedang ditekan tidak boleh diganti di tengah klik)
   });
 };
 Ev.menuTutup = () => document.querySelectorAll(".qmenu").forEach(m => { m.hidden = true; const b = m.parentElement.querySelector(".qbtn"); if (b) b.setAttribute("aria-expanded", "false"); });
@@ -2662,7 +2670,11 @@ $("#quick").addEventListener("click", e => {
   Ev.menuTutup();
   if (t.dataset.new) Ev.baru(t.dataset.new);
   else if (t.dataset.remote) { toast("Mengunduh kegiatan dari Google Drive…"); Cloud.pull(t.dataset.remote).then(() => Ev.quick()); }
-  else if (t.dataset.open && t.dataset.open !== S.id) Ev.load(t.dataset.open);
+  else if (t.dataset.open) {
+    if (t.dataset.open !== S.id) Ev.load(t.dataset.open);
+    else if (landingOn) { applyState(); setTab("data"); } // kegiatan sudah terisi di memori tetapi layar awal masih tampil: tutup layar awal
+    else toast("Kegiatan ini sudah terbuka.");
+  }
 });
 document.addEventListener("click", () => Ev.menuTutup());
 document.addEventListener("keydown", e => { if (e.key === "Escape") Ev.menuTutup(); });
