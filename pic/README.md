@@ -251,6 +251,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - APP_VER v49, sw.js VERSION pic-v49.
 
 ## v50-v51
-- Materi **Teknisi K3 Deteksi Gas** (katalog `tdg1`-`tdg3`, judul "Deteksi Gas 1" dst., `grp "*"`): Gas 1 = Dasar-Dasar K3, Kebijakan K3, Peraturan Perundang-Undangan K3 Ruang Terbatas; Gas 2 = Prosedur Ijin Kerja RT, Karakteristik Gas Atmosfir, Pengenalan Alat Deteksi Gas, Metode Deteksi Gas Atmosfir; Gas 3 = Evaluasi Online, Evaluasi Praktek. Ada `sesi` per jam & kolom ONLINE/OFFLINE. Tombol "Isi dari rundown" (`RD_FILL.tdg`) hanya mengisi materi; narasumber dikosongkan (diisi lewat pilihan nama). Katalog sama di `pic/js/app.js` (tanpa `sesi`); `pic/js/wrd.js` dibuat ulang.
-- APP_VER v51, sw.js VERSION pic-v51.
+- Materi **Teknisi K3 Deteksi Gas** (katalog `tdg1`-`tdg3`, judul "Deteksi Gas 1" dst., `grp "*"`): Gas 1 = Dasar-Dasar K3, Kebijakan K3, Peraturan Perundang-Undangan K3 Ruang Terbatas; Gas 2 = Prosedur Ijin Kerja RT, Karakteristik Gas Atmosfir, Pengenalan Alat Deteksi Gas, Metode Deteksi Gas Atmosfir; Gas 3 = Evaluasi Online, Evaluasi Praktek. Ada `sesi` per jam; kolom Aplikasi dikosongkan. Tombol "Isi dari rundown" (`RD_FILL.tdg`) hanya mengisi materi; narasumber dikosongkan (diisi lewat pilihan nama). Katalog sama di `pic/js/app.js` (tanpa `sesi`); `pic/js/wrd.js` dibuat ulang.
+- APP_VER v52, sw.js VERSION pic-v52.
 
