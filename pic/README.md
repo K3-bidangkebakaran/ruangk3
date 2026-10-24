@@ -270,3 +270,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Penyebab: di kegiatan Pesawat Angkat, peserta dipisah per alat (`peserta.kelas`). Peserta yang alatnya belum dipilih / tidak cocok masuk kartu "Tanpa kelas", sehingga tidak tampil di daftar alat Conveyor. Nama yang dipilihkan alatnya manual di web masuk ke Conveyor.
 - Perbaikan: bila kegiatan PAPA hanya punya SATU alat (bukan B3), semua peserta otomatis ikut alat itu: web (`kelasTunggal` saat data dibuka, saat diubah, baris baru default alat itu, data ke APK `Pic.node`), APK (`applyKegs`) dan pop up progres di panel admin. Bila alat lebih dari satu, kartu "Tanpa kelas" tetap ada, kini dengan petunjuk memilih alat di website.
 
+## v56 – Pulihkan peserta yang hilang + upload tidak lagi menghapus nama lama
+- Penyebab nama hilang: saat upload Excel/PDF yang namanya sebagian sudah ada, web menawarkan "GANTI seluruh daftar". Pilihan itu (OK) menghapus semua nama lama yang tidak ada di file, dan peserta yang baru punya selfie dianggap "bersih" sehingga ikut terhapus (berkas selfie mereka tetap ada di Drive).
+- Sekarang: OK = hanya menambah nama yang belum ada (aman). Mengganti seluruh daftar butuh konfirmasi kedua yang menyebut nama yang akan dihapus, ada tombol Batalkan, dan tidak ditawarkan bila ada peserta dengan selfie/nilai/TTD/foto.
+- Tombol baru "♻️ Pulihkan peserta dari Drive" (tab Kegiatan & Peserta): membaca data kegiatan + peta berkas di Google Drive, mencari peserta yang berkasnya (foto/TTD/selfie) ada di Drive tetapi tidak ada di daftar, lalu mengembalikan nama (id sama, jadi selfie di server cocok lagi) beserta foto/TTD/selfie. Perusahaan hanya terisi bila tercatat di data.json Drive.
+

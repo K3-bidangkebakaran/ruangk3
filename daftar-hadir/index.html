@@ -649,6 +649,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
         <button class="btn sm" id="btnAdd">+ Tambah Manual</button>
         <button class="btn sm" id="btnTenant" title="Ubah singkatan perusahaan peserta (mis. BDM) menjadi nama lengkap sesuai Database Tenant IMIP di Google Drive">🏢 Lengkapi nama perusahaan</button>
         <button class="btn sm" id="btnSort" title="Urutkan nama peserta sesuai abjad">Urutkan A–Z</button>
+        <button class="btn sm" id="btnPulih" title="Cari peserta yang fotonya / TTD / selfie-nya ada di Google Drive tetapi namanya sudah tidak ada di daftar ini, lalu kembalikan">♻️ Pulihkan peserta dari Drive</button>
         <input type="file" id="fileXls" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
       </div>
       <p class="xl-tip">File Excel atau PDF dibaca otomatis dari kolom <b>Nama Peserta</b> dan <b>Instansi/Perusahaan</b> (urutan kolom bebas). Kolom <b>Alat</b> dan <b>Kelas</b> (1/2/3 atau A–D) ikut terbaca dan mengisi jenis kegiatan, alat, serta kelas otomatis. Daftar lalu diurutkan sesuai abjad (A–Z). PDF harus berupa PDF asli, bukan foto/scan. <a href="#" id="btnTpl">Unduh template Excel</a></p>
@@ -3370,11 +3371,18 @@ async function importPdf(file) {
 // Tambahkan hasil baca file (Excel/PDF) ke daftar peserta: lewati duplikat, urutkan A–Z.
 function masukkanPeserta(list, sumber, adaInst) {
   const key = (n, i) => norm(n) + "|" + norm(i), reuse = new Map(); // reuse: id + selfie peserta lama dipertahankan saat daftar diganti (supaya link absen selfie tetap cocok)
-  { // impor ulang file yang sama (mis. setelah pembacaan diperbaiki): tawarkan mengganti daftar bila belum ada TTD/foto/status
+  let undo = null;
+  { // impor ulang file yang sama (mis. setelah pembacaan diperbaiki): tawarkan mengganti daftar bila belum ada TTD/foto/selfie/nilai. Pilihan AMAN (tambahkan saja) selalu didahulukan; mengganti butuh konfirmasi kedua yang menyebut nama yang akan dihapus.
     const nm = S.peserta.filter(p => (p.nama || "").trim());
-    const bersih = nm.every(p => !p.foto && !p.foto2 && !p.batal && !p.remedial && !(p.ttd && Object.keys(p.ttd).length));
+    const bersih = nm.every(p => !p.foto && !p.foto2 && !p.batal && !p.remedial && !p.ut && !p.up && !p.hasil && !(p.ttd && Object.keys(p.ttd).length) && !(p.sf && Object.keys(p.sf).length));
     const sama = list.filter(r => nm.some(p => norm(p.nama) === norm(r.nama))).length;
-    if (nm.length && bersih && sama >= Math.max(3, Math.min(nm.length, list.length) * 0.5) && confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = GANTI seluruh daftar dengan hasil baca file ini (disarankan bila daftar sebelumnya salah baca).\nBatal = hanya tambahkan nama yang belum ada.`)) { nm.forEach(p => reuse.set(key(p.nama, Tenant.full(p.instansi)), p)); S.peserta = []; }
+    if (nm.length && bersih && sama >= Math.max(3, Math.min(nm.length, list.length) * 0.5)
+      && !confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = hanya TAMBAHKAN nama yang belum ada (disarankan, tidak ada nama yang hilang).\nBatal = pilihan lain: mengganti seluruh daftar.`)) {
+      const ada = new Set(list.map(r => norm(r.nama))), hilang = nm.filter(p => !ada.has(norm(p.nama)));
+      const dft = hilang.slice(0, 8).map(p => p.nama.trim()).join(", ") + (hilang.length > 8 ? ` dan ${hilang.length - 8} lainnya` : "");
+      if (confirm(`GANTI seluruh daftar dengan isi file ini?\n\n${hilang.length ? `${hilang.length} nama yang ada sekarang tetapi TIDAK ada di file akan DIHAPUS dari daftar: ${dft}.` : "Tidak ada nama yang dihapus."}\n\nOK = ganti. Batal = tidak mengubah apa pun.`)) { const lama = S.peserta.slice(); nm.forEach(p => reuse.set(key(p.nama, Tenant.full(p.instansi)), p)); S.peserta = []; undo = () => { S.peserta = lama; renderList(); changed(); toast("Daftar peserta dikembalikan."); }; }
+      else return;
+    }
   }
   const have = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => key(p.nama, Tenant.full(p.instansi))));
   const add = []; let dup = 0, nTen = 0; Tenant.refresh();
@@ -3390,8 +3398,9 @@ function masukkanPeserta(list, sumber, adaInst) {
   S.peserta.push(...add); sortPeserta();
   const nkel = kelasDariData(add);
   renderList(); changed();
-  if (nkel) toast(AUTO.msg || `Kolom Kelas terbaca: ${nkel} kelas baru, laporan dipecah per kelas.`);
-  else toast(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${nTen ? `, ${nTen} nama perusahaan dilengkapi dari Database Tenant` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
+  const T = m => (undo ? toast(m, "Batalkan", undo) : toast(m));
+  if (nkel) T(AUTO.msg || `Kolom Kelas terbaca: ${nkel} kelas baru, laporan dipecah per kelas.`);
+  else T(`${add.length} peserta ditambahkan dari ${sumber}${dup ? ` (${dup} duplikat dilewati)` : ""}${nTen ? `, ${nTen} nama perusahaan dilengkapi dari Database Tenant` : ""}${adaInst === false ? ' – kolom "Instansi/Perusahaan" tidak ditemukan' : ""}. Daftar diurutkan A–Z.`);
 }
 function importFile(file) { return /\.pdf$/i.test(file.name) || file.type === "application/pdf" ? importPdf(file) : importExcel(file); }
 async function downloadTemplate() {
@@ -3407,6 +3416,40 @@ $("#btnXls").onclick = () => { $("#fileXls").value = ""; $("#fileXls").click(); 
 $("#fileXls").addEventListener("change", e => { const f = e.target.files[0]; if (f) importFile(f); });
 $("#btnTpl").onclick = e => { e.preventDefault(); downloadTemplate(); };
 $("#btnSort").onclick = () => { sortPeserta(); renderList(); changed(); toast("Peserta diurutkan A–Z."); };
+/* ---------- Pulihkan peserta yang hilang dari daftar tetapi berkasnya (foto / TTD / selfie) masih ada di Google Drive ---------- */
+const drvNama = f => { // "NAMA [abc12] - Siang.jpg" / "NAMA [abc12] (1).jpg" / "NAMA [abc12].png" -> NAMA
+  const t = String((f && f.name) || "").replace(/\.[a-z0-9]+$/i, "").replace(/ - (Pagi|Siang)$/i, "").replace(/ \((1|2)\)$/, "");
+  const m = /^(.*?)\s*\[[^\]]+\]$/.exec(t); return (m ? m[1] : t).trim();
+};
+async function pulihPeserta() {
+  if (!Cloud.ready()) { toast("Hubungkan Google Drive dulu (Pengaturan Drive), lalu coba lagi."); return; }
+  if (!navigator.onLine) { toast("Tidak ada internet."); return; }
+  const btn = $("#btnPulih"); btn.disabled = true; toast("Memeriksa Google Drive…");
+  try {
+    let r; try { r = await Cloud.api("getEvent", { id: S.id }); } catch (e) { toast(/tidak ditemukan/i.test(e.message || "") ? "Kegiatan ini belum ada di Google Drive, jadi belum ada yang bisa dipulihkan." : "Gagal membaca Google Drive: " + Cloud.friendly(e.message || "")); return; }
+    const files = r.files || {}, byId = new Map(), have = new Set(S.peserta.map(p => p.id)), haveNm = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => norm(p.nama)));
+    const cand = id => { let c = byId.get(id); if (!c) byId.set(id, c = { id, nama: "", instansi: "", kelas: "", keys: [] }); return c; };
+    ((r.event && r.event.peserta) || []).forEach(p => { if (p && p.id && (p.nama || "").trim()) { const c = cand(p.id); c.nama = String(p.nama).trim(); c.instansi = p.instansi || ""; c.kelas = p.kelas || ""; c.batal = !!p.batal; c.remedial = !!p.remedial; c.ut = p.ut; c.up = p.up; c.hasil = p.hasil; } });
+    Object.keys(files).forEach(k => { const [kind, pid] = k.split(":"); if (!["foto", "foto2", "ttd", "sf"].includes(kind) || !pid) return; const c = cand(pid); c.keys.push(k); if (!c.nama) c.nama = drvNama(files[k]); });
+    const hilang = [...byId.values()].filter(c => c.nama && !have.has(c.id)), baru = hilang.filter(c => !haveNm.has(norm(c.nama))), sudah = hilang.length - baru.length;
+    if (!baru.length) { toast(sudah ? `Tidak ada nama yang hilang (${sudah} berkas Drive milik nama yang sudah ada di daftar).` : "Tidak ada peserta yang hilang: semua peserta di Google Drive sudah ada di daftar."); return; }
+    baru.sort((a, b) => a.nama.localeCompare(b.nama, "id"));
+    const dft = baru.slice(0, 25).map(c => "• " + c.nama + (c.instansi ? " – " + c.instansi : "")).join("\n") + (baru.length > 25 ? `\n… dan ${baru.length - 25} lainnya` : "");
+    if (!confirm(`Ditemukan ${baru.length} peserta yang berkasnya ada di Google Drive tetapi tidak ada di daftar peserta:\n\n${dft}\n\nKembalikan ke daftar peserta (beserta foto / TTD / selfie dari Drive)?`)) return;
+    const add = baru.map(c => ({ id: c.id, nama: c.nama, instansi: c.instansi || "", foto: "", foto2: "", ttd: {}, sf: {}, kelas: c.kelas || "", batal: !!c.batal, remedial: !!c.remedial && !c.batal, ut: String(c.ut || ""), up: String(c.up || ""), hasil: c.hasil === "lulus" || c.hasil === "tidak" ? c.hasil : "" }));
+    S.peserta.push(...add); sortPeserta(); renderList(); changed();
+    toast(`${add.length} peserta dikembalikan ke daftar. Mengambil foto / TTD dari Drive…`);
+    const tmp = { peserta: add }, keys = baru.flatMap(c => c.keys).filter(k => files[k]);
+    let gagal = false;
+    try { if (keys.length) await Cloud.fetchFiles(tmp, files, keys); } catch (e) { gagal = true; }
+    const tujuan = new Map(S.peserta.map(p => [p.id, p]));
+    add.forEach(a => { const p = tujuan.get(a.id); if (!p) return; if (a.foto && !p.foto) p.foto = a.foto; if (a.foto2 && !p.foto2) p.foto2 = a.foto2; Object.keys(a.ttd).forEach(d => { if (!p.ttd[d]) p.ttd[d] = a.ttd[d]; }); Object.keys(a.sf).forEach(d => { p.sf = p.sf || {}; p.sf[d] = { ...a.sf[d], ...(p.sf[d] || {}) }; }); });
+    renderList(); changed();
+    const tanpaInst = add.filter(a => !a.instansi).length;
+    toast(`${add.length} peserta dipulihkan${gagal ? " (sebagian foto / TTD belum terunduh, coba tombol ini lagi)" : ""}.${tanpaInst ? ` Perusahaan ${tanpaInst} peserta tidak tercatat di Drive – isi manual.` : ""}`);
+  } finally { btn.disabled = false; }
+}
+$("#btnPulih").onclick = () => { pulihPeserta().catch(e => { $("#btnPulih").disabled = false; toast("Gagal memulihkan: " + (e && e.message || e)); }); };
 // seret file Excel / PDF ke kartu peserta
 {
   const card = $("#pList").closest(".card");
