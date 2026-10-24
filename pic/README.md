@@ -250,3 +250,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Word APK tab Absen Selfie: gambar selfie yang diulang ikut diperbarui (SFT).
 - APP_VER v49, sw.js VERSION pic-v49.
 
+## v50
+- Materi **Teknisi K3 Deteksi Gas** (3 hari: Hari 1-2 online, Hari 3 offline) ditambahkan ke katalog materi (`tdg1`, `tdg2`, `tdgev`, `tdgpr`, dengan `sesi` & kolom ONLINE/OFFLINE) dan narasumber baru `tagar` (TAGAR, Praktisi). Di website, tombol "Isi dari rundown Teknisi K3 Deteksi Gas" (`RD_FILL.tdg`): Hari 1 Repy, Hari 2 TAGAR, Hari 3 Kemnaker (Evaluasi Online) + Repy (Evaluasi Praktek). Katalog yang sama ada di `pic/js/app.js` (tanpa `sesi`); `pic/js/wrd.js` dibuat ulang.
+- APP_VER v50, sw.js VERSION pic-v50.
+
