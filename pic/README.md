@@ -286,3 +286,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Web melengkapi otomatis (tiap 15 detik & setelah Database Tenant dimuat) peserta kegiatan yang sedang dibuka, dengan tombol Batalkan; tidak mengganggu saat mengetik.
 - Code.gs `tenants_` kini mengirim status singkatan (`k`). Tanpa deploy ulang Code.gs, perilaku lama berlaku untuk urutan prioritas status (nama & alias tetap bekerja).
 
+## v59 – Pembukaan kegiatan lebih tahan gangguan + pemulihan aman antar tab
+- Membuka kegiatan (klik di daftar) kini menampilkan pesan bila gagal (sebelumnya diam saja), tidak menunggu tanpa batas, dan membuang baris peserta rusak. Kesalahan JavaScript tak terduga juga ditampilkan sebagai pesan "Terjadi kesalahan: …".
+- Pemulihan otomatis dari Drive membaca ulang data terbaru tepat sebelum menulis (tidak menimpa perubahan dari tab lain, mis. tab Daftar Hadir + bingkai di panel admin).
+

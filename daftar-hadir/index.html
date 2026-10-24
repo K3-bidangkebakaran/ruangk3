@@ -2565,11 +2565,16 @@ const Ev = {
       </div>`).join("") : `<div class="empty">${q ? "Tidak ada kegiatan yang cocok." : "Belum ada kegiatan tersimpan."}</div>`;
   },
   async load(id) {
-    await flush();
-    const d = await idbGet("event:" + id);
-    if (!d) { toast("Data kegiatan tidak ditemukan."); return; }
-    S = normalize(d); idbPut(CUR, S.id).catch(() => { });
-    applyState(); setTab("data");
+    const tunggu = (pr, ms) => Promise.race([pr, new Promise(r => setTimeout(() => r("__lambat"), ms))]);
+    try {
+      if ((await tunggu(flush(), 5000)) === "__lambat") console.warn("flush lambat");
+      const d = await tunggu(idbGet("event:" + id), 10000);
+      if (d === "__lambat") { toast("Penyimpanan browser tidak merespons. Tutup tab Daftar Hadir yang lain, muat ulang halaman, lalu coba lagi."); return; }
+      if (!d) { toast("Data kegiatan tidak ditemukan."); return; }
+      if (Array.isArray(d.peserta)) d.peserta = d.peserta.filter(p => p && typeof p === "object"); // baris peserta rusak (kosong) dibuang supaya kegiatan tetap bisa dibuka
+      S = normalize(d); idbPut(CUR, S.id).catch(() => { });
+      applyState(); setTab("data");
+    } catch (e) { console.error(e); toast("Gagal membuka kegiatan: " + String((e && e.message) || e).slice(0, 160)); }
   },
   async create(from) {
     await flush();
@@ -3450,20 +3455,21 @@ async function pulihEv(id) {
   const baru = [...byId.values()].filter(c => c.nama && !have.has(c.id) && !gone.has(c.id) && !haveNm.has(norm(c.nama))).sort((a, b) => a.nama.localeCompare(b.nama, "id"));
   if (!baru.length) return 0;
   const add = baru.map(c => ({ id: c.id, nama: c.nama, instansi: c.instansi || "", foto: "", foto2: "", ttd: {}, sf: {}, kelas: c.kelas || "", batal: !!c.batal, remedial: !!c.remedial && !c.batal, ut: String(c.ut || ""), up: String(c.up || ""), hasil: c.hasil === "lulus" || c.hasil === "tidak" ? c.hasil : "" }));
-  const simpan = async () => {
-    kelasTunggal(ev); ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 }; ev.sync.v = (ev.sync.v || 0) + 1;
-    if (id === S.id) { renderList(); changed(); return; }
-    await idbPut("event:" + id, ev); const m = meta(ev), i = EV.findIndex(e => e.id === id); if (i >= 0) EV[i] = { ...m, updated: EV[i].updated }; else EV.push(m); await idbPut(IDX, EV); Pic.mark(id);
+  /* terapkan perubahan ke data TERBARU (dibaca ulang tepat sebelum menulis, supaya tidak menimpa perubahan dari tab lain yang terjadi selama menunggu Drive) */
+  const terapkan = async fn => {
+    if (id === S.id) { fn(S); kelasTunggal(S); renderList(); changed(); return true; }
+    const raw = await idbGet("event:" + id), e2 = raw && normalize(raw); if (!e2 || TOMBS.has(id)) return false;
+    fn(e2); kelasTunggal(e2); e2.sync = e2.sync || { h: {}, v: 0, sv: 0, at: 0 }; e2.sync.v = (e2.sync.v || 0) + 1;
+    await idbPut("event:" + id, e2); const m = meta(e2), i = EV.findIndex(e => e.id === id); if (i >= 0) EV[i] = { ...m, updated: EV[i].updated }; else EV.push(m); await idbPut(IDX, EV); Pic.mark(id); return true;
   };
-  ev.peserta.push(...add); ev.peserta.sort(cmpNama); await simpan();
+  const tambah = e => { const ada = new Set(e.peserta.map(p => p.id)); add.forEach(a => { if (!ada.has(a.id)) e.peserta.push({ ...a, ttd: {}, sf: {} }); }); e.peserta.sort(cmpNama); };
+  if (!(await terapkan(tambah))) return 0;
   toast(`${add.length} peserta dipulihkan dari Google Drive${(ev.acara.kegiatan || "") ? " (" + ev.acara.kegiatan + ")" : ""}: ${add.slice(0, 4).map(a => a.nama).join(", ")}${add.length > 4 ? " dan " + (add.length - 4) + " lainnya" : ""}.`);
   const keys = baru.flatMap(c => c.keys).filter(k => files[k]);
   if (keys.length) {
     const tmp = { peserta: add.map(a => ({ ...a, ttd: {}, sf: {} })) };
     try { await Cloud.fetchFiles(tmp, files, keys); } catch (e) { }
-    const dst = id === S.id ? S : ev, tujuan = new Map(dst.peserta.map(p => [p.id, p]));
-    tmp.peserta.forEach(a => { const p = tujuan.get(a.id); if (!p) return; if (a.foto && !p.foto) p.foto = a.foto; if (a.foto2 && !p.foto2) p.foto2 = a.foto2; Object.keys(a.ttd).forEach(d => { if (!p.ttd[d]) p.ttd[d] = a.ttd[d]; }); Object.keys(a.sf).forEach(d => { p.sf = p.sf || {}; p.sf[d] = { ...a.sf[d], ...(p.sf[d] || {}) }; }); });
-    await simpan();
+    await terapkan(e => { const tujuan = new Map(e.peserta.map(p => [p.id, p])); tmp.peserta.forEach(a => { const p = tujuan.get(a.id); if (!p) return; if (a.foto && !p.foto) p.foto = a.foto; if (a.foto2 && !p.foto2) p.foto2 = a.foto2; Object.keys(a.ttd).forEach(d => { if (!p.ttd[d]) p.ttd[d] = a.ttd[d]; }); Object.keys(a.sf).forEach(d => { p.sf = p.sf || {}; p.sf[d] = { ...a.sf[d], ...(p.sf[d] || {}) }; }); }); });
   }
   return add.length;
 }
@@ -5131,6 +5137,7 @@ const Pic = {
   await Cloud.loadCfg();
   if (Cloud.ready()) { const rl = await idbGet(REMOTE_KEY); if (Array.isArray(rl)) Cloud.remote = rl; } // daftar Drive terakhir langsung tersedia (belum dianggap segar: remoteAt = 0)
   Tenant.init().then(() => Tenant.refresh(true));
+  { const told = new Set(); const lapor = m => { m = String(m || "").slice(0, 160); if (!m || told.has(m) || told.size > 5) return; told.add(m); try { toast("Terjadi kesalahan: " + m); } catch (e) { } }; window.addEventListener("unhandledrejection", e => lapor(e.reason && e.reason.message || e.reason)); window.addEventListener("error", e => lapor(e.message)); }
   Cloud.watch();
   ((await idbGet(DEL_KEY)) || []).forEach(id => Cloud.gone.add(id)); // kegiatan yang menunggu dihapus di Drive tidak boleh disinkron
   landingInit = true; showLanding(true); applyState(); landingInit = false;
