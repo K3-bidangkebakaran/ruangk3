@@ -133,6 +133,18 @@ async function boot() {
   await refreshSt(); list();
 }
 async function refreshSt() { try { ST = await FB.status(KID); } catch (_) { /* pakai data terakhir */ } }
+/* Daftar nama + status selfie dibaca ulang dari server (PIC bisa menambah/mengubah peserta saat halaman ini masih terbuka). Info kosong / gagal baca = pakai yang lama. */
+async function refreshAll() {
+  try { const i = await FB.info(KID); if (i && Array.isArray(i.peserta)) INFO = i; } catch (_) { /* pakai data terakhir */ }
+  await refreshSt();
+}
+const sigData = () => JSON.stringify([INFO && INFO.peserta, INFO && INFO.tgl, ST]);
+const onList = () => SCREEN === "list" || SCREEN === "off" || SCREEN === "dlist";
+function segarkan() { // berkala: bila daftar nama / status berubah, tampilan daftar diperbarui (tanpa mengganggu yang sedang memilih nama atau memotret)
+  if (!INFO || !FB || busy || CHOSEN || !onList() || document.hidden) return;
+  const before = sigData(); refreshAll().then(() => { if (!CHOSEN && !busy && onList() && sigData() !== before) { const q = $("#q"); list(q ? q.value : ""); if (q) { const q2 = $("#q"); if (q2) { q2.focus(); try { q2.setSelectionRange(q2.value.length, q2.value.length); } catch (_) { } } } } });
+}
+setInterval(segarkan, 30000);
 
 /* ---------- daftar nama ---------- */
 function ctx() {
@@ -291,11 +303,11 @@ function selesai(slots) {
 /* Hari / sesi (pagi-siang) berubah saat halaman masih terbuka: perbarui otomatis */
 function tick() {
   if (!INFO) return; const c = ctx(), key = c.z.iso + c.ses; if (key === LASTKEY) return; const first = !LASTKEY; LASTKEY = key; if (first) return;
-  if (SCREEN === "list" || SCREEN === "off" || SCREEN === "dlist") refreshSt().then(() => { if (SCREEN === "list" || SCREEN === "off" || SCREEN === "dlist") list(($("#q") || {}).value); });
+  if (SCREEN === "list" || SCREEN === "off" || SCREEN === "dlist") refreshAll().then(() => { if (SCREEN === "list" || SCREEN === "off" || SCREEN === "dlist") list(($("#q") || {}).value); });
   else { const pl = main.querySelector(".pill"); if (pl) { pl.textContent = `Hari ke-${c.idx + 1} · Absen ${sesiNama(c.ses)}`; pl.classList.toggle("siang", c.ses === "s"); } }
 }
 setInterval(tick, 10000); window.__sfTick = tick;
-document.addEventListener("visibilitychange", () => { if (!document.hidden && !CHOSEN && FB && INFO) refreshSt().then(() => { if (!CHOSEN) list(($("#q") || {}).value); }); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !CHOSEN && FB && INFO) refreshAll().then(() => { if (!CHOSEN) list(($("#q") || {}).value); }); });
 boot();
 </script>
 </body>

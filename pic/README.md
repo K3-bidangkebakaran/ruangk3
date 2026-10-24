@@ -259,3 +259,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Klik baris kegiatan (atau tombol **Progres**) membuka pop up progres: persen + rincian tiap bagian, sama dengan layar Pratinjau Laporan di APK, memakai isian semua akun PIC (`dh_kegiatan/{id}` + `dh_hasil/{id}`).
 - Hitungannya = `pic/js/prog.js`, DIBUAT OTOMATIS dari `lapCek` di `pic/js/app.js` oleh `node pic/tools/build-prog.js`. Jalankan ulang setiap kali `lapCek` atau fungsi yang dipakainya di app.js berubah.
 
+## v54 – Daftar nama link absen selfie selalu sama dengan daftar peserta di web
+- Penyebab: halaman `selfie/` membaca daftar nama (`dh_selfie/{kid}`) hanya satu kali saat dibuka. Nama tambahan (mis. dari upload Excel/PDF) yang masuk sesudahnya baru tampil setelah halaman dimuat ulang manual.
+- `selfie/index.html`: daftar nama + status dibaca ulang otomatis tiap 30 detik, saat tab kembali dibuka, dan saat pergantian hari/sesi. Tampilan hanya digambar ulang bila ada perubahan; tidak mengganggu peserta yang sedang mengetik pencarian, memilih nama, atau memotret. Gagal baca = pakai daftar terakhir.
+- `daftar-hadir/index.html` (`Pic.flush`): daftar nama selfie diterbitkan lebih dulu (ringan), tidak menunggu unggah gambar; satu kegiatan yang gagal tidak menghentikan kegiatan lain.
+- `masukkanPeserta`: pada pilihan "GANTI seluruh daftar", id peserta lama (dan data selfie yang sudah masuk) dipertahankan untuk nama yang sama, supaya selfie lama tetap cocok.

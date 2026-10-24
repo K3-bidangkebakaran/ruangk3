@@ -3356,13 +3356,13 @@ async function importPdf(file) {
 }
 // Tambahkan hasil baca file (Excel/PDF) ke daftar peserta: lewati duplikat, urutkan A–Z.
 function masukkanPeserta(list, sumber, adaInst) {
+  const key = (n, i) => norm(n) + "|" + norm(i), reuse = new Map(); // reuse: id + selfie peserta lama dipertahankan saat daftar diganti (supaya link absen selfie tetap cocok)
   { // impor ulang file yang sama (mis. setelah pembacaan diperbaiki): tawarkan mengganti daftar bila belum ada TTD/foto/status
     const nm = S.peserta.filter(p => (p.nama || "").trim());
     const bersih = nm.every(p => !p.foto && !p.foto2 && !p.batal && !p.remedial && !(p.ttd && Object.keys(p.ttd).length));
     const sama = list.filter(r => nm.some(p => norm(p.nama) === norm(r.nama))).length;
-    if (nm.length && bersih && sama >= Math.max(3, Math.min(nm.length, list.length) * 0.5) && confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = GANTI seluruh daftar dengan hasil baca file ini (disarankan bila daftar sebelumnya salah baca).\nBatal = hanya tambahkan nama yang belum ada.`)) S.peserta = [];
+    if (nm.length && bersih && sama >= Math.max(3, Math.min(nm.length, list.length) * 0.5) && confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = GANTI seluruh daftar dengan hasil baca file ini (disarankan bila daftar sebelumnya salah baca).\nBatal = hanya tambahkan nama yang belum ada.`)) { nm.forEach(p => reuse.set(key(p.nama, Tenant.full(p.instansi)), p)); S.peserta = []; }
   }
-  const key = (n, i) => norm(n) + "|" + norm(i);
   const have = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => key(p.nama, Tenant.full(p.instansi))));
   const add = []; let dup = 0, nTen = 0; Tenant.refresh();
   for (const r of list) {
@@ -3370,7 +3370,7 @@ function masukkanPeserta(list, sumber, adaInst) {
     const inst0 = cleanTxt(r.inst), inst = Tenant.full(inst0), k = key(nama, inst);
     if (inst !== inst0) nTen++;
     if (have.has(k)) { dup++; continue; }
-    have.add(k); add.push({ id: uid(), nama, instansi: inst, foto: "", ttd: {}, kelas: cleanTxt(r.kelas), alat: cleanTxt(r.alat) });
+    have.add(k); const o = reuse.get(k); add.push({ id: o ? o.id : uid(), nama, instansi: inst, foto: "", ttd: {}, ...(o && o.sf ? { sf: o.sf } : {}), kelas: cleanTxt(r.kelas), alat: cleanTxt(r.alat) });
   }
   if (!add.length) { toast(dup ? `Semua nama (${dup}) sudah ada di daftar peserta.` : `Tidak ada nama peserta di file ${sumber} tersebut.`); return; }
   S.peserta = S.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
@@ -4595,18 +4595,20 @@ const Pic = {
         await this.hapusSelfieSemua(id);
         this.drops = this.drops.filter(x => x !== id); await idbPut("pic-del", this.drops);
       }
-      for (const id of [...this.dirty]) {
+      let gagal = null; // satu kegiatan gagal tidak menghentikan kegiatan lain; dicoba lagi otomatis
+      for (const id of [...this.dirty]) { try {
         const ev = id === S.id ? S : (await idbGet("event:" + id));
         if (!ev) { this.dirty.delete(id); continue; }
         const n = this.node(ev); if (!n.nama || !n.tgl.length) { this.dirty.delete(id); continue; } // belum layak dikirim: butuh nama + tanggal (peserta boleh kosong, kegiatan tetap tampil di APK; dikirim lagi otomatis saat diubah)
+        await this.pubSelfie(id, ev, n); // daftar nama link absen selfie diterbitkan lebih dulu (ringan), tidak menunggu unggah gambar
         let wmGagal = false;
         try { n.wm = await this.pubWeb(id, ev); } catch (e) { n.wm = this.hash["wms:" + id] || ""; wmGagal = true; } // gambar yang hanya ada di website ikut dikirim (supaya Word & foto di APK sama dengan website); gagal = dicoba lagi otomatis
         if (!n.wm) delete n.wm;
         const h = fnv(JSON.stringify(n));
         if (this.hash[id] !== h) { await this.d.set(this.r(`dh_kegiatan/${id}`), { ...n, upd: Date.now() }); this.hash[id] = h; await idbPut("pic-hash", this.hash); }
-        await this.pubSelfie(id, ev, n);
         if (!wmGagal) this.dirty.delete(id);
-      }
+      } catch (e) { gagal = gagal || e; } }
+      if (gagal) throw gagal;
       this.err = "";
     } catch (e) { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 60000); }
     await idbPut("pic-pub", [...this.dirty]).catch(() => { });
