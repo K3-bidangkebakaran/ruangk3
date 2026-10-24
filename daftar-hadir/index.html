@@ -1076,6 +1076,8 @@ const idbGet = k => idb("readonly", st => st.get(k)).catch(() => null);
 const idbPut = (k, v) => idb("readwrite", st => st.put(v, k));
 const idbDel = k => idb("readwrite", st => st.delete(k)).catch(() => { });
 
+let loadBusy = 0; // >0 selama pengguna membuka kegiatan: pekerjaan latar (sinkron Drive, pemulihan, kirim PIC) menunggu supaya penyimpanan browser tidak macet
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
 let EV = []; // indeks kegiatan: ringkasan tiap kegiatan
 const TOMB = "events-gone"; let TOMBS = new Set(); // id kegiatan yang sudah dihapus: tidak boleh muncul lagi (mis. dari simpan otomatis yang tertunda)
 const tombAdd = id => { TOMBS.add(id); idbPut(TOMB, [...TOMBS].slice(-300)).catch(() => { }); };
@@ -2395,7 +2397,7 @@ $("#btnAdd").onclick = addRow;
 /* otomatis: singkatan perusahaan peserta kegiatan yang sedang dibuka dilengkapi dari Database Tenant (tidak mengganggu yang sedang mengetik) */
 const tenantTold = new Set();
 function tenantAuto() {
-  if (!Tenant.map.size || landingOn || !S.id || saveT || Date.now() - lastEditAt < 4000) return 0;
+  if (loadBusy || !Tenant.map.size || landingOn || !S.id || saveT || Date.now() - lastEditAt < 4000) return 0;
   const a = document.activeElement; if (a && a.closest && a.closest("#pList")) return 0;
   const rows = S.peserta.filter(p => (p.nama || "").trim() || p.instansi), ch = Tenant.lengkapi(rows);
   if (ch.length) { renderList(); changed(); toast(`${ch.length} nama perusahaan dilengkapi otomatis dari Database Tenant.`, "Batalkan", () => { ch.forEach(c => { c.p.instansi = c.lama; }); renderList(); changed(); }); }
@@ -2569,11 +2571,18 @@ const Ev = {
   },
   async load(id) {
     const tunggu = (pr, ms) => Promise.race([pr, new Promise(r => setTimeout(() => r("__lambat"), ms))]);
+    const sibuk = () => [saveT ? "simpan" : "", Cloud.alBusy ? "samakan Drive" : "", Cloud.busy ? "sinkron Drive" : "", Cloud.recBusy ? "cek Drive" : "", Pic.busy ? "kirim PIC" : "", typeof pulihJalan !== "undefined" && pulihJalan ? "pulihkan" : ""].filter(Boolean).join(", ") || "tidak diketahui";
+    if (this.loading) { toast("Masih membuka kegiatan, mohon tunggu sebentar…"); return; }
+    this.loading = true; loadBusy++;
     try {
       $("#saveSt").textContent = "Membuka kegiatan…"; toast("Membuka kegiatan…");
       if ((await tunggu(flush(), 5000)) === "__lambat") console.warn("flush lambat");
-      const d = await tunggu(idbGet("event:" + id), 10000);
-      if (d === "__lambat") { $("#saveSt").textContent = "Gagal membuka kegiatan"; toast("Penyimpanan browser tidak merespons. Tutup tab Daftar Hadir yang lain, muat ulang halaman, lalu coba lagi."); return; }
+      const pr = idbGet("event:" + id); let d, t0 = Date.now();
+      while ((d = await tunggu(pr, 6000)) === "__lambat") { // penyimpanan browser bisa sibuk menulis data lain (foto besar): tunggu, jangan menyerah
+        const dt = Math.round((Date.now() - t0) / 1000);
+        if (dt > 150) { $("#saveSt").textContent = "Gagal membuka kegiatan"; toast("Penyimpanan browser tidak merespons lebih dari 2,5 menit. Muat ulang halaman (Cmd+Shift+R), lalu coba lagi."); return; }
+        $("#saveSt").textContent = "Menunggu penyimpanan… " + dt + " dtk"; toast(`Masih menunggu penyimpanan browser (${dt} dtk). Sedang sibuk: ${sibuk()}. Jangan ditutup.`);
+      }
       if (!d) { // tercatat di daftar tetapi isinya tidak ada di perangkat ini: ambil dari Google Drive bila terhubung
         if (Cloud.ready() && navigator.onLine) { $("#saveSt").textContent = "Mengunduh dari Drive…"; toast("Data kegiatan belum ada di perangkat ini. Mengunduh dari Google Drive…"); await Cloud.pull(id); $("#saveSt").textContent = "Tersimpan otomatis"; return; }
         $("#saveSt").textContent = "Gagal membuka kegiatan"; toast("Data kegiatan tidak ditemukan di perangkat ini. Hubungkan Google Drive lalu coba lagi."); return;
@@ -2582,6 +2591,7 @@ const Ev = {
       S = normalize(d); idbPut(CUR, S.id).catch(() => { });
       applyState(); setTab("data"); $("#saveSt").textContent = "Tersimpan otomatis"; toast("Kegiatan dibuka.");
     } catch (e) { console.error(e); $("#saveSt").textContent = "Gagal membuka kegiatan"; toast("Gagal membuka kegiatan: " + String((e && e.message) || e).slice(0, 160)); }
+    finally { this.loading = false; loadBusy = Math.max(0, loadBusy - 1); }
   },
   async create(from) {
     await flush();
@@ -3489,7 +3499,7 @@ async function pulihEv(id) {
 const pulihCek = {};
 let pulihJalan = false, pulihOpenId = "";
 async function pulihTick() {
-  if (pulihJalan || !Cloud.ready() || !navigator.onLine || document.hidden) return;
+  if (loadBusy || pulihJalan || !Cloud.ready() || !navigator.onLine || document.hidden) return;
   const hari = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), now = Date.now();
   const urut = [S.id && !landingOn && EV.some(e => e.id === S.id) ? S.id : "", ...EV.filter(e => String(e.tanggal2 || e.tanggal || "") >= hari).sort((a, b) => String(b.tanggal || "").localeCompare(String(a.tanggal || ""))).map(e => e.id)].filter(Boolean);
   const dibukaBaru = S.id && S.id !== pulihOpenId;
@@ -4090,7 +4100,7 @@ const Cloud = {
   /* Pemulihan otomatis: saat aplikasi dibuka kembali / sinyal kembali / tiap 2 menit, coba lagi bila ada yang tertunda atau gagal. */
   watch() {
     const kick = back => {
-      if (!this.ready() || !navigator.onLine || document.hidden || this.busy) return;
+      if (loadBusy || !this.ready() || !navigator.onLine || document.hidden || this.busy) return;
       if (!back && this.fail && Date.now() < this.nextAt) return; // masih menunggu jadwal coba-ulang
       if (this.cfg.auto && this.dirty(S)) this.sync(false);
       this.verify(!!this.lastErr); this.flushDeletes().then(() => this.reconcile());
@@ -4503,6 +4513,7 @@ const Cloud = {
         toast(jobs.length === 1 ? "Menyamakan 1 kegiatan dari Google Drive…" : `Menyamakan ${jobs.length} kegiatan dari Google Drive…`);
         let i = 0;
         for (const j of jobs) {
+          for (let w = 0; loadBusy && w < 240; w++) await sleepMs(500); // pengguna sedang membuka kegiatan: beri jalan
           this.status(`☁️ Mengunduh kegiatan ${++i}/${jobs.length}…`, "busy");
           try { if (await this.refresh(j.e.id)) n++; }
           catch (e) { if (e && e.retry) break; } // sinyal buruk: berhenti, dicoba lagi otomatis
@@ -4657,7 +4668,7 @@ const Pic = {
     const kirimSkrg = () => { if (this.dirty.size && navigator.onLine) { clearTimeout(this.t); this.flush(); } }; // tab ditutup/disembunyikan: kirim sekarang juga
     document.addEventListener("visibilitychange", () => { if (document.hidden) kirimSkrg(); else if (navigator.onLine) { this.flush(); this.pullAll(); } });
     window.addEventListener("pagehide", kirimSkrg);
-    setInterval(() => { if (navigator.onLine) { this.flush(); this.pullAll(); } }, 60000);
+    setInterval(() => { if (navigator.onLine && !loadBusy) { this.flush(); this.pullAll(); } }, 60000);
     $("#picBtn").onclick = () => this.manual();
     idbGet("pic-dua").then(v => { if (!v) { EV.filter(e => e.jenis === "b3").forEach(e => this.mark(e.id)); idbPut("pic-dua", 1).catch(() => { }); } }).catch(() => { }); // sekali: kegiatan B3 lama dikirim ulang ke APK (2 foto per peserta)
     if (navigator.onLine) { await this.load(); this.flush(); this.pullAll(); }
@@ -4678,7 +4689,7 @@ const Pic = {
   mark(id) {
     if (!id) return;
     this.dirty.add(id); idbPut("pic-pub", [...this.dirty]).catch(() => { });
-    clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 800); // cepat: PIC melihat perubahan dalam hitungan detik
+    clearTimeout(this.t); this.t = setTimeout(async () => { for (let i = 0; loadBusy && i < 120; i++) await sleepMs(1000); this.flush(); }, 800); // cepat: PIC melihat perubahan dalam hitungan detik
   },
   node(ev) {
     nrMigrasi(ev);

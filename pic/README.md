@@ -297,3 +297,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Kegiatan yang tercatat di daftar tetapi isinya tidak ada di perangkat: diunduh otomatis dari Google Drive (bila terhubung).
 - Daftar dropdown tidak ditulis ulang bila isinya sama (tombol yang sedang diklik tidak diganti di tengah klik).
 - Klik kegiatan yang sudah terisi di memori saat layar awal masih tampil: layar awal ditutup.
+
+## v61 — Input Kegiatan: membuka kegiatan saat penyimpanan browser sibuk
+- Penyebab "tidak bisa dibuka": penyimpanan browser (IndexedDB) sedang sibuk menulis data besar dari sinkron Drive/PIC di latar belakang, sehingga membaca kegiatan menunggu >10 detik dan sebelumnya langsung menyerah.
+- Sekarang aplikasi menunggu sampai 2,5 menit dengan status "Menunggu penyimpanan… N dtk" dan menyebut pekerjaan yang sedang sibuk.
+- Selama kegiatan dibuka, pekerjaan latar (samakan Drive, sinkron berkala, kirim PIC, pemulihan Drive, lengkapi tenant) berhenti sementara.
+- Klik ganda saat sedang membuka diabaikan dengan pesan.
