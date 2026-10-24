@@ -8745,6 +8745,7 @@
                 const k = sk.val(), hs = sh.val() || {};
                 if (!k || typeof k !== 'object') { isi('<div class="dhp-load">Kegiatan ini belum terkirim ke aplikasi PIC. Buka aplikasi Daftar Hadir (tab Input Kegiatan) sampai tersambung internet, lalu coba lagi.</div>'); return; }
                 k.id = id; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {});
+                { const kl1 = (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas || {})).filter(Boolean); if (k.papa && !k.b3 && kl1.length === 1) k.peserta.forEach(p => { if (p && (p.nama || '').trim() && p.kelas !== kl1[0]) p.kelas = kl1[0]; }); } // satu alat: semua peserta ikut alat itu (sama dengan APK)
                 dhHasilAll = dhHasilAll || {}; dhHasilAll[id] = hs; dhHasilAt = Date.now();
                 const r = window.PicProgres.hitung(k, hs), pics = Object.values(hs).filter(x => x && typeof x === 'object'), nama = [...new Set(pics.map(x => x.picNama || x.ttdPicNama).filter(Boolean))];
                 const aktif = k.peserta.filter(p => !p.batal).length, selesai = dhSelesai(id), bar = Math.max(0, Math.min(100, r.pct));

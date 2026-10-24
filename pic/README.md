@@ -264,3 +264,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - `selfie/index.html`: daftar nama + status dibaca ulang otomatis tiap 30 detik, saat tab kembali dibuka, dan saat pergantian hari/sesi. Tampilan hanya digambar ulang bila ada perubahan; tidak mengganggu peserta yang sedang mengetik pencarian, memilih nama, atau memotret. Gagal baca = pakai daftar terakhir.
 - `daftar-hadir/index.html` (`Pic.flush`): daftar nama selfie diterbitkan lebih dulu (ringan), tidak menunggu unggah gambar; satu kegiatan yang gagal tidak menghentikan kegiatan lain.
 - `masukkanPeserta`: pada pilihan "GANTI seluruh daftar", id peserta lama (dan data selfie yang sudah masuk) dipertahankan untuk nama yang sama, supaya selfie lama tetap cocok.
+
+## v55 – Peserta tidak hilang bila kegiatan Pesawat Angkat hanya punya satu alat
+- Gejala: nama peserta lama "hilang" di APK, hanya nama yang diinput manual yang tampil di alat (mis. Conveyor).
+- Penyebab: di kegiatan Pesawat Angkat, peserta dipisah per alat (`peserta.kelas`). Peserta yang alatnya belum dipilih / tidak cocok masuk kartu "Tanpa kelas", sehingga tidak tampil di daftar alat Conveyor. Nama yang dipilihkan alatnya manual di web masuk ke Conveyor.
+- Perbaikan: bila kegiatan PAPA hanya punya SATU alat (bukan B3), semua peserta otomatis ikut alat itu: web (`kelasTunggal` saat data dibuka, saat diubah, baris baru default alat itu, data ke APK `Pic.node`), APK (`applyKegs`) dan pop up progres di panel admin. Bila alat lebih dari satu, kartu "Tanpa kelas" tetap ada, kini dengan petunjuk memilih alat di website.
+

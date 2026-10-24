@@ -241,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v52';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v54';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -678,7 +678,7 @@ document.addEventListener('focusout', () => { if (pendR) setTimeout(() => { if (
 async function applyKegs(srv) {
   const sg = fnv(JSON.stringify(srv)); if (sg === lastSrv) return false; lastSrv = sg;
   const baru = [];
-  Object.keys(srv).forEach(kid => { const k = srv[kid]; if (!k || typeof k !== 'object') return; k.id = kid; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {}); if (!KEGS[kid]) baru.push(kid); KEGS[kid] = k; });
+  Object.keys(srv).forEach(kid => { const k = srv[kid]; if (!k || typeof k !== 'object') return; k.id = kid; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); { const ks1 = kelasArr(k).filter(Boolean); if (k.papa && !k.b3 && ks1.length === 1) k.peserta.forEach(p => { if (p && (p.nama || '').trim() && p.kelas !== ks1[0]) p.kelas = ks1[0]; }); } /* hanya satu alat: semua peserta ikut alat itu (data lama yang alatnya belum dipilih tidak boleh tersembunyi di kartu 'Tanpa kelas') */ if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {}); if (!KEGS[kid]) baru.push(kid); KEGS[kid] = k; });
   lastSrvObj = srv; let tunggu = false;
   Object.keys(KEGS).forEach(kid => { // dihapus admin: buang dari HP. Bila masih ada data belum terkirim, beri waktu 10 menit lalu tetap dibuang (kegiatannya sudah tidak ada, hasilnya tidak bisa dipakai admin)
     const h0 = H[kid];
@@ -1061,7 +1061,7 @@ function render() {
       h = appbar(kNama(k), rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
       <div class="hello"><h2 style="font-size:17px">Pilih ${k.b3 ? 'program' : 'alat'}</h2><p class="hint" style="margin:4px 0 0">${k.b3 ? 'TTD peserta, dokumentasi peserta, nilai &amp; kelulusan, dan absensi narasumber dipisah per program. Dokumentasi harian satu untuk semua program (lihat bagian bawah).' : 'TTD peserta, dokumentasi peserta, dan nilai &amp; kelulusan dipisah per alat. Dokumentasi harian dan absensi narasumber satu untuk semua alat (lihat bagian bawah).'}</p></div>
       ${klGroups(k).map(g => { const sg = stat(kid, g.kl); return `<button type="button" class="kcard" data-act="alat" data-kl="${esc(g.kl)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(klLabel(g.kl))}</h3></div>
-        <div class="meta"><span>${g.n} peserta</span></div><div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
+        <div class="meta"><span>${g.n} peserta</span></div>${g.kl ? '' : '<p class="hint" style="margin:4px 0 0">Alat peserta ini belum dipilih di website (tab Kegiatan &amp; Peserta). Pilih alatnya supaya masuk ke alat yang benar.</p>'}<div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
       <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua ${k.b3 ? 'program' : 'alat'}</h2></div>
       ${tSf}${tDhr}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
