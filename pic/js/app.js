@@ -188,7 +188,6 @@ const NARA_KAT = [
   { id: 'kemnaker', nama: 'Kemnaker – RI', nip: '', inst: 'Kemnaker – RI', grp: 'kemnaker' },
   { id: 'fajrin', nama: 'Fajrin Alamo, S.T.', nip: '', inst: 'Praktisi', grp: 'praktisi' },
   { id: 'damai', nama: 'Damai Boy Lendra Rendika, S.T., M.T.', nip: '', inst: 'Praktisi', grp: 'praktisi' },
-  { id: 'tagar', nama: 'TAGAR', nip: '', inst: 'Praktisi', grp: 'praktisi' },
   { id: 'harso', nama: "HARSO BANGUN", nip: '', inst: '0812-8938-0000', grp: 'harso' },
   { id: 'dinas', nama: "DINAS DALAM PERMOHONAN", nip: '', inst: '', grp: 'dinas' },
   { id: 'wendri', nama: "Dr. Wendri", nip: '', inst: '0813-2270-1326', grp: 'wendri' },
@@ -229,10 +228,9 @@ const MATERI_KAT = [
   { id: 'trt3', judul: "Teknisi RT 3 – Deteksi Gas & Log Out Tag Out", grp: '*', isi: ["Teknik Pengukuran dan Deteksi Gas Ruang Terbatas", "Prosedur Log Out Tag Out"] },
   { id: 'trt4', judul: "Teknisi RT 4 – Regulasi & Izin Kerja", grp: '*', isi: ["Peraturan Perundang-Undangan K3 Ruang Terbatas", "Dasar-Dasar K3 Ruang Terbatas", "Prosedur Ijin Kerja di Ruang Terbatas"] },
   { id: 'rtev', judul: "Evaluasi & Praktek (Ruang Terbatas)", grp: '*', isi: ["Evaluasi", "Praktek"] },
-  { id: 'tdg1', judul: "Deteksi Gas 1 – Dasar K3, Kebijakan & Regulasi RT", grp: 'wasnaker', isi: ["Dasar-Dasar K3", "Kebijakan K3", "Peraturan Perundang-Undangan K3 Ruang Terbatas"] },
-  { id: 'tdg2', judul: "Deteksi Gas 2 – Izin Kerja, Gas Atmosfir & Alat Deteksi", grp: 'praktisi', isi: ["Prosedur Ijin Kerja di Ruang Terbatas", "Karakteristik Gas Atmosfir", "Pengenalan Alat Deteksi Gas", "Metode Deteksi Gas Atmosfir"] },
-  { id: 'tdgev', judul: "Deteksi Gas 3 – Evaluasi Online", grp: 'kemnaker', isi: ["Evaluasi Online"] },
-  { id: 'tdgpr', judul: "Deteksi Gas 3 – Evaluasi Praktek", grp: 'wasnaker', isi: ["Evaluasi Praktek"] }
+  { id: 'tdg1', judul: "Deteksi Gas 1", grp: '*', isi: ["Dasar-Dasar K3", "Kebijakan K3", "Peraturan Perundang-Undangan K3 Ruang Terbatas"] },
+  { id: 'tdg2', judul: "Deteksi Gas 2", grp: '*', isi: ["Prosedur Ijin Kerja di Ruang Terbatas", "Karakteristik Gas Atmosfir", "Pengenalan Alat Deteksi Gas", "Metode Deteksi Gas Atmosfir"] },
+  { id: 'tdg3', judul: "Deteksi Gas 3", grp: '*', isi: ["Evaluasi Online", "Evaluasi Praktek"] }
 ];
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp || m.grp === '*') : MATERI_KAT; };
@@ -243,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v50';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v51';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
