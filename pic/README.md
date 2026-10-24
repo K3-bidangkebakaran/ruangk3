@@ -254,3 +254,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Materi **Teknisi K3 Deteksi Gas** (katalog `tdg1`-`tdg3`, judul "Deteksi Gas 1" dst., `grp "*"`): Gas 1 = Dasar-Dasar K3, Kebijakan K3, Peraturan Perundang-Undangan K3 Ruang Terbatas; Gas 2 = Prosedur Ijin Kerja RT, Karakteristik Gas Atmosfir, Pengenalan Alat Deteksi Gas, Metode Deteksi Gas Atmosfir; Gas 3 = Evaluasi Online, Evaluasi Praktek. Ada `sesi` per jam; kolom Aplikasi dikosongkan. Tombol "Isi dari rundown" (`RD_FILL.tdg`) hanya mengisi materi; narasumber dikosongkan (diisi lewat pilihan nama). Katalog sama di `pic/js/app.js` (tanpa `sesi`); `pic/js/wrd.js` dibuat ulang.
 - APP_VER v52, sw.js VERSION pic-v52.
 
+## Panel admin: kegiatan Selesai & pop up progres (index.html, tanpa ubah APK)
+- Di ruangk3.com > Daftar Hadir & Dokumentasi > Rekap: tabel kini punya tab **Berjalan | Selesai**. Selesai = salah satu akun PIC sudah menekan "Selesai" di APK (`dh_hasil/{id}/{uid}.selesai`, dibaca dengan `dhMuatHasil`).
+- Klik baris kegiatan (atau tombol **Progres**) membuka pop up progres: persen + rincian tiap bagian, sama dengan layar Pratinjau Laporan di APK, memakai isian semua akun PIC (`dh_kegiatan/{id}` + `dh_hasil/{id}`).
+- Hitungannya = `pic/js/prog.js`, DIBUAT OTOMATIS dari `lapCek` di `pic/js/app.js` oleh `node pic/tools/build-prog.js`. Jalankan ulang setiap kali `lapCek` atau fungsi yang dipakainya di app.js berubah.
+

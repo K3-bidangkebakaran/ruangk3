@@ -272,6 +272,40 @@
             100%{ transform:translateY(150px) rotate(var(--rot)); opacity:0; }
         }
 
+        #dh-tabs-sel{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+        #dh-tabs-sel button{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer}
+        #dh-tabs-sel button.on{background:#0f172a;color:#fff;border-color:#0f172a}
+        #dh-tabs-sel button i{font-style:normal;font-size:11px;margin-left:6px;padding:1px 7px;border-radius:99px;background:rgba(100,116,139,.18)}
+        #dh-tabs-sel button.on i{background:rgba(255,255,255,.22)}
+        #dh-tbody tr[data-row]{cursor:pointer}
+        .dhp-bg{position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+        .dhp{background:#fff;color:#0f172a;border-radius:14px;width:min(760px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.35);overflow:hidden}
+        .dhp-top{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 12px;border-bottom:1px solid #e2e8f0}
+        .dhp-top h3{font-size:15px;font-weight:800;line-height:1.3;flex:1;min-width:0;overflow-wrap:anywhere}
+        .dhp-top small{display:block;font-weight:500;font-size:12px;color:#64748b;margin-top:3px}
+        .dhp-x{border:0;background:#f1f5f9;border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer;flex:none}
+        .dhp-body{overflow:auto;padding:14px 18px 18px;display:flex;flex-direction:column;gap:10px}
+        .dhp-body>*{flex:none}
+        .dhp-sum{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:#fef3c7;border:1px solid #fde68a}
+        .dhp-sum.ok{background:#d1fae5;border-color:#a7f3d0}
+        .dhp-sum .pct{font-size:30px;font-weight:800;line-height:1}
+        .dhp-sum b{display:block;font-size:14px}.dhp-sum small{font-size:12px;color:#475569}
+        .dhp-bar{height:8px;border-radius:99px;background:#e2e8f0;overflow:hidden}.dhp-bar i{display:block;height:100%;background:#10b981;border-radius:99px}
+        .dhp-meta{font-size:12px;color:#475569;line-height:1.5}
+        .dhp-sec{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+        .dhp-sec>summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;list-style:none;font-size:13px}
+        .dhp-sec>summary::-webkit-details-marker{display:none}
+        .dhp-sec .ic{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none;color:#fff;background:#ef4444}
+        .dhp-sec.ok .ic{background:#10b981}.dhp-sec.warn .ic{background:#f59e0b}
+        .dhp-sec summary span{flex:1;min-width:0}.dhp-sec summary b{display:block}.dhp-sec summary em{font-style:normal;font-size:11px;color:#64748b}.dhp-sec summary small{display:block;font-size:11.5px;color:#64748b}
+        .dhp-rows{padding:0 10px 10px;display:flex;flex-direction:column;gap:6px}
+        .dhp-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;background:#f8fafc;font-size:12.5px}
+        .dhp-row.bad{border-color:#fecaca;background:#fef2f2}
+        .dhp-row .lw{flex:1;min-width:160px}.dhp-row .lw small{display:block;color:#64748b;font-size:11px}
+        .dhp-ch{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#f1f5f9;color:#475569;margin:1px 2px 1px 0}
+        .dhp-ch.ok{background:#d1fae5;color:#047857}.dhp-ch.bad{background:#fee2e2;color:#b91c1c}.dhp-ch.warn{background:#fef3c7;color:#b45309}
+        .dhp-note{font-size:11.5px;color:#64748b}
+        .dhp-load{padding:30px 10px;text-align:center;font-size:13px;color:#64748b}
         #admin-panel-daftarhadir .dh-offscreen{position:absolute;left:-10000px;top:0;width:1100px;height:700px;overflow:hidden;visibility:hidden;pointer-events:none}
 
         @media (prefers-reduced-motion: reduce){
@@ -1958,6 +1992,7 @@
                         </div>
                         </div>
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div id="dh-tabs-sel" role="tablist" aria-label="Status kegiatan"><button type="button" role="tab" data-sel="jalan" class="on">Berjalan<i id="dh-n-jalan">0</i></button><button type="button" role="tab" data-sel="selesai">Selesai<i id="dh-n-selesai">–</i></button></div>
                         <div class="flex flex-col md:flex-row gap-3 mb-4">
                             <input type="text" id="dh-filter-cari" placeholder="Cari nama kegiatan atau tempat…" class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none">
                             <select id="dh-filter-status" class="px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none bg-white"><option value="">Semua status</option><option value="lengkap">Lengkap</option><option value="belum">Belum lengkap</option></select>
@@ -8676,6 +8711,53 @@
         const dhBarisDetail = (id) => { const tb = document.getElementById('dh-tbody'); return tb ? [...tb.querySelectorAll('tr[data-detail]')].find(r => r.dataset.detail === id) : null; };
         const dhSegarkanDetail = (id) => { const r = dhBarisDetail(id); if (r && r.firstElementChild) r.firstElementChild.innerHTML = dhIsiDetail(id); };
 
+        /* Kegiatan SELESAI = salah satu akun PIC sudah menekan "Selesai" di APK PIC (tanda selesai ikut terkirim di dh_hasil/{kegiatan}/{akun}). */
+        let dhSel = 'jalan', dhHasilAll = null, dhHasilAt = 0, dhHasilBusy = false;
+        const dhBase = () => `artifacts/${cleanAppId}/public/data`;
+        const dhSelesai = (id) => !!(dhHasilAll && dhHasilAll[id] && Object.values(dhHasilAll[id]).some(x => x && typeof x === 'object' && x.selesai));
+        window.dhMuatHasil = async function(force) {
+            if (dhHasilBusy || !dhIsAdmin()) return; if (!force && dhHasilAll && Date.now() - dhHasilAt < 20000) return;
+            dhHasilBusy = true;
+            try { const sn = await window.withTimeout(get(ref(db, dhBase() + '/dh_hasil')), 30000); dhHasilAll = sn.val() || {}; dhHasilAt = Date.now(); } catch (e) { /* belum bisa membaca hasil PIC: semua tetap di tab Berjalan */ }
+            finally { dhHasilBusy = false; window.dhRender(); }
+        };
+        const dhProgLoad = () => window.PicProgres ? Promise.resolve() : (window.__dhProgP = window.__dhProgP || new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/pic/js/prog.js?v=' + Date.now().toString(36).slice(0, 6); s.onload = () => res(); s.onerror = () => { window.__dhProgP = null; rej(new Error('Modul progres tidak termuat')); }; document.head.appendChild(s); }));
+        let dhProgSeq = 0;
+        const dhProgTutup = () => { dhProgSeq++; document.getElementById('dhp-bg')?.remove(); };
+        const dhProgRincian = (r) => r.secs.map(s => {
+            const ch = ([t, st]) => `<span class="dhp-ch ${dhEsc(st)}">${dhEsc(t)}${st === 'ok' ? ' ✔' : st === 'bad' ? ' ✖' : ''}</span>`;
+            const th = (t) => t.st === 'none' ? `<span class="dhp-ch bad">${dhEsc(t.lb)} ✖</span>` : `<span class="dhp-ch ok">${dhEsc(t.lb)}${t.st === 'web' ? ': website' : t.st === 'x' ? ': PIC' : ''} ✔</span>`;
+            const rows = s.rows.map(x => `<div class="dhp-row ${dhEsc(x.st)}"><div class="lw"><b>${dhEsc(x.t)}</b>${x.s ? `<small>${dhEsc(x.s)}</small>` : ''}</div><div>${(x.chips || []).map(ch).join('')}${(x.thumbs || []).map(th).join('')}</div></div>`).join('');
+            return `<details class="dhp-sec ${dhEsc(s.st)}"${s.st === 'ok' ? '' : ' open'}><summary><i class="ic">${s.st === 'ok' ? '✔' : s.st === 'warn' ? '!' : '✖'}</i><span><b>${dhEsc(s.judul)}</b>${s.grp ? `<em>${dhEsc(s.grp)}</em>` : ''}<small>${s.kosong ? 'Belum ada data' : s.ok + '/' + s.total + ' lengkap'}${s.kurang ? ' · ' + dhEsc(s.kurang) : ''}</small></span></summary><div class="dhp-rows">${s.info.map(x => `<div class="dhp-note">${dhEsc(x)}</div>`).join('')}${s.kosong ? '<div class="dhp-note">Belum ada data untuk bagian ini.</div>' : ''}${rows}</div></details>`;
+        }).join('');
+        window.dhProgres = async function(id) { // pop up progres laporan: sama dengan "Pratinjau Laporan" di APK PIC, memakai isian semua akun PIC
+            const e = dhById(id); if (!e) return; dhProgTutup(); const seq = dhProgSeq;
+            const tgl = e.tanggal ? (e.tanggal2 && e.tanggal2 !== e.tanggal ? dhTgl(e.tanggal) + ' – ' + dhTgl(e.tanggal2) : dhTgl(e.tanggal)) : '';
+            const bg = document.createElement('div'); bg.id = 'dhp-bg'; bg.className = 'dhp-bg'; bg.setAttribute('role', 'dialog'); bg.setAttribute('aria-modal', 'true');
+            bg.innerHTML = `<div class="dhp"><div class="dhp-top"><h3>${dhEsc(e.kegiatan || '(tanpa nama)')}<small>${dhEsc(tgl)}${e.tempat ? ' · ' + dhEsc(e.tempat) : ''}</small></h3><button type="button" class="dhp-x" data-x aria-label="Tutup">✕</button></div><div class="dhp-body" id="dhp-body"><div class="dhp-load">Memuat progres dari aplikasi PIC…</div></div></div>`;
+            bg.addEventListener('click', (ev) => { if (ev.target === bg || ev.target.closest('[data-x]')) dhProgTutup(); });
+            document.body.appendChild(bg);
+            const isi = (h) => { if (seq === dhProgSeq) { const b = document.getElementById('dhp-body'); if (b) b.innerHTML = h; } };
+            try {
+                await dhProgLoad();
+                const [sk, sh] = await Promise.all([window.withTimeout(get(ref(db, `${dhBase()}/dh_kegiatan/${id}`)), 20000), window.withTimeout(get(ref(db, `${dhBase()}/dh_hasil/${id}`)), 30000)]);
+                if (seq !== dhProgSeq) return;
+                const k = sk.val(), hs = sh.val() || {};
+                if (!k || typeof k !== 'object') { isi('<div class="dhp-load">Kegiatan ini belum terkirim ke aplikasi PIC. Buka aplikasi Daftar Hadir (tab Input Kegiatan) sampai tersambung internet, lalu coba lagi.</div>'); return; }
+                k.id = id; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {});
+                dhHasilAll = dhHasilAll || {}; dhHasilAll[id] = hs; dhHasilAt = Date.now();
+                const r = window.PicProgres.hitung(k, hs), pics = Object.values(hs).filter(x => x && typeof x === 'object'), nama = [...new Set(pics.map(x => x.picNama || x.ttdPicNama).filter(Boolean))];
+                const aktif = k.peserta.filter(p => !p.batal).length, selesai = dhSelesai(id), bar = Math.max(0, Math.min(100, r.pct));
+                isi(`<div class="dhp-sum ${r.all ? 'ok' : ''}"><div class="pct">${bar}%</div><div><b>${r.all ? 'Laporan sudah lengkap ✔' : 'Laporan belum lengkap'}</b><small>${r.nOk} dari ${r.secs.length} bagian lengkap${selesai ? ' · sudah ditandai Selesai oleh PIC' : ''}</small></div></div>
+                    <div class="dhp-bar"><i style="width:${bar}%"></i></div>
+                    <div class="dhp-meta">${k.peserta.length} peserta (${aktif} aktif) · PIC: ${nama.length ? dhEsc(nama.join(', ')) : 'belum ada isian dari akun PIC'}</div>
+                    ${dhProgRincian(r)}
+                    <p class="dhp-note">Sama dengan layar Pratinjau Laporan di APK PIC. Persen = rata-rata kelengkapan semua bagian; baris merah = masih kurang. Isian semua akun PIC (dan yang sudah ada di website) ikut dihitung.${k.lap && k.lap.selfie ? ' Absen selfie tidak masuk hitungan (dicek di tab Laporan).' : ''}</p>`);
+            } catch (err) { isi(`<div class="dhp-load">Gagal memuat progres: ${dhEsc(String((err && err.message) || err))}</div>`); }
+        };
+        document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('dhp-bg')) dhProgTutup(); });
+        document.getElementById('dh-tabs-sel')?.addEventListener('click', (ev) => { const b = ev.target.closest('button[data-sel]'); if (!b) return; dhSel = b.dataset.sel; window.dhRender(); window.dhMuatHasil(); });
+
         window.dhRender = function() {
             const tb = document.getElementById('dh-tbody'); if (!tb) return;
             const q = (document.getElementById('dh-filter-cari')?.value || '').toLowerCase().trim();
@@ -8691,17 +8773,21 @@
                 tb.innerHTML = kosong(dhLoading ? 'Memuat kegiatan dari Google Drive…' : (dhGalat ? 'Belum bisa memuat kegiatan. Tekan tombol Segarkan untuk mencoba lagi.' : (dhCfg() ? 'Belum ada kegiatan. Buat kegiatan di aplikasi Daftar Hadir; kegiatan muncul di sini setelah tersimpan ke Google Drive.' : 'Hubungkan Google Drive lewat tombol Pengaturan Drive untuk melihat kegiatan.')));
                 return;
             }
+            const nSel = dhEvents.filter(e => dhSelesai(e.id)).length;
+            setTxt('dh-n-jalan', dhEvents.length - nSel); setTxt('dh-n-selesai', dhHasilAll ? nSel : '–');
+            document.querySelectorAll('#dh-tabs-sel button').forEach(b => b.classList.toggle('on', b.dataset.sel === dhSel));
             const rows = dhEvents.filter(e =>
+                (dhSel === 'selesai') === dhSelesai(e.id) &&
                 (!st || (st === 'lengkap') === dhLengkap(e)) &&
                 (!q || `${e.kegiatan} ${e.tempat}`.toLowerCase().includes(q)));
-            if (!rows.length) { tb.innerHTML = kosong('Tidak ada kegiatan yang cocok dengan filter.'); return; }
+            if (!rows.length) { tb.innerHTML = kosong(dhSel === 'selesai' && !dhEvents.some(e => dhSelesai(e.id)) && !(q || st) ? 'Belum ada kegiatan yang ditandai Selesai di APK PIC. Kegiatan muncul di sini setelah PIC menekan tombol "Selesai" pada kegiatan itu.' : 'Tidak ada kegiatan yang cocok dengan filter.'); return; }
             const sfx = dhSufiks(dhEvents);
             tb.innerHTML = rows.map((e) => {
                 const tgl = e.tanggal ? (e.tanggal2 && e.tanggal2 !== e.tanggal ? dhTgl(e.tanggal) + ' – ' + dhTgl(e.tanggal2) : dhTgl(e.tanggal)) : '–';
                 const drive = dhLinkDrive(e.folderUrl);
                 const id = dhEsc(e.id), buka = !!dhOpen[e.id], hapus = dhHapusProses.has(e.id);
                 return `
-                <tr class="hover:bg-slate-50">
+                <tr class="hover:bg-slate-50" data-row="${id}" title="Klik untuk melihat progres laporan">
                     <td class="px-3 py-2 text-xs text-slate-500">${dhEsc(dhWaktu(e.updated))}</td>
                     <td class="px-3 py-2 font-semibold text-slate-800 whitespace-normal min-w-[200px]">${dhEsc(e.kegiatan || '(tanpa nama)')}${sfx[e.id] ? ' <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-700" title="Ada kegiatan lain dengan nama & tanggal yang sama. Huruf ini hanya penanda di Rekap, tidak masuk laporan.">' + sfx[e.id] + '</span>' : ''}${dhLengkap(e) ? ' <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">Lengkap</span>' : ''}</td>
                     <td class="px-3 py-2 text-xs">${dhEsc(tgl)}<br><span class="text-[10px] text-slate-500">${dhEsc(e.jumlahHari || 1)} hari</span></td>
@@ -8711,6 +8797,7 @@
                     <td class="px-3 py-2 text-xs">${dhEsc(e.ttdPeserta || '–')}</td>
                     <td class="px-3 py-2 text-xs">${dhEsc(e.ttdOrg || '–')}</td>
                     <td class="px-3 py-2 text-right space-x-1">
+                        <button type="button" data-act="progres" data-id="${id}" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-md text-xs font-bold">Progres</button>
                         <button type="button" data-act="detail" data-id="${id}" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold">${buka ? 'Tutup' : 'Detail'}</button>
                         ${drive ? `<a href="${dhEsc(drive)}" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-safety-500 text-white rounded-md text-xs font-bold inline-block">Buka Drive ↗</a>` : ''}
                         <button type="button" data-act="hapus" data-id="${id}" ${hapus ? 'disabled' : ''} class="px-2.5 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold">${hapus ? 'Menghapus…' : 'Hapus'}</button>
@@ -8755,7 +8842,7 @@
             } finally {
                 dhBusy = false; dhLoading = false;
                 if (btn) { btn.disabled = false; btn.innerText = ori; }
-                window.dhRender();
+                window.dhRender(); window.dhMuatHasil(true);
                 if (dhAgain) { dhAgain = false; setTimeout(() => window.dhMuat(true), 300); }
             }
         };
@@ -8815,8 +8902,11 @@
             } finally { dhHapusProses.delete(id); window.dhRender(); }
         };
         document.getElementById('dh-tbody')?.addEventListener('click', (ev) => {
-            const b = ev.target.closest && ev.target.closest('button[data-act]'); if (!b || b.disabled) return;
-            if (b.dataset.act === 'detail') window.dhDetail(b.dataset.id);
+            const b = ev.target.closest && ev.target.closest('button[data-act]');
+            if (!b) { const tr = ev.target.closest && ev.target.closest('tr[data-row]'); if (tr && !(ev.target.closest('a'))) window.dhProgres(tr.dataset.row); return; }
+            if (b.disabled) return;
+            if (b.dataset.act === 'progres') window.dhProgres(b.dataset.id);
+            else if (b.dataset.act === 'detail') window.dhDetail(b.dataset.id);
             else if (b.dataset.act === 'hapus') window.dhHapus(b.dataset.id);
         });
 
