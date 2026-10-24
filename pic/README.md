@@ -280,3 +280,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Kegiatan yang sedang dibuka dicek segera (lalu tiap 20 menit); kegiatan lain 30 hari terakhir dicek bergantian di latar belakang (paling sering 3 jam sekali). Perlu Drive terhubung + internet.
 - Peserta yang sengaja dihapus (tombol 🗑 atau "ganti daftar") dicatat di `ev.hapus` dan tidak dihidupkan lagi; peserta dengan nama yang sudah ada di daftar tidak digandakan.
 
+## v58 – Singkatan perusahaan (Database Tenant) dilengkapi otomatis
+- Penyebab singkatan tidak berubah: (1) singkatan yang sama dipakai dua perusahaan di Database Tenant dianggap ambigu dan dibiarkan; (2) pelengkapan hanya jalan saat kolom Perusahaan selesai diketik atau tombol ditekan.
+- Sekarang: singkatan berstatus "Terkonfirmasi" menang atas "Perlu dicek"; nama lengkap menang atas singkatan; kolom Singkatan boleh berisi beberapa singkatan dipisah koma / titik koma / "/". Bila masih sama kuat, tidak ditebak dan web memberi tahu singkatan mana yang harus dipilih manual.
+- Web melengkapi otomatis (tiap 15 detik & setelah Database Tenant dimuat) peserta kegiatan yang sedang dibuka, dengan tombol Batalkan; tidak mengganggu saat mengetik.
+- Code.gs `tenants_` kini mengirim status singkatan (`k`). Tanpa deploy ulang Code.gs, perilaku lama berlaku untuk urutan prioritas status (nama & alias tetap bekerja).
+

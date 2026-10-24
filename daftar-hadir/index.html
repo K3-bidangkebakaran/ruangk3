@@ -2389,6 +2389,17 @@ function addRow() {
   const rows = document.querySelectorAll(".p-row .nama"); rows[rows.length - 1].focus();
 }
 $("#btnAdd").onclick = addRow;
+/* otomatis: singkatan perusahaan peserta kegiatan yang sedang dibuka dilengkapi dari Database Tenant (tidak mengganggu yang sedang mengetik) */
+const tenantTold = new Set();
+function tenantAuto() {
+  if (!Tenant.map.size || landingOn || !S.id || saveT || Date.now() - lastEditAt < 4000) return 0;
+  const a = document.activeElement; if (a && a.closest && a.closest("#pList")) return 0;
+  const rows = S.peserta.filter(p => (p.nama || "").trim() || p.instansi), ch = Tenant.lengkapi(rows);
+  if (ch.length) { renderList(); changed(); toast(`${ch.length} nama perusahaan dilengkapi otomatis dari Database Tenant.`, "Batalkan", () => { ch.forEach(c => { c.p.instansi = c.lama; }); renderList(); changed(); }); }
+  const amb = [...new Set(rows.map(p => String(p.instansi || "").trim()).filter(v => v && Tenant.ambigu(v) && !tenantTold.has(S.id + "|" + v)))];
+  if (amb.length) { amb.forEach(v => tenantTold.add(S.id + "|" + v)); setTimeout(() => toast(`Singkatan dipakai lebih dari satu perusahaan di Database Tenant (pilih manual): ${amb.slice(0, 6).join(", ")}. Jadikan satu berstatus "Terkonfirmasi" di Database Tenant agar otomatis.`), ch.length ? 3500 : 0); }
+  return ch.length;
+}
 $("#btnTenant").onclick = async () => {
   const b = $("#btnTenant"), ori = b.textContent; b.disabled = true; b.textContent = "Memeriksa data tenant…";
   try {
@@ -3470,6 +3481,7 @@ async function pulihTick() {
   try { const n = await pulihEv(id); if (n >= 0) { pulihCek[id] = Date.now(); if (id === S.id) pulihOpenId = S.id; } } catch (e) { } finally { pulihJalan = false; }
 }
 setTimeout(() => { pulihTick(); setInterval(pulihTick, 20000); }, 6000);
+setTimeout(() => { try { tenantAuto(); } catch (e) { } setInterval(() => { try { tenantAuto(); } catch (e) { } }, 15000); }, 4000);
 // seret file Excel / PDF ke kartu peserta
 {
   const card = $("#pList").closest(".card");
@@ -3875,11 +3887,14 @@ const Word = (() => {
 const Tenant = {
   list: [], map: new Map(), at: 0, url: "", busy: false, checked: 0, old: false, err: "",
   key(t) { return String(t || "").toUpperCase().replace(/[.,;:()\/\\_'"\-]+/g, " ").replace(/\s+/g, " ").trim().replace(/^(PT|P T|CV)\s+/, ""); },
+  /* Singkatan yang sama dipakai dua perusahaan: yang berstatus "Terkonfirmasi" (x.k) menang atas "Perlu dicek"; nama lengkap menang atas singkatan; bila tetap sama kuat = ambigu (dibiarkan, tidak ditebak). */
   build(list) {
-    const m = new Map(), put = (k, n) => { if (!k) return; if (!m.has(k)) m.set(k, n); else if (m.get(k) !== n) m.set(k, null); };
-    (list || []).forEach(x => { if (!x || !x.n) return; put(this.key(x.n), x.n); put(this.key(x.s), x.n); (x.a || []).forEach(a => put(this.key(a), x.n)); });
+    const m = new Map(), pr = new Map(), put = (k, n, p) => { if (!k) return; const q = pr.get(k) || 0; if (!m.has(k) || p > q) { m.set(k, n); pr.set(k, p); } else if (p === q && m.get(k) !== n) m.set(k, null); };
+    const pecah = t => String(t || "").split(/[,;\n|]|\s\/\s/).map(x => x.trim()).filter(Boolean);
+    (list || []).forEach(x => { if (!x || !x.n) return; put(this.key(x.n), x.n, 6); pecah(x.s).forEach(a => put(this.key(a), x.n, x.k ? 5 : 3)); (x.a || []).forEach(a => put(this.key(a), x.n, x.k ? 4 : 2)); });
     this.list = list || []; this.map = m;
   },
+  ambigu(t) { const v = String(t || "").trim(); return !!v && this.map.get(this.key(v)) === null; },
   full(t) { const v = String(t || "").trim(); if (!v) return v; const n = this.map.get(this.key(v)); return n || v; },
   async init() { const c = await idbGet("tenant-db"); if (c && Array.isArray(c.list)) { this.build(c.list); this.at = c.at || 0; this.url = c.url || ""; } },
   async refresh(force) {
@@ -3892,6 +3907,7 @@ const Tenant = {
       this.build(r.tenants); this.at = Date.now(); this.url = r.url || this.url; this.err = ""; this.old = false;
       await idbPut("tenant-db", { list: r.tenants, at: this.at, url: this.url }).catch(() => { });
       try { Cloud.links(); } catch (e) { }
+      setTimeout(() => { try { tenantAuto(); } catch (e) { } }, 300);
       return true;
     } catch (e) { this.err = String((e && e.message) || e); this.old = /tidak dikenal/i.test(this.err); this.checked = Date.now() - 540000; return false; }
     finally { this.busy = false; }
