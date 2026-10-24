@@ -275,3 +275,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Sekarang: OK = hanya menambah nama yang belum ada (aman). Mengganti seluruh daftar butuh konfirmasi kedua yang menyebut nama yang akan dihapus, ada tombol Batalkan, dan tidak ditawarkan bila ada peserta dengan selfie/nilai/TTD/foto.
 - Tombol baru "♻️ Pulihkan peserta dari Drive" (tab Kegiatan & Peserta): membaca data kegiatan + peta berkas di Google Drive, mencari peserta yang berkasnya (foto/TTD/selfie) ada di Drive tetapi tidak ada di daftar, lalu mengembalikan nama (id sama, jadi selfie di server cocok lagi) beserta foto/TTD/selfie. Perusahaan hanya terisi bila tercatat di data.json Drive.
 
+## v57 – Pemulihan peserta dari Drive jadi OTOMATIS (tombol dihapus)
+- Web Daftar Hadir mencocokkan daftar peserta tiap kegiatan dengan Google Drive (data.json + peta berkas `_files.json`). Peserta yang berkasnya (foto/TTD/selfie) ada di Drive tetapi tidak ada di daftar dikembalikan sendiri (id sama), lengkap dengan foto/TTD/selfie, lalu otomatis terkirim ke APK dan link selfie.
+- Kegiatan yang sedang dibuka dicek segera (lalu tiap 20 menit); kegiatan lain 30 hari terakhir dicek bergantian di latar belakang (paling sering 3 jam sekali). Perlu Drive terhubung + internet.
+- Peserta yang sengaja dihapus (tombol 🗑 atau "ganti daftar") dicatat di `ev.hapus` dan tidak dihidupkan lagi; peserta dengan nama yang sudah ada di daftar tidak digandakan.
+

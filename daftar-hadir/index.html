@@ -649,7 +649,6 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
         <button class="btn sm" id="btnAdd">+ Tambah Manual</button>
         <button class="btn sm" id="btnTenant" title="Ubah singkatan perusahaan peserta (mis. BDM) menjadi nama lengkap sesuai Database Tenant IMIP di Google Drive">🏢 Lengkapi nama perusahaan</button>
         <button class="btn sm" id="btnSort" title="Urutkan nama peserta sesuai abjad">Urutkan A–Z</button>
-        <button class="btn sm" id="btnPulih" title="Cari peserta yang fotonya / TTD / selfie-nya ada di Google Drive tetapi namanya sudah tidak ada di daftar ini, lalu kembalikan">♻️ Pulihkan peserta dari Drive</button>
         <input type="file" id="fileXls" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
       </div>
       <p class="xl-tip">File Excel atau PDF dibaca otomatis dari kolom <b>Nama Peserta</b> dan <b>Instansi/Perusahaan</b> (urutan kolom bebas). Kolom <b>Alat</b> dan <b>Kelas</b> (1/2/3 atau A–D) ikut terbaca dan mengisi jenis kegiatan, alat, serta kelas otomatis. Daftar lalu diurutkan sesuai abjad (A–Z). PDF harus berupa PDF asli, bukan foto/scan. <a href="#" id="btnTpl">Unduh template Excel</a></p>
@@ -1043,7 +1042,8 @@ const blank = () => ({
   peserta: [],
   wm: { alamat: "", auto: true, lat: null, lng: null },
   lap: lapDefault(),
-  sync: { h: {}, v: 0, sv: 0, at: 0 }
+  sync: { h: {}, v: 0, sv: 0, at: 0 },
+  hapus: [] // id peserta yang sengaja dihapus (supaya pemulihan otomatis dari Drive tidak menghidupkannya lagi)
 });
 let S = blank();
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -1197,7 +1197,8 @@ const normalize0 = d => {
     acara: migAcara({ ...b.acara, ...LEGACY_DEF, ...(d.acara || {}) }, !!(d.acara && Array.isArray(d.acara.hari))),
     peserta: migTtd(d),
     wm: { ...b.wm, ...(d.wm || {}) }, lap: lapNorm(d.lap), pic: d.pic || null,
-    sync: { ...b.sync, ...(d.sync || {}), h: { ...((d.sync && d.sync.h) || {}) } }
+    sync: { ...b.sync, ...(d.sync || {}), h: { ...((d.sync && d.sync.h) || {}) } },
+    hapus: Array.isArray(d.hapus) ? d.hapus.filter(x => typeof x === "string").slice(-1000) : []
   };
   kelasTunggal(ev);
   return ev;
@@ -2365,8 +2366,8 @@ $("#pList").addEventListener("click", e => {
   if (act === "up" && i > 0) [S.peserta[i - 1], S.peserta[i]] = [S.peserta[i], S.peserta[i - 1]];
   if (act === "down" && i < S.peserta.length - 1) [S.peserta[i + 1], S.peserta[i]] = [S.peserta[i], S.peserta[i + 1]];
   if (act === "del") {
-    const [gone] = S.peserta.splice(i, 1);
-    toast(`"${gone.nama || "Peserta"}" dihapus.`, "Batalkan", () => { S.peserta.splice(i, 0, gone); renderList(); changed(); });
+    const [gone] = S.peserta.splice(i, 1); S.hapus = (S.hapus || []).concat(gone.id).slice(-1000);
+    toast(`"${gone.nama || "Peserta"}" dihapus.`, "Batalkan", () => { S.hapus = (S.hapus || []).filter(x => x !== gone.id); S.peserta.splice(i, 0, gone); renderList(); changed(); });
   }
   renderList(); changed();
 });
@@ -3380,7 +3381,7 @@ function masukkanPeserta(list, sumber, adaInst) {
       && !confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = hanya TAMBAHKAN nama yang belum ada (disarankan, tidak ada nama yang hilang).\nBatal = pilihan lain: mengganti seluruh daftar.`)) {
       const ada = new Set(list.map(r => norm(r.nama))), hilang = nm.filter(p => !ada.has(norm(p.nama)));
       const dft = hilang.slice(0, 8).map(p => p.nama.trim()).join(", ") + (hilang.length > 8 ? ` dan ${hilang.length - 8} lainnya` : "");
-      if (confirm(`GANTI seluruh daftar dengan isi file ini?\n\n${hilang.length ? `${hilang.length} nama yang ada sekarang tetapi TIDAK ada di file akan DIHAPUS dari daftar: ${dft}.` : "Tidak ada nama yang dihapus."}\n\nOK = ganti. Batal = tidak mengubah apa pun.`)) { const lama = S.peserta.slice(); nm.forEach(p => reuse.set(key(p.nama, Tenant.full(p.instansi)), p)); S.peserta = []; undo = () => { S.peserta = lama; renderList(); changed(); toast("Daftar peserta dikembalikan."); }; }
+      if (confirm(`GANTI seluruh daftar dengan isi file ini?\n\n${hilang.length ? `${hilang.length} nama yang ada sekarang tetapi TIDAK ada di file akan DIHAPUS dari daftar: ${dft}.` : "Tidak ada nama yang dihapus."}\n\nOK = ganti. Batal = tidak mengubah apa pun.`)) { const lama = S.peserta.slice(), hLama = (S.hapus || []).slice(); nm.forEach(p => reuse.set(key(p.nama, Tenant.full(p.instansi)), p)); S.peserta = []; S.hapus = (S.hapus || []).concat(hilang.map(p => p.id)).slice(-1000); undo = () => { S.peserta = lama; S.hapus = hLama; renderList(); changed(); toast("Daftar peserta dikembalikan."); }; }
       else return;
     }
   }
@@ -3421,35 +3422,54 @@ const drvNama = f => { // "NAMA [abc12] - Siang.jpg" / "NAMA [abc12] (1).jpg" / 
   const t = String((f && f.name) || "").replace(/\.[a-z0-9]+$/i, "").replace(/ - (Pagi|Siang)$/i, "").replace(/ \((1|2)\)$/, "");
   const m = /^(.*?)\s*\[[^\]]+\]$/.exec(t); return (m ? m[1] : t).trim();
 };
-async function pulihPeserta() {
-  if (!Cloud.ready()) { toast("Hubungkan Google Drive dulu (Pengaturan Drive), lalu coba lagi."); return; }
-  if (!navigator.onLine) { toast("Tidak ada internet."); return; }
-  const btn = $("#btnPulih"); btn.disabled = true; toast("Memeriksa Google Drive…");
-  try {
-    let r; try { r = await Cloud.api("getEvent", { id: S.id }); } catch (e) { toast(/tidak ditemukan/i.test(e.message || "") ? "Kegiatan ini belum ada di Google Drive, jadi belum ada yang bisa dipulihkan." : "Gagal membaca Google Drive: " + Cloud.friendly(e.message || "")); return; }
-    const files = r.files || {}, byId = new Map(), have = new Set(S.peserta.map(p => p.id)), haveNm = new Set(S.peserta.filter(p => (p.nama || "").trim()).map(p => norm(p.nama)));
-    const cand = id => { let c = byId.get(id); if (!c) byId.set(id, c = { id, nama: "", instansi: "", kelas: "", keys: [] }); return c; };
-    ((r.event && r.event.peserta) || []).forEach(p => { if (p && p.id && (p.nama || "").trim()) { const c = cand(p.id); c.nama = String(p.nama).trim(); c.instansi = p.instansi || ""; c.kelas = p.kelas || ""; c.batal = !!p.batal; c.remedial = !!p.remedial; c.ut = p.ut; c.up = p.up; c.hasil = p.hasil; } });
-    Object.keys(files).forEach(k => { const [kind, pid] = k.split(":"); if (!["foto", "foto2", "ttd", "sf"].includes(kind) || !pid) return; const c = cand(pid); c.keys.push(k); if (!c.nama) c.nama = drvNama(files[k]); });
-    const hilang = [...byId.values()].filter(c => c.nama && !have.has(c.id)), baru = hilang.filter(c => !haveNm.has(norm(c.nama))), sudah = hilang.length - baru.length;
-    if (!baru.length) { toast(sudah ? `Tidak ada nama yang hilang (${sudah} berkas Drive milik nama yang sudah ada di daftar).` : "Tidak ada peserta yang hilang: semua peserta di Google Drive sudah ada di daftar."); return; }
-    baru.sort((a, b) => a.nama.localeCompare(b.nama, "id"));
-    const dft = baru.slice(0, 25).map(c => "• " + c.nama + (c.instansi ? " – " + c.instansi : "")).join("\n") + (baru.length > 25 ? `\n… dan ${baru.length - 25} lainnya` : "");
-    if (!confirm(`Ditemukan ${baru.length} peserta yang berkasnya ada di Google Drive tetapi tidak ada di daftar peserta:\n\n${dft}\n\nKembalikan ke daftar peserta (beserta foto / TTD / selfie dari Drive)?`)) return;
-    const add = baru.map(c => ({ id: c.id, nama: c.nama, instansi: c.instansi || "", foto: "", foto2: "", ttd: {}, sf: {}, kelas: c.kelas || "", batal: !!c.batal, remedial: !!c.remedial && !c.batal, ut: String(c.ut || ""), up: String(c.up || ""), hasil: c.hasil === "lulus" || c.hasil === "tidak" ? c.hasil : "" }));
-    S.peserta.push(...add); sortPeserta(); renderList(); changed();
-    toast(`${add.length} peserta dikembalikan ke daftar. Mengambil foto / TTD dari Drive…`);
-    const tmp = { peserta: add }, keys = baru.flatMap(c => c.keys).filter(k => files[k]);
-    let gagal = false;
-    try { if (keys.length) await Cloud.fetchFiles(tmp, files, keys); } catch (e) { gagal = true; }
-    const tujuan = new Map(S.peserta.map(p => [p.id, p]));
-    add.forEach(a => { const p = tujuan.get(a.id); if (!p) return; if (a.foto && !p.foto) p.foto = a.foto; if (a.foto2 && !p.foto2) p.foto2 = a.foto2; Object.keys(a.ttd).forEach(d => { if (!p.ttd[d]) p.ttd[d] = a.ttd[d]; }); Object.keys(a.sf).forEach(d => { p.sf = p.sf || {}; p.sf[d] = { ...a.sf[d], ...(p.sf[d] || {}) }; }); });
-    renderList(); changed();
-    const tanpaInst = add.filter(a => !a.instansi).length;
-    toast(`${add.length} peserta dipulihkan${gagal ? " (sebagian foto / TTD belum terunduh, coba tombol ini lagi)" : ""}.${tanpaInst ? ` Perusahaan ${tanpaInst} peserta tidak tercatat di Drive – isi manual.` : ""}`);
-  } finally { btn.disabled = false; }
+/* Pemulihan OTOMATIS: nama peserta yang berkasnya (foto / TTD / selfie) ada di Google Drive tetapi tidak ada di daftar kegiatan dikembalikan sendiri
+   (id sama, jadi selfie & hasil PIC cocok lagi), beserta foto / TTD / selfie dari Drive. Peserta yang sengaja dihapus (S.hapus) tidak dihidupkan lagi. */
+async function pulihEv(id) {
+  if (!Cloud.ready() || !navigator.onLine || Cloud.busy) return -1;
+  const sibuk = () => id === S.id && (saveT || (document.activeElement && document.activeElement.closest && document.activeElement.closest("#pList")) || Date.now() - lastEditAt < 4000);
+  if (sibuk()) return -1;
+  let r; try { r = await Cloud.api("getEvent", { id }); } catch (e) { return /tidak ditemukan/i.test((e && e.message) || "") ? 0 : -1; }
+  const buka = id === S.id, ev = buka ? S : await idbGet("event:" + id).then(x => x && normalize(x));
+  if (!ev || TOMBS.has(id)) return 0;
+  if (sibuk()) return -1;
+  const files = r.files || {}, byId = new Map(), have = new Set(ev.peserta.map(p => p.id)), haveNm = new Set(ev.peserta.filter(p => (p.nama || "").trim()).map(p => norm(p.nama))), gone = new Set(ev.hapus || []);
+  const cand = pid => { let c = byId.get(pid); if (!c) byId.set(pid, c = { id: pid, nama: "", instansi: "", kelas: "", keys: [] }); return c; };
+  ((r.event && r.event.peserta) || []).forEach(p => { if (p && p.id && (p.nama || "").trim()) { const c = cand(p.id); c.nama = String(p.nama).trim(); c.instansi = p.instansi || ""; c.kelas = p.kelas || ""; c.batal = !!p.batal; c.remedial = !!p.remedial; c.ut = p.ut; c.up = p.up; c.hasil = p.hasil; } });
+  Object.keys(files).forEach(k => { const [kind, pid] = k.split(":"); if (!["foto", "foto2", "ttd", "sf"].includes(kind) || !pid) return; const c = cand(pid); c.keys.push(k); if (!c.nama) c.nama = drvNama(files[k]); });
+  const baru = [...byId.values()].filter(c => c.nama && !have.has(c.id) && !gone.has(c.id) && !haveNm.has(norm(c.nama))).sort((a, b) => a.nama.localeCompare(b.nama, "id"));
+  if (!baru.length) return 0;
+  const add = baru.map(c => ({ id: c.id, nama: c.nama, instansi: c.instansi || "", foto: "", foto2: "", ttd: {}, sf: {}, kelas: c.kelas || "", batal: !!c.batal, remedial: !!c.remedial && !c.batal, ut: String(c.ut || ""), up: String(c.up || ""), hasil: c.hasil === "lulus" || c.hasil === "tidak" ? c.hasil : "" }));
+  const simpan = async () => {
+    kelasTunggal(ev); ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 }; ev.sync.v = (ev.sync.v || 0) + 1;
+    if (id === S.id) { renderList(); changed(); return; }
+    await idbPut("event:" + id, ev); const m = meta(ev), i = EV.findIndex(e => e.id === id); if (i >= 0) EV[i] = { ...m, updated: EV[i].updated }; else EV.push(m); await idbPut(IDX, EV); Pic.mark(id);
+  };
+  ev.peserta.push(...add); ev.peserta.sort(cmpNama); await simpan();
+  toast(`${add.length} peserta dipulihkan dari Google Drive${(ev.acara.kegiatan || "") ? " (" + ev.acara.kegiatan + ")" : ""}: ${add.slice(0, 4).map(a => a.nama).join(", ")}${add.length > 4 ? " dan " + (add.length - 4) + " lainnya" : ""}.`);
+  const keys = baru.flatMap(c => c.keys).filter(k => files[k]);
+  if (keys.length) {
+    const tmp = { peserta: add.map(a => ({ ...a, ttd: {}, sf: {} })) };
+    try { await Cloud.fetchFiles(tmp, files, keys); } catch (e) { }
+    const dst = id === S.id ? S : ev, tujuan = new Map(dst.peserta.map(p => [p.id, p]));
+    tmp.peserta.forEach(a => { const p = tujuan.get(a.id); if (!p) return; if (a.foto && !p.foto) p.foto = a.foto; if (a.foto2 && !p.foto2) p.foto2 = a.foto2; Object.keys(a.ttd).forEach(d => { if (!p.ttd[d]) p.ttd[d] = a.ttd[d]; }); Object.keys(a.sf).forEach(d => { p.sf = p.sf || {}; p.sf[d] = { ...a.sf[d], ...(p.sf[d] || {}) }; }); });
+    await simpan();
+  }
+  return add.length;
 }
-$("#btnPulih").onclick = () => { pulihPeserta().catch(e => { $("#btnPulih").disabled = false; toast("Gagal memulihkan: " + (e && e.message || e)); }); };
+/* penjadwal: kegiatan yang sedang dibuka dicek segera, kegiatan lain (30 hari terakhir ke depan) bergantian di latar belakang; tiap kegiatan paling sering sekali per 3 jam */
+const pulihCek = {};
+let pulihJalan = false, pulihOpenId = "";
+async function pulihTick() {
+  if (pulihJalan || !Cloud.ready() || !navigator.onLine || document.hidden) return;
+  const hari = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), now = Date.now();
+  const urut = [S.id && !landingOn && EV.some(e => e.id === S.id) ? S.id : "", ...EV.filter(e => String(e.tanggal2 || e.tanggal || "") >= hari).sort((a, b) => String(b.tanggal || "").localeCompare(String(a.tanggal || ""))).map(e => e.id)].filter(Boolean);
+  const dibukaBaru = S.id && S.id !== pulihOpenId;
+  const id = urut.find(x => now - (pulihCek[x] || 0) > (x === S.id ? (dibukaBaru ? 0 : 20 * 60e3) : 3 * 3600e3));
+  if (!id) return;
+  pulihJalan = true;
+  try { const n = await pulihEv(id); if (n >= 0) { pulihCek[id] = Date.now(); if (id === S.id) pulihOpenId = S.id; } } catch (e) { } finally { pulihJalan = false; }
+}
+setTimeout(() => { pulihTick(); setInterval(pulihTick, 20000); }, 6000);
 // seret file Excel / PDF ke kartu peserta
 {
   const card = $("#pList").closest(".card");
@@ -4431,6 +4451,7 @@ const Cloud = {
       if (loc && !loc.cloud) return false; // ada perubahan baru di perangkat ini selagi mengunduh: jangan ditimpa
       if (id === S.id && (saveT || this.dirty(S) || Date.now() - lastEditAt < 10000)) return false; // sedang diedit: coba lagi nanti
     }
+    if (old && Array.isArray(old.hapus) && old.hapus.length) ev.hapus = [...new Set([...(ev.hapus || []), ...old.hapus])].slice(-1000);
     if (old && old.pic) ev.pic = { ...old.pic, msig: "x", merged: 0 }; // catatan PIC milik perangkat ini dipertahankan; tanda "sudah digabung" dicabut: versi Drive bisa belum memuat foto/TTD dari PIC, jadi hasil PIC digabung ulang pada penarikan berikutnya
     if (id === S.id) { S = ev; await doSave(); applyState(); }
     else await this.storeEv(ev);
