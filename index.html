@@ -1313,7 +1313,7 @@
                 <div id="admin-panel-home" class="admin-panel block">
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 border-b pb-4 gap-4">
-                            <div><h3 class="text-lg font-bold text-slate-900 mb-2">Jadwal Training & Kegiatan</h3></div>
+                            <div><h3 class="text-lg font-bold text-slate-900 mb-2">Jadwal Training & Kegiatan</h3><button type="button" id="btn-ekspor-ics" onclick="window.eksporKalenderIcs()" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold" title="Unduh jadwal sebagai file .ics lalu buka di aplikasi Kalender (Mac / iPhone / iCloud)">📅 Tambah ke Kalender Mac / iCloud</button></div>
                             <div class="flex items-center space-x-2 sm:space-x-4 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
                                 <button id="btn-prev-month" class="p-2 rounded-md hover:bg-slate-200 text-slate-600">◄</button>
                                 <h4 id="calendar-month-year" class="text-sm sm:text-base font-bold text-safety-600 w-28 sm:w-32 text-center">Bulan Tahun</h4>
@@ -7359,6 +7359,41 @@
             if (fotoBacaTertunda) {
                 window.ambilFotoBerita(b).then(() => { if (window._beritaTerbukaId === id) window.bacaBerita(id); }).catch(() => {});
             }
+        };
+
+        /* Ekspor jadwal Kalender Kegiatan ke file .ics (Kalender Mac / iCloud / iPhone). UID tetap per kegiatan+tanggal, jadi mengimpor ulang ke kalender yang sama MEMPERBARUI acara, bukan menggandakan. */
+        window.eksporKalenderIcs = function() {
+            try {
+                if (!currentUser) return window.showToast('Silakan login dulu.', 'error');
+                let daftar = dataKegiatanAll;
+                if (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi' || currentUser.role === 'admin_bidang') daftar = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
+                else if (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') daftar = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
+                const lihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
+                const esc = t => String(t == null ? '' : t).replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+                const lipat = baris => { const o = []; let r = baris; while (r.length > 72) { o.push(r.slice(0, 72)); r = ' ' + r.slice(72); } o.push(r); return o.join('\r\n'); };
+                const ymd = d => d.replace(/-/g, '');
+                const hariBerikut = d => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ''); };
+                const cap = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+                const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RuangK3//Kalender Kegiatan//ID', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:RuangK3 Kegiatan', 'X-WR-TIMEZONE:Asia/Makassar'];
+                let n = 0;
+                daftar.forEach(k => {
+                    const tgl = [...new Set(String(k.tanggal || '').match(/\d{4}-\d{2}-\d{2}/g) || [])].sort();
+                    tgl.forEach(d => {
+                        const lunas = (k.statusBayarDates && k.statusBayarDates[d] === true) || k.statusBayar === true;
+                        const judul = (k.pjk3 || 'Kegiatan') + (k.namaKegiatan ? ' – ' + k.namaKegiatan : '');
+                        const desk = [k.namaKegiatan ? 'Kegiatan: ' + k.namaKegiatan : '', lihatTim && k.namaTim ? 'Tim: ' + k.namaTim : '', 'Status bayar: ' + (lunas ? 'Lunas' : 'Belum lunas'), tgl.length > 1 ? 'Hari ke-' + (tgl.indexOf(d) + 1) + ' dari ' + tgl.length : ''].filter(Boolean).join('\n');
+                        [ 'BEGIN:VEVENT', 'UID:' + k.id + '-' + d + '@ruangk3.com', 'DTSTAMP:' + cap, 'DTSTART;VALUE=DATE:' + ymd(d), 'DTEND;VALUE=DATE:' + hariBerikut(d), 'SUMMARY:' + esc(judul), 'DESCRIPTION:' + esc(desk), 'TRANSP:TRANSPARENT', 'END:VEVENT' ].forEach(b => L.push(b));
+                        n++;
+                    });
+                });
+                if (!n) return window.showToast('Belum ada jadwal untuk diekspor.', 'info');
+                L.push('END:VCALENDAR');
+                const blob = new Blob([L.map(lipat).join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+                const url = URL.createObjectURL(blob), a = document.createElement('a');
+                a.href = url; a.download = 'RuangK3-Kegiatan.ics'; document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                window.showToast(n + ' jadwal diunduh. Buka file RuangK3-Kegiatan.ics, lalu pilih kalender iCloud tujuan.', 'success');
+            } catch (e) { window.showToast('Gagal membuat file kalender: ' + (e && e.message || e), 'error'); }
         };
 
         window.renderDashboardPendapatanHome = function() {

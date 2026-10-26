@@ -303,3 +303,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Sekarang aplikasi menunggu sampai 2,5 menit dengan status "Menunggu penyimpanan… N dtk" dan menyebut pekerjaan yang sedang sibuk.
 - Selama kegiatan dibuka, pekerjaan latar (samakan Drive, sinkron berkala, kirim PIC, pemulihan Drive, lengkapi tenant) berhenti sementara.
 - Klik ganda saat sedang membuka diabaikan dengan pesan.
+
+## v62 — Kalender Kegiatan: ekspor ke Kalender Mac / iCloud (.ics)
+- Tombol "📅 Tambah ke Kalender Mac / iCloud" di Panel Admin → Kalender Kegiatan.
+- Menghasilkan file RuangK3-Kegiatan.ics (acara sehari penuh per tanggal; isi sama dengan yang tampil di panel sesuai peran).
+- UID tetap per kegiatan+tanggal, jadi impor ulang ke kalender yang sama memperbarui acara (tidak menggandakan).
