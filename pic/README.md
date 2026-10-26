@@ -308,3 +308,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Tombol "📅 Tambah ke Kalender Mac / iCloud" di Panel Admin → Kalender Kegiatan.
 - Menghasilkan file RuangK3-Kegiatan.ics (acara sehari penuh per tanggal; isi sama dengan yang tampil di panel sesuai peran).
 - UID tetap per kegiatan+tanggal, jadi impor ulang ke kalender yang sama memperbarui acara (tidak menggandakan).
+
+## v63 — Kalender Kegiatan: langganan otomatis ke Kalender Mac / iCloud
+- Tombol "🔄 Langganan Otomatis (iCloud)" di Kalender Kegiatan (khusus Admin Utama): jadwal dikirim ke Apps Script (aksi `agendaSimpan`, disimpan sebagai file di folder Drive) dan disajikan lewat alamat rahasia `?agenda=TOKEN` (Code.gs versi 9). Kalender Mac berlangganan alamat itu dan menyegarkan tiap jam.
+- Setelah langganan diaktifkan, setiap data kegiatan berubah (Panel Admin terbuka) jadwal dikirim ulang otomatis bila isinya berubah. Jadwal kosong tidak pernah dikirim otomatis.
+- Code.gs tidak disimpan di repo ini; tempel manual di Apps Script lalu Deploy → Kelola deployment → Versi baru.
+- Tombol ekspor .ics manual tetap ada sebagai cadangan.

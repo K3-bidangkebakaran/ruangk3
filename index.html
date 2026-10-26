@@ -1313,13 +1313,14 @@
                 <div id="admin-panel-home" class="admin-panel block">
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 border-b pb-4 gap-4">
-                            <div><h3 class="text-lg font-bold text-slate-900 mb-2">Jadwal Training & Kegiatan</h3><button type="button" id="btn-ekspor-ics" onclick="window.eksporKalenderIcs()" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold" title="Unduh jadwal sebagai file .ics lalu buka di aplikasi Kalender (Mac / iPhone / iCloud)">📅 Tambah ke Kalender Mac / iCloud</button></div>
+                            <div><h3 class="text-lg font-bold text-slate-900 mb-2">Jadwal Training & Kegiatan</h3><button type="button" id="btn-ekspor-ics" onclick="window.eksporKalenderIcs()" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold" title="Unduh jadwal sebagai file .ics lalu buka di aplikasi Kalender (Mac / iPhone / iCloud)">📅 Tambah ke Kalender Mac / iCloud</button> <button type="button" id="btn-agenda-langganan" onclick="window.agendaLangganan()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold" title="Jadwal tampil otomatis di Kalender Mac / iCloud / iPhone dan widget">🔄 Langganan Otomatis (iCloud)</button></div>
                             <div class="flex items-center space-x-2 sm:space-x-4 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
                                 <button id="btn-prev-month" class="p-2 rounded-md hover:bg-slate-200 text-slate-600">◄</button>
                                 <h4 id="calendar-month-year" class="text-sm sm:text-base font-bold text-safety-600 w-28 sm:w-32 text-center">Bulan Tahun</h4>
                                 <button id="btn-next-month" class="p-2 rounded-md hover:bg-slate-200 text-slate-600">►</button>
                             </div>
                         </div>
+                        <div id="agenda-box" class="hidden mb-4 p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-xs text-slate-700 space-y-2"></div>
                         <div class="w-full overflow-x-auto">
                             <div class="min-w-[600px]">
                                 <div class="grid grid-cols-7 gap-px mb-1 bg-slate-200 border border-slate-200 rounded-t-lg overflow-hidden">
@@ -7361,40 +7362,90 @@
             }
         };
 
-        /* Ekspor jadwal Kalender Kegiatan ke file .ics (Kalender Mac / iCloud / iPhone). UID tetap per kegiatan+tanggal, jadi mengimpor ulang ke kalender yang sama MEMPERBARUI acara, bukan menggandakan. */
+        /* Jadwal Kalender Kegiatan -> file .ics (Kalender Mac / iCloud / iPhone). UID tetap per kegiatan+tanggal: impor ulang / langganan MEMPERBARUI acara, tidak menggandakan. */
+        window.buatIcsKegiatan = function() {
+            let daftar = dataKegiatanAll;
+            if (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi' || currentUser.role === 'admin_bidang') daftar = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
+            else if (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') daftar = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
+            const lihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
+            const esc = t => String(t == null ? '' : t).replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+            const lipat = baris => { const o = []; let r = baris; while (r.length > 72) { o.push(r.slice(0, 72)); r = ' ' + r.slice(72); } o.push(r); return o.join('\r\n'); };
+            const ymd = d => d.replace(/-/g, '');
+            const hariBerikut = d => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ''); };
+            const cap = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+            const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RuangK3//Kalender Kegiatan//ID', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:RuangK3 Kegiatan', 'X-WR-TIMEZONE:Asia/Makassar', 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
+            let n = 0;
+            daftar.forEach(k => {
+                const tgl = [...new Set(String(k.tanggal || '').match(/\d{4}-\d{2}-\d{2}/g) || [])].sort();
+                tgl.forEach(d => {
+                    const lunas = (k.statusBayarDates && k.statusBayarDates[d] === true) || k.statusBayar === true;
+                    const judul = (k.pjk3 || 'Kegiatan') + (k.namaKegiatan ? ' – ' + k.namaKegiatan : '');
+                    const desk = [k.namaKegiatan ? 'Kegiatan: ' + k.namaKegiatan : '', lihatTim && k.namaTim ? 'Tim: ' + k.namaTim : '', 'Status bayar: ' + (lunas ? 'Lunas' : 'Belum lunas'), tgl.length > 1 ? 'Hari ke-' + (tgl.indexOf(d) + 1) + ' dari ' + tgl.length : ''].filter(Boolean).join('\n');
+                    ['BEGIN:VEVENT', 'UID:' + k.id + '-' + d + '@ruangk3.com', 'DTSTAMP:' + cap, 'DTSTART;VALUE=DATE:' + ymd(d), 'DTEND;VALUE=DATE:' + hariBerikut(d), 'SUMMARY:' + esc(judul), 'DESCRIPTION:' + esc(desk), 'TRANSP:TRANSPARENT', 'END:VEVENT'].forEach(b => L.push(b));
+                    n++;
+                });
+            });
+            L.push('END:VCALENDAR');
+            return { text: L.map(lipat).join('\r\n') + '\r\n', n };
+        };
         window.eksporKalenderIcs = function() {
             try {
                 if (!currentUser) return window.showToast('Silakan login dulu.', 'error');
-                let daftar = dataKegiatanAll;
-                if (currentUser.role === 'admin_tim' || currentUser.role === 'admin_eldi' || currentUser.role === 'admin_bidang') daftar = dataKegiatanAll.filter(k => k.idTim === currentUser.idTim);
-                else if (currentUser.role === 'admin_utama' || currentUser.role === 'viewer_kalender') daftar = dataKegiatanAll.filter(k => k.idTim !== 'eldi_123' && !(k.namaTim && k.namaTim.toLowerCase().includes('eldi')));
-                const lihatTim = currentUser.role === 'admin_utama' || currentUser.role === 'admin_eldi' || currentUser.role === 'viewer_kalender';
-                const esc = t => String(t == null ? '' : t).replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-                const lipat = baris => { const o = []; let r = baris; while (r.length > 72) { o.push(r.slice(0, 72)); r = ' ' + r.slice(72); } o.push(r); return o.join('\r\n'); };
-                const ymd = d => d.replace(/-/g, '');
-                const hariBerikut = d => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + 1); return x.toISOString().slice(0, 10).replace(/-/g, ''); };
-                const cap = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
-                const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RuangK3//Kalender Kegiatan//ID', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:RuangK3 Kegiatan', 'X-WR-TIMEZONE:Asia/Makassar'];
-                let n = 0;
-                daftar.forEach(k => {
-                    const tgl = [...new Set(String(k.tanggal || '').match(/\d{4}-\d{2}-\d{2}/g) || [])].sort();
-                    tgl.forEach(d => {
-                        const lunas = (k.statusBayarDates && k.statusBayarDates[d] === true) || k.statusBayar === true;
-                        const judul = (k.pjk3 || 'Kegiatan') + (k.namaKegiatan ? ' – ' + k.namaKegiatan : '');
-                        const desk = [k.namaKegiatan ? 'Kegiatan: ' + k.namaKegiatan : '', lihatTim && k.namaTim ? 'Tim: ' + k.namaTim : '', 'Status bayar: ' + (lunas ? 'Lunas' : 'Belum lunas'), tgl.length > 1 ? 'Hari ke-' + (tgl.indexOf(d) + 1) + ' dari ' + tgl.length : ''].filter(Boolean).join('\n');
-                        [ 'BEGIN:VEVENT', 'UID:' + k.id + '-' + d + '@ruangk3.com', 'DTSTAMP:' + cap, 'DTSTART;VALUE=DATE:' + ymd(d), 'DTEND;VALUE=DATE:' + hariBerikut(d), 'SUMMARY:' + esc(judul), 'DESCRIPTION:' + esc(desk), 'TRANSP:TRANSPARENT', 'END:VEVENT' ].forEach(b => L.push(b));
-                        n++;
-                    });
-                });
-                if (!n) return window.showToast('Belum ada jadwal untuk diekspor.', 'info');
-                L.push('END:VCALENDAR');
-                const blob = new Blob([L.map(lipat).join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+                const r = window.buatIcsKegiatan();
+                if (!r.n) return window.showToast('Belum ada jadwal untuk diekspor.', 'info');
+                const blob = new Blob([r.text], { type: 'text/calendar;charset=utf-8' });
                 const url = URL.createObjectURL(blob), a = document.createElement('a');
                 a.href = url; a.download = 'RuangK3-Kegiatan.ics'; document.body.appendChild(a); a.click(); a.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 10000);
-                window.showToast(n + ' jadwal diunduh. Buka file RuangK3-Kegiatan.ics, lalu pilih kalender iCloud tujuan.', 'success');
+                window.showToast(r.n + ' jadwal diunduh. Buka file RuangK3-Kegiatan.ics, lalu pilih kalender iCloud tujuan.', 'success');
             } catch (e) { window.showToast('Gagal membuat file kalender: ' + (e && e.message || e), 'error'); }
         };
+        /* Langganan otomatis: Admin Utama membuka panel -> jadwal dikirim ke Apps Script (Drive) -> Kalender Mac/iCloud berlangganan ke alamat rahasia dan memperbarui sendiri tiap jam. */
+        {
+            const AG_H = 'rk3_agenda_h', AG_T = 'rk3_agenda_tok';
+            let agT = null, agBusy = false;
+            const hash = t => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ':' + t.length; };
+            window.agendaKirim = async function(paksa) { // melempar galat bila gagal; mengembalikan {token}
+                const cfg = dhCfg();
+                if (!cfg) throw new Error('Google Drive belum dihubungkan (tombol Pengaturan Drive di menu Daftar Hadir).');
+                if (!currentUser || currentUser.role !== 'admin_utama') throw new Error('Langganan kalender hanya diatur dari akun Admin Utama.');
+                if (agBusy) throw new Error('Sedang mengirim, coba lagi sebentar.');
+                const r = window.buatIcsKegiatan();
+                if (!r.n) { if (paksa) throw new Error('Belum ada jadwal di Kalender Kegiatan.'); return null; } // jangan pernah mengosongkan jadwal di Drive secara otomatis
+                const h = hash(r.text.replace(/^DTSTAMP:.*\r\n/gm, ''));
+                let tok = ''; try { tok = localStorage.getItem(AG_T) || ''; if (!paksa && tok && localStorage.getItem(AG_H) === h) return { token: tok, sama: true }; } catch (e) {}
+                agBusy = true;
+                try {
+                    const j = await dhApi('agendaSimpan', { ics: r.text, n: r.n }, cfg);
+                    try { localStorage.setItem(AG_H, h); localStorage.setItem(AG_T, j.token); } catch (e) {}
+                    return { token: j.token, n: r.n };
+                } finally { agBusy = false; }
+            };
+            window.agendaAuto = function() { // dipanggil tiap data kegiatan berubah; dikirim ke Drive hanya bila isinya benar-benar berubah
+                clearTimeout(agT);
+                agT = setTimeout(() => { try { if (dhCfg() && currentUser && currentUser.role === 'admin_utama' && localStorage.getItem(AG_T)) window.agendaKirim(false).catch(() => {}); } catch (e) {} }, 8000);
+            };
+            window.agendaLangganan = async function() {
+                const btn = document.getElementById('btn-agenda-langganan'), box = document.getElementById('agenda-box');
+                const lbl = btn ? btn.innerHTML : ''; if (btn) { btn.disabled = true; btn.textContent = 'Menyiapkan…'; }
+                try {
+                    const j = await window.agendaKirim(true), cfg = dhCfg();
+                    const url = cfg.url + (cfg.url.includes('?') ? '&' : '?') + 'agenda=' + encodeURIComponent(j.token), web = url.replace(/^https:/, 'webcal:');
+                    const e = x => String(x).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+                    box.innerHTML = `<div class="font-bold text-emerald-800 text-sm">✅ ${j.n || 'Semua'} jadwal siap. Pasang langganan sekali saja:</div>
+                      <ol class="list-decimal ml-5 space-y-1"><li>Di Mac, klik <a href="${e(web)}" class="font-bold text-emerald-700 underline">Buka di aplikasi Kalender</a> lalu pilih <b>Langganan</b>. Kalau tidak terbuka: aplikasi Kalender → menu <b>File → Langganan Kalender Baru…</b>, tempel alamat di bawah.</li>
+                      <li>Pada <b>Lokasi</b> pilih <b>iCloud</b> (supaya ikut ke iPhone) dan <b>Segarkan Otomatis: Setiap jam</b>.</li>
+                      <li>Selesai. Jadwal baru / berubah / dihapus di RuangK3 ikut berubah sendiri di Kalender dan widget Mac. Jadwal dikirim ke Drive setiap Panel Admin dibuka.</li></ol>
+                      <div class="flex gap-2 items-center"><input id="agenda-url" readonly value="${e(url)}" class="flex-1 min-w-0 px-2 py-1.5 border border-slate-300 rounded bg-white text-[11px]" onclick="this.select()"><button type="button" id="agenda-salin" class="px-3 py-1.5 bg-white border border-slate-300 rounded font-bold">Salin</button></div>
+                      <div class="text-[11px] text-slate-500">Alamat ini rahasia (berisi nama PJK3, tim, dan status bayar). Jangan dibagikan.</div>`;
+                    box.classList.remove('hidden');
+                    document.getElementById('agenda-salin').onclick = () => { const inp = document.getElementById('agenda-url'); inp.select(); try { navigator.clipboard.writeText(inp.value).then(() => window.showToast('Alamat disalin.', 'success')).catch(() => document.execCommand && document.execCommand('copy')); } catch (er) { try { document.execCommand('copy'); } catch (e2) {} } };
+                } catch (er) {
+                    const m = String(er && er.message || er);
+                    window.showToast(/tidak dikenal/i.test(m) ? 'Apps Script belum diperbarui: tempel Code.gs terbaru, lalu Deploy → Kelola deployment → Versi baru.' : 'Gagal: ' + m, 'error');
+                } finally { if (btn) { btn.disabled = false; btn.innerHTML = lbl; } }
+            };
+        }
 
         window.renderDashboardPendapatanHome = function() {
             try {
@@ -8302,6 +8353,7 @@
                         snapshot.forEach(d => { const dt=d.val(); dt.id=d.key; dataKegiatanAll.push(dt); }); 
                     } 
                     window.renderDashboardPendapatanHome();
+                    try { window.agendaAuto && window.agendaAuto(); } catch (e) {}
                 });
 
                 onValue(ref(db, pathPengeluaran), (snapshot) => {
