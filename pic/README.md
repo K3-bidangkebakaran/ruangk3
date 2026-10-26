@@ -314,3 +314,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Setelah langganan diaktifkan, setiap data kegiatan berubah (Panel Admin terbuka) jadwal dikirim ulang otomatis bila isinya berubah. Jadwal kosong tidak pernah dikirim otomatis.
 - Code.gs tidak disimpan di repo ini; tempel manual di Apps Script lalu Deploy → Kelola deployment → Versi baru.
 - Tombol ekspor .ics manual tetap ada sebagai cadangan.
+
+## v64 — Tugas baru: tombol WhatsApp satu klik
+- Penyebab WA tidak terkirim: `sendWA_Fonnte` hanya kerangka (console.log); Fonnte sudah tidak dipakai (webhook pindah ke Telegram).
+- Setelah Admin Utama menyimpan kegiatan baru untuk sebuah tim, muncul kartu "Kirim WhatsApp" (wa.me, nomor tim & pesan terisi). Nomor 08…/+62…/8… dinormalkan ke 62…; tim tanpa nomor mendapat peringatan.

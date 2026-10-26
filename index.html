@@ -2624,6 +2624,31 @@
             soalSiap = true;
         };
 
+        /* WhatsApp tugas baru: satu klik. Kartu muncul setelah tugas disimpan; tombolnya membuka WhatsApp (wa.me) dengan nomor & pesan sudah terisi, admin tinggal menekan Kirim.
+           (Tidak ada pengirim otomatis: layanan Fonnte sudah tidak dipakai, bot Telegram hanya untuk bukti transfer.) */
+        window.nomorWA = function(hp) {
+            let n = String(hp || '').replace(/[^\d+]/g, '').replace(/^\+/, '');
+            if (n.startsWith('0')) n = '62' + n.slice(1);
+            else if (n.startsWith('8')) n = '62' + n;
+            return /^\d{9,15}$/.test(n) ? n : '';
+        };
+        window.tawarkanWA = function(nama, hp, pesan) {
+            const no = window.nomorWA(hp);
+            if (!no) return window.showToast('Nomor HP tim ' + nama + ' tidak valid. Perbaiki di Kelola Akun Tim.', 'warning');
+            document.getElementById('kartu-wa-tugas')?.remove();
+            const esc = x => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            const k = document.createElement('div');
+            k.id = 'kartu-wa-tugas';
+            k.className = 'fixed bottom-4 right-4 z-[9999] max-w-xs w-[calc(100%-2rem)] bg-white border border-emerald-300 rounded-xl shadow-2xl p-4 text-sm';
+            k.innerHTML = `<div class="font-bold text-slate-800 mb-1">Tugas tersimpan ✅</div>
+                <div class="text-xs text-slate-600 mb-3">Beritahu <b>${esc(nama)}</b> lewat WhatsApp. Pesan dan nomor sudah terisi, tinggal tekan Kirim.</div>
+                <div class="flex gap-2"><a href="https://wa.me/${no}?text=${encodeURIComponent(pesan)}" target="_blank" rel="noopener" class="flex-1 text-center px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs">📲 Kirim WhatsApp</a>
+                <button type="button" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold text-xs">Tutup</button></div>`;
+            const tutup = () => k.remove();
+            k.querySelector('button').onclick = tutup; k.querySelector('a').addEventListener('click', () => setTimeout(tutup, 400));
+            document.body.appendChild(k); setTimeout(tutup, 90000);
+        };
+
         window.sendWA_Fonnte = async function(hp, message) {
             // Placeholder for WhatsApp API integration
             console.log(`[WA Simulator] Sent to ${hp}: \n${message}`);
@@ -5892,9 +5917,11 @@
                     
                     if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { 
                         const timData = dataTimAll.find(t => t.id === idTim); 
-                        if(timData && timData.hp) { 
-                            await window.sendWA_Fonnte(timData.hp, `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${timData.nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`); 
-                        } 
+                        if (timData && timData.hp) { 
+                            window.tawarkanWA(timData.nama, timData.hp, `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${timData.nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`); 
+                        } else if (timData) {
+                            window.showToast('Tim ' + timData.nama + ' belum punya nomor HP. Isi dulu di Kelola Akun Tim agar bisa kirim WhatsApp.', 'warning');
+                        }
                     }
                     
                     btn.innerText = "Tersimpan!";
