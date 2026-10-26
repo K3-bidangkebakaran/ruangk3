@@ -2193,7 +2193,7 @@
             toast.innerHTML = `<span>${message}</span>`;
             container.appendChild(toast);
 
-            const displayMs = type === 'error' ? 7000 : 3000;
+            const displayMs = type === 'warning' ? 10000 : type === 'error' ? 7000 : 3000;
             setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-2');
@@ -2647,6 +2647,21 @@
             const tutup = () => k.remove();
             k.querySelector('button').onclick = tutup; k.querySelector('a').addEventListener('click', () => setTimeout(tutup, 400));
             document.body.appendChild(k); setTimeout(tutup, 90000);
+        };
+
+        /* Tulis ke Firebase dengan batas waktu: data langsung tersimpan di halaman ini dan dikirim begitu server membalas. Bila server lambat (>10 dtk), tombol tidak menggantung: pengguna diberi tahu, dan hasil akhirnya dilaporkan lewat pesan. */
+        window.tungguTulis = function(janji, ms, nama) {
+            const p = Promise.resolve(janji);
+            return new Promise((res, rej) => {
+                let selesai = false;
+                const t = setTimeout(() => {
+                    if (selesai) return; selesai = true;
+                    window.showToast(nama + ' sudah dicatat di halaman ini, tetapi server belum membalas. Koneksi internet lambat atau terputus. JANGAN tutup / muat ulang halaman ini; akan dikirim otomatis begitu koneksi pulih.', 'warning');
+                    p.then(() => window.showToast(nama + ' sekarang sudah tersimpan di server. ✅', 'success'), () => window.showToast(nama + ' GAGAL tersimpan di server. Periksa koneksi lalu input ulang.', 'error'));
+                    res('tunda');
+                }, ms);
+                p.then(() => { if (selesai) return; selesai = true; clearTimeout(t); res('ok'); }, e => { if (selesai) return; selesai = true; clearTimeout(t); rej(e); });
+            });
         };
 
         window.sendWA_Fonnte = async function(hp, message) {
@@ -5907,13 +5922,15 @@
             const dataToSave = { idTim, namaTim, tanggal, namaKegiatan: namaKeg, pjk3, pendapatanManagement, pendapatanTim };
             try {
                 if (idEdit) { 
-                    await update(ref(db, `${pathKegiatan}/${idEdit}`), dataToSave); 
+                    const pr = update(ref(db, `${pathKegiatan}/${idEdit}`), dataToSave); 
+                    const st = await window.tungguTulis(pr, 10000, 'Perubahan kegiatan');
                     document.getElementById('btn-batal-kegiatan')?.click(); 
-                    btn.innerText = "Diperbarui!"; 
-                    window.showToast("Kegiatan diperbarui.", "success"); 
+                    btn.innerText = st === 'ok' ? "Diperbarui!" : "Diperbarui (menunggu server)"; 
+                    if (st === 'ok') window.showToast("Kegiatan diperbarui.", "success"); 
                 } else {
                     dataToSave.timestamp = Date.now(); 
-                    await push(ref(db, pathKegiatan), dataToSave);
+                    const pr = push(ref(db, pathKegiatan), dataToSave);
+                    const st = await window.tungguTulis(pr, 10000, 'Kegiatan');
                     
                     if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { 
                         const timData = dataTimAll.find(t => t.id === idTim); 
@@ -5924,8 +5941,8 @@
                         }
                     }
                     
-                    btn.innerText = "Tersimpan!";
-                    window.showToast("Kegiatan berhasil ditambahkan.", "success");
+                    btn.innerText = st === 'ok' ? "Tersimpan!" : "Tersimpan (menunggu server)";
+                    if (st === 'ok') window.showToast("Kegiatan berhasil ditambahkan.", "success");
                 } 
                 e.target.reset(); 
                 let fpKegiatan = document.getElementById('input-kegiatan-tanggal')?._flatpickr; 

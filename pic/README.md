@@ -318,3 +318,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v64 — Tugas baru: tombol WhatsApp satu klik
 - Penyebab WA tidak terkirim: `sendWA_Fonnte` hanya kerangka (console.log); Fonnte sudah tidak dipakai (webhook pindah ke Telegram).
 - Setelah Admin Utama menyimpan kegiatan baru untuk sebuah tim, muncul kartu "Kirim WhatsApp" (wa.me, nomor tim & pesan terisi). Nomor 08…/+62…/8… dinormalkan ke 62…; tim tanpa nomor mendapat peringatan.
+
+## v65 — Input Kegiatan Baru: tombol tidak lagi menggantung "Menyimpan…"
+- Penulisan ke Firebase (kegiatan baru / ubah) kini diberi batas 10 detik (`window.tungguTulis`). Bila server belum membalas, tombol berubah "Tersimpan (menunggu server)" dan muncul peringatan; hasil akhirnya (berhasil / gagal) dilaporkan lewat pesan. Peringatan tampil 10 detik.
