@@ -2686,6 +2686,26 @@
             };
         }
 
+        /* Penanda koneksi ke server Firebase: bila terputus >6 detik, muncul pita kuning supaya jelas kenapa tombol simpan menunggu. */
+        {
+            let tPutus = null;
+            try {
+                onValue(ref(db, '.info/connected'), snap => {
+                    const on = snap.val() === true; window.fbTerhubung = on;
+                    clearTimeout(tPutus);
+                    const pita = document.getElementById('pita-koneksi');
+                    if (on) { if (pita) pita.remove(); return; }
+                    tPutus = setTimeout(() => {
+                        if (window.fbTerhubung || document.getElementById('pita-koneksi')) return;
+                        const d = document.createElement('div'); d.id = 'pita-koneksi';
+                        d.className = 'fixed bottom-5 left-5 z-[9999] max-w-xs bg-amber-500 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl';
+                        d.textContent = '⚠ Belum terhubung ke server RuangK3. Perubahan yang Anda simpan menunggu dan akan terkirim otomatis begitu tersambung.';
+                        document.body.appendChild(d);
+                    }, 6000);
+                });
+            } catch (e) {}
+        }
+
         window.sendWA_Fonnte = async function(hp, message) {
             // Placeholder for WhatsApp API integration
             console.log(`[WA Simulator] Sent to ${hp}: \n${message}`);
@@ -6311,17 +6331,29 @@
             const jumlah = parseInt(nominalEl ? nominalEl.value : '', 10);
             const deskripsi = deskEl ? deskEl.value.trim() : '';
             const tabungan = tabunganEl ? tabunganEl.checked : false;
-            if (!tanggal || !jumlah || jumlah <= 0 || !deskripsi) {
-                window.showToast("Lengkapi dulu tanggal, deskripsi, dan nominal sebelum disimpan.", "error");
+            const kosong = [[tglEl, !tanggal], [nominalEl, !jumlah || jumlah <= 0], [deskEl, !deskripsi]].filter(x => x[0] && x[1]).map(x => x[0]);
+            [tglEl, nominalEl, deskEl].forEach(el => el && el.classList.remove('border-red-500', 'ring-2', 'ring-red-300'));
+            if (kosong.length || !tanggal || !jumlah || jumlah <= 0 || !deskripsi) {
+                kosong.forEach(el => el.classList.add('border-red-500', 'ring-2', 'ring-red-300'));
+                if (kosong[0]) kosong[0].focus();
+                window.showToast("Lengkapi dulu kolom yang berwarna merah (tanggal, nominal, deskripsi) sebelum disimpan.", "error");
                 return;
             }
+            window._draftSibuk = window._draftSibuk || new Set();
+            if (window._draftSibuk.has(id)) return window.showToast('Sedang menyimpan, mohon tunggu…', 'info');
+            const kartu = document.querySelector(`[data-draft-id="${id}"]`), tombol = kartu && kartu.querySelector('button');
+            const teksAsli = tombol ? tombol.textContent : '';
+            window._draftSibuk.add(id); if (tombol) { tombol.disabled = true; tombol.textContent = 'Menyimpan…'; }
             try {
-                await push(ref(db, pathPengeluaran), { tanggal, deskripsi, jumlah, timestamp: Date.now(), sumberWa: true, tabungan });
-                await remove(ref(db, `${pathPengeluaranDraftWa}/${id}`));
-                window.showToast(tabungan ? "Pengeluaran dari Telegram tersimpan (tercatat juga di Laporan Tabungan)." : "Pengeluaran dari Telegram tersimpan.", "success");
+                // kunci tetap per draft: klik berulang / kirim ulang tidak membuat pengeluaran dobel
+                const pr = set(ref(db, `${pathPengeluaran}/wa_${id}`), { tanggal, deskripsi, jumlah, timestamp: Date.now(), sumberWa: true, tabungan }).then(() => remove(ref(db, `${pathPengeluaranDraftWa}/${id}`)));
+                const st = await window.tungguTulis(pr, 10000, 'Pengeluaran dari Telegram');
+                if (st === 'ok') window.showToast(tabungan ? "Pengeluaran dari Telegram tersimpan (tercatat juga di Laporan Tabungan)." : "Pengeluaran dari Telegram tersimpan.", "success");
+                else if (tombol) tombol.textContent = 'Menunggu server…';
             } catch (e) {
-                window.showToast("Gagal menyimpan pengeluaran.", "error");
-            }
+                if (tombol) { tombol.disabled = false; tombol.textContent = teksAsli; }
+                window.showToast("Gagal menyimpan pengeluaran: " + String((e && e.message) || e).slice(0, 120), "error");
+            } finally { window._draftSibuk.delete(id); }
         };
 
         window.tolakDraftPengeluaranWa = async function(id) {

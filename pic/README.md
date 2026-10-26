@@ -325,3 +325,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v66 — Input Kegiatan Baru (jadwal): tidak hilang saat koneksi lambat
 - Penyebab jadwal "kadang hilang": penulisan ke Firebase hanya ada di memori halaman sampai server membalas; bila koneksi lambat lalu halaman ditutup/dimuat ulang, jadwal tidak pernah sampai.
 - Sekarang tiap simpan/ubah jadwal masuk "kotak keluar" di perangkat (localStorage `rk3_kegiatan_outbox`), memakai kunci tetap (dibuat dulu lewat `push().key` + `set`), dan dikirim ulang otomatis saat Panel Admin dibuka lagi sampai server membalas (tidak bisa dobel). Penolakan izin server tidak dikirim ulang terus.
+
+## v67 — Draft Pengeluaran Telegram: tombol "Simpan ke Pengeluaran" memberi tanda & tidak dobel; pita status koneksi
+- Tombol langsung berubah "Menyimpan…" (dinonaktifkan), kolom kosong ditandai merah, simpan memakai kunci tetap `wa_<id>` (klik berulang tidak membuat pengeluaran dobel), dan memakai batas 10 detik (`tungguTulis`) seperti Input Kegiatan.
+- Pita kuning "Belum terhubung ke server RuangK3" muncul bila Firebase terputus >6 detik (`.info/connected`), supaya jelas kenapa tombol simpan menunggu.
