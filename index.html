@@ -2656,13 +2656,35 @@
                 let selesai = false;
                 const t = setTimeout(() => {
                     if (selesai) return; selesai = true;
-                    window.showToast(nama + ' sudah dicatat di halaman ini, tetapi server belum membalas. Koneksi internet lambat atau terputus. JANGAN tutup / muat ulang halaman ini; akan dikirim otomatis begitu koneksi pulih.', 'warning');
+                    window.showToast(nama + ' sudah dicatat di perangkat ini, tetapi server belum membalas (internet lambat / terputus). Aman: akan dikirim ulang otomatis begitu koneksi pulih, bahkan jika halaman ditutup lalu dibuka lagi di perangkat ini.', 'warning');
                     p.then(() => window.showToast(nama + ' sekarang sudah tersimpan di server. ✅', 'success'), () => window.showToast(nama + ' GAGAL tersimpan di server. Periksa koneksi lalu input ulang.', 'error'));
                     res('tunda');
                 }, ms);
                 p.then(() => { if (selesai) return; selesai = true; clearTimeout(t); res('ok'); }, e => { if (selesai) return; selesai = true; clearTimeout(t); rej(e); });
             });
         };
+
+        /* Kotak keluar jadwal kegiatan: tulisan ke Firebase yang belum dibalas server disimpan di perangkat dan dikirim ulang otomatis (kunci tetap = tidak dobel). Mencegah jadwal hilang bila halaman ditutup/dimuat ulang saat koneksi lambat. */
+        {
+            const KEY = 'rk3_kegiatan_outbox', jalan = new Set();
+            const baca = () => { try { const a = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+            const tulis = a => { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} };
+            const hapus = (op, key) => tulis(baca().filter(x => !(x.key === key && x.op === op)));
+            window.simpanKegiatanAman = function(op, key, data) {
+                const a = baca().filter(x => !(x.key === key && x.op === op)); a.push({ op, key, data, at: Date.now() }); tulis(a);
+                jalan.add(op + key);
+                const pr = Promise.resolve(op === 'set' ? set(ref(db, `${pathKegiatan}/${key}`), data) : update(ref(db, `${pathKegiatan}/${key}`), data));
+                pr.then(() => { hapus(op, key); jalan.delete(op + key); }, e => { jalan.delete(op + key); if (e && /permission|denied/i.test(String(e.code || e.message || e))) hapus(op, key); }); // ditolak server = bukan masalah koneksi: jangan dikirim ulang terus
+                return pr;
+            };
+            window.kirimUlangKegiatan = async function() {
+                const a = baca().filter(x => x && x.key && x.data && !jalan.has(x.op + x.key) && Date.now() - (x.at || 0) < 30 * 864e5);
+                if (!a.length) return;
+                let ok = 0;
+                for (const x of a) { try { await window.tungguTulis(window.simpanKegiatanAman(x.op, x.key, x.data), 15000, 'Kegiatan tertunda') === 'ok' && ok++; } catch (e) {} }
+                if (ok) window.showToast(ok + ' kegiatan yang tertunda berhasil dikirim ke server. ✅', 'success');
+            };
+        }
 
         window.sendWA_Fonnte = async function(hp, message) {
             // Placeholder for WhatsApp API integration
@@ -5922,14 +5944,14 @@
             const dataToSave = { idTim, namaTim, tanggal, namaKegiatan: namaKeg, pjk3, pendapatanManagement, pendapatanTim };
             try {
                 if (idEdit) { 
-                    const pr = update(ref(db, `${pathKegiatan}/${idEdit}`), dataToSave); 
+                    const pr = window.simpanKegiatanAman('update', idEdit, dataToSave); 
                     const st = await window.tungguTulis(pr, 10000, 'Perubahan kegiatan');
                     document.getElementById('btn-batal-kegiatan')?.click(); 
                     btn.innerText = st === 'ok' ? "Diperbarui!" : "Diperbarui (menunggu server)"; 
                     if (st === 'ok') window.showToast("Kegiatan diperbarui.", "success"); 
                 } else {
                     dataToSave.timestamp = Date.now(); 
-                    const pr = push(ref(db, pathKegiatan), dataToSave);
+                    const pr = window.simpanKegiatanAman('set', push(ref(db, pathKegiatan)).key, dataToSave); // kunci dibuat dulu: kirim ulang memakai kunci yang sama, jadi tidak pernah dobel
                     const st = await window.tungguTulis(pr, 10000, 'Kegiatan');
                     
                     if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { 
@@ -8398,6 +8420,7 @@
                     } 
                     window.renderDashboardPendapatanHome();
                     try { window.agendaAuto && window.agendaAuto(); } catch (e) {}
+                    if (!window._outboxDicoba) { window._outboxDicoba = true; setTimeout(() => { try { window.kirimUlangKegiatan && window.kirimUlangKegiatan(); } catch (e) {} }, 1500); }
                 });
 
                 onValue(ref(db, pathPengeluaran), (snapshot) => {

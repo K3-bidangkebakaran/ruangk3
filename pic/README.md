@@ -321,3 +321,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v65 — Input Kegiatan Baru: tombol tidak lagi menggantung "Menyimpan…"
 - Penulisan ke Firebase (kegiatan baru / ubah) kini diberi batas 10 detik (`window.tungguTulis`). Bila server belum membalas, tombol berubah "Tersimpan (menunggu server)" dan muncul peringatan; hasil akhirnya (berhasil / gagal) dilaporkan lewat pesan. Peringatan tampil 10 detik.
+
+## v66 — Input Kegiatan Baru (jadwal): tidak hilang saat koneksi lambat
+- Penyebab jadwal "kadang hilang": penulisan ke Firebase hanya ada di memori halaman sampai server membalas; bila koneksi lambat lalu halaman ditutup/dimuat ulang, jadwal tidak pernah sampai.
+- Sekarang tiap simpan/ubah jadwal masuk "kotak keluar" di perangkat (localStorage `rk3_kegiatan_outbox`), memakai kunci tetap (dibuat dulu lewat `push().key` + `set`), dan dikirim ulang otomatis saat Panel Admin dibuka lagi sampai server membalas (tidak bisa dobel). Penolakan izin server tidak dikirim ulang terus.
