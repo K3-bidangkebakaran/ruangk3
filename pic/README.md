@@ -329,3 +329,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v67 — Draft Pengeluaran Telegram: tombol "Simpan ke Pengeluaran" memberi tanda & tidak dobel; pita status koneksi
 - Tombol langsung berubah "Menyimpan…" (dinonaktifkan), kolom kosong ditandai merah, simpan memakai kunci tetap `wa_<id>` (klik berulang tidak membuat pengeluaran dobel), dan memakai batas 10 detik (`tungguTulis`) seperti Input Kegiatan.
 - Pita kuning "Belum terhubung ke server RuangK3" muncul bila Firebase terputus >6 detik (`.info/connected`), supaya jelas kenapa tombol simpan menunggu.
+
+## v68 — Huruf A/B untuk kegiatan PAPA & Damkar yang berjalan bersamaan
+- Sebelumnya huruf pembeda (A, B, C…) hanya muncul bila nama & tanggal kegiatan sama (praktis hanya B3). Kini kegiatan **Damkar** dan **PAPA (Pesawat Angkat/Angkut)** sejenis yang berjalan bersamaan (ada hari yang sama, nama boleh berbeda, mis. Operator Conveyor & Operator Crane) juga diberi huruf, urutan mengikuti urutan di Drive. B3 tidak berubah.
+- Huruf tampil di APK (node `sfx`), daftar Kegiatan Tersimpan / tombol cepat, dan Rekap Kegiatan di Panel Admin (`dhSufiks`). Hanya tampilan: nama kegiatan di laporan/Word tidak berubah. Kegiatan yang hurufnya berubah otomatis dikirim ulang ke APK.

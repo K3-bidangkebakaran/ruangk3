@@ -8793,8 +8793,20 @@
         /* Penanda A/B/C: kegiatan dengan nama & tanggal mulai yang sama diberi huruf pembeda (urutan = urutan di Google Drive, sama dengan aplikasi Daftar Hadir). Hanya tampilan; tidak masuk laporan. */
         const dhSufiks = (arr) => {
             const g = {}, out = {}, huruf = (i) => (i >= 26 ? huruf(Math.floor(i / 26) - 1) : '') + String.fromCharCode(65 + i % 26);
-            (arr || []).forEach(e => { if (!e || !String(e.kegiatan || '').trim() || !e.tanggal) return; const k = String(e.kegiatan).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + '|' + String(e.tanggal).slice(0, 10); (g[k] = g[k] || []).push(e); });
-            Object.values(g).filter(a => a.length > 1).forEach(a => a.sort((x, y) => (x._o ?? 1e9) - (y._o ?? 1e9) || (String(x.id) < String(y.id) ? -1 : 1)).forEach((e, i) => { out[e.id] = huruf(i); }));
+            const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+            const jenis = (e) => { const t = norm(e.kegiatan); if (/bahan berbahaya|ruang terbatas|lingkungan kerja/.test(t)) return 'b3'; if (/kebakaran|damkar|pemadam/.test(t)) return 'damkar'; if (/pesawat angkat|pesawat angkut|papa|hoist|crane|forklift/.test(t)) return 'angkat'; return 'lain'; };
+            const hari = (e) => { if (Array.isArray(e.hari) && e.hari.length) return [...new Set(e.hari.filter(Boolean))]; const o = []; const a = new Date(String(e.tanggal || '').slice(0, 10) + 'T00:00:00Z'); let b = new Date(String(e.tanggal2 || e.tanggal || '').slice(0, 10) + 'T00:00:00Z'); if (isNaN(a)) return o; if (isNaN(b) || b < a) b = a; for (const d = new Date(a); d <= b && o.length < 14; d.setUTCDate(d.getUTCDate() + 1)) o.push(d.toISOString().slice(0, 10)); return o; };
+            const urut = (x, y) => (x._o ?? 1e9) - (y._o ?? 1e9) || (String(x.id) < String(y.id) ? -1 : 1);
+            (arr || []).forEach(e => { if (!e || !String(e.kegiatan || '').trim() || !e.tanggal) return; const j = jenis(e); if (j === 'damkar' || j === 'angkat') return; const k = norm(e.kegiatan) + '|' + String(e.tanggal).slice(0, 10); (g[k] = g[k] || []).push(e); });
+            Object.values(g).filter(a => a.length > 1).forEach(a => a.sort(urut).forEach((e, i) => { out[e.id] = huruf(i); }));
+            // Damkar & PAPA sejenis yang berjalan bersamaan (ada hari yang sama) juga diberi huruf A, B, C… (sama dengan aplikasi Daftar Hadir & APK)
+            ['damkar', 'angkat'].forEach((jn) => {
+                const a = (arr || []).filter(e => e && String(e.kegiatan || '').trim() && e.tanggal && jenis(e) === jn).map(e => ({ e, d: hari(e) })).filter(x => x.d.length);
+                const par = a.map((_, i) => i), f = (i) => par[i] === i ? i : (par[i] = f(par[i])), pemilik = new Map();
+                a.forEach((x, i) => x.d.forEach(d => { if (pemilik.has(d)) par[f(i)] = f(pemilik.get(d)); else pemilik.set(d, i); }));
+                const kl = {}; a.forEach((x, i) => (kl[f(i)] = kl[f(i)] || []).push(x.e));
+                Object.values(kl).filter(c => c.length > 1).forEach(c => c.sort(urut).forEach((e, i) => { out[e.id] = huruf(i); }));
+            });
             return out;
         };
         const dhHidden = {}; // id kegiatan yang baru dihapus: jangan tampil lagi walau daftar Drive belum menyusul

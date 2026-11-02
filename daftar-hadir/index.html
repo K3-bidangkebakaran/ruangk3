@@ -1213,16 +1213,25 @@ const meta = x => {
            tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, fotoDua(x.acara))).length, ttd: !!x.acara.ttd,
            cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)), ru: (x.sync && x.sync.ru) || 0 }; // ru = waktu 'Diperbarui' di Drive yang terakhir cocok dengan salinan ini
 };
-/* Penanda A/B/C: bila ada lebih dari satu kegiatan dengan nama & tanggal yang sama, daftar/rekap memberi huruf pembeda.
+/* Penanda A/B/C: bila ada lebih dari satu kegiatan dengan nama & tanggal yang sama (B3), atau kegiatan Damkar / PAPA sejenis yang berjalan bersamaan (ada hari yang sama), daftar/rekap/APK memberi huruf pembeda.
    HANYA tampilan: nama kegiatan yang tersimpan & semua laporan/berkas Word TIDAK berubah. Urutan huruf = urutan di Google Drive (sama di semua perangkat & di Rekap admin). */
 const hurufKe = i => (i >= 26 ? hurufKe(Math.floor(i / 26) - 1) : "") + String.fromCharCode(65 + i % 26);
 const sufMap = () => {
   const rem = (Cloud.remote || []), ro = new Map(rem.map((e, i) => [e && e.id, i])), items = new Map();
-  EV.forEach(e => items.set(e.id, { id: e.id, k: e.kegiatan, t: e.tanggal, o: ro.has(e.id) ? ro.get(e.id) : 1e9 + (Number(e.created) || 0) }));
-  rem.forEach((e, i) => { if (e && e.id && !items.has(e.id) && !Cloud.gone.has(e.id)) items.set(e.id, { id: e.id, k: e.kegiatan, t: e.tanggal, o: i }); });
-  const g = {}; items.forEach(x => { if (!String(x.k || "").trim() || !x.t) return; (g[norm(x.k) + "|" + String(x.t).slice(0, 10)] = g[norm(x.k) + "|" + String(x.t).slice(0, 10)] || []).push(x); });
-  const m = new Map();
-  Object.values(g).filter(a => a.length > 1).forEach(a => a.sort((p, q) => p.o - q.o || (p.id < q.id ? -1 : 1)).forEach((x, i) => m.set(x.id, hurufKe(i))));
+  const isi = (e, o) => ({ id: e.id, k: e.kegiatan, t: e.tanggal, o, j: Ev.jenisIdx(e), d: hariList(e).filter(Boolean) });
+  EV.forEach(e => items.set(e.id, isi(e, ro.has(e.id) ? ro.get(e.id) : 1e9 + (Number(e.created) || 0))));
+  rem.forEach((e, i) => { if (e && e.id && !items.has(e.id) && !Cloud.gone.has(e.id)) items.set(e.id, isi(e, i)); });
+  const urut = (p, q) => p.o - q.o || (p.id < q.id ? -1 : 1), m = new Map();
+  // B3 / lainnya: huruf bila nama & tanggal mulai sama
+  const g = {}; items.forEach(x => { if (x.j === "damkar" || x.j === "angkat" || !String(x.k || "").trim() || !x.t) return; (g[norm(x.k) + "|" + String(x.t).slice(0, 10)] = g[norm(x.k) + "|" + String(x.t).slice(0, 10)] || []).push(x); });
+  Object.values(g).filter(a => a.length > 1).forEach(a => a.sort(urut).forEach((x, i) => m.set(x.id, hurufKe(i))));
+  // Damkar & PAPA: kegiatan sejenis yang berjalan BERSAMAAN (ada hari yang sama) diberi huruf A, B, C… seperti B3
+  ["damkar", "angkat"].forEach(jn => {
+    const a = [...items.values()].filter(x => x.j === jn && String(x.k || "").trim() && x.d.length), par = a.map((_, i) => i), f = i => par[i] === i ? i : (par[i] = f(par[i])), pemilik = new Map();
+    a.forEach((x, i) => x.d.forEach(d => { if (pemilik.has(d)) par[f(i)] = f(pemilik.get(d)); else pemilik.set(d, i); }));
+    const kl = {}; a.forEach((x, i) => (kl[f(i)] = kl[f(i)] || []).push(x));
+    Object.values(kl).filter(c => c.length > 1).forEach(c => c.sort(urut).forEach((x, i) => m.set(x.id, hurufKe(i))));
+  });
   return m;
 };
 const sfxTag = (m, id) => m.has(id) ? `<span class="sfx" title="Ada kegiatan lain dengan nama & tanggal yang sama. Huruf ini hanya penanda di daftar, tidak masuk laporan.">${m.get(id)}</span>` : "";
