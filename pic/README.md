@@ -333,3 +333,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v68 — Huruf A/B untuk kegiatan PAPA & Damkar yang berjalan bersamaan
 - Sebelumnya huruf pembeda (A, B, C…) hanya muncul bila nama & tanggal kegiatan sama (praktis hanya B3). Kini kegiatan **Damkar** dan **PAPA (Pesawat Angkat/Angkut)** sejenis yang berjalan bersamaan (ada hari yang sama, nama boleh berbeda, mis. Operator Conveyor & Operator Crane) juga diberi huruf, urutan mengikuti urutan di Drive. B3 tidak berubah.
 - Huruf tampil di APK (node `sfx`), daftar Kegiatan Tersimpan / tombol cepat, dan Rekap Kegiatan di Panel Admin (`dhSufiks`). Hanya tampilan: nama kegiatan di laporan/Word tidak berubah. Kegiatan yang hurufnya berubah otomatis dikirim ulang ke APK.
+
+## v55 (APK) — Nama PIC pada lencana status kegiatan
+- Di daftar kegiatan APK, lencana status ("Berjalan", "Lengkap", …) kini diikuti nama PIC yang diisi admin di web (kolom Nama pada TTD Penyelenggara / `namaTtd`), mis. "Berjalan · Rachmad Rafli A.D". Kosong = tampil seperti sebelumnya. Lencana boleh turun ke dua baris bila namanya panjang.
+- APP_VER v55, service worker `pic-v55`, `prog.js` dibangun ulang.
