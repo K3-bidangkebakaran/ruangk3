@@ -241,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v55';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v56';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -507,11 +507,21 @@ function stat(kid, kl) { // kl: hitung khusus satu alat (PAPA); tanpa kl = semua
   let ttd = 0, ttdTotal = 0; aktif.forEach(p => days.forEach(d => { if (!perluHari(h, p, d, days, k)) return; ttdTotal++; if (sudahTtd(h, p, d)) ttd++; }));
   return { aktif: aktif.length, batal: peserta.length - aktif.length, remedial: aktif.filter(p => isRem(h, p)).length, ttd, ttdTotal, foto: aktif.filter(p => fotoLengkap(k, h, p)).length, ttdPic: ttdOrgOk(h, k) };
 }
+/* Status kegiatan di daftar = mengikuti Pratinjau Laporan (lapCek): "Lengkap" hanya bila SEMUA bagian laporan lengkap.
+   Belum lengkap: sebelum hari pertama = "Belum mulai"; selama tanggal kegiatan = "Sedang berjalan"; sesudah hari terakhir = "Belum lengkap". */
+const LCC = {};
+function lapSemua(kid) { // hasil lapCek ringkas (di-cache selama datanya tidak berubah, supaya daftar kegiatan tetap ringan)
+  const k = KEGS[kid], h = hOf(kid), sig = [OHV, h.rev || 0, h.upd || 0, fnv(JSON.stringify(k)), Object.keys(XM[kid] || {}).length, Object.keys(SFD[kid] || {}).length, Object.values(SFT[kid] || {}).reduce((a, b) => a + (+b || 0), 0), DEV, todayIso()].join('|');
+  if (LCC[kid] && LCC[kid].sig === sig) return LCC[kid].all;
+  let all = false; try { all = !!lapCek(kid).all; } catch (e) { all = false; }
+  LCC[kid] = { sig, all }; return all;
+}
 function statusKeg(kid) {
-  const s = stat(kid);
-  if (!s.ttd && !s.foto && !s.ttdPic && !s.batal) return ['Belum mulai', ''];
-  if (s.ttdTotal && s.ttd >= s.ttdTotal && s.foto >= s.aktif && s.ttdPic) return ['Lengkap', 'ok'];
-  return ['Berjalan', 'warn'];
+  const k = KEGS[kid] || {}, tg = k.tgl || [], hari = todayIso(), aw = tg[0] || '', ak = tg[tg.length - 1] || '';
+  if (lapSemua(kid)) return ['Lengkap', 'ok'];
+  if (aw && hari < aw) return ['Belum mulai', ''];
+  if (!ak || hari <= ak) return ['Sedang berjalan', 'warn'];
+  return ['Belum lengkap', 'bad'];
 }
 const mediaList = h => {
   const out = [];

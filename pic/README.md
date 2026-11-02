@@ -337,3 +337,11 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v55 (APK) — Nama PIC pada lencana status kegiatan
 - Di daftar kegiatan APK, lencana status ("Berjalan", "Lengkap", …) kini diikuti nama PIC yang diisi admin di web (kolom Nama pada TTD Penyelenggara / `namaTtd`), mis. "Berjalan · Rachmad Rafli A.D". Kosong = tampil seperti sebelumnya. Lencana boleh turun ke dua baris bila namanya panjang.
 - APP_VER v55, service worker `pic-v55`, `prog.js` dibangun ulang.
+
+## v56 (APK) — Status kegiatan mengikuti Pratinjau Laporan
+- Lencana di daftar kegiatan sekarang dihitung dari Pratinjau Laporan (`lapCek`), bukan hanya TTD/foto/TTD PIC:
+  - **Lengkap**: semua bagian laporan lengkap (100%).
+  - **Belum mulai**: hari ini sebelum hari pertama kegiatan.
+  - **Sedang berjalan**: hari ini di antara hari pertama & terakhir kegiatan (laporan belum lengkap).
+  - **Belum lengkap** (merah): kegiatan sudah lewat tetapi laporan belum lengkap.
+- Hasil cek di-cache selama data tidak berubah (`lapSemua`). APP_VER v56, service worker `pic-v56`, `prog.js` dibangun ulang.
