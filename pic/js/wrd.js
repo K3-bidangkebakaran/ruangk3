@@ -78,7 +78,7 @@ function nrMigrasi(ev) { // isian narasumber per alat (versi sebelumnya, lap.nrk
   L.nrk = {};
 }
 const lapDefault = () => ({
-  nilai: true, evalT: true, hasil: true, harian: true, nara: true, selfie: false, rundown: null, nr: {}, nrk: {}, nrOffK: {}, batch: "", nKota: "", nTgl: "",
+  nilai: true, evalT: false, hasil: true, harian: true, nara: true, selfie: false, rundown: null, nr: {}, nrk: {}, nrOffK: {}, batch: "", nKota: "", nTgl: "",
   s1: { jab: "PENGAWAS KETENAGAKERJAAN\nSULAWESI TENGAH", nama: "", nip: "", ttd: "" },
   s2: { jab: "AHLI PENANGGULANGAN KEBAKARAN", nama: "", ttd: "" },
   hari: {}
@@ -353,7 +353,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   sec.sf = html; html = "";
   if (L.nilai) {
     const rows = lpPeserta.filter(p => !p.batal);
-    const eT = true, tbl = (c, st) => `<table class="lap nl">${colg(eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th>${eT ? "<th>NILAI EVALUASI TEORI</th>" : ""}</tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td>${eT ? `<td class="c">${esc(p.et || "")}</td>` : ""}</tr>`).join("") || empty(eT ? 6 : 5)}</tbody></table>`;
+    const eT = false, tbl = (c, st) => `<table class="lap nl">${colg(eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th>${eT ? "<th>NILAI EVALUASI TEORI</th>" : ""}</tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td>${eT ? `<td class="c">${esc(p.et || "")}</td>` : ""}</tr>`).join("") || empty(eT ? 6 : 5)}</tbody></table>`;
     const sg = s => `<div class="lp-sg"><div class="jab">${esc(s.jab || "").replace(/\n/g, "<br>")}</div><div class="sp">${s.ttd ? `<img src="${s.ttd}" alt="">` : ""}</div><div class="nm">${esc(s.nama || "") || "&nbsp;"}</div>${s.nip ? `<div class="nip">NIP. ${esc(s.nip)}</div>` : ""}</div>`;
     const head = pi => pi ? `<div class="lp-h">DAFTAR NILAI PESERTA <small>(lanjutan)</small></div><div class="lp-gap"></div>`
       : `<div class="lp-h">DAFTAR NILAI PESERTA</div><div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.tgl1)}</div><div class="lp-gap"></div>`;
@@ -633,7 +633,7 @@ const Word = (() => {
   const lapEmpty = (D, Wm) => D.row(D.cell(tw(Wm.reduce((a, b) => a + b, 0)), D.par(lr(D, "Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: Wm.length }), { h: tw(4.8) });
 
   function nilai(ev, ctx) {
-    const D = Doc(), L = ev.lap || {}, T = ctx.lap, eT = true, Wm = eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35], W = Wm.map(tw);
+    const D = Doc(), L = ev.lap || {}, T = ctx.lap, eT = false, Wm = eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35], W = Wm.map(tw);
     const rows = ev.peserta.filter(p => (p.nama || "").trim() && !p.batal);
     const body = rows.map((p, i) => D.row(
       D.cell(W[0], D.par(lr(D, i + 1), { jc: "center" })) + D.cell(W[1], D.par(lr(D, upc(p.nama)))) + D.cell(W[2], D.par(lr(D, upc(p.instansi))))
