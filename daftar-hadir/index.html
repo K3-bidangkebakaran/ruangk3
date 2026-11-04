@@ -963,7 +963,7 @@ const MATERI_KAT = [
 let NARA_USER = []; const NARA_UK = "nara-user";
 const naraAll = () => NARA_KAT.concat(NARA_USER);
 const naraOf = id => naraAll().find(n => n.id === id) || null;
-const materiOpsi = kid => { const n = naraOf(kid); return n && n.grp ? MATERI_KAT.filter(m => m.grp === n.grp || m.grp === "*") : MATERI_KAT; };
+const materiOpsi = kid => MATERI_KAT; // semua materi terbuka untuk narasumber mana pun (tidak lagi dibatasi per narasumber)
 const naraOpsiHtml = r => { const o = x => `<option value="${x.id}"${r.kid === x.id ? " selected" : ""}>${esc(x.nama)}</option>`; return NARA_KAT.map(o).join("") + (NARA_USER.length ? `<optgroup label="Tersimpan (isi manual sebelumnya)">${NARA_USER.map(o).join("")}</optgroup>` : ""); };
 function naraSimpan(r) { // dipanggil setelah nama/NIP/instansi manual diubah: simpan untuk dipakai lagi
   if (!r || r.kid !== "_m") return false;

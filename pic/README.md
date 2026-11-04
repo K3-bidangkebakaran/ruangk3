@@ -374,3 +374,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v62 — materi Ahli K3 Muda Lingkungan Kerja + TTD "Online" untuk Kemnaker
 - Katalog materi baru (7 hari sesuai rundown, tanpa nama pemateri): "Ahli K3 Muda LK 1…7". Di website tersedia tombol "Isi dari rundown Ahli K3 Muda Lingkungan Kerja" (tab Laporan); narasumber dibiarkan kosong untuk diisi sendiri.
 - Narasumber yang diisi Kemnaker (pilihan "Kemnaker – RI" atau tulisan Kemnaker di nama/instansi): kolom Tanda Tangan otomatis tertulis "Online" di pratinjau web, Word, dan APK; tidak perlu tanda tangan dan dihitung lengkap di progres laporan.
+
+## v63 — semua materi terbuka untuk narasumber mana pun
+- Pilihan Materi di Absensi Narasumber (website & APK) tidak lagi dibatasi per narasumber: semua materi bisa dipilih.
