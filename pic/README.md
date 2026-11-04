@@ -366,3 +366,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v60 (APK)
 - *Download Daftar Nilai (PDF)* aktif kapan saja (tidak perlu laporan lengkap / Selesai), selama kegiatan memakai Daftar Nilai. *Download Laporan (PDF)* tetap hanya saat laporan lengkap & Selesai. APP_VER v60, sw `pic-v60`.
+
+## v61 — layar tidak lagi menggulir sendiri + label "Lengkap" di Rekap
+- APK: layar Absensi kembali ke posisi gulir semula setelah data dari server masuk (sebelumnya melompat ke atas karena isi daftar disusun SETELAH posisi dikembalikan). Pembaruan latar belakang juga ditunda selama jari masih menggulir.
+- Website (Rekap Kegiatan): label hijau "Lengkap" dan filter Lengkap/Belum kini memakai hitungan yang sama dengan Pratinjau Laporan di APK (semua bagian 100%), bukan hanya kolom Foto/TTD di Drive.

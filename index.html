@@ -8826,10 +8826,9 @@
         const dhTgl = (d) => { const t = new Date(String(d) + 'T00:00:00'); return isNaN(t) ? String(d || '–') : t.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); };
         const dhWaktu = (v) => { const t = typeof v === 'number' ? v : Date.parse(v); return t ? new Date(t).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–'; };
         const dhMs = (v) => (typeof v === 'number' ? v : (Date.parse(v) || 0));
-        const dhLengkap = (e) => {
-            const f = String(e.foto || '').split('/'), t = String(e.ttdPeserta || '').split('/');
-            return Number(e.n) > 0 && f[0] === f[1] && t[0] === t[1] && e.ttdOrg === 'Sudah';
-        };
+        /* LENGKAP = hasil hitung yang SAMA dengan Pratinjau Laporan di APK PIC (semua bagian 100%), bukan sekadar kolom Foto/TTD di Drive. Sebelum terhitung: belum diberi tanda. */
+        let dhLapRes = {}, dhLapSig = {};
+        const dhLengkap = (e) => !!(dhLapRes[e.id] && dhLapRes[e.id].all);
 
         function dhStatus(teks, jenis) {
             const el = document.getElementById('dh-status'); if (!el) return;
@@ -8923,8 +8922,26 @@
             if (dhHasilBusy || !dhIsAdmin()) return; if (!force && dhHasilAll && Date.now() - dhHasilAt < 20000) return;
             dhHasilBusy = true;
             try { const sn = await window.withTimeout(get(ref(db, dhBase() + '/dh_hasil')), 30000); dhHasilAll = sn.val() || {}; dhHasilAt = Date.now(); } catch (e) { /* belum bisa membaca hasil PIC: semua tetap di tab Berjalan */ }
+            try { await dhHitungSemua(); } catch (e) { /* kelengkapan belum bisa dihitung: badge Lengkap tidak ditampilkan */ }
             finally { dhHasilBusy = false; window.dhRender(); }
         };
+        const dhNormKeg = (k, id) => { // samakan bentuk data kegiatan seperti di APK PIC
+            if (!k || typeof k !== 'object') return null;
+            k.id = id; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {});
+            const kl1 = (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas || {})).filter(Boolean); if (k.papa && !k.b3 && kl1.length === 1) k.peserta.forEach(p => { if (p && (p.nama || '').trim() && p.kelas !== kl1[0]) p.kelas = kl1[0]; }); // satu alat: semua peserta ikut alat itu (sama dengan APK)
+            return k;
+        };
+        const dhHitungSatu = (id, k, hs) => { try { const kk = dhNormKeg(k, id); if (!kk) return; const r = window.PicProgres.hitung(kk, hs || {}); dhLapRes[id] = { all: !!r.all, pct: r.pct, nOk: r.nOk, n: r.secs.length }; } catch (e) { delete dhLapRes[id]; } };
+        async function dhHitungSemua() {
+            if (!dhHasilAll) return; await dhProgLoad();
+            const sk = await window.withTimeout(get(ref(db, dhBase() + '/dh_kegiatan')), 40000), all = sk.val() || {};
+            dhEvents.forEach(e => {
+                const k = all[e.id]; if (!k) { delete dhLapRes[e.id]; return; }
+                let sig; try { sig = JSON.stringify(k).length + ':' + JSON.stringify(dhHasilAll[e.id] || {}).length; } catch (x) { sig = String(Math.random()); }
+                if (dhLapSig[e.id] === sig && dhLapRes[e.id]) return; dhLapSig[e.id] = sig;
+                dhHitungSatu(e.id, JSON.parse(JSON.stringify(k)), JSON.parse(JSON.stringify(dhHasilAll[e.id] || {})));
+            });
+        }
         const dhProgLoad = () => window.PicProgres ? Promise.resolve() : (window.__dhProgP = window.__dhProgP || new Promise((res, rej) => { const s = document.createElement('script'); s.src = '/pic/js/prog.js?v=' + Date.now().toString(36).slice(0, 6); s.onload = () => res(); s.onerror = () => { window.__dhProgP = null; rej(new Error('Modul progres tidak termuat')); }; document.head.appendChild(s); }));
         let dhProgSeq = 0;
         const dhProgTutup = () => { dhProgSeq++; document.getElementById('dhp-bg')?.remove(); };
@@ -8948,10 +8965,10 @@
                 if (seq !== dhProgSeq) return;
                 const k = sk.val(), hs = sh.val() || {};
                 if (!k || typeof k !== 'object') { isi('<div class="dhp-load">Kegiatan ini belum terkirim ke aplikasi PIC. Buka aplikasi Daftar Hadir (tab Input Kegiatan) sampai tersambung internet, lalu coba lagi.</div>'); return; }
-                k.id = id; if (!Array.isArray(k.peserta)) k.peserta = Object.values(k.peserta || {}); if (!Array.isArray(k.tgl)) k.tgl = Object.values(k.tgl || {});
-                { const kl1 = (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas || {})).filter(Boolean); if (k.papa && !k.b3 && kl1.length === 1) k.peserta.forEach(p => { if (p && (p.nama || '').trim() && p.kelas !== kl1[0]) p.kelas = kl1[0]; }); } // satu alat: semua peserta ikut alat itu (sama dengan APK)
+                dhNormKeg(k, id);
                 dhHasilAll = dhHasilAll || {}; dhHasilAll[id] = hs; dhHasilAt = Date.now();
-                const r = window.PicProgres.hitung(k, hs), pics = Object.values(hs).filter(x => x && typeof x === 'object'), nama = [...new Set(pics.map(x => x.picNama || x.ttdPicNama).filter(Boolean))];
+                const r = window.PicProgres.hitung(k, hs); dhLapRes[id] = { all: !!r.all, pct: r.pct, nOk: r.nOk, n: r.secs.length }; delete dhLapSig[id]; window.dhRender();
+                const pics = Object.values(hs).filter(x => x && typeof x === 'object'), nama = [...new Set(pics.map(x => x.picNama || x.ttdPicNama).filter(Boolean))];
                 const aktif = k.peserta.filter(p => !p.batal).length, selesai = dhSelesai(id), bar = Math.max(0, Math.min(100, r.pct));
                 isi(`<div class="dhp-sum ${r.all ? 'ok' : ''}"><div class="pct">${bar}%</div><div><b>${r.all ? 'Laporan sudah lengkap ✔' : 'Laporan belum lengkap'}</b><small>${r.nOk} dari ${r.secs.length} bagian lengkap${selesai ? ' · sudah ditandai Selesai oleh PIC' : ''}</small></div></div>
                     <div class="dhp-bar"><i style="width:${bar}%"></i></div>

@@ -241,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v60';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v61';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -681,7 +681,10 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
    dan pull() (cadangan: dipanggil saat dibuka / kembali online / tiap 1 menit bila pendengar putus). */
 let lastSrvObj = {}, goneT = null, lastSrv = '', watchOff = null, watchUid = null, watchGot = 0, pendR = false;
 let UPL = 0; // pemilih berkas sedang terbuka: jangan render ulang layar (input bisa hilang sebelum berkas terpilih)
-const busy = () => { const a = document.activeElement; return !!CAM || Date.now() < UPL || !!$('#pad') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+let UT = 0, UTSELF = 0; // waktu terakhir jari/mouse menggulir layar (gulir buatan aplikasi sendiri tidak dihitung)
+['touchmove', 'wheel'].forEach(ev => document.addEventListener(ev, () => { UT = Date.now(); }, { passive: true, capture: true }));
+document.addEventListener('scroll', () => { if (Date.now() > UTSELF) UT = Date.now(); }, { passive: true, capture: true }); // termasuk gulir lanjutan (inersia) setelah jari lepas
+const busy = () => { const a = document.activeElement; return !!CAM || Date.now() < UPL || Date.now() - UT < 700 || !!$('#pad') || !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
 function renderSoft() { if (busy()) { pendR = true; return; } pendR = false; render(); } // jangan merusak layar yang sedang diketik/dipakai kamera
 setInterval(() => { if (pendR && !busy()) renderSoft(); }, 500);
 document.addEventListener('focusout', () => { if (pendR) setTimeout(() => { if (pendR && !busy()) renderSoft(); }, 150); });
@@ -1066,6 +1069,7 @@ function scrollSnap(app) { // posisi gulir layar + kotak gulir di dalamnya (prat
   return { t: sc ? sc.scrollTop : 0, w: w ? [w.scrollTop, w.scrollLeft] : null, c: $$('.chips', app).map(x => x.scrollLeft) };
 }
 function scrollBack(app, sn) {
+  UTSELF = Date.now() + 250; // gulir yang kita atur sendiri ini bukan gulir pengguna
   const sc = $('.screen', app), w = $('.wwrap', app); if (sc) sc.scrollTop = sn.t;
   if (w && sn.w) { w.scrollTop = sn.w[0]; w.scrollLeft = sn.w[1]; }
   $$('.chips', app).forEach((x, i) => { if (sn.c[i]) x.scrollLeft = sn.c[i]; });
@@ -1245,8 +1249,11 @@ function render() {
   if (P.screen === 'nil') renderNil();
   if (P.screen === 'wrd') { wrdMount(); wrdFit(); if (P.wd === 'sf' && P.kid) sfLoad(P.kid).catch(() => { }); }
   if (P.screen === 'sfm' && P.kid && !SFS[P.kid]) sfLoad(P.kid).catch(() => { });
-  if (snap) scrollBack(app, snap);
   if (P.screen === 'abs') renderAbs();
+  if (snap) { // kembalikan posisi gulir SETELAH isi layar selesai tersusun (renderAbs/renderNil menambah isi) dan sekali lagi saat gambar sudah ikut menentukan tinggi layar
+    const t0 = UT, balik = () => { if (UT === t0 && app.isConnected) scrollBack(app, snap); };
+    scrollBack(app, snap); requestAnimationFrame(() => { balik(); setTimeout(balik, 120); setTimeout(balik, 400); });
+  }
   if (P.screen === 'login') $('#lUser').focus();
   if (P.kid) xmKick(); // unduh gambar akun PIC lain untuk kegiatan yang dibuka
 }
