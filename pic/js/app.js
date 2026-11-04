@@ -249,7 +249,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v67';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v68';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -1194,7 +1194,7 @@ function render() {
       <div class="field"><input id="nilQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
       ${ln.hasil ? `<button type="button" class="btn" data-act="allulus">✔ Tandai semua Lulus</button>` : ''}
       <div class="nlist" id="nilList"></div>
-      <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.nilai && ln.evalT ? 'Nilai Evaluasi Teori: ketik nilai manual, atau ketuk Lulus / Tidak lulus. ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
+      <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.nilai ? 'Nilai Ujian Teori juga bisa diisi dengan mengetuk Lulus / Tidak lulus di bawah kotaknya (ketuk lagi untuk mengosongkan; angka tetap bisa diketik manual). ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
   } else if (P.screen === 'ttn') {
     const hh = hOf(kid), ln = LAPK(k), sg = (w, n, jab, nip) => `<div class="card2"><b>${esc(jab || '')}</b>${ttdBadge(nTtdSrc(hh, k, n))}
       <div class="field"><label for="in_${w}nama">Nama</label><input id="in_${w}nama" data-lap="${w}.nama" value="${esc(lapNama(hh, k, w, 'nama'))}" autocomplete="off" placeholder="Contoh: REPY, ST"></div>
@@ -1275,7 +1275,7 @@ function renderNil() {
   $('#nilList').innerHTML = rows.length ? rows.map((p, i) => {
     const cx = isBatal(h, p), kv = kelOf(h, p);
     return `<div class="nrow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><div class="who"><b>${esc(p.nama)}</b><small>${instKel(p)}</small></div>${cx ? '<span class="pill bad">CANCEL</span>'
-      : `${ln.nilai ? `<div class="nin"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'ut'))}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label></div>${ln.evalT ? (() => { const et = nilaiOf(h, p, 'et'); return `<div class="net"><label><span>Nilai Evaluasi Teori <i>(ketik nilai manual, atau pilih di bawah)</i></span><input inputmode="text" data-nf="et" placeholder="Nilai" value="${esc(et)}" aria-label="Nilai Evaluasi Teori ${esc(p.nama)}" autocomplete="off"></label><div class="kel"><button type="button" class="ckb${et === 'LULUS' ? ' on' : ''}" data-act="etv" data-v="LULUS" aria-pressed="${et === 'LULUS'}">${et === 'LULUS' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${et === 'TIDAK LULUS' ? ' on' : ''}" data-act="etv" data-v="TIDAK LULUS" aria-pressed="${et === 'TIDAK LULUS'}">${et === 'TIDAK LULUS' ? '☑' : '☐'} Tidak lulus</button></div></div>`; })() : ''}` : ''}
+      : `${ln.nilai ? (() => { const ut = nilaiOf(h, p, 'ut'); return `<div class="nin"><div class="ncol"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(ut)}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><div class="tbtn"><button type="button" class="ckb${ut === 'LULUS' ? ' on' : ''}" data-act="etv" data-v="LULUS" aria-pressed="${ut === 'LULUS'}">${ut === 'LULUS' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${ut === 'TIDAK LULUS' ? ' on' : ''}" data-act="etv" data-v="TIDAK LULUS" aria-pressed="${ut === 'TIDAK LULUS'}">${ut === 'TIDAK LULUS' ? '☑' : '☐'} Tidak lulus</button></div></div><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label></div>`; })() : ''}
       ${ln.hasil ? `<div class="kel"><button type="button" class="ckb${kv === 'lulus' ? ' on' : ''}" data-act="kel" data-v="lulus" aria-pressed="${kv === 'lulus'}">${kv === 'lulus' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${kv === 'tidak' ? ' on' : ''}" data-act="kel" data-v="tidak" aria-pressed="${kv === 'tidak'}">${kv === 'tidak' ? '☑' : '☐'} Tidak lulus</button></div>` : ''}`}</div>`;
   }).join('') : `<div class="empty">${ps.length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
 }
@@ -1621,9 +1621,9 @@ document.addEventListener('click', e => {
     const cur = kelOf(h, p); h.kel[pid] = cur === b.dataset.v ? '' : b.dataset.v; touch(kid); renderNil();
   }
   else if ((a === 'dlall' || a === 'dlnil') && k) { unduhLaporan(kid, a === 'dlall' ? 'semua' : 'nilai'); }
-  else if (a === 'etv' && k) { // Nilai Evaluasi Teori: pilih Lulus / Tidak lulus (ketuk lagi = kosongkan); nilai angka tetap bisa diketik manual
+  else if (a === 'etv' && k) { // Nilai Ujian Teori (= Evaluasi Teori): pilih Lulus / Tidak lulus (ketuk lagi = kosongkan); nilai angka tetap bisa diketik manual
     const row = b.closest('.nrow'), pid = row.dataset.pid, h = hOf(kid), p = (k.peserta || []).find(x => x.id === pid); if (!p) return;
-    const cur = nilaiOf(h, p, 'et'); (h.nilai[pid] = h.nilai[pid] || {}).et = cur === b.dataset.v ? '' : b.dataset.v; touch(kid); renderNil();
+    const cur = nilaiOf(h, p, 'ut'); (h.nilai[pid] = h.nilai[pid] || {}).ut = cur === b.dataset.v ? '' : b.dataset.v; touch(kid); renderNil();
   }
   else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; pesKl(k).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
   else if (a === 'nsig' && k) { const h = hOf(kid), n = b.dataset.n, ln = LAPK(k), nm = lapNama(h, k, 's' + n, 'nama'); openPad('Tanda tangan penandatangan', `${nm || (ln['s' + n + 'jab'] || '').replace(/\n/g, ' ')} · ${k.nama}`, u => { h['n' + n] = u; delete h.sent['n' + n]; touch(kid); render(); }, h['n' + n]); }

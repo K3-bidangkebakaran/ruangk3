@@ -449,7 +449,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 .lp-r{display:grid;grid-template-columns:var(--cols,24px 1fr 64px 64px auto);gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
 .lp-r .no{color:var(--muted);font-size:12px;text-align:center}
 .lp-r .nm{min-width:0}
-.lp-r .etb{display:flex;gap:3px}.lp-r .etb button{flex:1;font:inherit;font-size:10.5px;padding:3px 2px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;white-space:nowrap}.lp-r .etb button.on{background:#e6f4ea;border-color:#2e7d32;font-weight:700}.lp-r .etb button.bad.on{background:#fde8e8;border-color:#c62828}
+.lp-r .etb{display:flex;gap:3px}.lp-r .lpn .etb{flex-direction:column}.lp-r .etb button{flex:1;font:inherit;font-size:10.5px;padding:3px 2px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;white-space:nowrap}.lp-r .etb button.on{background:#e6f4ea;border-color:#2e7d32;font-weight:700}.lp-r .etb button.bad.on{background:#fde8e8;border-color:#c62828}
 .lp-r .lpn{display:flex;flex-direction:column;gap:2px;min-width:0}.lp-r .lpn span{font-size:10.5px;font-weight:600;color:var(--muted);line-height:1.15;text-align:center}
 .lp-r .nm b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp-r .nm small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2901,14 +2901,14 @@ function renderLap() {
   $("#lpDl").innerHTML = [["rd", "Rundown", rdOn(S)], ["dh", "Daftar Hadir", true], ["sf", "Absen Selfie", L.selfie], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true], ["ln", "Daftar Peserta Lulus/Tidak Lulus", hasil]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
   const ps = S.peserta.filter(p => (p.nama || "").trim());
   const list = $("#lpList");
-  list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["80px", "80px", ...(["104px"])] : []), ...(hasil ? ["auto"] : [])].join(" "));
-  $("#lpPesHint").textContent = nilai ? "Isi Nilai Ujian Teori dan Nilai Ujian Praktek (bebas, mis. 83.3 atau X). Peserta Cancel tidak ikut di Daftar Nilai." : nilai && hasil ? "Isi Nilai Ujian Teori & Nilai Ujian Praktek (bebas, mis. 83.3 atau X), lalu centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah)."
+  list.style.setProperty("--cols", ["24px", "1fr", ...(nilai ? ["84px", "84px"] : []), ...(hasil ? ["auto"] : [])].join(" "));
+  $("#lpPesHint").textContent = nilai ? "Isi Nilai Ujian Teori dan Nilai Ujian Praktek (bebas, mis. 83.3 atau X). Nilai Ujian Teori juga bisa diisi dengan mengetuk Lulus / Tdk lulus. Peserta Cancel tidak ikut di Daftar Nilai." : nilai && hasil ? "Isi Nilai Ujian Teori & Nilai Ujian Praktek (bebas, mis. 83.3 atau X), lalu centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah)."
     : nilai ? "Isi Nilai Ujian Teori & Nilai Ujian Praktek (bebas, mis. 83.3 atau X). Peserta Cancel tidak ikut di Daftar Nilai." : "Centang Lulus / Tidak lulus. Peserta Cancel otomatis ditulis CANCEL (merah). Kosong = keterangan dikosongkan.";
   $("#lpAllLulus").hidden = !hasil;
   list.innerHTML = ps.length ? ps.map((p, i) => {
     const nm = `<div class="no">${i + 1}</div><div class="nm"><b>${esc(p.nama)}</b><small>${esc(p.instansi)}</small>${kls(p)}</div>`;
     if (p.batal) return `<div class="lp-r cx" data-id="${p.id}">${nm}<div class="cxl" style="grid-column:3/-1">CANCEL</div></div>`;
-    return `<div class="lp-r" data-id="${p.id}">${nm}${nilai ? `<label class="lpn"><span>Nilai Ujian Teori</span><input type="text" data-f="ut" inputmode="decimal" placeholder="Nilai" value="${esc(p.ut)}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label class="lpn"><span>Nilai Ujian Praktek</span><input type="text" data-f="up" inputmode="decimal" placeholder="Nilai" value="${esc(p.up)}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label>${false ? `<div class="lpn et"><span>Nilai Evaluasi Teori</span><input type="text" data-f="et" placeholder="Nilai / pilih" value="${esc(p.et)}" aria-label="Nilai Evaluasi Teori ${esc(p.nama)}" autocomplete="off"><div class="etb"><button type="button" data-et="LULUS" class="${p.et === "LULUS" ? "on" : ""}" aria-pressed="${p.et === "LULUS"}">Lulus</button><button type="button" data-et="TIDAK LULUS" class="bad ${p.et === "TIDAK LULUS" ? "on" : ""}" aria-pressed="${p.et === "TIDAK LULUS"}">Tdk lulus</button></div></div>` : ""}` : ""}${hasil ? `<div class="ck"><label><input type="checkbox" data-f="lulus" ${p.hasil === "lulus" ? "checked" : ""}>Lulus</label><label><input type="checkbox" data-f="tidak" ${p.hasil === "tidak" ? "checked" : ""}>Tidak lulus</label></div>` : ""}</div>`;
+    return `<div class="lp-r" data-id="${p.id}">${nm}${nilai ? `<div class="lpn"><label class="lpn"><span>Nilai Ujian Teori</span><input type="text" data-f="ut" inputmode="text" placeholder="Nilai" value="${esc(p.ut)}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><div class="etb"><button type="button" data-et="LULUS" class="${p.ut === "LULUS" ? "on" : ""}" aria-pressed="${p.ut === "LULUS"}">Lulus</button><button type="button" data-et="TIDAK LULUS" class="bad ${p.ut === "TIDAK LULUS" ? "on" : ""}" aria-pressed="${p.ut === "TIDAK LULUS"}">Tdk lulus</button></div></div><label class="lpn"><span>Nilai Ujian Praktek</span><input type="text" data-f="up" inputmode="decimal" placeholder="Nilai" value="${esc(p.up)}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label>${false ? `<div class="lpn et"><span>Nilai Evaluasi Teori</span><input type="text" data-f="et" placeholder="Nilai / pilih" value="${esc(p.et)}" aria-label="Nilai Evaluasi Teori ${esc(p.nama)}" autocomplete="off"><div class="etb"><button type="button" data-et="LULUS" class="${p.et === "LULUS" ? "on" : ""}" aria-pressed="${p.et === "LULUS"}">Lulus</button><button type="button" data-et="TIDAK LULUS" class="bad ${p.et === "TIDAK LULUS" ? "on" : ""}" aria-pressed="${p.et === "TIDAK LULUS"}">Tdk lulus</button></div></div>` : ""}` : ""}${hasil ? `<div class="ck"><label><input type="checkbox" data-f="lulus" ${p.hasil === "lulus" ? "checked" : ""}>Lulus</label><label><input type="checkbox" data-f="tidak" ${p.hasil === "tidak" ? "checked" : ""}>Tidak lulus</label></div>` : ""}</div>`;
   }).join("") : `<div class="empty">Belum ada peserta. Isi dulu di tab 1.</div>`;
   { // PAPA: narasumber satu untuk semua alat. B3: tiap program punya narasumber sendiri (pilih program di sini)
     const bx = $("#nrKelasBox"), b3 = isB3(S.acara), ks = kelasList(S.acara);
@@ -2976,7 +2976,7 @@ $("#lapBox").addEventListener("input", e => {
   if (el.dataset.lp) { lpSet(el.dataset.lp, el.value); changed(); return; }
   if (el.dataset.nf && el.closest(".lp-nr") && !(el.tagName === "SELECT")) { lapNr(el.closest(".lp-nr").dataset.day)[el.dataset.nf] = el.value; changed(); return; }
   const row = el.closest(".lp-r"), day = el.closest(".lp-day");
-  if (row && (el.dataset.f === "ut" || el.dataset.f === "up" || el.dataset.f === "et")) { const p = S.peserta[idx(row.dataset.id)]; if (p) { p[el.dataset.f] = el.value.trim(); changed(); if (el.dataset.f === "et") row.querySelectorAll("[data-et]").forEach(x => { const on = x.dataset.et === p.et; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); }); } }
+  if (row && (el.dataset.f === "ut" || el.dataset.f === "up" || el.dataset.f === "et")) { const p = S.peserta[idx(row.dataset.id)]; if (p) { p[el.dataset.f] = el.value.trim(); changed(); if (el.dataset.f === "ut") row.querySelectorAll("[data-et]").forEach(x => { const on = x.dataset.et === p.ut; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); }); } }
   else if (day && el.dataset.f === "materi") { lapHari(day.dataset.day).materi = el.value; changed(); }
 });
 $("#lapBox").addEventListener("change", e => {
@@ -3011,9 +3011,9 @@ $("#lapBox").addEventListener("click", e => {
   }
   if (b.dataset.et) {
     const row = b.closest(".lp-r"), p = row && S.peserta[idx(row.dataset.id)]; if (!p) return;
-    p.et = p.et === b.dataset.et ? "" : b.dataset.et;
-    const inp = row.querySelector("[data-f=et]"); if (inp) inp.value = p.et;
-    row.querySelectorAll("[data-et]").forEach(x => { const on = x.dataset.et === p.et; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
+    p.ut = p.ut === b.dataset.et ? "" : b.dataset.et;
+    const inp = row.querySelector("[data-f=ut]"); if (inp) inp.value = p.ut;
+    row.querySelectorAll("[data-et]").forEach(x => { const on = x.dataset.et === p.ut; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); });
     changed(); return;
   }
   if (b.dataset.dl) { unduhLap(b.dataset.dl); return; }

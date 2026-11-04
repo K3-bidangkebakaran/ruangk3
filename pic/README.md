@@ -393,3 +393,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v67 — Kolom Nilai Evaluasi Teori dihapus
 - Daftar Nilai kembali ke kolom NO, NAMA, INSTANSI, NILAI UJIAN TEORI, NILAI UJIAN PRAKTEK. Nilai Evaluasi Teori = Nilai Ujian Teori, jadi tidak ada kolom tambahan lagi (website, APK, Word, dan hitungan progres).
+
+## v68 — Nilai Ujian Teori: tombol Lulus / Tidak lulus + angka manual
+- Di kolom Nilai Ujian Teori (APK dan website) ada tombol Lulus dan Tidak lulus di bawah kotak nilai; angka tetap bisa diketik manual. Ketuk tombol yang sama lagi untuk mengosongkan.
