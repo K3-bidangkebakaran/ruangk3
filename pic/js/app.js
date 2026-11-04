@@ -168,7 +168,7 @@ const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
 const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const fotoDua = k => !!(k && (k.damkar || k.b3)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
 const fotoLengkap = (k, h, p) => isRem(h, p) || (fotoAda(h, p, 'foto') && (!fotoDua(k) || fotoAda(h, p, 'foto2'))); // Remedial: fotonya sudah di batch sebelumnya (tidak wajib)
-const LAPK = k => (k && k.lap) || {};
+const LAPK = k => ({ ...((k && k.lap) || {}), evalT: true }); // kolom Nilai Evaluasi Teori selalu ada (tidak perlu dipilih)
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
 // nilai/kelulusan: isian PIC (bila ada) menimpa isian dari admin
 const nilaiOf = (h, p, f) => { const o = ovOf(h), x = o && o.nilai[p.id] && o.nilai[p.id][f]; if (h.nilai[p.id] && f in h.nilai[p.id] && ownWins(h, x)) return String(h.nilai[p.id][f] || ''); return x ? String(x.v || '') : String(p[f] || ''); };
@@ -249,7 +249,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v65';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v66';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];

@@ -60,7 +60,7 @@ const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKe
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
 const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; };
 const fotoDua = k => !!(k && (k.damkar || k.b3));
-const LAPK = k => (k && k.lap) || {};
+const LAPK = k => ({ ...((k && k.lap) || {}), evalT: true });
 const nilaiOf = (h, p, f) => { const o = ovOf(h), x = o && o.nilai[p.id] && o.nilai[p.id][f]; if (h.nilai[p.id] && f in h.nilai[p.id] && ownWins(h, x)) return String(h.nilai[p.id][f] || ''); return x ? String(x.v || '') : String(p[f] || ''); };
 const kelOf = (h, p) => { const o = ovOf(h), x = o && o.kel[p.id]; if ((p.id in h.kel) && ownWins(h, x)) return h.kel[p.id]; return x ? x.v : (p.hasil || ''); };
 const nilaiLengkap = (h, ln, p) => (!ln.nilai || !!(nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up'))) && (!(ln.nilai && ln.evalT) || !!nilaiOf(h, p, 'et')) && (!ln.hasil || !!kelOf(h, p));
@@ -117,7 +117,7 @@ const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(
 const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, own = (d in h.nr) ? h.nr[d] : null, ov = ovOf(h), xr = ov && ov.nr[d], base = nrAdmin(k, d); Object.keys(o).forEach(f => { const x = xr && xr[f]; let v; if (own && (f in own) && ownWins(h, x)) v = own[f]; else if (x) v = x.v; else v = own ? own[f] : base[f]; o[f] = String(v == null ? '' : v); }); const m = raw ? null : MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v65';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v66';
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
 const B3_REN = [['Petugas Penyelamat Ruang Terbatas', 'PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS']];
 function b3Ren(h) {

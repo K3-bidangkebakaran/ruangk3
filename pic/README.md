@@ -386,3 +386,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Pilihan materi menampilkan semua materi untuk narasumber mana pun; narasumber ber-instansi Wasnaker hanya melihat materi Wasnaker + materi umum.
 - Website: tombol "Hapus nama dari daftar pilihan" untuk nama tersimpan maupun bawaan (bisa dipulihkan lewat tombol Pulihkan).
 - Judul kolom rundown "NARSUM" menjadi "NARASUMBER" (pratinjau & Word).
+
+## v66 — Nilai Evaluasi Teori selalu ada
+- Kolom "Nilai Evaluasi Teori" (angka manual atau Lulus / Tidak Lulus) kini otomatis ada di Daftar Nilai, website maupun APK; pilihan centang di tab Laporan dihapus.
