@@ -241,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v58';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v59';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -1044,9 +1044,9 @@ async function unduhLaporan(kid, mode) {
     }
     if (ln.selfie) { await sfLoad(kid).catch(() => { }); }
     const n0 = kurang(); if (n0 > 0) { toast(`${n0} gambar masih belum termuat dari server (butuh internet). Sambungkan internet lalu coba lagi.`); return; }
-    const B = wrdBuild(kid, k), kop = await kopDataUrl(), urut = mode === 'nilai' ? ['nl', 'ln'] : WRD_DOCS.map(d => d[0]), pages = [];
+    const B = wrdBuild(kid, k), kop = await kopDataUrl(), urut = mode === 'nilai' ? ['nl'] : WRD_DOCS.map(d => d[0]), pages = [];
     B.groups.forEach(g => urut.forEach(d => (g.secs[d] || []).forEach(sec => pages.push(sec))));
-    if (!pages.length) { toast('Belum ada halaman laporan untuk dibuat.'); return; }
+    if (!pages.length) { toast(mode === 'nilai' ? 'Kegiatan ini tidak memakai Daftar Nilai.' : 'Belum ada halaman laporan untuk dibuat.'); return; }
     const jpgs = [];
     for (let i = 0; i < pages.length; i++) { toast(`Menyusun PDF… halaman ${i + 1}/${pages.length}`); await tunggu(20); jpgs.push(await halamanJpeg(pages[i], kop)); }
     const dasar = String(k.kegiatan || k.nama || 'Kegiatan').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90), nm = (mode === 'nilai' ? 'Daftar Nilai - ' : 'Laporan - ') + dasar + '.pdf';

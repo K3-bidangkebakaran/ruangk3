@@ -357,3 +357,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - **Download Laporan (APK) kini PDF, satu berkas** (bukan ZIP/Word): *Download Laporan (PDF)* = seluruh laporan (rundown, daftar hadir, selfie, nilai, narasumber, dok. harian, dok. peserta, lulus/tidak lulus; PAPA/B3 berurutan per alat/program) dan *Download Daftar Nilai (PDF)* = Daftar Nilai + Lulus/Tidak Lulus. Aktif hanya bila laporan lengkap & kegiatan sudah ditekan Selesai. Halaman A4 sama dengan Pratinjau Word (HTML -> gambar JPEG per halaman -> PDF, dibuat di HP, tanpa pustaka luar; teks di PDF berupa gambar).
 - **Urutan**: Rekap Kegiatan (admin), daftar Kegiatan Tersimpan (Daftar Hadir) dan daftar kegiatan APK diurutkan menurut **tanggal mulai kegiatan** (terbaru di atas); tidak lagi memakai id/waktu dibuka. Untuk membalik (terlama di atas) ubah arah `localeCompare` di `dhRapikan` (root index.html), `Ev.render` (daftar-hadir) dan `.sort` daftar APK (`awal(b).localeCompare(awal(a))`).
 - APP_VER v58, service worker `pic-v58`.
+
+## v59 (APK)
+- *Download Daftar Nilai (PDF)* kini HANYA berisi halaman Daftar Nilai (tanpa halaman Lulus/Tidak Lulus). APP_VER v59, service worker `pic-v59`.
