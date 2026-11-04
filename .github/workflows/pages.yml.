@@ -1,0 +1,40 @@
+# Deploy situs ruangk3.com ke GitHub Pages lewat GitHub Actions.
+# Dipakai sebagai pengganti "Deploy from a branch" (Settings > Pages > Source = GitHub Actions).
+# Paket disusun sendiri (bukan upload-pages-artifact) supaya berkas berawalan titik ikut terbawa:
+# .well-known/assetlinks.json (dibutuhkan APK Portal PIC) dan .nojekyll.
+name: Deploy ruangk3.com (Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-ruangk3-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Susun paket situs (termasuk berkas berawalan titik)
+        run: |
+          tar --dereference --hard-dereference --exclude=.git --exclude=.github -cf "$RUNNER_TEMP/artifact.tar" .
+          tar -tf "$RUNNER_TEMP/artifact.tar" | grep -E '^\./(\.well-known/assetlinks\.json|\.nojekyll|CNAME|index\.html)$' || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
+      - id: deployment
+        uses: actions/deploy-pages@v4
