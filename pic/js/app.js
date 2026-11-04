@@ -241,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v59';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v60';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -1033,16 +1033,16 @@ function susunPdf(jpgs) { // PDF sederhana: satu gambar JPEG penuh per halaman A
 async function unduhLaporan(kid, mode) {
   const k = KEGS[kid], h = k && hOf(kid); if (!k || DLB) return;
   if (!window.Wrd) { toast('Modul laporan belum termuat. Muat ulang aplikasi lalu coba lagi.'); return; }
-  if (!(h.selesai && lapSemua(kid))) { toast('Download aktif setelah laporan lengkap dan kegiatan ditandai Selesai.'); return; }
+  if (mode === 'nilai' ? !LAPK(k).nilai : !(h.selesai && lapSemua(kid))) { toast(mode === 'nilai' ? 'Kegiatan ini tidak memakai Daftar Nilai.' : 'Download aktif setelah laporan lengkap dan kegiatan ditandai Selesai.'); return; }
   DLB = mode; render();
   try {
     toast('Menyiapkan gambar…');
-    const ln = LAPK(k), kurang = () => { const js = JSON.stringify(wrdEv(kid, k)); return (js.split(FLAG.foto).length - 1) + (js.split(FLAG.sig).length - 1); };
+    const ln = LAPK(k), kurang = () => { const e0 = wrdEv(kid, k), js = JSON.stringify(mode === 'nilai' ? [e0.lap.s1.ttd, e0.lap.s2.ttd] : e0); return (js.split(FLAG.foto).length - 1) + (js.split(FLAG.sig).length - 1); };
     for (let i = 0; i < 3 && kurang() > 0; i++) { // gambar dari website / akun PIC lain harus sudah benar-benar termuat (bukan tanda centang)
       xmKick(); for (let t = 0; t < 120 && (xmBusy || wmBusy); t++) await tunggu(500);
       if (kurang() > 0) { xmSig[kid] = ''; wmSig[kid] = ''; await xmLoad(kid).catch(() => { }); await wmLoad(kid).catch(() => { }); }
     }
-    if (ln.selfie) { await sfLoad(kid).catch(() => { }); }
+    if (ln.selfie && mode !== 'nilai') { await sfLoad(kid).catch(() => { }); }
     const n0 = kurang(); if (n0 > 0) { toast(`${n0} gambar masih belum termuat dari server (butuh internet). Sambungkan internet lalu coba lagi.`); return; }
     const B = wrdBuild(kid, k), kop = await kopDataUrl(), urut = mode === 'nilai' ? ['nl'] : WRD_DOCS.map(d => d[0]), pages = [];
     B.groups.forEach(g => urut.forEach(d => (g.secs[d] || []).forEach(sec => pages.push(sec))));
@@ -1121,9 +1121,9 @@ function render() {
     const btnSelesai = alat ? '' : `<button class="btn" type="button" data-act="selesai" style="margin-top:6px">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">Tekan setelah SEMUA isian selesai. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.</p>`;
     const dlCard = alat ? '' : (() => {
       const lengkap = lapSemua(kid), selesai = !!hh.selesai, ok = lengkap && selesai, cat = ok ? 'Laporan lengkap dan sudah ditandai Selesai. Siap diunduh sebagai PDF (satu berkas berisi seluruh laporan).' : !lengkap ? 'Belum bisa diunduh: Pratinjau Laporan belum lengkap. Lengkapi dulu semua bagian yang masih kurang.' : 'Laporan sudah lengkap. Tekan tombol ✔ Selesai di atas, lalu tombol download ini aktif.';
-      return `<div class="card2 dlbox${ok ? ' ok' : ''}"><b>⬇ Download Laporan</b><div class="hint">${cat}</div>
+      return `<div class="card2 dlbox${ok ? ' ok' : ''}"><b>⬇ Download Laporan</b><div class="hint">${cat}${ln.nilai ? ' Daftar Nilai (PDF) bisa diunduh kapan saja, walau laporan belum lengkap.' : ''}</div>
         <button class="btn pri" type="button" data-act="dlall"${ok && !DLB ? '' : ' disabled'}>${DLB === 'semua' ? 'Menyusun berkas…' : 'Download Laporan (PDF)'}</button>
-        <button class="btn" type="button" data-act="dlnil"${ok && !DLB ? '' : ' disabled'}>${DLB === 'nilai' ? 'Menyusun berkas…' : 'Download Daftar Nilai (PDF)'}</button></div>`; })();
+        <button class="btn" type="button" data-act="dlnil"${ln.nilai && !DLB ? '' : ' disabled'}>${DLB === 'nilai' ? 'Menyusun berkas…' : 'Download Daftar Nilai (PDF)'}</button></div>`; })();
     const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua ' + (k.b3 ? 'program' : 'alat') : ''}</small></span>${I.chev}</button>`; })() : '';
     if (alat) {
       h = appbar(klLabel(P.kl), k.nama, true) + `<div class="screen">

@@ -363,3 +363,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## Perbaikan kolom Foto di Rekap
 - Kolom Foto "11/11" otomatis diubah Google Sheets jadi tanggal (tampil 2026-11-10T16:00:00.000Z). Rekap kini mengembalikannya ke pecahan (`dhFrac`); Apps Script (Code.gs) menulis kolom Foto/TTD Peserta sebagai teks dan membaca kembali tanggal salah itu (`frac_`).
+
+## v60 (APK)
+- *Download Daftar Nilai (PDF)* aktif kapan saja (tidak perlu laporan lengkap / Selesai), selama kegiatan memakai Daftar Nilai. *Download Laporan (PDF)* tetap hanya saat laporan lengkap & Selesai. APP_VER v60, sw `pic-v60`.
