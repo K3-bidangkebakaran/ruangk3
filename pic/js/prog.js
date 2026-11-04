@@ -62,7 +62,7 @@ const fotoDua = k => !!(k && (k.damkar || k.b3));
 const LAPK = k => (k && k.lap) || {};
 const nilaiOf = (h, p, f) => { const o = ovOf(h), x = o && o.nilai[p.id] && o.nilai[p.id][f]; if (h.nilai[p.id] && f in h.nilai[p.id] && ownWins(h, x)) return String(h.nilai[p.id][f] || ''); return x ? String(x.v || '') : String(p[f] || ''); };
 const kelOf = (h, p) => { const o = ovOf(h), x = o && o.kel[p.id]; if ((p.id in h.kel) && ownWins(h, x)) return h.kel[p.id]; return x ? x.v : (p.hasil || ''); };
-const nilaiLengkap = (h, ln, p) => (!ln.nilai || !!(nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up'))) && (!ln.hasil || !!kelOf(h, p));
+const nilaiLengkap = (h, ln, p) => (!ln.nilai || !!(nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up'))) && (!(ln.nilai && ln.evalT) || !!nilaiOf(h, p, 'et')) && (!ln.hasil || !!kelOf(h, p));
 const lapNama = (h, k, w, f) => { const o = ovOf(h), x = o && o.s[w] && o.s[w][f]; if (h.lapN[w] && f in h.lapN[w] && ownWins(h, x)) return String(h.lapN[w][f] || ''); return x ? String(x.v || '') : String(LAPK(k)[w + f] || ''); };
 const kotaOf = (h, k) => { const o = ovOf(h), x = o && o.nKota; if (('nKota' in h.lapN) && ownWins(h, x)) return String(h.lapN.nKota || ''); return x ? String(x.v || '') : String(LAPK(k).nKota || ''); };
 const materiOf = (h, k, d) => { const o = ovOf(h), x = o && o.materi[d]; if ((d in h.materi) && ownWins(h, x)) return String(h.materi[d] || ''); return x ? String(x.v || '') : String((LAPK(k).materi || {})[d] || ''); };
@@ -109,7 +109,7 @@ const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(
 const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, own = (d in h.nr) ? h.nr[d] : null, ov = ovOf(h), xr = ov && ov.nr[d], base = nrAdmin(k, d); Object.keys(o).forEach(f => { const x = xr && xr[f]; let v; if (own && (f in own) && ownWins(h, x)) v = own[f]; else if (x) v = x.v; else v = own ? own[f] : base[f]; o[f] = String(v == null ? '' : v); }); const m = raw ? null : MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v56';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v57';
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
 const B3_REN = [['Petugas Penyelamat Ruang Terbatas', 'PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS']];
 function b3Ren(h) {
@@ -159,8 +159,8 @@ function lapCek(kid) {
   grp.forEach(g => {
     const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('dok' + sfx(g), 'Dokumentasi Peserta' + (keys.length > 1 ? ' (2 foto per peserta)' : ''), 'dok', g);
     aktif.forEach(p => {
-      const th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = th.every(t => t.st !== 'none');
-      s.total++; if (lengkap) s.ok++; s.rows.push({ t: p.nama, st: lengkap ? 'ok' : 'bad', thumbs: th });
+      const th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = isRem(h, p) || th.every(t => t.st !== 'none');
+      s.total++; if (lengkap) s.ok++; s.rows.push({ t: p.nama, s: isRem(h, p) ? 'DI BATCH SEBELUMNYA (remedial)' : '', st: lengkap ? 'ok' : 'bad', thumbs: th });
     });
     if (ps.length > aktif.length) s.info.push(`${ps.length - aktif.length} peserta Cancel (tidak dihitung).`);
     if (!ps.length) s.kosong = true; else if (s.total > s.ok) s.kurang = `${s.total - s.ok} peserta belum lengkap`;
@@ -202,7 +202,7 @@ function lapCek(kid) {
     const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('nil' + sfx(g), 'Nilai & Kelulusan', 'nil', g);
     aktif.forEach(p => {
       const ok = nilaiLengkap(h, ln, p), ut = nilaiOf(h, p, 'ut'), up = nilaiOf(h, p, 'up'), kv = kelOf(h, p), ch = [];
-      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); }
+      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); if (ln.evalT) { const et = nilaiOf(h, p, 'et'); ch.push(['Evaluasi ' + (et || '–'), et ? 'ok' : 'bad']); } }
       if (ln.hasil) ch.push([kv === 'lulus' ? 'Lulus' : kv === 'tidak' ? 'Tidak lulus' : 'Belum diisi', kv ? 'ok' : 'bad']);
       s.total++; if (ok) s.ok++; s.rows.push({ t: p.nama, st: ok ? 'ok' : 'bad', chips: ch });
     });

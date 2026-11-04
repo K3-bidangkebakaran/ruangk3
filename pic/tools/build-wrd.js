@@ -18,7 +18,7 @@ body.forEach(n => {
 const ids = (node, set) => { (function w(n) { if (!n || typeof n !== 'object') return; if (Array.isArray(n)) { n.forEach(w); return; } if (n.type === 'Identifier') set.add(n.name); for (const k of Object.keys(n)) { if (k === 'type' || k === 'start' || k === 'end') continue; const v = n[k]; if (v && typeof v === 'object') w(v); } })(node); return set; };
 // diganti / disediakan sendiri di wrd.js (bergantung pada halaman website: layar, tanda tangan penyelenggara, pengukur halaman, gambar kop, aturan hari per alat)
 const EXCL = new Set(['S', 'blank', 'idx', 'today', 'todayIso', 'orgLocked', 'KOP_HEAD', 'KOP_FOOT', 'measurer', 'measEl', 'hariKelas', 'hariNon1', 'aturan4', 'KLS1']);
-const ROOTS = ['renderSet', 'kelasGroups', 'rdOn', 'kelasKey', 'hariList', 'fotoDua', 'isB3', 'jenisOf'];
+const ROOTS = ['renderSet', 'kelasGroups', 'rdOn', 'kelasKey', 'hariList', 'fotoDua', 'isB3', 'jenisOf', 'Word', 'hariPendek', 'fmtTglPendek', 'hariTanggal', 'waktu', 'lapTexts', 'LAP_QR', 'safeName', 'judulDasar'];
 const got = new Set(), q = [...ROOTS];
 while (q.length) { const nm = q.pop(); if (got.has(nm) || !decl.has(nm) || EXCL.has(nm)) continue; got.add(nm); const n = decl.get(nm); stm.add(n); ids(n, new Set()).forEach(x => { if (decl.has(x) && !got.has(x) && !EXCL.has(x)) q.push(x); }); }
 const parts = [...stm].sort((a, b) => a.start - b.start).map(n => code.slice(n.start, n.end));
@@ -27,7 +27,7 @@ const st = html.indexOf('/* ---------- A4 pages (output) ---------- */'), en = h
 let css = html.slice(st, en);
 css = css.replace(/^#pages\{[^}]*\}\n/m, '').replace(/@media screen\{[\s\S]*?\n\}\n/, '').replace(/^#pages\.hide-[^\n]*\n/m, '');
 css = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\n{2,}/g, '\n').trim();
-const EXPORT = ['renderSet', 'kelasGroups', 'rdOn', 'kelasKey', 'hariList', 'fotoDua', 'isB3', 'jenisOf', 'hariTanggal', 'waktu', 'lapTexts', 'nrKeys', 'nrOff', 'nrEf', 'naraNew', 'NR_KEY'].filter(n => got.has(n));
+const EXPORT = ['renderSet', 'kelasGroups', 'rdOn', 'kelasKey', 'hariList', 'fotoDua', 'isB3', 'jenisOf', 'hariTanggal', 'waktu', 'lapTexts', 'nrKeys', 'nrOff', 'nrEf', 'naraNew', 'NR_KEY', 'Word', 'hariPendek', 'fmtTglPendek', 'LAP_QR', 'safeName', 'judulDasar'].filter(n => got.has(n));
 const out = `/* DIBUAT OTOMATIS oleh pic/tools/build-wrd.js dari daftar-hadir/index.html — JANGAN diedit manual (ubah kode di website lalu jalankan ulang).
    Isi: kode pembuat halaman laporan (Daftar Hadir, Selfie, Nilai, Narasumber, Dokumentasi, Lulus, Rundown) yang sama dengan pratinjau website. */
 (function () {
@@ -42,7 +42,11 @@ function measurer() { // pengukur tinggi halaman: di dalam shadow DOM sendiri su
 function hariKelas(ev, k) { return (ev.hkMap && ev.hkMap[kelasKey(k || "")]) || null; } // hari alat/program: dihitung website (node.hk), dikirim apa adanya
 const CSS = ${JSON.stringify(':host{all:initial;display:block;--accent:#f58220;--accent-d:#c9661a;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;color:#1d1d1f}*{box-sizing:border-box;margin:0;padding:0}[hidden]{display:none!important}.sign-hint{display:none}\n' + css)};
 ${parts.join('\n')}
-window.Wrd = { CSS, ${EXPORT.join(', ')} };
+// ---- khusus APK: konteks berkas Word (kop surat dibaca dari berkas lokal -> data URL) ----
+let KOPD = null;
+async function imgData(u) { try { const r = await fetch(u), b = await r.blob(); return await new Promise(res => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = () => res(""); f.readAsDataURL(b); }); } catch (e) { return ""; } }
+async function docCtx(ev) { if (!KOPD) KOPD = [await imgData(KOP_HEAD), await imgData(KOP_FOOT)]; const days = hariList(ev.acara); return { days, pendek: hariPendek, tglTtd: fmtTglPendek(ev.acara.tglTtd), hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara), kopHead: KOPD[0], kopFoot: KOPD[1], lap: lapTexts(ev), qr: LAP_QR }; }
+window.Wrd = { CSS, docCtx, ${EXPORT.join(', ')} };
 })();
 `;
 fs.writeFileSync(OUT, out);

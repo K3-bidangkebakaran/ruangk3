@@ -166,13 +166,13 @@ const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKe
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
 const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const fotoDua = k => !!(k && (k.damkar || k.b3)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
-const fotoLengkap = (k, h, p) => fotoAda(h, p, 'foto') && (!fotoDua(k) || fotoAda(h, p, 'foto2'));
+const fotoLengkap = (k, h, p) => isRem(h, p) || (fotoAda(h, p, 'foto') && (!fotoDua(k) || fotoAda(h, p, 'foto2'))); // Remedial: fotonya sudah di batch sebelumnya (tidak wajib)
 const LAPK = k => (k && k.lap) || {};
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
 // nilai/kelulusan: isian PIC (bila ada) menimpa isian dari admin
 const nilaiOf = (h, p, f) => { const o = ovOf(h), x = o && o.nilai[p.id] && o.nilai[p.id][f]; if (h.nilai[p.id] && f in h.nilai[p.id] && ownWins(h, x)) return String(h.nilai[p.id][f] || ''); return x ? String(x.v || '') : String(p[f] || ''); };
 const kelOf = (h, p) => { const o = ovOf(h), x = o && o.kel[p.id]; if ((p.id in h.kel) && ownWins(h, x)) return h.kel[p.id]; return x ? x.v : (p.hasil || ''); };
-const nilaiLengkap = (h, ln, p) => (!ln.nilai || !!(nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up'))) && (!ln.hasil || !!kelOf(h, p)); // satu peserta: nilai (bila dipakai) & kelulusan (bila dipakai) sudah terisi
+const nilaiLengkap = (h, ln, p) => (!ln.nilai || !!(nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up'))) && (!(ln.nilai && ln.evalT) || !!nilaiOf(h, p, 'et')) && (!ln.hasil || !!kelOf(h, p)); // satu peserta: nilai (bila dipakai) & kelulusan (bila dipakai) sudah terisi
 const lapNama = (h, k, w, f) => { const o = ovOf(h), x = o && o.s[w] && o.s[w][f]; if (h.lapN[w] && f in h.lapN[w] && ownWins(h, x)) return String(h.lapN[w][f] || ''); return x ? String(x.v || '') : String(LAPK(k)[w + f] || ''); };
 const kotaOf = (h, k) => { const o = ovOf(h), x = o && o.nKota; if (('nKota' in h.lapN) && ownWins(h, x)) return String(h.lapN.nKota || ''); return x ? String(x.v || '') : String(LAPK(k).nKota || ''); };
 const materiOf = (h, k, d) => { const o = ovOf(h), x = o && o.materi[d]; if ((d in h.materi) && ownWins(h, x)) return String(h.materi[d] || ''); return x ? String(x.v || '') : String((LAPK(k).materi || {})[d] || ''); };
@@ -241,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v56';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v57';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -806,8 +806,8 @@ function lapCek(kid) {
   grp.forEach(g => {
     const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('dok' + sfx(g), 'Dokumentasi Peserta' + (keys.length > 1 ? ' (2 foto per peserta)' : ''), 'dok', g);
     aktif.forEach(p => {
-      const th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = th.every(t => t.st !== 'none');
-      s.total++; if (lengkap) s.ok++; s.rows.push({ t: p.nama, st: lengkap ? 'ok' : 'bad', thumbs: th });
+      const th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = isRem(h, p) || th.every(t => t.st !== 'none');
+      s.total++; if (lengkap) s.ok++; s.rows.push({ t: p.nama, s: isRem(h, p) ? 'DI BATCH SEBELUMNYA (remedial)' : '', st: lengkap ? 'ok' : 'bad', thumbs: th });
     });
     if (ps.length > aktif.length) s.info.push(`${ps.length - aktif.length} peserta Cancel (tidak dihitung).`);
     if (!ps.length) s.kosong = true; else if (s.total > s.ok) s.kurang = `${s.total - s.ok} peserta belum lengkap`;
@@ -849,7 +849,7 @@ function lapCek(kid) {
     const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('nil' + sfx(g), 'Nilai & Kelulusan', 'nil', g);
     aktif.forEach(p => {
       const ok = nilaiLengkap(h, ln, p), ut = nilaiOf(h, p, 'ut'), up = nilaiOf(h, p, 'up'), kv = kelOf(h, p), ch = [];
-      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); }
+      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); if (ln.evalT) { const et = nilaiOf(h, p, 'et'); ch.push(['Evaluasi ' + (et || '–'), et ? 'ok' : 'bad']); } }
       if (ln.hasil) ch.push([kv === 'lulus' ? 'Lulus' : kv === 'tidak' ? 'Tidak lulus' : 'Belum diisi', kv ? 'ok' : 'bad']);
       s.total++; if (ok) s.ok++; s.rows.push({ t: p.nama, st: ok ? 'ok' : 'bad', chips: ch });
     });
@@ -947,7 +947,7 @@ function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin 
     const ttd = {}; days.forEach(d => { const u = (h.hadir[p.id] && h.hadir[p.id][d]) || xmGet(kid, `s_${p.id}_${d}`) || wmGet(kid, `s_${p.id}_${d}`); if (u) ttd[d] = u; else if (webT(p, d) || xT(h, p.id, d)) ttd[d] = FLAG.sig; });
     const fo = key => (h[key] && h[key][p.id]) || xmGet(kid, (key === 'foto2' ? 'f2_' : 'f_') + p.id) || wmGet(kid, (key === 'foto2' ? 'f2_' : 'f_') + p.id) || ((webF(p, key) || xF(h, p.id, key)) ? FLAG.foto : '');
     const sf = {}; days.forEach(d => ['p', 's'].forEach(s => { const u = sfd[`${p.id}~${d}~${s}`]; if (u) (sf[d] = sf[d] || {})[s] = u; }));
-    return { id: p.id, nama: p.nama, instansi: p.instansi || '', kelas: p.kelas || '', batal: isBatal(h, p), remedial: isRem(h, p), ut: nilaiOf(h, p, 'ut'), up: nilaiOf(h, p, 'up'), hasil: kelOf(h, p), foto: fo('foto'), foto2: fo('foto2'), ttd, sf };
+    return { id: p.id, nama: p.nama, instansi: p.instansi || '', kelas: p.kelas || '', batal: isBatal(h, p), remedial: isRem(h, p), ut: nilaiOf(h, p, 'ut'), up: nilaiOf(h, p, 'up'), et: nilaiOf(h, p, 'et'), hasil: kelOf(h, p), foto: fo('foto'), foto2: fo('foto2'), ttd, sf };
   });
   const hari = {}, px = xmPlan(kid);
   days.forEach(d => {
@@ -962,7 +962,7 @@ function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin 
     kls.forEach(l => { const kk = kelasKey(l), pf = kk + '~', o = {}; keysOf(pf, Object.keys((ln.nrk || {})[kk] || {})).forEach(key => { o[key.slice(pf.length)] = row(key); }); nrk[kk] = o; });
     Object.keys(ln.nrOff || {}).forEach(key => { const m = NRK_RE.exec(key); if (ln.nrOff[key] && m[1]) (nrOffK[m[1]] = nrOffK[m[1]] || {})[m[2]] = 1; });
   } else { keysOf('', Object.keys(ln.nr || {})).forEach(key => { nr[key] = row(key); }); Object.keys(ln.nrOff || {}).forEach(key => { if (ln.nrOff[key]) nrOff[key] = 1; }); }
-  const lap = { nilai: !!ln.nilai, hasil: !!ln.hasil, harian: !!ln.harian, nara: !!ln.nara, selfie: !!ln.selfie, rundown: ln.rundown == null ? null : !!ln.rundown, batch: ln.batch || '', nKota: kotaOf(h, k), nTgl: ln.nTgl || '',
+  const lap = { nilai: !!ln.nilai, evalT: !!ln.evalT, hasil: !!ln.hasil, harian: !!ln.harian, nara: !!ln.nara, selfie: !!ln.selfie, rundown: ln.rundown == null ? null : !!ln.rundown, batch: ln.batch || '', nKota: kotaOf(h, k), nTgl: ln.nTgl || '',
     s1: { jab: ln.s1jab || '', nama: lapNama(h, k, 's1', 'nama'), nip: lapNama(h, k, 's1', 'nip'), ttd: n1 }, s2: { jab: ln.s2jab || '', nama: lapNama(h, k, 's2', 'nama'), nip: '', ttd: n2 }, hari, nr, nrk, nrOff, nrOffK };
   const hk = {}; Object.entries(k.hk || {}).forEach(([kk, v]) => { hk[kk] = arr(v); });
   return { id: kid, created: k.dibuat || 0, acara: a, peserta, lap, hkMap: hk };
@@ -994,6 +994,40 @@ function wrdHtml(kid, k) {
     <div class="row" style="align-items:center;flex-wrap:wrap"><button type="button" class="btn sm" data-act="wz">${P.wz === 'full' ? '🔍 Pas layar' : '🔍 Ukuran asli (geser)'}</button><span class="hint" style="flex:1 1 180px">${nPg} halaman · tampilan sama dengan pratinjau website. Tanda ✔ = sudah ada di website / akun PIC lain.${sfp ? ` Memuat selfie ${sfp.n}/${sfp.t}…` : ''}</span></div>
     <div class="wwrap"><div id="wrdhost"></div></div>
     <p class="hint">Isi & susunan halaman memakai kode yang sama dengan website Daftar Hadir (pembagian halaman bisa sedikit berbeda di berkas Word asli). Berkas Word dibuat dari website.</p>`;
+}
+/* ---- Download laporan (Word asli, kode sama dengan website) — aktif hanya bila laporan lengkap & kegiatan ditandai Selesai ---- */
+let DLB = '';
+const tunggu = ms => new Promise(r => setTimeout(r, ms));
+function simpanBerkas(blob, nama) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nama; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
+async function unduhLaporan(kid, mode) {
+  const k = KEGS[kid], h = k && hOf(kid); if (!k || DLB) return;
+  if (!(window.Wrd && Wrd.Word && Wrd.docCtx)) { toast('Modul laporan belum termuat. Muat ulang aplikasi lalu coba lagi.'); return; }
+  if (!(h.selesai && lapSemua(kid))) { toast('Download aktif setelah laporan lengkap dan kegiatan ditandai Selesai.'); return; }
+  DLB = mode; render();
+  try {
+    toast('Menyiapkan gambar…');
+    const ln = LAPK(k), kurang = () => { const js = JSON.stringify(wrdEv(kid, k)); return (js.split(FLAG.foto).length - 1) + (js.split(FLAG.sig).length - 1); };
+    for (let i = 0; i < 3 && kurang() > 0; i++) { // gambar dari website / akun PIC lain harus sudah benar-benar termuat (bukan tanda centang)
+      xmKick(); for (let t = 0; t < 120 && (xmBusy || wmBusy); t++) await tunggu(500);
+      if (kurang() > 0) { xmSig[kid] = ''; wmSig[kid] = ''; await xmLoad(kid).catch(() => { }); await wmLoad(kid).catch(() => { }); }
+    }
+    if (ln.selfie) { await sfLoad(kid).catch(() => { }); }
+    const n0 = kurang(); if (n0 > 0) { toast(`${n0} gambar masih belum termuat dari server (butuh internet). Sambungkan internet lalu coba lagi.`); return; }
+    const ev = wrdEv(kid, k), groups = Wrd.kelasGroups(ev), files = [], multi = groups.length > 1 || !!(groups[0] && groups[0].kelas);
+    const NOM = ev.lap.selfie ? { rd: 0, dh: 1, sf: 2, nl: 3, nr: 4, dy: 5, dk: 6, ln: 7 } : { rd: 0, dh: 1, nl: 2, nr: 3, dy: 4, dk: 5, ln: 6 };
+    let jobs = [];
+    groups.forEach(g => { const L = g.ev.lap || {}; (mode === 'nilai' ? [[L.nilai, 'nl'], [L.hasil, 'ln']] : [[Wrd.rdOn(g.ev), 'rd'], [true, 'dh'], [L.selfie, 'sf'], [L.nilai, 'nl'], [L.nara, 'nr'], [L.harian, 'dy'], [true, 'dk'], [L.hasil, 'ln']]).forEach(([on, kind]) => { if (on && !(kind === 'dk' && !g.ev.peserta.some(p => p.foto || p.foto2))) jobs.push({ g, kind }); }); });
+    if (!jobs.length) { toast('Tidak ada berkas yang perlu dibuat untuk kegiatan ini.'); return; }
+    for (let i = 0; i < jobs.length; i++) {
+      toast(`Menyusun berkas Word ${i + 1}/${jobs.length}…`); await tunggu(30);
+      const { g, kind } = jobs[i], r = await Wrd.Word.lapFile(kind, g.ev, await Wrd.docCtx(g.ev));
+      files.push({ name: (multi ? Wrd.safeName(g.kelas || 'Tanpa kelas') + '/' : '') + (mode === 'nilai' ? '' : NOM[kind] + '. ') + r.name, bytes: r.bytes });
+    }
+    const dasar = Wrd.safeName(Wrd.judulDasar(ev.acara) || k.nama || 'Kegiatan');
+    if (files.length === 1) { simpanBerkas(new Blob([files[0].bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), files[0].name); toast('Berkas Word siap diunduh: ' + files[0].name); }
+    else { const nm = (mode === 'nilai' ? 'Daftar Nilai - ' : 'Laporan - ') + dasar + '.zip'; simpanBerkas(new Blob([Wrd.Word.zip(files.map(f => ({ name: f.name, data: f.bytes })))], { type: 'application/zip' }), nm); toast(`${files.length} berkas Word dikemas dalam ZIP: ${nm}`); }
+  } catch (e) { toast('Gagal menyusun laporan: ' + String(e && e.message || e)); }
+  finally { DLB = ''; render(); }
 }
 function wrdMount() { // halaman A4 ditampilkan di dalam shadow DOM supaya gayanya tidak bercampur dengan aplikasi
   const host = $('#wrdhost'); if (!host || !window.Wrd) return;
@@ -1060,6 +1094,11 @@ function render() {
     const tLap = (() => { const c = lapCek(kid); return `<button type="button" class="tile lap${c.all ? ' ok' : ''}" data-act="go" data-to="lap"><span class="ic">${I.list}</span><span><b>Pratinjau Laporan</b><small>${c.all ? 'Laporan lengkap ✔' : c.pct + '% lengkap · ' + (c.secs.length - c.nOk) + ' bagian masih kurang'} — cek sebelum selesai</small></span>${I.chev}</button>`; })();
     const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
     const btnSelesai = alat ? '' : `<button class="btn" type="button" data-act="selesai" style="margin-top:6px">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">Tekan setelah SEMUA isian selesai. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.</p>`;
+    const dlCard = alat ? '' : (() => {
+      const lengkap = lapSemua(kid), selesai = !!hh.selesai, ok = lengkap && selesai, cat = ok ? 'Laporan lengkap dan sudah ditandai Selesai. Siap diunduh (file Word, sama dengan pratinjau).' : !lengkap ? 'Belum bisa diunduh: Pratinjau Laporan belum lengkap. Lengkapi dulu semua bagian yang masih kurang.' : 'Laporan sudah lengkap. Tekan tombol ✔ Selesai di atas, lalu tombol download ini aktif.';
+      return `<div class="card2 dlbox${ok ? ' ok' : ''}"><b>⬇ Download Laporan</b><div class="hint">${cat}</div>
+        <button class="btn pri" type="button" data-act="dlall"${ok && !DLB ? '' : ' disabled'}>${DLB === 'semua' ? 'Menyusun berkas…' : 'Download Seluruh Laporan (ZIP)'}</button>
+        <button class="btn" type="button" data-act="dlnil"${ok && !DLB ? '' : ' disabled'}>${DLB === 'nilai' ? 'Menyusun berkas…' : 'Download Daftar Nilai Peserta'}</button></div>`; })();
     const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua ' + (k.b3 ? 'program' : 'alat') : ''}</small></span>${I.chev}</button>`; })() : '';
     if (alat) {
       h = appbar(klLabel(P.kl), k.nama, true) + `<div class="screen">
@@ -1075,12 +1114,12 @@ function render() {
       <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua ${k.b3 ? 'program' : 'alat'}</h2></div>
       ${tSf}${tDhr}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
-      <p class="hint">${k.b3 ? 'Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua program. Absensi Narasumber ada di dalam tiap program.' : 'Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1.'} Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
+      <p class="hint">${k.b3 ? 'Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua program. Absensi Narasumber ada di dalam tiap program.' : 'Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1.'} Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}${dlCard}</div>`;
     } else {
       h = appbar(kNama(k), rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
       ${tAbs}${tSf}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
-      <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}</div>`;
+      <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}${dlCard}</div>`;
     }
   } else if (P.screen === 'abs') {
     const days = absDays(k), d = days[P.day] || days[0] || '';
@@ -1108,7 +1147,7 @@ function render() {
       <div class="photos${fotoDua(k) ? ' dk' : ''}">${urutKelas(k, pesKl(k)).map(p => {
         const cx = isBatal(hh, p), rm = isRem(hh, p), keys = fotoDua(k) ? ['foto', 'foto2'] : ['foto'];
         const slot = (key, i) => { const f0 = hh[key] && hh[key][p.id], xk = (key === 'foto2' ? 'f2_' : 'f_') + p.id, wo = !f0 && !xmGet(kid, xk) && wmGet(kid, xk), xo = !f0 && (xmGet(kid, xk) || wo), f = f0 || xo, xi = xo ? xmPlan(kid).find(x => x.key === xk) : null, wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = fotoDua(k) ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}" data-act="pv" data-pv="p|${esc(p.id)}|${key}" title="Ketuk untuk memperbesar">${xi ? `<span class="by">Oleh: ${esc(xi.nama)}</span>` : wo ? '<span class="by">Dari website</span>' : f0 && ME && ME.nama ? `<span class="by">Oleh: Anda (${esc(ME.nama)})</span>` : ''}` : (cx ? 'Batal ikut' : wf ? `<span data-act="pv" data-pv="p|${esc(p.id)}|${key}" style="cursor:pointer">${webF(p, key) ? '✔ Sudah ada (website)' : xF(hh, p.id, key) ? (online() ? '✔ Sudah ada (PIC lain)<br><small>Memuat foto…</small>' : '✔ Sudah ada (PIC lain)<br><small>Butuh sinyal untuk melihat</small>') : '✔ Sudah ada'}<br><small>Ketuk untuk lihat</small></span>` : 'Belum ada foto')}</div>${cx ? '' : `<div class="slbtns"><button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button><label class="btn sm filebtn" data-up-l>⬆ Unggah<input type="file" accept="image/*" data-up="1" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="Unggah ${lb.toLowerCase()} ${esc(p.nama)} dari galeri"></label></div>`}</div>`; };
-        return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div><div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
+        return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div>${rm && !cx ? '<div class="bsb">DI BATCH SEBELUMNYA</div>' : ''}<div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
       <p class="hint">Foto bisa diambil langsung dari kamera (otomatis diberi watermark: nama peserta, kegiatan, titik lokasi, tanggal, jam) atau <b>diunggah dari galeri HP</b> (tombol ⬆ Unggah; watermark memuat nama, kegiatan, tempat, dan tanggal foto). Ketuk foto untuk memperbesar. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
   else if (P.screen === 'nil') {
@@ -1118,7 +1157,7 @@ function render() {
       <div class="field"><input id="nilQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
       ${ln.hasil ? `<button type="button" class="btn" data-act="allulus">✔ Tandai semua Lulus</button>` : ''}
       <div class="nlist" id="nilList"></div>
-      <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
+      <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.nilai && ln.evalT ? 'Nilai Evaluasi Teori: ketik nilai manual, atau ketuk Lulus / Tidak lulus. ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
   } else if (P.screen === 'ttn') {
     const hh = hOf(kid), ln = LAPK(k), sg = (w, n, jab, nip) => `<div class="card2"><b>${esc(jab || '')}</b>${ttdBadge(nTtdSrc(hh, k, n))}
       <div class="field"><label for="in_${w}nama">Nama</label><input id="in_${w}nama" data-lap="${w}.nama" value="${esc(lapNama(hh, k, w, 'nama'))}" autocomplete="off" placeholder="Contoh: REPY, ST"></div>
@@ -1196,7 +1235,7 @@ function renderNil() {
   $('#nilList').innerHTML = rows.length ? rows.map((p, i) => {
     const cx = isBatal(h, p), kv = kelOf(h, p);
     return `<div class="nrow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><div class="who"><b>${esc(p.nama)}</b><small>${instKel(p)}</small></div>${cx ? '<span class="pill bad">CANCEL</span>'
-      : `${ln.nilai ? `<div class="nin"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'ut'))}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label></div>` : ''}
+      : `${ln.nilai ? `<div class="nin"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'ut'))}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label></div>${ln.evalT ? (() => { const et = nilaiOf(h, p, 'et'); return `<div class="net"><label><span>Nilai Evaluasi Teori <i>(ketik nilai manual, atau pilih di bawah)</i></span><input inputmode="text" data-nf="et" placeholder="Nilai" value="${esc(et)}" aria-label="Nilai Evaluasi Teori ${esc(p.nama)}" autocomplete="off"></label><div class="kel"><button type="button" class="ckb${et === 'LULUS' ? ' on' : ''}" data-act="etv" data-v="LULUS" aria-pressed="${et === 'LULUS'}">${et === 'LULUS' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${et === 'TIDAK LULUS' ? ' on' : ''}" data-act="etv" data-v="TIDAK LULUS" aria-pressed="${et === 'TIDAK LULUS'}">${et === 'TIDAK LULUS' ? '☑' : '☐'} Tidak lulus</button></div></div>`; })() : ''}` : ''}
       ${ln.hasil ? `<div class="kel"><button type="button" class="ckb${kv === 'lulus' ? ' on' : ''}" data-act="kel" data-v="lulus" aria-pressed="${kv === 'lulus'}">${kv === 'lulus' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${kv === 'tidak' ? ' on' : ''}" data-act="kel" data-v="tidak" aria-pressed="${kv === 'tidak'}">${kv === 'tidak' ? '☑' : '☐'} Tidak lulus</button></div>` : ''}`}</div>`;
   }).join('') : `<div class="empty">${ps.length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
 }
@@ -1487,7 +1526,7 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 window.addEventListener('focus', () => setTimeout(() => { if (UPL) UPL = Math.min(UPL, Date.now() + 4000); }, 0)); // pemilih tertutup (dipilih / dibatalkan): sisakan beberapa detik untuk menerima berkas
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, kid = P.kid, k = kid && KEGS[kid];
-  if (a === 'selesai' && k) { const s = stat(kid), sisa = (s.ttdTotal - s.ttd) + (s.aktif - s.foto) + (s.ttdPic ? 0 : 1); if (!confirm(sisa > 0 ? `Masih ada isian yang belum lengkap (${s.ttdTotal - s.ttd} TTD peserta, ${s.aktif - s.foto} foto${s.ttdPic ? '' : ', TTD PIC'}).\n\nTetap tandai SELESAI? Kegiatan disembunyikan dari daftar (bisa dibuka lagi).` : 'Semua isian sudah lengkap.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)')) return; const h = hOf(kid); h.selesai = true; touch(kid); P.screen = 'home'; P.kid = null; P.kl = null; render(); toast('Kegiatan ditandai selesai.'); return; }
+  if (a === 'selesai' && k) { const s = stat(kid), sisa = (s.ttdTotal - s.ttd) + (s.aktif - s.foto) + (s.ttdPic ? 0 : 1); if (!confirm(sisa > 0 ? `Masih ada isian yang belum lengkap (${s.ttdTotal - s.ttd} TTD peserta, ${s.aktif - s.foto} foto${s.ttdPic ? '' : ', TTD PIC'}).\n\nTetap tandai SELESAI? Kegiatan disembunyikan dari daftar (bisa dibuka lagi).` : 'Semua isian sudah lengkap.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)')) return; const h = hOf(kid); h.selesai = true; touch(kid); if (lapSemua(kid)) { render(); toast('Kegiatan ditandai selesai. Laporan lengkap — tombol Download Laporan sudah aktif di bawah.'); setTimeout(() => { const e = $('.dlbox'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 150); return; } P.screen = 'home'; P.kid = null; P.kl = null; render(); toast('Kegiatan ditandai selesai.'); return; }
   if (a === 'bukalagi') { const id = b.dataset.id, h = hOf(id); h.selesai = false; touch(id); render(); toast('Kegiatan dibuka lagi.'); return; }
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { syncErr = ''; sync(); pull(true); toast('Memeriksa dan mengirim data…'); } }
@@ -1540,6 +1579,11 @@ document.addEventListener('click', e => {
   else if (a === 'kel' && k) {
     const row = b.closest('.nrow'), pid = row.dataset.pid, h = hOf(kid), p = (k.peserta || []).find(x => x.id === pid); if (!p) return;
     const cur = kelOf(h, p); h.kel[pid] = cur === b.dataset.v ? '' : b.dataset.v; touch(kid); renderNil();
+  }
+  else if ((a === 'dlall' || a === 'dlnil') && k) { unduhLaporan(kid, a === 'dlall' ? 'semua' : 'nilai'); }
+  else if (a === 'etv' && k) { // Nilai Evaluasi Teori: pilih Lulus / Tidak lulus (ketuk lagi = kosongkan); nilai angka tetap bisa diketik manual
+    const row = b.closest('.nrow'), pid = row.dataset.pid, h = hOf(kid), p = (k.peserta || []).find(x => x.id === pid); if (!p) return;
+    const cur = nilaiOf(h, p, 'et'); (h.nilai[pid] = h.nilai[pid] || {}).et = cur === b.dataset.v ? '' : b.dataset.v; touch(kid); renderNil();
   }
   else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; pesKl(k).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
   else if (a === 'nsig' && k) { const h = hOf(kid), n = b.dataset.n, ln = LAPK(k), nm = lapNama(h, k, 's' + n, 'nama'); openPad('Tanda tangan penandatangan', `${nm || (ln['s' + n + 'jab'] || '').replace(/\n/g, ' ')} · ${k.nama}`, u => { h['n' + n] = u; delete h.sent['n' + n]; touch(kid); render(); }, h['n' + n]); }
