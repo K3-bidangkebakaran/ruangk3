@@ -241,7 +241,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v57';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v58';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -995,13 +995,44 @@ function wrdHtml(kid, k) {
     <div class="wwrap"><div id="wrdhost"></div></div>
     <p class="hint">Isi & susunan halaman memakai kode yang sama dengan website Daftar Hadir (pembagian halaman bisa sedikit berbeda di berkas Word asli). Berkas Word dibuat dari website.</p>`;
 }
-/* ---- Download laporan (Word asli, kode sama dengan website) — aktif hanya bila laporan lengkap & kegiatan ditandai Selesai ---- */
+/* ---- Download laporan PDF: seluruh laporan jadi SATU berkas PDF (halaman A4 sama dengan Pratinjau Word) — aktif hanya bila laporan lengkap & kegiatan ditandai Selesai ---- */
 let DLB = '';
 const tunggu = ms => new Promise(r => setTimeout(r, ms));
 function simpanBerkas(blob, nama) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nama; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); }
+let KOPDU = null;
+async function kopDataUrl() { // kop surat (berkas lokal) -> data URL supaya ikut tergambar di halaman PDF
+  if (KOPDU) return KOPDU; const f = async u => { try { const r = await fetch(u), b = await r.blob(); return await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => res(''); fr.readAsDataURL(b); }); } catch (e) { return ''; } };
+  return (KOPDU = { head: await f('img/kop-head.png'), foot: await f('img/kop-foot.png') });
+}
+const A4W = 794, A4H = 1123, PDFS = 2; // piksel CSS per halaman A4 (96 dpi) & skala gambar
+async function halamanJpeg(secHtml, kop) { // satu halaman A4 (HTML) -> JPEG, lewat SVG foreignObject
+  const box = document.createElement('div'); box.innerHTML = secHtml.split('img/kop-head.png').join(kop.head).split('img/kop-foot.png').join(kop.foot);
+  const xml = new XMLSerializer().serializeToString(box).replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
+  const css = Wrd.CSS.replace(/:host\{[^}]*\}/g, '').replace(/box-shadow:[^;}]*;?/g, '').replace(/margin:0 auto 16px/g, 'margin:0');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${A4W}" height="${A4H}"><foreignObject x="0" y="0" width="${A4W}" height="${A4H}"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${A4W}px;height:${A4H}px;overflow:hidden;background:#fff;--accent:#f58220;--accent-d:#c9661a;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;color:#1d1d1f"><style>${css}</style>${xml}</div></foreignObject></svg>`;
+  const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('halaman tidak bisa digambar')); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+  const cv = document.createElement('canvas'); cv.width = A4W * PDFS; cv.height = A4H * PDFS; const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85)); if (!blob) throw new Error('gambar halaman gagal dibuat');
+  return new Uint8Array(await blob.arrayBuffer());
+}
+function susunPdf(jpgs) { // PDF sederhana: satu gambar JPEG penuh per halaman A4 (595 x 842 pt)
+  const enc = new TextEncoder(), parts = [], off = []; let len = 0; const put = x => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+  const n = jpgs.length; put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  off[1] = len; put('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  off[2] = len; put(`2 0 obj\n<< /Type /Pages /Count ${n} /Kids [${jpgs.map((_, i) => (3 + i * 3) + ' 0 R').join(' ')}] >>\nendobj\n`);
+  jpgs.forEach((jp, i) => {
+    const pg = 3 + i * 3, im = pg + 1, ct = pg + 2, cs = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+    off[pg] = len; put(`${pg} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${ct} 0 R >>\nendobj\n`);
+    off[im] = len; put(`${im} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${A4W * PDFS} /Height ${A4H * PDFS} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jp.length} >>\nstream\n`); put(jp); put('\nendstream\nendobj\n');
+    off[ct] = len; put(`${ct} 0 obj\n<< /Length ${cs.length} >>\nstream\n${cs}\nendstream\nendobj\n`);
+  });
+  const xr = len, tot = 3 + n * 3; put(`xref\n0 ${tot}\n0000000000 65535 f \n`); for (let i = 1; i < tot; i++) put(String(off[i]).padStart(10, '0') + ' 00000 n \n');
+  put(`trailer\n<< /Size ${tot} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+  return new Blob(parts, { type: 'application/pdf' });
+}
 async function unduhLaporan(kid, mode) {
   const k = KEGS[kid], h = k && hOf(kid); if (!k || DLB) return;
-  if (!(window.Wrd && Wrd.Word && Wrd.docCtx)) { toast('Modul laporan belum termuat. Muat ulang aplikasi lalu coba lagi.'); return; }
+  if (!window.Wrd) { toast('Modul laporan belum termuat. Muat ulang aplikasi lalu coba lagi.'); return; }
   if (!(h.selesai && lapSemua(kid))) { toast('Download aktif setelah laporan lengkap dan kegiatan ditandai Selesai.'); return; }
   DLB = mode; render();
   try {
@@ -1013,20 +1044,14 @@ async function unduhLaporan(kid, mode) {
     }
     if (ln.selfie) { await sfLoad(kid).catch(() => { }); }
     const n0 = kurang(); if (n0 > 0) { toast(`${n0} gambar masih belum termuat dari server (butuh internet). Sambungkan internet lalu coba lagi.`); return; }
-    const ev = wrdEv(kid, k), groups = Wrd.kelasGroups(ev), files = [], multi = groups.length > 1 || !!(groups[0] && groups[0].kelas);
-    const NOM = ev.lap.selfie ? { rd: 0, dh: 1, sf: 2, nl: 3, nr: 4, dy: 5, dk: 6, ln: 7 } : { rd: 0, dh: 1, nl: 2, nr: 3, dy: 4, dk: 5, ln: 6 };
-    let jobs = [];
-    groups.forEach(g => { const L = g.ev.lap || {}; (mode === 'nilai' ? [[L.nilai, 'nl'], [L.hasil, 'ln']] : [[Wrd.rdOn(g.ev), 'rd'], [true, 'dh'], [L.selfie, 'sf'], [L.nilai, 'nl'], [L.nara, 'nr'], [L.harian, 'dy'], [true, 'dk'], [L.hasil, 'ln']]).forEach(([on, kind]) => { if (on && !(kind === 'dk' && !g.ev.peserta.some(p => p.foto || p.foto2))) jobs.push({ g, kind }); }); });
-    if (!jobs.length) { toast('Tidak ada berkas yang perlu dibuat untuk kegiatan ini.'); return; }
-    for (let i = 0; i < jobs.length; i++) {
-      toast(`Menyusun berkas Word ${i + 1}/${jobs.length}…`); await tunggu(30);
-      const { g, kind } = jobs[i], r = await Wrd.Word.lapFile(kind, g.ev, await Wrd.docCtx(g.ev));
-      files.push({ name: (multi ? Wrd.safeName(g.kelas || 'Tanpa kelas') + '/' : '') + (mode === 'nilai' ? '' : NOM[kind] + '. ') + r.name, bytes: r.bytes });
-    }
-    const dasar = Wrd.safeName(Wrd.judulDasar(ev.acara) || k.nama || 'Kegiatan');
-    if (files.length === 1) { simpanBerkas(new Blob([files[0].bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }), files[0].name); toast('Berkas Word siap diunduh: ' + files[0].name); }
-    else { const nm = (mode === 'nilai' ? 'Daftar Nilai - ' : 'Laporan - ') + dasar + '.zip'; simpanBerkas(new Blob([Wrd.Word.zip(files.map(f => ({ name: f.name, data: f.bytes })))], { type: 'application/zip' }), nm); toast(`${files.length} berkas Word dikemas dalam ZIP: ${nm}`); }
-  } catch (e) { toast('Gagal menyusun laporan: ' + String(e && e.message || e)); }
+    const B = wrdBuild(kid, k), kop = await kopDataUrl(), urut = mode === 'nilai' ? ['nl', 'ln'] : WRD_DOCS.map(d => d[0]), pages = [];
+    B.groups.forEach(g => urut.forEach(d => (g.secs[d] || []).forEach(sec => pages.push(sec))));
+    if (!pages.length) { toast('Belum ada halaman laporan untuk dibuat.'); return; }
+    const jpgs = [];
+    for (let i = 0; i < pages.length; i++) { toast(`Menyusun PDF… halaman ${i + 1}/${pages.length}`); await tunggu(20); jpgs.push(await halamanJpeg(pages[i], kop)); }
+    const dasar = String(k.kegiatan || k.nama || 'Kegiatan').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90), nm = (mode === 'nilai' ? 'Daftar Nilai - ' : 'Laporan - ') + dasar + '.pdf';
+    simpanBerkas(susunPdf(jpgs), nm); toast(`PDF siap diunduh (${pages.length} halaman): ${nm}`);
+  } catch (e) { toast('Gagal menyusun PDF: ' + String(e && e.message || e)); }
   finally { DLB = ''; render(); }
 }
 function wrdMount() { // halaman A4 ditampilkan di dalam shadow DOM supaya gayanya tidak bercampur dengan aplikasi
@@ -1068,7 +1093,7 @@ function render() {
     const semua = Object.values(KEGS), selesaiNya = x => !!(H[x.id] && H[x.id].selesai), all = P.showDone ? semua.filter(selesaiNya) : semua.filter(x => !selesaiNya(x)), nSelesai = semua.filter(selesaiNya).length;
     // yang sedang/akan berlangsung di atas (terdekat dulu), lalu yang sudah lewat (terbaru dulu)
     const list = all.filter(x => !qq || String(x.nama).toLowerCase().includes(qq) || String(x.tempat || '').toLowerCase().includes(qq))
-      .sort((a, b) => { const ua = akhir(a) >= hari, ub = akhir(b) >= hari; if (ua !== ub) return ua ? -1 : 1; return ua ? awal(a).localeCompare(awal(b)) : awal(b).localeCompare(awal(a)); });
+      .sort((a, b) => awal(b).localeCompare(awal(a)) || String(a.nama || '').localeCompare(String(b.nama || ''))); // urut menurut tanggal mulai kegiatan (terbaru di atas)
     h = appbar('Portal PIC', ME.nama, false) + `<div class="screen">${hasilDenied ? `<div class="card2" style="border-color:var(--warn)"><b>⚠ Data akun PIC lain belum bisa dibaca</b><div class="hint">Aturan Firebase belum mengizinkan akun PIC membaca hasil akun PIC lain, jadi tanda "sudah TTD oleh PIC lain" belum muncul. Minta admin memperbarui aturan <b>dh_hasil</b> (lihat pic/README.md). Data Anda sendiri tetap tersimpan dan terkirim.</div></div>` : ''}<div class="hello"><h2>Daftar kegiatan</h2><p class="hint" style="margin:4px 0 0">${qq ? `${list.length} dari ${all.length} kegiatan` : `${all.length} kegiatan ${P.showDone ? 'yang sudah selesai' : 'dari admin utama'}`}.</p></div>
       ${all.length > 4 ? `<div class="field"><input id="homeQ" type="search" placeholder="Cari nama kegiatan atau tempat" aria-label="Cari kegiatan" value="${esc(P.hq || '')}"></div>` : ''}
       ${list.length ? list.map(x => { const s = stat(x.id), st = statusKeg(x.id); return `<button type="button" class="kcard" data-act="open" data-id="${esc(x.id)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(x.nama)}${x.sfx ? ` <span style="display:inline-block;font-size:12px;font-weight:800;color:#1d4ed8;background:#dbeafe;border-radius:6px;padding:0 7px;vertical-align:2px" title="Ada kegiatan lain dengan nama & tanggal yang sama">${esc(x.sfx)}</span>` : ''}</h3><span class="pill ${st[1]}"${String(x.namaTtd || '').trim() ? ' style="white-space:normal;text-align:right;max-width:52%;border-radius:14px;line-height:1.3"' : ''}>${st[0]}${String(x.namaTtd || '').trim() ? ' · ' + esc(String(x.namaTtd).trim()) : ''}</span></div>
@@ -1095,10 +1120,10 @@ function render() {
     const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
     const btnSelesai = alat ? '' : `<button class="btn" type="button" data-act="selesai" style="margin-top:6px">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">Tekan setelah SEMUA isian selesai. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.</p>`;
     const dlCard = alat ? '' : (() => {
-      const lengkap = lapSemua(kid), selesai = !!hh.selesai, ok = lengkap && selesai, cat = ok ? 'Laporan lengkap dan sudah ditandai Selesai. Siap diunduh (file Word, sama dengan pratinjau).' : !lengkap ? 'Belum bisa diunduh: Pratinjau Laporan belum lengkap. Lengkapi dulu semua bagian yang masih kurang.' : 'Laporan sudah lengkap. Tekan tombol ✔ Selesai di atas, lalu tombol download ini aktif.';
+      const lengkap = lapSemua(kid), selesai = !!hh.selesai, ok = lengkap && selesai, cat = ok ? 'Laporan lengkap dan sudah ditandai Selesai. Siap diunduh sebagai PDF (satu berkas berisi seluruh laporan).' : !lengkap ? 'Belum bisa diunduh: Pratinjau Laporan belum lengkap. Lengkapi dulu semua bagian yang masih kurang.' : 'Laporan sudah lengkap. Tekan tombol ✔ Selesai di atas, lalu tombol download ini aktif.';
       return `<div class="card2 dlbox${ok ? ' ok' : ''}"><b>⬇ Download Laporan</b><div class="hint">${cat}</div>
-        <button class="btn pri" type="button" data-act="dlall"${ok && !DLB ? '' : ' disabled'}>${DLB === 'semua' ? 'Menyusun berkas…' : 'Download Seluruh Laporan (ZIP)'}</button>
-        <button class="btn" type="button" data-act="dlnil"${ok && !DLB ? '' : ' disabled'}>${DLB === 'nilai' ? 'Menyusun berkas…' : 'Download Daftar Nilai Peserta'}</button></div>`; })();
+        <button class="btn pri" type="button" data-act="dlall"${ok && !DLB ? '' : ' disabled'}>${DLB === 'semua' ? 'Menyusun berkas…' : 'Download Laporan (PDF)'}</button>
+        <button class="btn" type="button" data-act="dlnil"${ok && !DLB ? '' : ' disabled'}>${DLB === 'nilai' ? 'Menyusun berkas…' : 'Download Daftar Nilai (PDF)'}</button></div>`; })();
     const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua ' + (k.b3 ? 'program' : 'alat') : ''}</small></span>${I.chev}</button>`; })() : '';
     if (alat) {
       h = appbar(klLabel(P.kl), k.nama, true) + `<div class="screen">

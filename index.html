@@ -8788,15 +8788,7 @@
         const dhRapikan = (arr) => { // buang duplikat id (ambil yang terbaru), urutkan terbaru di atas
             const m = new Map();
             (arr || []).forEach(x => { if (!x || x.id == null || x.id === '') return; const k = String(x.id), o = m.get(k); if (!o || dhMs(x.updated) >= dhMs(o.updated)) m.set(k, x); });
-            return [...m.values()].sort((a, b) => (dhBuat(b) - dhBuat(a)) || (dhMs(b.updated) - dhMs(a.updated)));
-        };
-        /* Waktu PEMBUATAN kegiatan (bukan terakhir dibuka/diubah): dari kolom created bila ada, kalau tidak dari id kegiatan (id = 8 huruf acak + waktu pembuatan base36); id lama tanpa waktu -> pakai tanggal kegiatan */
-        const dhBuat = (e) => {
-            if (!e) return 0;
-            const c = e.created != null ? dhMs(e.created) : 0; if (c > 0) return c;
-            const t = parseInt(String(e.id || '').slice(8), 36);
-            if (/^[a-z0-9]{12,}$/.test(String(e.id || '')) && t > 1.5e12 && t < 4.1e12) return t;
-            return dhMs(String(e.tanggal || '').slice(0, 10)) || 0;
+            return [...m.values()].sort((a, b) => String(b.tanggal || '').slice(0, 10).localeCompare(String(a.tanggal || '').slice(0, 10)) || String(a.kegiatan || '').localeCompare(String(b.kegiatan || '')) || (dhMs(b.updated) - dhMs(a.updated)));
         };
         /* Penanda A/B/C: kegiatan dengan nama & tanggal mulai yang sama diberi huruf pembeda (urutan = urutan di Google Drive, sama dengan aplikasi Daftar Hadir). Hanya tampilan; tidak masuk laporan. */
         const dhSufiks = (arr) => {

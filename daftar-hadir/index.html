@@ -2553,12 +2553,6 @@ const Ev = {
     const days = hariList({ tanggal: e.tanggal, tanggal2: e.tanggal2, hari: e.hari }).filter(Boolean);
     return days.length ? (days.length > 1 ? `${hariTanggal({}, days)} (${days.length} hari)` : fmtTgl(days[0])) : "Tanggal belum diisi";
   },
-  /** waktu PEMBUATAN kegiatan (urutan daftar = terbaru dibuat di atas, bukan yang baru dibuka): dari id (8 huruf acak + waktu base36), kalau tidak ada dari kolom created */
-  buat(e) {
-    const id = String((e && e.id) || ""), t = parseInt(id.slice(8), 36);
-    if (/^[a-z0-9]{12,}$/.test(id) && t > 1.5e12 && t < 4.1e12) return t;
-    return Number(e && e.created) || 0;
-  },
   /** jenis kegiatan untuk tombol cepat; kegiatan lama (belum ada kolom jenis di indeks) ditebak dari namanya */
   jenisIdx(e) {
     if (e.jenis === "damkar" || e.jenis === "angkat" || e.jenis === "b3") return e.jenis;
@@ -2570,7 +2564,7 @@ const Ev = {
   },
   render() {
     const q = norm($("#evSearch").value);
-    const list = [...EV].sort((x, y) => (this.buat(y) - this.buat(x)) || (y.updated - x.updated)).filter(e => !q || norm(`${e.kegiatan} ${e.tempat}`).includes(q));
+    const list = [...EV].sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")) || String(x.kegiatan || "").localeCompare(String(y.kegiatan || ""))).filter(e => !q || norm(`${e.kegiatan} ${e.tempat}`).includes(q));
     const tgl = e => this.tgl(e);
     this.quick(); const sm = sufMap();
     const upd = t => new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(t));

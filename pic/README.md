@@ -352,3 +352,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - **"DI BATCH SEBELUMNYA"**: peserta Remedial di Dokumentasi Peserta (halaman web, Word, layar APK, pratinjau Word APK) diberi tulisan itu pada kotak foto; foto peserta remedial tidak lagi wajib (APK & web menganggap lengkap).
 - **Urutan Rekap**: Rekap Kegiatan (admin) dan daftar Kegiatan Tersimpan (Daftar Hadir) diurutkan menurut **waktu pembuatan** (dari `created` / id kegiatan), bukan yang terakhir dibuka/diubah. Id lama tanpa waktu memakai tanggal kegiatan.
 - APP_VER v57, service worker `pic-v57`, `wrd.js` & `prog.js` dibangun ulang.
+
+## v58 (APK) + web — Download laporan jadi PDF, urutan menurut tanggal mulai
+- **Download Laporan (APK) kini PDF, satu berkas** (bukan ZIP/Word): *Download Laporan (PDF)* = seluruh laporan (rundown, daftar hadir, selfie, nilai, narasumber, dok. harian, dok. peserta, lulus/tidak lulus; PAPA/B3 berurutan per alat/program) dan *Download Daftar Nilai (PDF)* = Daftar Nilai + Lulus/Tidak Lulus. Aktif hanya bila laporan lengkap & kegiatan sudah ditekan Selesai. Halaman A4 sama dengan Pratinjau Word (HTML -> gambar JPEG per halaman -> PDF, dibuat di HP, tanpa pustaka luar; teks di PDF berupa gambar).
+- **Urutan**: Rekap Kegiatan (admin), daftar Kegiatan Tersimpan (Daftar Hadir) dan daftar kegiatan APK diurutkan menurut **tanggal mulai kegiatan** (terbaru di atas); tidak lagi memakai id/waktu dibuka. Untuk membalik (terlama di atas) ubah arah `localeCompare` di `dhRapikan` (root index.html), `Ev.render` (daftar-hadir) dan `.sort` daftar APK (`awal(b).localeCompare(awal(a))`).
+- APP_VER v58, service worker `pic-v58`.
