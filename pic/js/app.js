@@ -81,10 +81,11 @@ const xF = (h, pid, key) => { const o = ovOf(h); return !!(o && o[key === 'foto2
 const xPic = h => { const o = ovOf(h); return !!(o && o.ttdPic); };
 const xNrT = (h, key) => { const o = ovOf(h); return !!(o && o.nrT[key]); };     // TTD narasumber sudah ada dari akun PIC lain
 const nrTtdSrc = (h, k, key) => (h.nrs && h.nrs[key]) ? 'own' : xNrT(h, key) ? 'pic' : (k && nrAdmin(k, key).ttd) ? 'web' : ''; // asal TTD narasumber: HP ini / PIC lain / website
-const nrTtd = (h, key, k) => !!nrTtdSrc(h, k, key);
+const nrOnline = r => !!r && /kemnaker/i.test([r.kid, r.nama, r.inst].join(' ')); // narasumber Kemnaker: TTD otomatis "Online" (tidak perlu tanda tangan)
+const nrTtd = (h, key, k) => !!nrTtdSrc(h, k, key) || nrOnline(nrOf(h, k, key));
 const nTtdSrc = (h, k, n) => h['n' + n] ? 'own' : (ovOf(h) && ovOf(h)['n' + n]) ? 'pic' : (k && LAPK(k)['s' + n + 'ttd']) ? 'web' : ''; // asal TTD penandatangan daftar nilai
 const nTtd = (h, n, k) => !!nTtdSrc(h, k, n);           // TTD penandatangan daftar nilai (sendiri / PIC lain / website)
-const TTD_TXT = { own: '✓ Sudah TTD', pic: '✓ Sudah TTD · diisi PIC lain', web: '✓ Sudah TTD · sudah ada di website' };
+const TTD_TXT = { own: '✓ Sudah TTD', pic: '✓ Sudah TTD · diisi PIC lain', web: '✓ Sudah TTD · sudah ada di website', online: '✓ TTD: Online' };
 const ttdBadge = src => src ? `<span class="tgd ok">${TTD_TXT[src]}</span>` : '<span class="tgd no">Belum TTD</span>';
 const hfN = (h, d) => ((h.hfoto && h.hfoto[d]) || []).length + (() => { const o = ovOf(h), st = o && o.hf[d]; return st ? st.size : 0; })(); // foto dokumentasi harian (sendiri + PIC lain)
 /* ---------- gambar milik akun PIC lain ----------
@@ -230,7 +231,14 @@ const MATERI_KAT = [
   { id: 'rtev', judul: "Evaluasi & Praktek (Ruang Terbatas)", grp: '*', isi: ["Evaluasi", "Praktek"] },
   { id: 'tdg1', judul: "Deteksi Gas 1", grp: '*', isi: ["Dasar-Dasar K3", "Kebijakan K3", "Peraturan Perundang-Undangan K3 Ruang Terbatas"] },
   { id: 'tdg2', judul: "Deteksi Gas 2", grp: '*', isi: ["Prosedur Ijin Kerja di Ruang Terbatas", "Karakteristik Gas Atmosfir", "Pengenalan Alat Deteksi Gas", "Metode Deteksi Gas Atmosfir"] },
-  { id: 'tdg3', judul: "Deteksi Gas 3", grp: '*', isi: ["Evaluasi Online", "Evaluasi Praktek"] }
+  { id: 'tdg3', judul: "Deteksi Gas 3", grp: '*', isi: ["Evaluasi Online", "Evaluasi Praktek"] },
+  { id: 'lkm1', judul: "Ahli K3 Muda LK 1 – Kebijakan & Risiko Kesehatan", grp: '*', isi: ["Kebijakan umum pelaksanaan pembinaan dan pengawasan K3 & Persyaratan K3 Lingkungan Kerja", "Pengenalan risiko Kesehatan dan promosi kesehatan"] },
+  { id: 'lkm2', judul: "Ahli K3 Muda LK 2 – Hygiene Industri & Ventilasi", grp: '*', isi: ["Program Hygiene Industri: Antisipasi, rekognisi, evaluasi dan pengendalian bahaya di tempat kerja", "Ventilasi Industri"] },
+  { id: 'lkm3', judul: "Ahli K3 Muda LK 3 – Materi SKKNI", grp: '*', isi: ["Materi SKKNI"] },
+  { id: 'lkm4', judul: "Ahli K3 Muda LK 4 – Sistem Informasi & Sampel Ergonomi/Psikologi", grp: '*', isi: ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi", "Praktek pengumpulan sampel faktor ergonomi dan psikologi"] },
+  { id: 'lkm5', judul: "Ahli K3 Muda LK 5 – Sampel Fisika/Kimia/Biologi, PKL & Pelaporan", grp: '*', isi: ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi", "Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"] },
+  { id: 'lkm6', judul: "Ahli K3 Muda LK 6 – Uji Kompetensi", grp: '*', isi: ["Uji Kompetensi"] },
+  { id: 'lkm7', judul: "Ahli K3 Muda LK 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] }
 ];
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = kid => { const n = naraOf(kid); return n ? MATERI_KAT.filter(m => m.grp === n.grp || m.grp === '*') : MATERI_KAT; };
@@ -241,7 +249,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v61';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v62';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -1203,7 +1211,7 @@ function render() {
     const brt = !k.b3 && days.length > 4 && kelasArr(k).filter(Boolean).length > 0 && k.hk && Object.keys(k.hk).length, hk0 = (() => { const v = k.hk && Object.values(k.hk)[0]; return v ? (Array.isArray(v) ? v : Object.values(v)) : []; })();
     h = appbar('Absensi Narasumber', subK(k), true) + `<div class="screen">${days.map((d0, i) => { const ks = nrKeys(hh, k, d0, nrPfx(k)); if (!ks.length) return `<div class="card2"><b>Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}</b><div class="hint">Hari ini tidak ada narasumber (dihapus admin).</div></div>`; return ks.map((d, n) => {
       const r = nrOf(hh, k, d), man = r.kid === '_m', mk = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(m => m.id === r.mid) : null, sg = hh.nrs[d], src = nrTtdSrc(hh, k, d);
-      return `<div class="card2" data-day="${esc(d)}"><b>${n ? `Narasumber ke-${n + 1} · Hari ${i + 1}` : `Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}`}</b>${ttdBadge(src)}${brt ? `<small>${hk0.includes(d0) ? 'Semua alat/kelas' : 'Libur Kelas 2/3 & Rigger'}</small>` : ''}
+      return `<div class="card2" data-day="${esc(d)}"><b>${n ? `Narasumber ke-${n + 1} · Hari ${i + 1}` : `Hari ${i + 1} · ${esc(hariNama(d0))}, ${esc(tglPanjang(d0))}`}</b>${ttdBadge(nrOnline(r) ? 'online' : src)}${brt ? `<small>${hk0.includes(d0) ? 'Semua alat/kelas' : 'Libur Kelas 2/3 & Rigger'}</small>` : ''}
       <div class="field"><label for="nk${i}_${n}">Narasumber</label><select id="nk${i}_${n}" data-nr="kid"><option value="">— Pilih narasumber —</option>${NARA_KAT.map(n => `<option value="${n.id}"${r.kid === n.id ? ' selected' : ''}>${esc(n.nama)}</option>`).join('')}<option value="_m"${man ? ' selected' : ''}>✍️ Isi manual (kosong)</option></select></div>
       ${man ? `<div class="field"><label for="nn${i}_${n}">Nama narasumber</label><input id="nn${i}_${n}" data-nr="nama" value="${esc(r.nama)}" autocomplete="off" placeholder="Contoh: Fido Rinekas, S.T"></div>
         <div class="field"><label for="np${i}_${n}">NIP (boleh kosong)</label><input id="np${i}_${n}" data-nr="nip" value="${esc(r.nip)}" autocomplete="off"></div>
@@ -1211,9 +1219,9 @@ function render() {
         : r.kid ? `<div class="nauto"><small>Instansi (otomatis)</small><b>${esc(r.inst)}</b><small>NIP: ${esc(r.nip) || '–'}</small></div>` : ''}
       ${r.kid ? `<div class="field"><label for="nm${i}_${n}">Materi</label><select id="nm${i}_${n}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
       ${mk ? `<div class="nbul">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join('')}</div>` : r.mid === 'manual' ? `<div class="field"><label for="nt${i}_${n}">Isi materi (satu baris = satu poin)</label><textarea id="nt${i}_${n}" data-nr="mtxt" rows="4" placeholder="Contoh: Evaluasi Teori">${esc(r.mtxt)}</textarea></div>` : ''}
-      ${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : src ? `<div class="hint"><b>Tanda tangan narasumber sudah ada (${src === 'pic' ? 'diisi PIC lain' : 'di website'}).</b> Tidak perlu tanda tangan lagi; boleh tanda tangan ulang bila ingin mengganti.</div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
+      ${nrOnline(r) ? `<div class="hint"><b>Tanda tangan: Online.</b> Narasumber Kemnaker tidak perlu tanda tangan; kolom Tanda Tangan di laporan otomatis tertulis "Online".</div>${n ? '<div class="row"><button type="button" class="btn" data-act="nrclr">Kosongkan baris</button></div>' : ''}` : `${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : src ? `<div class="hint"><b>Tanda tangan narasumber sudah ada (${src === 'pic' ? 'diisi PIC lain' : 'di website'}).</b> Tidak perlu tanda tangan lagi; boleh tanda tangan ulang bila ingin mengganti.</div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
       <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}${n ? '<button type="button" class="btn" data-act="nrclr">Kosongkan baris</button>' : ''}</div>
-      ${r.nama.trim() ? `<div class="row"><button type="button" class="btn" data-act="nrshare">📤 Bagikan link ke narasumber</button><button type="button" class="btn" data-act="nrcopy">Salin link</button></div><div class="hint">${hh.nshared[d] ? 'Link sudah dibuat. ' : ''}Narasumber membuka link, menandatangani di HP-nya sendiri, lalu tanda tangan masuk otomatis ke baris ini.</div>` : '<div class="hint">Pilih narasumber dulu agar link penandatanganan bisa dibagikan.</div>'}</div>`;
+      ${r.nama.trim() ? `<div class="row"><button type="button" class="btn" data-act="nrshare">📤 Bagikan link ke narasumber</button><button type="button" class="btn" data-act="nrcopy">Salin link</button></div><div class="hint">${hh.nshared[d] ? 'Link sudah dibuat. ' : ''}Narasumber membuka link, menandatangani di HP-nya sendiri, lalu tanda tangan masuk otomatis ke baris ini.</div>` : '<div class="hint">Pilih narasumber dulu agar link penandatanganan bisa dibagikan.</div>'}`}</div>`;
     }).join('') + (ks.length < NR_MAX ? `<button type="button" class="btn" data-act="nradd" data-d="${esc(d0)}">➕ Tambah narasumber di hari ini</button>` : ''); }).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
       <p class="hint">Pilih nama narasumber: instansi terisi otomatis, lalu pilih materi. Tanda tangan bisa langsung di HP ini, atau bagikan link ke narasumber agar tanda tangan di HP-nya sendiri. Hasilnya muncul di pratinjau admin dan di berkas Word Absensi Narasumber.</p></div>`;
   } else if (P.screen === 'lap') {

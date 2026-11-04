@@ -949,7 +949,15 @@ const MATERI_KAT = [
   /* Teknisi K3 Deteksi Gas (3 hari: Hari 1-2 online, Hari 3 offline); narasumber diisi sendiri */
   { id: "tdg1", judul: "Deteksi Gas 1", grp: "*", isi: ["Dasar-Dasar K3", "Kebijakan K3", "Peraturan Perundang-Undangan K3 Ruang Terbatas"], sesi: [["Dasar-Dasar K3"], ["Kebijakan K3"], ["Peraturan Perundang-Undangan K3 Ruang Terbatas"], ["Peraturan Perundang-Undangan K3 Ruang Terbatas"]] },
   { id: "tdg2", judul: "Deteksi Gas 2", grp: "*", isi: ["Prosedur Ijin Kerja di Ruang Terbatas", "Karakteristik Gas Atmosfir", "Pengenalan Alat Deteksi Gas", "Metode Deteksi Gas Atmosfir"], sesi: [["Prosedur Ijin Kerja di Ruang Terbatas"], ["Karakteristik Gas Atmosfir", "Pengenalan Alat Deteksi Gas"], ["Metode Deteksi Gas Atmosfir"], ["Metode Deteksi Gas Atmosfir"]] },
-  { id: "tdg3", judul: "Deteksi Gas 3", grp: "*", isi: ["Evaluasi Online", "Evaluasi Praktek"], sesi: [["Evaluasi Online"], ["Evaluasi Online"], ["Evaluasi Praktek"], ["Evaluasi Praktek"]] }
+  { id: "tdg3", judul: "Deteksi Gas 3", grp: "*", isi: ["Evaluasi Online", "Evaluasi Praktek"], sesi: [["Evaluasi Online"], ["Evaluasi Online"], ["Evaluasi Praktek"], ["Evaluasi Praktek"]] },
+  /* Ahli K3 Muda Lingkungan Kerja (7 hari, materi per hari sesuai rundown; narasumber diisi sendiri, nama pemateri tidak diambil) */
+  { id: "lkm1", judul: "Ahli K3 Muda LK 1 – Kebijakan & Risiko Kesehatan", grp: "*", isi: ["Kebijakan umum pelaksanaan pembinaan dan pengawasan K3 & Persyaratan K3 Lingkungan Kerja", "Pengenalan risiko Kesehatan dan promosi kesehatan"], sesi: [["Kebijakan umum pelaksanaan pembinaan dan pengawasan K3 & Persyaratan K3 Lingkungan Kerja"], ["Kebijakan umum pelaksanaan pembinaan dan pengawasan K3 & Persyaratan K3 Lingkungan Kerja"], ["Pengenalan risiko Kesehatan dan promosi kesehatan"], ["Pengenalan risiko Kesehatan dan promosi kesehatan"]] },
+  { id: "lkm2", judul: "Ahli K3 Muda LK 2 – Hygiene Industri & Ventilasi", grp: "*", isi: ["Program Hygiene Industri: Antisipasi, rekognisi, evaluasi dan pengendalian bahaya di tempat kerja", "Ventilasi Industri"], sesi: [["Program Hygiene Industri: Antisipasi, rekognisi, evaluasi dan pengendalian bahaya di tempat kerja"], ["Program Hygiene Industri: Antisipasi, rekognisi, evaluasi dan pengendalian bahaya di tempat kerja"], ["Ventilasi Industri"], ["Ventilasi Industri"]] },
+  { id: "lkm3", judul: "Ahli K3 Muda LK 3 – Materi SKKNI", grp: "*", isi: ["Materi SKKNI"], sesi: [["Materi SKKNI"], ["Materi SKKNI"], ["Materi SKKNI"], ["Materi SKKNI"]] },
+  { id: "lkm4", judul: "Ahli K3 Muda LK 4 – Sistem Informasi & Sampel Ergonomi/Psikologi", grp: "*", isi: ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi", "Praktek pengumpulan sampel faktor ergonomi dan psikologi"], sesi: [["Sistim informasi lingkungan kerja"], ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi"], ["Teknik pengumpulan sampel faktor ergonomi dan psikologi"], ["Praktek pengumpulan sampel faktor ergonomi dan psikologi"]] },
+  { id: "lkm5", judul: "Ahli K3 Muda LK 5 – Sampel Fisika/Kimia/Biologi, PKL & Pelaporan", grp: "*", isi: ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi", "Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"], sesi: [["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi"], ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi"], ["PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi"], ["Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"]] },
+  { id: "lkm6", judul: "Ahli K3 Muda LK 6 – Uji Kompetensi", grp: "*", isi: ["Uji Kompetensi"], sesi: [["Uji Kompetensi"], ["Uji Kompetensi"], ["Uji Kompetensi"], ["Uji Kompetensi"]] },
+  { id: "lkm7", judul: "Ahli K3 Muda LK 7 – Evaluasi Teori & Seminar", grp: "*", isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"], ["Seminar Hasil Pengukuran dan Evaluasi Praktek"], ["Seminar Hasil Pengukuran dan Evaluasi Praktek"]] }
 ];
 /* Narasumber yang diisi manual otomatis TERSIMPAN di daftar ini (di browser ini) dan bisa dipilih lagi di kegiatan lain. */
 let NARA_USER = []; const NARA_UK = "nara-user";
@@ -1007,6 +1015,7 @@ function hariNon1(a) {
   const pick = Array.isArray(a && a.libur) ? days.filter(d => !a.libur.includes(d)) : Array.isArray(a && a.hari4) ? days.filter(d => a.hari4.includes(d)) : [];
   return pick.length ? pick : days.slice(0, 4);
 }
+const nrOnline = r => !!r && /kemnaker/i.test([r.kid, r.nama, r.inst].join(" ")); // narasumber Kemnaker: kolom tanda tangan otomatis tertulis "Online" (tanpa tanda tangan)
 const nrEf = r => (r && r.kid ? r : naraNew()); // baris tanpa narasumber terpilih dianggap kosong (nama sisa tidak ikut tercetak)
 function nrMigrasi(ev) { // isian narasumber per alat (versi sebelumnya, lap.nrk) digabung ke satu isian bersama (lap.nr); yang sudah terisi tidak ditimpa
   const L = ev && ev.lap; if (!L || !L.nrk || !Object.keys(L.nrk).length || isB3(ev.acara)) return; // B3: isian per program dipertahankan
@@ -1415,10 +1424,11 @@ const RD_FILL = { // isi cepat Absensi Narasumber dari rundown yang sudah dipaka
   kimia: [[["harso", "kim1"]], [["harso", "kim2"]], [["harso", "kim3"]], [["harso", "kim4"]], [["harso", "kim5"]], [["dinas", "kim6"]], [["wendri", "kim7"]], [["wendri", "kim8"]], [["elien", "kim9"]], [["elien", "kim10"]], [["elien", "kim11"]], [["kemnaker", "kim12"]]],
   prt: [[["_m", "prt1"]], [["_m", "prt2"]], [["_m", "rtev"]]], // narasumber belum ada di rundown: dikosongkan, diisi lewat pilihan nama
   tdg: [[["_m", "tdg1"]], [["_m", "tdg2"]], [["_m", "tdg3"]]], // Teknisi K3 Deteksi Gas: materi sesuai rundown, narasumber dikosongkan (diisi lewat pilihan nama)
+  lkm: [[["_m", "lkm1"]], [["_m", "lkm2"]], [["_m", "lkm3"]], [["_m", "lkm4"]], [["_m", "lkm5"]], [["_m", "lkm6"]], [["_m", "lkm7"]]], // Ahli K3 Muda Lingkungan Kerja: materi per hari sesuai rundown, narasumber dikosongkan
   trt: [[["_m", "trt1"]], [["_m", "trt2"]], [["_m", "trt3"]], [["_m", "trt4"]], [["_m", "rtev"]]],
   rigger: [[["fajrin", "rig1"]], [["ronal", "rig2"]], [["damai", "rigp"]], [["kemnaker", "eval"], ["repy", "evalw"]]]
 };
-const RD_B3 = { "Ahli K3 Kimia": "kimia", [B3_RESCUE]: "prt", "Teknisi Ruang Terbatas": "trt", "Teknisi K3 Deteksi Gas": "tdg" }; // program B3 yang sudah punya template rundown
+const RD_B3 = { "Ahli K3 Kimia": "kimia", [B3_RESCUE]: "prt", "Teknisi Ruang Terbatas": "trt", "Teknisi K3 Deteksi Gas": "tdg", "Ahli K3 Muda Lingkungan Kerja": "lkm" }; // program B3 yang sudah punya template rundown
 function rdTemplate(tp) {
   const plan = RD_FILL[tp]; if (!plan) return 0;
   const b3 = isB3(S.acara), kl = b3 ? NRK : "", all = hariList(S.acara).filter(Boolean);
@@ -1588,7 +1598,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
     const bul = t => String(t || "").split("\n").map(x => x.trim()).filter(Boolean).map(x => `<div class="bl"><i>↓</i><span>${esc(x)}</span></div>`).join("");
     const rowN = key => {
       const iso = nrIso(key), first = key === iso, r = nrEf((L.nr || {})[key]), d = toD(iso), nip = (r.kid && r.kid !== "_m") || r.nip ? `<div class="nip">NIP : ${esc(r.nip)}</div>` : "";
-      return `<tr><td class="c">${first ? `${esc(hrNama(d))}<br>${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}` : ""}</td><td><div>${esc(r.nama)}</div>${nip}</td><td class="c">${esc(r.inst)}</td><td class="mt">${bul(r.mtxt)}</td><td class="c sg">${r.ttd ? `<img src="${r.ttd}" alt="">` : ""}</td></tr>`;
+      return `<tr><td class="c">${first ? `${esc(hrNama(d))}<br>${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}` : ""}</td><td><div>${esc(r.nama)}</div>${nip}</td><td class="c">${esc(r.inst)}</td><td class="mt">${bul(r.mtxt)}</td><td class="c sg">${nrOnline(r) ? "<b>Online</b>" : r.ttd ? `<img src="${r.ttd}" alt="">` : ""}</td></tr>`;
     };
     const tblN = c => `<table class="lap nr">${colg(WN)}<thead><tr><th>Hari / Tanggal</th><th>Narasumber</th><th>Instansi</th><th>Materi</th><th>Tanda Tangan</th></tr></thead><tbody>${c.map(rowN).join("") || empty(5)}</tbody></table>`;
     const headN = pi => `<div class="lp-h">ABSENSI NARASUMBER${pi ? " <small>(lanjutan)</small>" : ""}</div>${pi ? "" : `<div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.rentang)}${LT.batch ? ` (BATCH ${esc(LT.batch)})` : ""}</div>`}<div class="lp-gap"></div>`;
@@ -2912,7 +2922,7 @@ function renderLap() {
       ${r.kid ? `<select data-nf="mid" aria-label="Materi ${ttl}"><option value="">— Pilih materi —</option>${opsi.map(m => `<option value="${m.id}"${r.mid === m.id ? " selected" : ""}>${esc(m.judul)}</option>`).join("")}<option value="manual"${r.mid === "manual" ? " selected" : ""}>✍️ Isi manual</option></select>` : ""}
       ${mk ? `<div class="bls">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join("")}</div>` : r.mid === "manual" ? `<textarea data-nf="mtxt" rows="4" placeholder="Isi materi, satu baris = satu poin">${esc(r.mtxt)}</textarea>` : ""}
       ${(r.kid || "").startsWith("u_") ? `<div class="hint">Narasumber ini tersimpan dari isian manual. <button class="btn sm" type="button" data-act="nuhapus">Hapus dari daftar tersimpan</button></div>` : ""}
-      <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd ? `background-image:url('${r.ttd}')` : ""}">${r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button><button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan</button><button class="btn sm danger" type="button" data-act="ndel" title="${n ? "Hapus baris narasumber ini" : "Hapus hari ini dari absensi narasumber"}">🗑 ${n ? "Hapus baris" : "Hapus hari ini"}</button></div></div>`;
+      <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd && !nrOnline(r) ? `background-image:url('${r.ttd}')` : ""}">${nrOnline(r) ? "<b>Online</b>" : r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button><button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan</button><button class="btn sm danger" type="button" data-act="ndel" title="${n ? "Hapus baris narasumber ini" : "Hapus hari ini dari absensi narasumber"}">🗑 ${n ? "Hapus baris" : "Hapus hari ini"}</button></div></div>`;
   };
   const nrOffCard = (d, i) => `<div class="lp-day lp-nr off" data-day="${d}"><div class="h">HARI ${i + 1} · ${esc(fmtTgl(d))}</div><div>Hari ini <b>dihapus</b> dari absensi narasumber (tidak dicetak dan tidak tampil di aplikasi PIC).</div><div class="lap-sig" style="margin-top:8px"><button class="btn sm" type="button" data-act="nback">↩ Pulihkan hari ini</button></div></div>`;
   $("#lpNr").innerHTML = !(L.nara || rdOn(S)) ? "" : nrDays.length ? nrDays.map((d, i) => {
@@ -3833,7 +3843,7 @@ const Word = (() => {
       return D.row(
         D.cell(W[0], first ? D.par(lr(D, hr(d)), { jc: "center" }) + D.par(lr(D, `${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`), { jc: "center" }) : D.par(""))
         + D.cell(W[1], D.par(lr(D, r.nama || "")) + nip) + D.cell(W[2], D.par(lr(D, r.inst || ""), { jc: "center" }))
-        + D.cell(W[3], mat) + D.cell(W[4], D.par(r.ttd ? D.inline(r.ttd, 26, 15) : "", { jc: "center", before: 20, after: 20 })), { h: tw(17) });
+        + D.cell(W[3], mat) + D.cell(W[4], D.par(nrOnline(r) ? lr(D, "Online", { b: 1 }) : r.ttd ? D.inline(r.ttd, 26, 15) : "", { jc: "center", before: 20, after: 20 })), { h: tw(17) });
     }).join("");
     const head = lapHead(D, Wm, ["Hari / Tanggal", "Narasumber", "Instansi", "Materi", "Tanda Tangan"], GR);
     const indent = tw(CONT_W - 62);

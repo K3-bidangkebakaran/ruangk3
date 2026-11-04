@@ -370,3 +370,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v61 — layar tidak lagi menggulir sendiri + label "Lengkap" di Rekap
 - APK: layar Absensi kembali ke posisi gulir semula setelah data dari server masuk (sebelumnya melompat ke atas karena isi daftar disusun SETELAH posisi dikembalikan). Pembaruan latar belakang juga ditunda selama jari masih menggulir.
 - Website (Rekap Kegiatan): label hijau "Lengkap" dan filter Lengkap/Belum kini memakai hitungan yang sama dengan Pratinjau Laporan di APK (semua bagian 100%), bukan hanya kolom Foto/TTD di Drive.
+
+## v62 — materi Ahli K3 Muda Lingkungan Kerja + TTD "Online" untuk Kemnaker
+- Katalog materi baru (7 hari sesuai rundown, tanpa nama pemateri): "Ahli K3 Muda LK 1…7". Di website tersedia tombol "Isi dari rundown Ahli K3 Muda Lingkungan Kerja" (tab Laporan); narasumber dibiarkan kosong untuk diisi sendiri.
+- Narasumber yang diisi Kemnaker (pilihan "Kemnaker – RI" atau tulisan Kemnaker di nama/instansi): kolom Tanda Tangan otomatis tertulis "Online" di pratinjau web, Word, dan APK; tidak perlu tanda tangan dan dihitung lengkap di progres laporan.
