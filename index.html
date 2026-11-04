@@ -8785,9 +8785,15 @@
         const dhOpen = {}; // id kegiatan yang barisnya sedang dibuka -> {html, upd, loading, err, seq}
         const dhHapusProses = new Set();
         const dhById = (id) => dhEvents.find(x => x.id === id);
+        /* Kolom "11/11" (foto/peserta) yang terlanjur diubah Google Sheets jadi tanggal ISO dikembalikan ke teks pecahan */
+        const dhFrac = (v, n) => {
+            const t = String(v == null ? '' : v); if (!/^\d{4}-\d{2}-\d{2}T/.test(t)) return t;
+            const ms = Date.parse(t); if (!ms) return t; const d = new Date(ms + 9 * 3600e3), m = d.getUTCMonth() + 1, dd = d.getUTCDate(), N = Number(n) || 0;
+            return (dd === N && m <= N) ? m + '/' + dd : (m === N && dd <= N) ? dd + '/' + m : m + '/' + dd; // pembilang tidak pernah lebih besar dari total
+        };
         const dhRapikan = (arr) => { // buang duplikat id (ambil yang terbaru), urutkan terbaru di atas
             const m = new Map();
-            (arr || []).forEach(x => { if (!x || x.id == null || x.id === '') return; const k = String(x.id), o = m.get(k); if (!o || dhMs(x.updated) >= dhMs(o.updated)) m.set(k, x); });
+            (arr || []).forEach(x => { if (!x || x.id == null || x.id === '') return; if (x.foto != null) x.foto = dhFrac(x.foto, x.n); if (x.ttdPeserta != null) x.ttdPeserta = dhFrac(x.ttdPeserta, (Number(x.n) || 0) * (Number(x.jumlahHari) || 1)); const k = String(x.id), o = m.get(k); if (!o || dhMs(x.updated) >= dhMs(o.updated)) m.set(k, x); });
             return [...m.values()].sort((a, b) => String(b.tanggal || '').slice(0, 10).localeCompare(String(a.tanggal || '').slice(0, 10)) || String(a.kegiatan || '').localeCompare(String(b.kegiatan || '')) || (dhMs(b.updated) - dhMs(a.updated)));
         };
         /* Penanda A/B/C: kegiatan dengan nama & tanggal mulai yang sama diberi huruf pembeda (urutan = urutan di Google Drive, sama dengan aplikasi Daftar Hadir). Hanya tampilan; tidak masuk laporan. */
