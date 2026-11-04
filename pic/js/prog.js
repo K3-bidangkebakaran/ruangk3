@@ -105,19 +105,19 @@ const MATERI_KAT = [
   { id: 'tdg1', judul: "Deteksi Gas 1", grp: '*', isi: ["Dasar-Dasar K3", "Kebijakan K3", "Peraturan Perundang-Undangan K3 Ruang Terbatas"] },
   { id: 'tdg2', judul: "Deteksi Gas 2", grp: '*', isi: ["Prosedur Ijin Kerja di Ruang Terbatas", "Karakteristik Gas Atmosfir", "Pengenalan Alat Deteksi Gas", "Metode Deteksi Gas Atmosfir"] },
   { id: 'tdg3', judul: "Deteksi Gas 3", grp: '*', isi: ["Evaluasi Online", "Evaluasi Praktek"] },
-  { id: 'lkm1', judul: "Ahli K3 Muda LK 1 – Kebijakan & Risiko Kesehatan", grp: '*', isi: ["Kebijakan umum pelaksanaan pembinaan dan pengawasan K3 & Persyaratan K3 Lingkungan Kerja", "Pengenalan risiko Kesehatan dan promosi kesehatan"] },
-  { id: 'lkm2', judul: "Ahli K3 Muda LK 2 – Hygiene Industri & Ventilasi", grp: '*', isi: ["Program Hygiene Industri: Antisipasi, rekognisi, evaluasi dan pengendalian bahaya di tempat kerja", "Ventilasi Industri"] },
-  { id: 'lkm3', judul: "Ahli K3 Muda LK 3 – Materi SKKNI", grp: '*', isi: ["Materi SKKNI"] },
-  { id: 'lkm4', judul: "Ahli K3 Muda LK 4 – Sistem Informasi & Sampel Ergonomi/Psikologi", grp: '*', isi: ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi", "Praktek pengumpulan sampel faktor ergonomi dan psikologi"] },
-  { id: 'lkm5', judul: "Ahli K3 Muda LK 5 – Sampel Fisika/Kimia/Biologi, PKL & Pelaporan", grp: '*', isi: ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi", "Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"] },
-  { id: 'lkm6', judul: "Ahli K3 Muda LK 6 – Uji Kompetensi", grp: '*', isi: ["Uji Kompetensi"] },
-  { id: 'lkm7', judul: "Ahli K3 Muda LK 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] }
+  { id: 'lkm1', judul: "Ahli K3 Muda LK Hari 1 – Kebijakan & Risiko Kesehatan", grp: '*', isi: ["Kebijakan umum pelaksanaan pembinaan dan pengawasan K3 & Persyaratan K3 Lingkungan Kerja", "Pengenalan risiko Kesehatan dan promosi kesehatan"] },
+  { id: 'lkm2', judul: "Ahli K3 Muda LK Hari 2 – Hygiene Industri & Ventilasi", grp: '*', isi: ["Program Hygiene Industri: Antisipasi, rekognisi, evaluasi dan pengendalian bahaya di tempat kerja", "Ventilasi Industri"] },
+  { id: 'lkm3', judul: "Ahli K3 Muda LK Hari 3 – Materi SKKNI", grp: '*', isi: ["Materi SKKNI"] },
+  { id: 'lkm4', judul: "Ahli K3 Muda LK Hari 4 – Sistem Informasi & Sampel Ergonomi/Psikologi", grp: '*', isi: ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi", "Praktek pengumpulan sampel faktor ergonomi dan psikologi"] },
+  { id: 'lkm5', judul: "Ahli K3 Muda LK Hari 5 – Sampel Fisika/Kimia/Biologi, PKL & Pelaporan", grp: '*', isi: ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi", "Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"] },
+  { id: 'lkm6', judul: "Ahli K3 Muda LK Hari 6 – Uji Kompetensi", grp: '*', isi: ["Uji Kompetensi"] },
+  { id: 'lkm7', judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] }
 ];
 const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(k).nrk || {})[m[1]] || {})[m[2]] || {}) : ((LAPK(k).nr || {})[key] || {}); };
 const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, own = (d in h.nr) ? h.nr[d] : null, ov = ovOf(h), xr = ov && ov.nr[d], base = nrAdmin(k, d); Object.keys(o).forEach(f => { const x = xr && xr[f]; let v; if (own && (f in own) && ownWins(h, x)) v = own[f]; else if (x) v = x.v; else v = own ? own[f] : base[f]; o[f] = String(v == null ? '' : v); }); const m = raw ? null : MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v63';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v64';
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
 const B3_REN = [['Petugas Penyelamat Ruang Terbatas', 'PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS']];
 function b3Ren(h) {

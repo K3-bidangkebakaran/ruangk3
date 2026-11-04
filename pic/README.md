@@ -377,3 +377,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v63 — semua materi terbuka untuk narasumber mana pun
 - Pilihan Materi di Absensi Narasumber (website & APK) tidak lagi dibatasi per narasumber: semua materi bisa dipilih.
+
+## v64 — nama materi Ahli K3 Muda LK dibuat jelas per hari
+- Judul materi menjadi "Ahli K3 Muda LK Hari 1 – … Hari 7 – …" supaya mudah dicari di pilihan Materi.
