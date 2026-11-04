@@ -380,3 +380,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v64 — nama materi Ahli K3 Muda LK dibuat jelas per hari
 - Judul materi menjadi "Ahli K3 Muda LK Hari 1 – … Hari 7 – …" supaya mudah dicari di pilihan Materi.
+
+## v65 — daftar narasumber bisa diedit/dihapus, materi terbuka kecuali Wasnaker
+- Instansi nama narasumber yang sudah ada kini bisa diubah (website & APK); di website perubahan tersimpan untuk nama itu.
+- Pilihan materi menampilkan semua materi untuk narasumber mana pun; narasumber ber-instansi Wasnaker hanya melihat materi Wasnaker + materi umum.
+- Website: tombol "Hapus nama dari daftar pilihan" untuk nama tersimpan maupun bawaan (bisa dipulihkan lewat tombol Pulihkan).
+- Judul kolom rundown "NARSUM" menjadi "NARASUMBER" (pratinjau & Word).

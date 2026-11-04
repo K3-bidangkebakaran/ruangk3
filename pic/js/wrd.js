@@ -406,7 +406,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
     const dayHtml = d => `<tr><td class="c hr" rowspan="${d.rows.length + 1}"><b>Hari<br>Ke – ${d.i + 1}</b></td><td class="c"><b><i>${rdTgl(d.iso)}</i></b></td><td></td><td></td><td></td><td></td></tr>`
       + d.rows.map(r => { const g = r.k === "br" || r.k === "iso" ? " gy" : ""; return `<tr><td class="c${g}">${r.w}</td><td class="${g.trim()}">${rdLines(r).map(esc).join("<br>")}</td><td></td><td class="c"><b>${esc(r.app)}</b></td>${nsHtml(r)}</tr>`; }).join("");
     const headRd = pi => `<div class="lp-h">${esc(t1)}${pi ? " <small>(lanjutan)</small>" : ""}</div><div class="lp-h s3">${esc(t2)}</div><div class="lp-gap"></div>`;
-    const bodyRd = c => headRd(c._pi || 0) + `<table class="lap rd">${colg(WR)}<thead><tr><th>HARI</th><th>WAKTU</th><th>MATERI &amp; PEMBINAAN</th><th></th><th>APLIKASI</th><th>NARSUM</th></tr></thead><tbody>${c.map(dayHtml).join(`<tr class="sep"><td colspan="6"></td></tr>`)}</tbody></table>`;
+    const bodyRd = c => headRd(c._pi || 0) + `<table class="lap rd">${colg(WR)}<thead><tr><th>HARI</th><th>WAKTU</th><th>MATERI &amp; PEMBINAAN</th><th></th><th>APLIKASI</th><th>NARASUMBER</th></tr></thead><tbody>${c.map(dayHtml).join(`<tr class="sep"><td colspan="6"></td></tr>`)}</tbody></table>`;
     const chs = lapChunk(RD, (c, pi, st, tail) => { c._pi = pi; return bodyRd(c); });
     chs.forEach((c, pi) => { c._pi = pi; html += page(bodyRd(c), "pg-lap pg-rd"); });
     nRd = chs.length;
@@ -717,7 +717,7 @@ const Word = (() => {
   }
   function rundown(ev, ctx) { // Rundown / Jadwal Pembinaan (isi dari Absensi Narasumber)
     const D = Doc(), Wm = [17, 24, 64, 8, 22, 55], W = Wm.map(tw), GR = "D9D9D9", GY = "E7E6E6", [t1, t2] = rdTitle(ev), RD = rdBuild(ev), SZ = 19;
-    const head = lapHead(D, Wm, ["HARI", "WAKTU", "MATERI & PEMBINAAN", "", "APLIKASI", "NARSUM"], "FFFFFF");
+    const head = lapHead(D, Wm, ["HARI", "WAKTU", "MATERI & PEMBINAAN", "", "APLIKASI", "NARASUMBER"], "FFFFFF");
     const C = (i, txt, o = {}) => D.cell(W[i], txt, o);
     const P = (t, o = {}) => D.par(lr(D, t, { sz: SZ, ...(o.r || {}) }), { jc: o.jc, before: 10, after: 10 });
     const rows = RD.map((d, di) => {

@@ -241,7 +241,7 @@ const MATERI_KAT = [
   { id: 'lkm7', judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] }
 ];
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
-const materiOpsi = kid => MATERI_KAT; // semua materi terbuka untuk narasumber mana pun
+const materiOpsi = (kid, inst) => { const n = naraOf(kid), w = inst ? /wasnaker/i.test(String(inst)) : !!(n && n.grp === 'wasnaker'); return w ? MATERI_KAT.filter(m => m.grp === 'wasnaker' || m.grp === '*') : MATERI_KAT; }; // semua materi terbuka, kecuali narasumber Wasnaker (hanya materi Wasnaker + umum)
 // isian narasumber per hari: isian PIC (bila ada) menimpa isian dari admin
 const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(k).nrk || {})[m[1]] || {})[m[2]] || {}) : ((LAPK(k).nr || {})[key] || {}); }; // isian dari admin (web) untuk satu baris
 const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, own = (d in h.nr) ? h.nr[d] : null, ov = ovOf(h), xr = ov && ov.nr[d], base = nrAdmin(k, d); Object.keys(o).forEach(f => { const x = xr && xr[f]; let v; if (own && (f in own) && ownWins(h, x)) v = own[f]; else if (x) v = x.v; else v = own ? own[f] : base[f]; o[f] = String(v == null ? '' : v); }); const m = raw ? null : MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; }; // raw: teks materi apa adanya (tanpa diisi ulang dari katalog) = isi Word di website
@@ -249,7 +249,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v64';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v65';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -476,7 +476,7 @@ function naraPilih(r, kid) {
   if (!kid) { r.kid = r.nama = r.nip = r.inst = r.mid = r.mtxt = ''; return; } // '— Pilih narasumber —': isian baris dikosongkan
   r.kid = kid; const n = naraOf(kid);
   if (n) { r.nama = n.nama; r.nip = n.nip; r.inst = n.inst; }
-  if (r.mid && r.mid !== 'manual' && !materiOpsi(kid).some(m => m.id === r.mid)) { r.mid = ''; r.mtxt = ''; }
+  if (r.mid && r.mid !== 'manual' && !materiOpsi(kid, r.inst).some(m => m.id === r.mid)) { r.mid = ''; r.mtxt = ''; }
 }
 function materiPilih(r, mid) { r.mid = mid; const m = MATERI_KAT.find(x => x.id === mid); if (m) r.mtxt = m.isi.join('\n'); }
 const saveH = kid => iPut('h:' + kid, H[kid]);
@@ -1216,8 +1216,8 @@ function render() {
       ${man ? `<div class="field"><label for="nn${i}_${n}">Nama narasumber</label><input id="nn${i}_${n}" data-nr="nama" value="${esc(r.nama)}" autocomplete="off" placeholder="Contoh: Fido Rinekas, S.T"></div>
         <div class="field"><label for="np${i}_${n}">NIP (boleh kosong)</label><input id="np${i}_${n}" data-nr="nip" value="${esc(r.nip)}" autocomplete="off"></div>
         <div class="field"><label for="ni${i}_${n}">Instansi</label><input id="ni${i}_${n}" data-nr="inst" value="${esc(r.inst)}" autocomplete="off" placeholder="Contoh: Kemnaker"></div>`
-        : r.kid ? `<div class="nauto"><small>Instansi (otomatis)</small><b>${esc(r.inst)}</b><small>NIP: ${esc(r.nip) || '–'}</small></div>` : ''}
-      ${r.kid ? `<div class="field"><label for="nm${i}_${n}">Materi</label><select id="nm${i}_${n}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
+        : r.kid ? `<div class="field"><label for="ni${i}_${n}">Instansi (bisa diubah)</label><input id="ni${i}_${n}" data-nr="inst" value="${esc(r.inst)}" autocomplete="off" placeholder="Instansi"></div><div class="nauto"><small>NIP: ${esc(r.nip) || '–'}</small></div>` : ''}
+      ${r.kid ? `<div class="field"><label for="nm${i}_${n}">Materi</label><select id="nm${i}_${n}" data-nr="mid"><option value="">— Pilih materi —</option>${materiOpsi(r.kid, r.inst).map(m => `<option value="${m.id}"${r.mid === m.id ? ' selected' : ''}>${esc(m.judul)}</option>`).join('')}<option value="manual"${r.mid === 'manual' ? ' selected' : ''}>✍️ Isi manual</option></select></div>` : ''}
       ${mk ? `<div class="nbul">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join('')}</div>` : r.mid === 'manual' ? `<div class="field"><label for="nt${i}_${n}">Isi materi (satu baris = satu poin)</label><textarea id="nt${i}_${n}" data-nr="mtxt" rows="4" placeholder="Contoh: Evaluasi Teori">${esc(r.mtxt)}</textarea></div>` : ''}
       ${nrOnline(r) ? `<div class="hint"><b>Tanda tangan: Online.</b> Narasumber Kemnaker tidak perlu tanda tangan; kolom Tanda Tangan di laporan otomatis tertulis "Online".</div>${n ? '<div class="row"><button type="button" class="btn" data-act="nrclr">Kosongkan baris</button></div>' : ''}` : `${sg ? `<div class="sigbtn done" style="margin:2px 0;max-width:300px;min-height:90px;border-style:solid"><img src="${sg}" alt="TTD narasumber" style="max-height:84px"></div>` : src ? `<div class="hint"><b>Tanda tangan narasumber sudah ada (${src === 'pic' ? 'diisi PIC lain' : 'di website'}).</b> Tidak perlu tanda tangan lagi; boleh tanda tangan ulang bila ingin mengganti.</div>` : '<div class="hint">Belum ada tanda tangan narasumber.</div>'}
       <div class="row"><button type="button" class="btn pri" data-act="nrsig">${sg ? 'Ganti tanda tangan' : 'Tanda tangan narasumber'}</button>${sg ? '<button type="button" class="btn" data-act="nrsigdel">Hapus</button>' : ''}${n ? '<button type="button" class="btn" data-act="nrclr">Kosongkan baris</button>' : ''}</div>

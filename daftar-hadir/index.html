@@ -961,10 +961,15 @@ const MATERI_KAT = [
 ];
 /* Narasumber yang diisi manual otomatis TERSIMPAN di daftar ini (di browser ini) dan bisa dipilih lagi di kegiatan lain. */
 let NARA_USER = []; const NARA_UK = "nara-user";
-const naraAll = () => NARA_KAT.concat(NARA_USER);
+let NARA_OV = {}, NARA_HIDE = []; const NARA_SK = "nara-set"; // NARA_OV: instansi yang diubah untuk nama bawaan; NARA_HIDE: nama bawaan yang disembunyikan dari pilihan
+const naraSetSimpan = () => { const v = { ov: NARA_OV, hide: NARA_HIDE }; idbPut(NARA_SK, v).catch(() => { }); try { localStorage.setItem("rk3_" + NARA_SK, JSON.stringify(v)); } catch (e) { } };
+const naraUserSimpan = () => { idbPut(NARA_UK, NARA_USER).catch(() => { }); try { localStorage.setItem("rk3_" + NARA_UK, JSON.stringify(NARA_USER)); } catch (e) { } };
+const naraKat = () => NARA_KAT.map(n => NARA_OV[n.id] != null ? { ...n, inst: NARA_OV[n.id] } : n);
+const naraAll = () => naraKat().concat(NARA_USER);
 const naraOf = id => naraAll().find(n => n.id === id) || null;
-const materiOpsi = kid => MATERI_KAT; // semua materi terbuka untuk narasumber mana pun (tidak lagi dibatasi per narasumber)
-const naraOpsiHtml = r => { const o = x => `<option value="${x.id}"${r.kid === x.id ? " selected" : ""}>${esc(x.nama)}</option>`; return NARA_KAT.map(o).join("") + (NARA_USER.length ? `<optgroup label="Tersimpan (isi manual sebelumnya)">${NARA_USER.map(o).join("")}</optgroup>` : ""); };
+/* Pilihan materi: semua materi terbuka untuk narasumber mana pun, kecuali narasumber Wasnaker (hanya materi Wasnaker + materi umum) */
+const materiOpsi = (kid, inst) => { const n = naraOf(kid), w = inst ? /wasnaker/i.test(String(inst)) : !!(n && n.grp === "wasnaker"); return w ? MATERI_KAT.filter(m => m.grp === "wasnaker" || m.grp === "*") : MATERI_KAT; };
+const naraOpsiHtml = r => { const o = x => `<option value="${x.id}"${r.kid === x.id ? " selected" : ""}>${esc(x.nama)}</option>`; return NARA_KAT.filter(n => !NARA_HIDE.includes(n.id) || n.id === r.kid).map(o).join("") + (NARA_USER.length ? `<optgroup label="Tersimpan (isi manual sebelumnya)">${NARA_USER.map(o).join("")}</optgroup>` : ""); };
 function naraSimpan(r) { // dipanggil setelah nama/NIP/instansi manual diubah: simpan untuk dipakai lagi
   if (!r || r.kid !== "_m") return false;
   const nama = String(r.nama || "").replace(/\s+/g, " ").trim(); if (!nama) return false;
@@ -1027,7 +1032,7 @@ function naraPilih(r, kid) { // pilih narasumber: nama, NIP, instansi terisi oto
   if (!kid) { Object.assign(r, naraNew()); return; } // "— Pilih narasumber —": seluruh isian baris dikosongkan
   r.kid = kid; const n = naraOf(kid);
   if (n) { r.nama = n.nama; r.nip = n.nip; r.inst = n.inst; }
-  if (r.mid && r.mid !== "manual" && !materiOpsi(kid).some(m => m.id === r.mid)) { r.mid = ""; r.mtxt = ""; }
+  if (r.mid && r.mid !== "manual" && !materiOpsi(kid, r.inst).some(m => m.id === r.mid)) { r.mid = ""; r.mtxt = ""; }
 }
 function materiPilih(r, mid) { // pilih materi katalog: isi materi terisi otomatis; "manual" = diketik sendiri
   r.mid = mid; const m = MATERI_KAT.find(x => x.id === mid);
@@ -1614,7 +1619,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
     const dayHtml = d => `<tr><td class="c hr" rowspan="${d.rows.length + 1}"><b>Hari<br>Ke – ${d.i + 1}</b></td><td class="c"><b><i>${rdTgl(d.iso)}</i></b></td><td></td><td></td><td></td><td></td></tr>`
       + d.rows.map(r => { const g = r.k === "br" || r.k === "iso" ? " gy" : ""; return `<tr><td class="c${g}">${r.w}</td><td class="${g.trim()}">${rdLines(r).map(esc).join("<br>")}</td><td></td><td class="c"><b>${esc(r.app)}</b></td>${nsHtml(r)}</tr>`; }).join("");
     const headRd = pi => `<div class="lp-h">${esc(t1)}${pi ? " <small>(lanjutan)</small>" : ""}</div><div class="lp-h s3">${esc(t2)}</div><div class="lp-gap"></div>`;
-    const bodyRd = c => headRd(c._pi || 0) + `<table class="lap rd">${colg(WR)}<thead><tr><th>HARI</th><th>WAKTU</th><th>MATERI &amp; PEMBINAAN</th><th></th><th>APLIKASI</th><th>NARSUM</th></tr></thead><tbody>${c.map(dayHtml).join(`<tr class="sep"><td colspan="6"></td></tr>`)}</tbody></table>`;
+    const bodyRd = c => headRd(c._pi || 0) + `<table class="lap rd">${colg(WR)}<thead><tr><th>HARI</th><th>WAKTU</th><th>MATERI &amp; PEMBINAAN</th><th></th><th>APLIKASI</th><th>NARASUMBER</th></tr></thead><tbody>${c.map(dayHtml).join(`<tr class="sep"><td colspan="6"></td></tr>`)}</tbody></table>`;
     const chs = lapChunk(RD, (c, pi, st, tail) => { c._pi = pi; return bodyRd(c); });
     chs.forEach((c, pi) => { c._pi = pi; html += page(bodyRd(c), "pg-lap pg-rd"); });
     nRd = chs.length;
@@ -2914,14 +2919,14 @@ function renderLap() {
   const nrDays = isB3(S.acara) && NRK ? (hariKelas(S, NRK) || days) : days, OFFN = nrOffG(L, NRK);
   const NR = nrD(L, NRK);
   const nrCard = (d, i, key, n) => {
-    const r = NR[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = (n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`) + (aturan4(S.acara) && kelasList(S.acara).length && days.length > 4 ? ` <span class="dtag ${hariNon1(S.acara).includes(d) ? "all" : "k1"}">${hariNon1(S.acara).includes(d) ? "Semua alat/kelas" : "Libur Kelas 2/3 &amp; Rigger"}</span>` : "");
+    const r = NR[key] || naraNew(), man = r.kid === "_m", opsi = materiOpsi(r.kid, r.inst), mk = r.mid && r.mid !== "manual" ? MATERI_KAT.find(m => m.id === r.mid) : null, ttl = (n ? `Narasumber ke-${n + 1} · HARI ${i + 1}` : `HARI ${i + 1} · ${esc(fmtTgl(d))}`) + (aturan4(S.acara) && kelasList(S.acara).length && days.length > 4 ? ` <span class="dtag ${hariNon1(S.acara).includes(d) ? "all" : "k1"}">${hariNon1(S.acara).includes(d) ? "Semua alat/kelas" : "Libur Kelas 2/3 &amp; Rigger"}</span>` : "");
     return `<div class="lp-day lp-nr" data-day="${key}"><div class="h">${ttl}</div>
       <select data-nf="kid" aria-label="Narasumber ${ttl}"><option value="">— Pilih narasumber —</option>${naraOpsiHtml(r)}<option value="_m"${man ? " selected" : ""}>✍️ Isi manual</option></select>
       ${man ? `<input type="text" data-nf="nama" placeholder="Nama narasumber (mis. Fido Rinekas, S.T)" value="${esc(r.nama)}" autocomplete="off"><input type="text" data-nf="nip" placeholder="NIP (opsional)" value="${esc(r.nip)}" autocomplete="off"><input type="text" data-nf="inst" placeholder="Instansi (mis. Kemnaker)" value="${esc(r.inst)}" autocomplete="off">`
-        : r.kid ? `<div class="auto">Instansi: <b>${esc(r.inst)}</b><br>NIP: ${esc(r.nip) || "–"}</div>` : ""}
+        : r.kid ? `<input type="text" data-nf="inst" placeholder="Instansi" aria-label="Instansi narasumber" value="${esc(r.inst)}" autocomplete="off" title="Instansi bisa diubah; perubahan tersimpan untuk nama ini"><div class="auto">NIP: ${esc(r.nip) || "–"}</div>` : ""}
       ${r.kid ? `<select data-nf="mid" aria-label="Materi ${ttl}"><option value="">— Pilih materi —</option>${opsi.map(m => `<option value="${m.id}"${r.mid === m.id ? " selected" : ""}>${esc(m.judul)}</option>`).join("")}<option value="manual"${r.mid === "manual" ? " selected" : ""}>✍️ Isi manual</option></select>` : ""}
       ${mk ? `<div class="bls">${mk.isi.map(x => `<div><i>↓</i><span>${esc(x)}</span></div>`).join("")}</div>` : r.mid === "manual" ? `<textarea data-nf="mtxt" rows="4" placeholder="Isi materi, satu baris = satu poin">${esc(r.mtxt)}</textarea>` : ""}
-      ${(r.kid || "").startsWith("u_") ? `<div class="hint">Narasumber ini tersimpan dari isian manual. <button class="btn sm" type="button" data-act="nuhapus">Hapus dari daftar tersimpan</button></div>` : ""}
+      ${r.kid && r.kid !== "_m" ? `<div class="hint">${(r.kid || "").startsWith("u_") ? "Narasumber ini tersimpan dari isian manual. " : ""}<button class="btn sm" type="button" data-act="nuhapus">🗑 Hapus nama dari daftar pilihan</button>${NARA_HIDE.length ? ` <button class="btn sm" type="button" data-act="nurestore">↩ Pulihkan ${NARA_HIDE.length} nama bawaan yang disembunyikan</button>` : ""}</div>` : (NARA_HIDE.length ? `<div class="hint"><button class="btn sm" type="button" data-act="nurestore">↩ Pulihkan ${NARA_HIDE.length} nama bawaan yang disembunyikan</button></div>` : "")}
       <div class="lap-sig" style="margin-top:8px"><div class="thumb" style="${r.ttd && !nrOnline(r) ? `background-image:url('${r.ttd}')` : ""}">${nrOnline(r) ? "<b>Online</b>" : r.ttd ? "" : "Belum ada"}</div><button class="btn sm" type="button" data-act="nsig">✍️ Tanda tangan narasumber</button><button class="btn sm" type="button" data-act="nclr">🧹 Kosongkan</button><button class="btn sm danger" type="button" data-act="ndel" title="${n ? "Hapus baris narasumber ini" : "Hapus hari ini dari absensi narasumber"}">🗑 ${n ? "Hapus baris" : "Hapus hari ini"}</button></div></div>`;
   };
   const nrOffCard = (d, i) => `<div class="lp-day lp-nr off" data-day="${d}"><div class="h">HARI ${i + 1} · ${esc(fmtTgl(d))}</div><div>Hari ini <b>dihapus</b> dari absensi narasumber (tidak dicetak dan tidak tampil di aplikasi PIC).</div><div class="lap-sig" style="margin-top:8px"><button class="btn sm" type="button" data-act="nback">↩ Pulihkan hari ini</button></div></div>`;
@@ -2977,7 +2982,14 @@ $("#lapBox").addEventListener("input", e => {
 });
 $("#lapBox").addEventListener("change", e => {
   const el = e.target;
-  if (el.dataset.nf && el.tagName !== "SELECT" && el.closest(".lp-nr") && /^(nama|nip|inst)$/.test(el.dataset.nf)) { if (naraSimpan(lapNr(el.closest(".lp-nr").dataset.day))) toast("Narasumber tersimpan. Bisa dipilih lagi di kegiatan lain."); return; }
+  if (el.dataset.nf && el.tagName !== "SELECT" && el.closest(".lp-nr") && /^(nama|nip|inst)$/.test(el.dataset.nf)) {
+    const rr = lapNr(el.closest(".lp-nr").dataset.day);
+    if (rr.kid && rr.kid !== "_m") { // nama yang sudah ada: ubah instansinya (tersimpan untuk nama ini); materi disesuaikan lagi (Wasnaker dibatasi)
+      if (el.dataset.nf === "inst") { const v = String(el.value || "").trim(), u = NARA_USER.find(n => n.id === rr.kid); if (u) { u.inst = v; naraUserSimpan(); } else if (NARA_KAT.some(n => n.id === rr.kid)) { NARA_OV[rr.kid] = v; naraSetSimpan(); } if (rr.mid && rr.mid !== "manual" && !materiOpsi(rr.kid, v).some(m => m.id === rr.mid)) { rr.mid = ""; rr.mtxt = ""; } renderLap(); changed(); toast("Instansi diubah dan tersimpan untuk nama ini."); }
+      return;
+    }
+    if (naraSimpan(rr)) toast("Narasumber tersimpan. Bisa dipilih lagi di kegiatan lain."); return;
+  }
   if (el.dataset.lpc) { S.lap[el.dataset.lpc] = el.checked; renderLap(); changed(); return; }
   if (el.dataset.nf && el.closest(".lp-nr") && el.tagName === "SELECT") {
     const r = lapNr(el.closest(".lp-nr").dataset.day);
@@ -3019,8 +3031,10 @@ $("#lapBox").addEventListener("click", e => {
   }
   else if (b.dataset.act === "nuhapus" && day) {
     const r = lapNr(day.dataset.day), i = NARA_USER.findIndex(n => n.id === r.kid);
-    if (i >= 0) { NARA_USER.splice(i, 1); idbPut(NARA_UK, NARA_USER).catch(() => { }); try { localStorage.setItem("rk3_" + NARA_UK, JSON.stringify(NARA_USER)); } catch (e) { } r.kid = "_m"; renderLap(); changed(); toast("Dihapus dari daftar tersimpan (isian di kegiatan ini tetap)."); }
+    if (i >= 0) { NARA_USER.splice(i, 1); naraUserSimpan(); r.kid = "_m"; renderLap(); changed(); toast("Dihapus dari daftar pilihan (isian di kegiatan ini tetap)."); }
+    else if (NARA_KAT.some(n => n.id === r.kid)) { if (!NARA_HIDE.includes(r.kid)) NARA_HIDE.push(r.kid); naraSetSimpan(); r.kid = "_m"; renderLap(); changed(); toast("Nama disembunyikan dari daftar pilihan (isian di kegiatan ini tetap). Bisa dipulihkan lewat tombol Pulihkan."); }
   }
+  else if (b.dataset.act === "nurestore") { NARA_HIDE = []; naraSetSimpan(); renderLap(); toast("Nama bawaan dipulihkan ke daftar pilihan."); }
   else if (b.dataset.act === "rdtpl") {
     const has = Object.values(nrD(S.lap, NRK) || {}).some(r => r && (r.kid || r.ttd));
     if (has && !confirm("Narasumber & materi yang sudah terisi akan diganti dengan template rundown ini (tanda tangan narasumber hari itu ikut terhapus). Lanjutkan?")) return;
@@ -3857,7 +3871,7 @@ const Word = (() => {
   }
   function rundown(ev, ctx) { // Rundown / Jadwal Pembinaan (isi dari Absensi Narasumber)
     const D = Doc(), Wm = [17, 24, 64, 8, 22, 55], W = Wm.map(tw), GR = "D9D9D9", GY = "E7E6E6", [t1, t2] = rdTitle(ev), RD = rdBuild(ev), SZ = 19;
-    const head = lapHead(D, Wm, ["HARI", "WAKTU", "MATERI & PEMBINAAN", "", "APLIKASI", "NARSUM"], "FFFFFF");
+    const head = lapHead(D, Wm, ["HARI", "WAKTU", "MATERI & PEMBINAAN", "", "APLIKASI", "NARASUMBER"], "FFFFFF");
     const C = (i, txt, o = {}) => D.cell(W[i], txt, o);
     const P = (t, o = {}) => D.par(lr(D, t, { sz: SZ, ...(o.r || {}) }), { jc: o.jc, before: 10, after: 10 });
     const rows = RD.map((d, di) => {
@@ -5176,6 +5190,7 @@ const Pic = {
   EV = (await idbGet(IDX)) || [];
   TOMBS = new Set((await idbGet(TOMB)) || []);
   try { let u = await idbGet(NARA_UK); if (!Array.isArray(u) || !u.length) { try { u = JSON.parse(localStorage.getItem("rk3_" + NARA_UK) || "[]"); } catch (e) { u = []; } } NARA_USER = (Array.isArray(u) ? u : []).filter(n => n && n.id && n.nama); } catch (e) { }
+  try { let v = await idbGet(NARA_SK); if (!v) { try { v = JSON.parse(localStorage.getItem("rk3_" + NARA_SK) || "null"); } catch (e) { v = null; } } if (v && typeof v === "object") { NARA_OV = v.ov && typeof v.ov === "object" ? v.ov : {}; NARA_HIDE = Array.isArray(v.hide) ? v.hide : []; } } catch (e) { }
   if (EV.some(e => TOMBS.has(e.id))) { // sisa kegiatan yang sudah dihapus (mis. tersimpan ulang oleh proses lama): bersihkan
     for (const e of EV.filter(e => TOMBS.has(e.id))) await idbDel("event:" + e.id);
     EV = EV.filter(e => !TOMBS.has(e.id)); await idbPut(IDX, EV).catch(() => { });
