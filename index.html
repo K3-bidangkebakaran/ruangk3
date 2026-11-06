@@ -269,7 +269,7 @@
             return p.then(function () {
                 var baris = bersihkanHalaman(halaman);
                 var huruf = baris.join('').length;
-                return { halaman: pdf.numPages, karakter: huruf, soal: parseBaris(baris) };
+                return { halaman: pdf.numPages, karakter: huruf, baris: baris, soal: parseBaris(baris) };
             });
         });
     }
@@ -7584,6 +7584,34 @@
             if (!input) return;
             let sedang = false;
 
+            // Muat pdf.js: CDN dulu; kalau gagal, pakai salinan di situs sendiri (daftar-hadir/lib).
+            function muatSkrip(src) {
+                return new Promise((ok, gagal) => {
+                    const s = document.createElement('script');
+                    s.src = src; s.onload = ok; s.onerror = () => { s.remove(); gagal(new Error('gagal memuat ' + src)); };
+                    document.head.appendChild(s);
+                });
+            }
+            async function muatPdfjs() {
+                try { await window.muatPustaka('pdfjs'); if (window.pdfjsLib) return; } catch (e) { console.warn('pdf.js CDN gagal, pakai salinan lokal:', e); }
+                if (!window.pdfjsLib) await muatSkrip('daftar-hadir/lib/pdf.min.js');
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'daftar-hadir/lib/pdf.worker.min.js';
+            }
+            function tampilTeks(baris, namaFile) {
+                tutupPratinjau();
+                const wrap = document.createElement('div');
+                wrap.id = 'modal-impor-pdf-soal';
+                wrap.className = 'fixed inset-0 z-[300] bg-slate-900/60 flex items-center justify-center p-3';
+                wrap.innerHTML = `<div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+                    <div class="p-4 border-b"><h3 class="text-base font-bold text-slate-900">Soal belum dikenali</h3>
+                    <p class="text-xs text-slate-600 mt-1">Format yang dikenali: <b>1.</b> pertanyaan, opsi <b>A.</b> sampai <b>D.</b>, kunci <b>Jawaban: B</b> (per soal) atau daftar <b>Kunci Jawaban</b> di akhir. Di bawah adalah teks yang terbaca dari <b>${esc(namaFile)}</b> (${baris.length} baris) &mdash; kirim ke pengembang bila perlu.</p></div>
+                    <pre class="p-4 text-[11px] leading-snug overflow-auto flex-1 whitespace-pre-wrap break-words bg-slate-50">${esc(baris.slice(0, 80).join('\n'))}</pre>
+                    <div class="p-3 border-t text-right"><button type="button" id="pdf-soal-tutup" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold">Tutup</button></div></div>`;
+                document.body.appendChild(wrap);
+                wrap.querySelector('#pdf-soal-tutup').addEventListener('click', tutupPratinjau);
+                wrap.addEventListener('click', (e) => { if (e.target === wrap) tutupPratinjau(); });
+            }
+
             function tutupPratinjau() { document.getElementById('modal-impor-pdf-soal')?.remove(); }
 
             function bukaPratinjau(daftar, bidang, kelasList, namaFile) {
@@ -7697,18 +7725,19 @@
                 const awal = label ? label.innerText : '';
                 if (label) label.innerText = 'Membaca PDF...';
                 try {
-                    await window.muatPustaka('pdfjs');
+                    await muatPdfjs();
                     const r = await window.SoalPdf.bacaFile(file);
                     if (r.karakter < 30) {
                         window.showToast('PDF ini berupa gambar/hasil scan, tidak ada teks yang bisa dibaca. Gunakan PDF yang teksnya bisa diblok/disalin.', 'error');
                     } else if (!r.soal.length) {
-                        window.showToast('Tidak ada soal yang dikenali. Pastikan format: "1. Pertanyaan", opsi "A. ..." sampai "D. ...", dan kunci "Jawaban: B" atau daftar "Kunci Jawaban" di akhir.', 'error');
+                        window.showToast('Soal belum dikenali dari PDF ini. Teks yang terbaca ditampilkan supaya formatnya bisa dicek.', 'error');
+                        tampilTeks(r.baris, file.name);
                     } else {
                         bukaPratinjau(r.soal, bidang, kelasList, file.name);
                     }
                 } catch (err) {
                     console.error('Gagal baca PDF soal:', err);
-                    window.showToast(err && err.message ? err.message : 'Gagal membaca PDF.', 'error');
+                    window.showToast('Gagal membaca PDF: ' + (err && err.message ? err.message : 'sebab tidak diketahui'), 'error');
                 } finally {
                     sedang = false;
                     if (label) label.innerText = awal;
