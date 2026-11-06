@@ -249,7 +249,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v68';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v69';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -574,7 +574,7 @@ function friendlyErr(e) {
   const m = String((e && (e.code || e.message)) || e || '');
   if (/PERMISSION_DENIED|permission/i.test(m)) return 'Aturan Firebase untuk Portal PIC belum dipasang oleh admin.';
   if (/network|timeout|terputus|lambat|fetch/i.test(m)) return 'Sinyal lemah. Akan dicoba lagi.';
-  return 'Belum terkirim. Akan dicoba lagi.';
+  return 'Belum terkirim. Akan dicoba lagi.' + (m ? ' (' + m.slice(0, 80) + ')' : '');
 }
 /* Hasil satu akun disimpan sebagai SATU berkas di server. Bila akun yang sama dipakai di dua HP, HP yang mengirim belakangan akan menimpa isian HP lain.
    svMerge: sebelum mengirim, baca berkas di server; isian dari HP lain yang belum ada di sini ditambahkan (isian di HP ini menang bila sama), gambarnya diunduh. */
@@ -618,11 +618,11 @@ async function sync() {
       const h = H[kid];
       { // gambar dikirim 3 sekaligus (kualitas/ukuran gambar tidak diubah); bila satu gagal, yang lain dituntaskan lalu error dilempar → dicoba lagi otomatis
         const todo = []; for (const [key, data] of mediaList(h)) { const hs = fnv(data); if (h.sent[key] !== hs) todo.push([key, data, hs]); }
-        let nx = 0, gagal = null;
-        await Promise.all(Array.from({ length: Math.min(4, todo.length) }, async () => {
-          while (!gagal && nx < todo.length) {
+        let nx = 0, gagal = null, nGagal = 0;
+        await Promise.all(Array.from({ length: Math.min(2, todo.length) }, async () => { // 2 sekaligus: di sinyal lemah, 4 sekaligus saling berebut dan semuanya kena batas waktu
+          while (nGagal < 3 && nx < todo.length) { // satu gambar gagal tidak menghentikan gambar lain; berhenti bila 3 kali gagal (sinyal putus)
             const [key, data, hs] = todo[nx++];
-            try { await window.PicFB.putMedia(kid, key, data); h.sent[key] = hs; await saveH(kid); renderPill(); } catch (e) { gagal = gagal || e; }
+            try { await window.PicFB.putMedia(kid, key, data); h.sent[key] = hs; await saveH(kid); renderPill(); } catch (e) { gagal = gagal || e; nGagal++; }
           }
         }));
         if (gagal) throw gagal;
@@ -1569,7 +1569,7 @@ document.addEventListener('click', e => {
   if (a === 'selesai' && k) { const s = stat(kid), sisa = (s.ttdTotal - s.ttd) + (s.aktif - s.foto) + (s.ttdPic ? 0 : 1); if (!confirm(sisa > 0 ? `Masih ada isian yang belum lengkap (${s.ttdTotal - s.ttd} TTD peserta, ${s.aktif - s.foto} foto${s.ttdPic ? '' : ', TTD PIC'}).\n\nTetap tandai SELESAI? Kegiatan disembunyikan dari daftar (bisa dibuka lagi).` : 'Semua isian sudah lengkap.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)')) return; const h = hOf(kid); h.selesai = true; touch(kid); if (lapSemua(kid)) { render(); toast('Kegiatan ditandai selesai. Laporan lengkap — tombol Download Laporan sudah aktif di bawah.'); setTimeout(() => { const e = $('.dlbox'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 150); return; } P.screen = 'home'; P.kid = null; P.kl = null; render(); toast('Kegiatan ditandai selesai.'); return; }
   if (a === 'bukalagi') { const id = b.dataset.id, h = hOf(id); h.selesai = false; touch(id); render(); toast('Kegiatan dibuka lagi.'); return; }
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
-  if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { syncErr = ''; sync(); pull(true); toast('Memeriksa dan mengirim data…'); } }
+  if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { const e0 = syncErr; syncErr = ''; sync(); pull(true); toast(e0 ? 'Mengirim ulang. Kendala sebelumnya: ' + e0 : 'Memeriksa dan mengirim data…'); } }
   else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'back') { // dari layar per alat (abs/dok/nil/nar) kembali ke menu alat; dari menu alat ke daftar alat
     if (P.from === 'lap' && P.screen !== 'lap') { P.screen = 'lap'; P.kl = null; P.from = null; }

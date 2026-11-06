@@ -396,3 +396,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v68 — Nilai Ujian Teori: tombol Lulus / Tidak lulus + angka manual
 - Di kolom Nilai Ujian Teori (APK dan website) ada tombol Lulus dan Tidak lulus di bawah kotak nilai; angka tetap bisa diketik manual. Ketuk tombol yang sama lagi untuk mengosongkan.
+
+## v69 — Foto dari APK lebih tahan sinyal lemah
+- Gambar dikirim 2 sekaligus (sebelumnya 4), dan satu gambar yang gagal tidak lagi menghentikan gambar lain (berhenti bila 3 kali gagal).
+- `putMedia`: kiriman yang kena batas waktu tidak diulang dari nol; percobaan berikutnya memakai kiriman yang sama, dan batas waktu mengikuti ukuran gambar (90–300 detik). Mencegah antrean kiriman menumpuk dan saling memperlambat.
+- Pesan "belum terkirim" kini memuat sebab singkat; mengetuk tulisan merah menampilkan kendala sebelumnya.

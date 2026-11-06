@@ -28,6 +28,7 @@ const app = initializeApp(firebaseConfig, 'portal-pic');
 const auth = getAuth(app);
 const db = getDatabase(app);
 
+const MEDIA_SENDING = new Map();
 const fail = (code, message) => Object.assign(new Error(message), { code });
 function withTimeout(promise, ms, message) {
   let t;
@@ -98,7 +99,16 @@ window.PicFB = {
   async selfieOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_selfie_foto/${kid}/${key}`)), 60000)).val() || ''; },
   async media(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}`)), 120000)).val() || {}; },
   // gambar disimpan dengan kunci tetap, jadi kirim ulang menimpa data yang sama
-  async putMedia(kid, key, dataUrl) { await withTimeout(set(ref(db, `${ROOT}/dh_media/${kid}/${key}`), dataUrl), 90000); },
+  // Gambar yang kirimnya kena batas waktu tetap berada di antrean kiriman Firebase. Percobaan berikutnya memakai kiriman yang SAMA (tidak menambah antrean baru),
+  // dan batas waktu mengikuti ukuran gambar, supaya di sinyal lemah gambar akhirnya tuntas (tidak terus mengulang dari nol).
+  async putMedia(kid, key, dataUrl) {
+    const id = kid + '/' + key; let rec = MEDIA_SENDING.get(id);
+    if (!rec || rec.v !== dataUrl) {
+      const p = set(ref(db, `${ROOT}/dh_media/${kid}/${key}`), dataUrl), rm = () => { if (MEDIA_SENDING.get(id) === rec) MEDIA_SENDING.delete(id); };
+      rec = { v: dataUrl, p }; MEDIA_SENDING.set(id, rec); p.then(rm, rm);
+    }
+    await withTimeout(rec.p, Math.min(300000, Math.max(90000, Math.round(String(dataUrl).length / 2) )));
+  },
   async putHasil(kid, hasil) { await withTimeout(set(ref(db, `${ROOT}/dh_hasil/${kid}/${auth.currentUser.uid}`), clean({ ...hasil, picUid: auth.currentUser.uid })), 30000); },
   // Link tanda tangan narasumber (halaman ruangk3.com/narasumber/): info baris -> dh_nara/{kid}/{key}; TTD -> dh_nara_ttd; penanda waktu -> dh_nara_st
   async naraPub(kid, key, info) { await withTimeout(set(ref(db, `${ROOT}/dh_nara/${kid}/${key}`), clean({ ...info, upd: Date.now() })), 30000); },
