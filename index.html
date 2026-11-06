@@ -129,9 +129,12 @@
 
     var RE_KUNCI_INLINE = /^(?:\*+\s*)?(?:kunci(?:\s+jawaban)?|jawaban(?:\s+(?:benar|yang\s+benar))?|answer|ans|key)\s*[:=\-–]\s*\(?\s*([A-Da-d])\s*\)?(?=[\s.,;)]|$)/i;
     var RE_KUNCI_JUDUL = /^(?:daftar\s+)?(?:kunci(?:\s+jawaban)?|lembar\s+jawaban|answer\s*key|jawaban)\s*:?\s*(.*)$/i;
-    var RE_PEMBAHASAN = /^(?:pembahasan|penjelasan|catatan|explanation|alasan)\b/i;
+    var RE_PEMBAHASAN = /^(?:pembahasan|penjelasan|catatan|explanation|alasan)\s*:/i;
     var RE_SOAL = /^(\d{1,3})\s*[.)]\s*(\S.*)$/;
     var RE_OPSI = /^\(?([A-Da-d])\s*[.)]\s*(.*)$/;
+    var RE_SOAL_POLOS = /^(\d{1,3})\s+(\S.*)$/;   // "1 Pertanyaan" tanpa titik (hanya bila nomornya berurutan)
+    var RE_OPSI_POLOS = /^([A-D])\s+(\S.*)$/;    // "A Pilihan" tanpa titik (hanya bila hurufnya sesuai urutan)
+    var RE_LENCANA = /\s*[✓✔√☑]\s*Jawaban\s*$/;    // lencana "✓ Jawaban" di sebelah opsi yang benar
     var RE_TANDA = /[✓✔√☑]/g;
 
     function pasanganKunci(teks) {
@@ -176,6 +179,7 @@
         }
         var tandaAwal = false;
         function tambahOpsi(h, teks) {
+            if (RE_LENCANA.test(teks)) { cur.kunci = h; cur.adaTanda = true; teks = teks.replace(RE_LENCANA, ''); }
             if (tandaAwal || /^\*|\*$/.test(teks) || RE_TANDA.test(teks)) { cur.kunci = h; cur.adaTanda = true; }
             tandaAwal = false;
             RE_TANDA.lastIndex = 0;
@@ -204,10 +208,16 @@
             if (RE_PEMBAHASAN.test(l)) { abaikan = true; return; }
 
             var ms = l.match(RE_SOAL);
+            if (!ms) {
+                var mp = l.match(RE_SOAL_POLOS);
+                if (mp && (parseInt(mp[1], 10) === noTerakhir + 1 || (noTerakhir === 0 && parseInt(mp[1], 10) <= 2)) && (!cur || abaikan || cur.opsi.filter(Boolean).length >= 4)) ms = mp;
+            }
             if (ms) {
                 var no = parseInt(ms[1], 10);
-                var siapBaru = !cur || (cur.opsi.filter(Boolean).length >= 4) || no === noTerakhir + 1;
-                // "1. teks" yang bukan nomor lanjutan ketika opsi belum lengkap dianggap lanjutan teks
+                // Soal baru hanya bila nomornya melanjutkan urutan (atau kecil lompatannya); baris seperti "9. Dasar"
+                // yang cuma sambungan kalimat pembahasan/opsi tidak dianggap soal baru.
+                var urut = no === noTerakhir + 1 || (no > noTerakhir && no <= noTerakhir + 5);
+                var siapBaru = !cur || noTerakhir === 0 || urut;
                 if (siapBaru && !(cur && mode === 'o' && cur.opsi.filter(Boolean).length < 4 && no !== noTerakhir + 1)) {
                     var sebaris = pecahOpsi(ms[2], 0);
                     if (sebaris && sebaris.awal > 0) {
@@ -230,6 +240,8 @@
                 }
                 var mo = l.match(RE_OPSI);
                 if (mo && mo[1].toUpperCase().charCodeAt(0) - 65 === harapan) { tambahOpsi(harapan, mo[2]); return; }
+                var mq = l.match(RE_OPSI_POLOS);
+                if (mq && mq[1].charCodeAt(0) - 65 === harapan && (harapan > 0 || mode === 'q')) { tambahOpsi(harapan, mq[2]); return; }
             }
             // lanjutan teks
             if (mode === 'o' && opsiIdx >= 0) cur.opsi[opsiIdx] = (cur.opsi[opsiIdx] || '') + ' ' + l;
