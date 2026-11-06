@@ -74,6 +74,211 @@
             };
         })();
     </script>
+    <script>
+/* Pembaca soal dari PDF (Bank Soal). Murni teks: PDF hasil scan/gambar tidak bisa dibaca. */
+(function (root) {
+    var HURUF = 'ABCD';
+
+    function bersih(s) {
+        return String(s || '').replace(/[   ]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    /* Ambil teks 1 halaman PDF jadi baris-baris (urut atas ke bawah, kiri ke kanan). */
+    function barisDariItem(items) {
+        var rows = [];
+        items.forEach(function (it) {
+            if (!it || typeof it.str !== 'string' || !it.transform) return;
+            var y = it.transform[5], x = it.transform[4];
+            var row = null;
+            for (var i = 0; i < rows.length; i++) { if (Math.abs(rows[i].y - y) <= 3) { row = rows[i]; break; } }
+            if (!row) { row = { y: y, it: [] }; rows.push(row); }
+            row.it.push({ x: x, w: it.width || 0, s: it.str });
+        });
+        rows.sort(function (a, b) { return b.y - a.y; });
+        return rows.map(function (r) {
+            r.it.sort(function (a, b) { return a.x - b.x; });
+            var out = '', prevEnd = null;
+            r.it.forEach(function (p) {
+                if (prevEnd !== null && p.x - prevEnd > 1.5 && !/\s$/.test(out) && !/^\s/.test(p.s)) out += ' ';
+                out += p.s;
+                prevEnd = p.x + p.w;
+            });
+            return bersih(out);
+        }).filter(function (l) { return l; });
+    }
+
+    /* Buang header/footer yang berulang di banyak halaman + nomor halaman. */
+    function bersihkanHalaman(halaman) {
+        var hitung = {};
+        halaman.forEach(function (ls) {
+            var sudah = {};
+            ls.forEach(function (l) { if (!sudah[l]) { sudah[l] = 1; hitung[l] = (hitung[l] || 0) + 1; } });
+        });
+        var batas = Math.max(3, Math.ceil(halaman.length * 0.6));
+        var semua = [];
+        halaman.forEach(function (ls) {
+            ls.forEach(function (l, i) {
+                if (halaman.length >= 3 && hitung[l] >= batas && l.length < 90 && (i < 2 || i >= ls.length - 2)) return;
+                if (/^(halaman|hal\.?|page)\s*\d+(\s*(dari|of|\/)\s*\d+)?$/i.test(l)) return;
+                if (/^[-–—\s]*\d{1,3}[-–—\s]*$/.test(l) && (i === 0 || i === ls.length - 1)) return;
+                semua.push(l);
+            });
+        });
+        return semua;
+    }
+
+    var RE_KUNCI_INLINE = /^(?:\*+\s*)?(?:kunci(?:\s+jawaban)?|jawaban(?:\s+(?:benar|yang\s+benar))?|answer|ans|key)\s*[:=\-–]\s*\(?\s*([A-Da-d])\s*\)?(?=[\s.,;)]|$)/i;
+    var RE_KUNCI_JUDUL = /^(?:daftar\s+)?(?:kunci(?:\s+jawaban)?|lembar\s+jawaban|answer\s*key|jawaban)\s*:?\s*(.*)$/i;
+    var RE_PEMBAHASAN = /^(?:pembahasan|penjelasan|catatan|explanation|alasan)\b/i;
+    var RE_SOAL = /^(\d{1,3})\s*[.)]\s*(\S.*)$/;
+    var RE_OPSI = /^\(?([A-Da-d])\s*[.)]\s*(.*)$/;
+    var RE_TANDA = /[✓✔√☑]/g;
+
+    function pasanganKunci(teks) {
+        var map = {}, ada = false, m, re = /(\d{1,3})\s*[.\-–):]?\s*([A-Da-d])(?![A-Za-z0-9])/g;
+        while ((m = re.exec(teks))) { map[parseInt(m[1], 10)] = m[2].toUpperCase().charCodeAt(0) - 65; ada = true; }
+        return ada ? map : null;
+    }
+
+    /* Pecah satu baris yang berisi beberapa opsi sekaligus ("A. x  B. y  C. z  D. w"). */
+    function pecahOpsi(baris, huruf) {
+        var re = /(?:^|\s)\(?([A-Da-d])[.)](?=\s|$)/g, m, tanda = [], harapan = huruf;
+        while ((m = re.exec(baris))) {
+            if (m[1].toUpperCase().charCodeAt(0) - 65 === harapan) {
+                tanda.push({ idx: m.index + (m[0].length - m[0].replace(/^\s+/, '').length), sesudah: m.index + m[0].length, h: harapan });
+                harapan++;
+            }
+        }
+        if (tanda.length < 2) return null;
+        var hasil = [];
+        for (var i = 0; i < tanda.length; i++) {
+            var akhir = i + 1 < tanda.length ? tanda[i + 1].idx : baris.length;
+            hasil.push({ h: tanda[i].h, teks: bersih(baris.slice(tanda[i].sesudah, akhir)) });
+        }
+        hasil.awal = tanda[0].idx;
+        return hasil;
+    }
+
+    function parseBaris(baris) {
+        var soal = [], cur = null, mode = null, opsiIdx = -1, kunciMap = null, dalamKunci = false, abaikan = false, noTerakhir = 0;
+
+        function tutup() {
+            if (!cur) return;
+            cur.pertanyaan = bersih(cur.pertanyaan);
+            cur.opsi = cur.opsi.map(bersih);
+            soal.push(cur);
+            cur = null; mode = null; opsiIdx = -1;
+        }
+        function mulai(no, teks) {
+            tutup();
+            cur = { no: no, pertanyaan: teks, opsi: [], kunci: null, adaTanda: false };
+            mode = 'q'; abaikan = false; noTerakhir = no;
+        }
+        var tandaAwal = false;
+        function tambahOpsi(h, teks) {
+            if (tandaAwal || /^\*|\*$/.test(teks) || RE_TANDA.test(teks)) { cur.kunci = h; cur.adaTanda = true; }
+            tandaAwal = false;
+            RE_TANDA.lastIndex = 0;
+            teks = teks.replace(RE_TANDA, ' ').replace(/^\*+\s*|\s*\*+$/g, '');
+            cur.opsi[h] = teks; mode = 'o'; opsiIdx = h;
+        }
+
+        baris.forEach(function (l) {
+            tandaAwal = false;
+            if (/^(\*|[✓✔√☑])\s*(?=\(?[A-Da-d]\s*[.)])/.test(l)) { tandaAwal = true; l = l.replace(/^(\*|[✓✔√☑])\s*/, ''); }
+            // mode daftar kunci jawaban
+            if (dalamKunci) {
+                var pk = pasanganKunci(l);
+                if (pk) { kunciMap = kunciMap || {}; for (var k in pk) kunciMap[k] = pk[k]; }
+                return;
+            }
+            var mk = l.match(RE_KUNCI_INLINE);
+            if (mk && cur) { cur.kunci = mk[1].toUpperCase().charCodeAt(0) - 65; cur.adaTanda = true; abaikan = false; mode = 'x'; return; }
+            var mj = l.match(RE_KUNCI_JUDUL);
+            if (mj && soal.length + (cur ? 1 : 0) > 0 && (mj[1] === '' || pasanganKunci(mj[1]))) {
+                tutup(); dalamKunci = true;
+                var p0 = mj[1] ? pasanganKunci(mj[1]) : null;
+                if (p0) { kunciMap = kunciMap || {}; for (var k0 in p0) kunciMap[k0] = p0[k0]; }
+                return;
+            }
+            if (RE_PEMBAHASAN.test(l)) { abaikan = true; return; }
+
+            var ms = l.match(RE_SOAL);
+            if (ms) {
+                var no = parseInt(ms[1], 10);
+                var siapBaru = !cur || (cur.opsi.filter(Boolean).length >= 4) || no === noTerakhir + 1;
+                // "1. teks" yang bukan nomor lanjutan ketika opsi belum lengkap dianggap lanjutan teks
+                if (siapBaru && !(cur && mode === 'o' && cur.opsi.filter(Boolean).length < 4 && no !== noTerakhir + 1)) {
+                    var sebaris = pecahOpsi(ms[2], 0);
+                    if (sebaris && sebaris.awal > 0) {
+                        mulai(no, ms[2].slice(0, sebaris.awal));
+                        sebaris.forEach(function (o) { tambahOpsi(o.h, o.teks); });
+                    } else mulai(no, ms[2]);
+                    return;
+                }
+            }
+            if (!cur) return;
+            if (abaikan) { return; }
+
+            // opsi (bisa beberapa dalam 1 baris)
+            var harapan = cur.opsi.length;
+            if (harapan <= 3) {
+                var banyak = pecahOpsi(l, harapan);
+                if (banyak) {
+                    banyak.forEach(function (o) { tambahOpsi(o.h, o.teks); });
+                    return;
+                }
+                var mo = l.match(RE_OPSI);
+                if (mo && mo[1].toUpperCase().charCodeAt(0) - 65 === harapan) { tambahOpsi(harapan, mo[2]); return; }
+            }
+            // lanjutan teks
+            if (mode === 'o' && opsiIdx >= 0) cur.opsi[opsiIdx] = (cur.opsi[opsiIdx] || '') + ' ' + l;
+            else if (mode === 'q') cur.pertanyaan += ' ' + l;
+        });
+        tutup();
+
+        if (kunciMap) {
+            soal.forEach(function (s, i) {
+                if (s.kunci === null || s.kunci === undefined) {
+                    var v = kunciMap[s.no];
+                    if (v === undefined) v = kunciMap[i + 1];
+                    if (v !== undefined) s.kunci = v;
+                }
+            });
+        }
+        return soal.filter(function (s) { return s.pertanyaan && s.opsi.filter(Boolean).length >= 2; }).map(function (s) {
+            var opsi = [0, 1, 2, 3].map(function (i) { return s.opsi[i] || ''; });
+            var k = (typeof s.kunci === 'number' && s.kunci >= 0 && s.kunci <= 3) ? s.kunci : null;
+            return { pertanyaan: s.pertanyaan, opsi: opsi, kunci: k };
+        });
+    }
+
+    /* Baca file PDF (File/Blob) -> daftar soal. */
+    function bacaFile(file) {
+        return file.arrayBuffer().then(function (buf) {
+            return root.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+        }).then(function (pdf) {
+            var halaman = [], p = Promise.resolve();
+            for (var i = 1; i <= pdf.numPages; i++) {
+                (function (no) {
+                    p = p.then(function () { return pdf.getPage(no); })
+                        .then(function (pg) { return pg.getTextContent(); })
+                        .then(function (tc) { halaman.push(barisDariItem(tc.items)); });
+                })(i);
+            }
+            return p.then(function () {
+                var baris = bersihkanHalaman(halaman);
+                var huruf = baris.join('').length;
+                return { halaman: pdf.numPages, karakter: huruf, soal: parseBaris(baris) };
+            });
+        });
+    }
+
+    root.SoalPdf = { parseBaris: parseBaris, barisDariItem: barisDariItem, bersihkanHalaman: bersihkanHalaman, bacaFile: bacaFile };
+    if (typeof module !== 'undefined') module.exports = root.SoalPdf;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+    </script>
 
     <style>
         html { scroll-behavior: smooth; }
@@ -1849,6 +2054,14 @@
                         <div class="lg:col-span-1">
                             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sticky top-0">
                                 <h3 class="text-md font-bold text-slate-900 mb-4 border-b pb-2">Tambah / Edit Soal</h3>
+                                <div class="mb-4 p-3 border border-dashed border-slate-300 rounded-lg bg-slate-50">
+                                    <p class="text-xs font-bold text-slate-800">Impor Soal dari PDF</p>
+                                    <p class="text-[10px] text-slate-500 mt-0.5 mb-2">Pilih Bidang &amp; Kelas di bawah dulu, lalu upload PDF. Soal, opsi A-D, dan kunci jawaban dibuat otomatis (bisa dicek &amp; diperbaiki sebelum disimpan).</p>
+                                    <label for="input-soal-pdf" class="flex items-center justify-center w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white cursor-pointer hover:bg-slate-100">
+                                        <span id="label-nama-pdf-soal">Klik untuk upload PDF soal</span>
+                                    </label>
+                                    <input type="file" id="input-soal-pdf" accept="application/pdf,.pdf" class="hidden">
+                                </div>
                                 <form id="form-soal" class="space-y-4">
                                     <input type="hidden" id="input-soal-id" value="">
                                     <input type="hidden" id="input-soal-kelas-asli" value="">
@@ -7361,6 +7574,147 @@
             }
             setTimeout(() => { btn.innerText = ori; }, 2000);
         });
+
+        // ===== Impor soal dari PDF =====
+        // Bidang & Kelas dipilih manual di form (checkbox kelas); PDF dibaca di browser (tanpa upload ke server),
+        // soal + kunci jawaban dibuat otomatis, ditampilkan dulu sebagai pratinjau yang bisa diperbaiki, baru disimpan.
+        (function () {
+            const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const input = document.getElementById('input-soal-pdf');
+            if (!input) return;
+            let sedang = false;
+
+            function tutupPratinjau() { document.getElementById('modal-impor-pdf-soal')?.remove(); }
+
+            function bukaPratinjau(daftar, bidang, kelasList, namaFile) {
+                tutupPratinjau();
+                const perluCek = (s) => s.kunci === null || s.opsi.some((o) => !o);
+                const jml = daftar.length, jmlCek = daftar.filter(perluCek).length;
+                const wrap = document.createElement('div');
+                wrap.id = 'modal-impor-pdf-soal';
+                wrap.className = 'fixed inset-0 z-[300] bg-slate-900/60 flex items-center justify-center p-3';
+                wrap.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col">
+                        <div class="p-4 border-b">
+                            <h3 class="text-base font-bold text-slate-900">Pratinjau Soal dari PDF</h3>
+                            <p class="text-xs text-slate-500 mt-1 break-words">${esc(namaFile)} &middot; ${jml} soal terbaca${jmlCek ? ` &middot; <span class="text-amber-600 font-semibold">${jmlCek} perlu dicek (kunci/opsi belum lengkap)</span>` : ''}</p>
+                            <p class="text-xs text-slate-600 mt-1">Disimpan ke: <b>${esc(bidang)}</b> &rarr; ${kelasList.map(esc).join(', ')}</p>
+                        </div>
+                        <div id="pdf-soal-list" class="p-4 space-y-3 overflow-y-auto flex-1"></div>
+                        <div class="p-4 border-t flex items-center justify-between gap-2 flex-wrap">
+                            <label class="text-xs text-slate-600 flex items-center gap-2"><input type="checkbox" id="pdf-soal-semua"> Pilih semua yang lengkap</label>
+                            <div class="flex gap-2">
+                                <button type="button" id="pdf-soal-batal" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-700">Batal</button>
+                                <button type="button" id="pdf-soal-simpan" class="px-4 py-2 bg-safety-500 text-white rounded-lg text-sm font-bold">Simpan</button>
+                            </div>
+                        </div>
+                    </div>`;
+                document.body.appendChild(wrap);
+                const list = wrap.querySelector('#pdf-soal-list');
+                list.innerHTML = daftar.map((s, i) => {
+                    const cek = perluCek(s);
+                    return `<div class="pdf-soal-item border rounded-lg p-3 ${cek ? 'border-amber-300 bg-amber-50' : 'border-slate-200'}" data-i="${i}">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-bold text-slate-700 flex items-center gap-2"><input type="checkbox" class="pdf-soal-pilih" ${cek ? '' : 'checked'}> Soal ${i + 1}${cek ? ' <span class="text-amber-600 font-semibold">(cek dulu)</span>' : ''}</label>
+                        </div>
+                        <textarea rows="2" class="pdf-soal-tanya w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm outline-none">${esc(s.pertanyaan)}</textarea>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                            ${[0, 1, 2, 3].map((k) => `<div class="flex items-center gap-1"><span class="text-xs font-bold text-slate-500 w-4">${'ABCD'[k]}</span><input type="text" value="${esc(s.opsi[k])}" data-k="${k}" class="pdf-soal-opsi flex-1 px-2 py-1 border border-slate-300 rounded-lg text-sm outline-none"></div>`).join('')}
+                        </div>
+                        <div class="mt-2 flex items-center gap-2"><span class="text-xs font-semibold text-slate-700">Kunci:</span>
+                            <select class="pdf-soal-kunci px-2 py-1 border border-slate-300 rounded-lg text-sm bg-white">
+                                <option value="">-- pilih --</option>
+                                ${[0, 1, 2, 3].map((k) => `<option value="${k}" ${s.kunci === k ? 'selected' : ''}>${'ABCD'[k]}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                const semua = wrap.querySelector('#pdf-soal-semua');
+                semua.checked = jmlCek === 0;
+                semua.addEventListener('change', () => {
+                    list.querySelectorAll('.pdf-soal-item').forEach((it) => {
+                        const ok = it.querySelector('.pdf-soal-kunci').value !== '' && [...it.querySelectorAll('.pdf-soal-opsi')].every((o) => o.value.trim());
+                        it.querySelector('.pdf-soal-pilih').checked = semua.checked && ok;
+                    });
+                });
+                wrap.querySelector('#pdf-soal-batal').addEventListener('click', tutupPratinjau);
+                wrap.addEventListener('click', (e) => { if (e.target === wrap) tutupPratinjau(); });
+
+                wrap.querySelector('#pdf-soal-simpan').addEventListener('click', async (ev) => {
+                    const tombol = ev.currentTarget;
+                    const hasil = [];
+                    let lewati = 0;
+                    list.querySelectorAll('.pdf-soal-item').forEach((it) => {
+                        if (!it.querySelector('.pdf-soal-pilih').checked) return;
+                        const tanya = it.querySelector('.pdf-soal-tanya').value.trim();
+                        const opsi = [...it.querySelectorAll('.pdf-soal-opsi')].map((o) => o.value.trim());
+                        const kunci = it.querySelector('.pdf-soal-kunci').value;
+                        if (!tanya || opsi.some((o) => !o) || kunci === '') { lewati++; it.classList.add('border-red-400'); return; }
+                        hasil.push({ pertanyaan: tanya, opsi, jawabanBenar: parseInt(kunci, 10) });
+                    });
+                    if (lewati) return window.showToast(`${lewati} soal yang dicentang belum lengkap (pertanyaan/opsi/kunci). Lengkapi dulu atau hilangkan centangnya.`, 'warning');
+                    if (!hasil.length) return window.showToast('Belum ada soal yang dicentang.', 'warning');
+                    tombol.disabled = true; tombol.innerText = 'Menyimpan...';
+                    try {
+                        const dasar = Date.now();
+                        const updates = {};
+                        let n = 0;
+                        hasil.forEach((s, i) => {
+                            kelasList.forEach((kelas) => {
+                                const key = push(ref(db, pathSoal)).key;
+                                updates[`${pathSoal}/${key}`] = { pertanyaan: s.pertanyaan, gambarUrl: null, opsi: s.opsi, jawabanBenar: s.jawabanBenar, kategori: `${bidang} - ${kelas}`, timestamp: dasar + i };
+                                n++;
+                            });
+                        });
+                        const kunciSemua = Object.keys(updates);
+                        for (let i = 0; i < kunciSemua.length; i += 200) {
+                            const potong = {};
+                            kunciSemua.slice(i, i + 200).forEach((k) => { potong[k] = updates[k]; });
+                            await update(ref(db), potong);
+                        }
+                        tutupPratinjau();
+                        window.showToast(`${hasil.length} soal tersimpan${kelasList.length > 1 ? ` ke ${kelasList.length} kelas (${n} data)` : ''}.`, 'success');
+                    } catch (err) {
+                        console.error('Gagal simpan soal dari PDF:', err);
+                        tombol.disabled = false; tombol.innerText = 'Simpan';
+                        window.showToast('Gagal menyimpan soal. Periksa sinyal lalu coba lagi.', 'error');
+                    }
+                });
+            }
+
+            input.addEventListener('change', async () => {
+                const file = input.files && input.files[0];
+                input.value = '';
+                if (!file || sedang) return;
+                if (!currentUser) return window.showToast('Silakan login dulu.', 'warning');
+                const bidang = document.getElementById('input-bidang-soal').value;
+                const kelasList = Array.from(document.querySelectorAll('.kelas-soal-checkbox:checked')).map((cb) => cb.value);
+                if (!bidang || kelasList.length === 0) return window.showToast('Pilih Bidang dan minimal 1 Kelas K3 dulu (di bawah), baru upload PDF.', 'warning');
+                if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') return window.showToast('File harus berformat PDF.', 'warning');
+                sedang = true;
+                const label = document.getElementById('label-nama-pdf-soal');
+                const awal = label ? label.innerText : '';
+                if (label) label.innerText = 'Membaca PDF...';
+                try {
+                    await window.muatPustaka('pdfjs');
+                    const r = await window.SoalPdf.bacaFile(file);
+                    if (r.karakter < 30) {
+                        window.showToast('PDF ini berupa gambar/hasil scan, tidak ada teks yang bisa dibaca. Gunakan PDF yang teksnya bisa diblok/disalin.', 'error');
+                    } else if (!r.soal.length) {
+                        window.showToast('Tidak ada soal yang dikenali. Pastikan format: "1. Pertanyaan", opsi "A. ..." sampai "D. ...", dan kunci "Jawaban: B" atau daftar "Kunci Jawaban" di akhir.', 'error');
+                    } else {
+                        bukaPratinjau(r.soal, bidang, kelasList, file.name);
+                    }
+                } catch (err) {
+                    console.error('Gagal baca PDF soal:', err);
+                    window.showToast(err && err.message ? err.message : 'Gagal membaca PDF.', 'error');
+                } finally {
+                    sedang = false;
+                    if (label) label.innerText = awal;
+                }
+            });
+        })();
 
         window.batalEditSoal = function() {
             document.getElementById('form-soal').reset();

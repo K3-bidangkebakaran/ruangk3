@@ -413,3 +413,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - `Cloud.sync` memeriksa Drive dulu: dihapus akun lain -> ikut dihapus (tidak dibuat ulang); lebih baru -> digabung lalu dikirim. `Cloud.refresh` menggabung (bukan menolak) bila ada perubahan belum terkirim; status baru `conflict` di `stateOf`.
 - Sinyal langsung lewat node Firebase baru `dh_upd/{id}` = `{t, by, del}` (`Pic.signal`/`Pic.updRun`): perubahan -> perangkat lain `Cloud.kickSoon()` (reconcile); hapus -> `Ev.purge(id,false)` sekali per penanda (`dh-upd-done`). Rekap Kegiatan (index.html) ikut memuat ulang saat ada sinyal dan menulis penanda saat menghapus.
 - Aturan Firebase: `dh_upd` cukup `auth != null` (baca & tulis).
+
+## Bank Soal — Impor dari PDF (website, `index.html` root)
+- Di Kelola Bank Soal ada kotak "Impor Soal dari PDF". Bidang & Kelas dipilih manual (checkbox kelas, boleh lebih dari 1), lalu upload PDF.
+- PDF dibaca di browser dengan pdf.js (`window.SoalPdf.bacaFile`, tanpa dikirim ke server). Dikenali: pertanyaan bernomor ("1." / "1)"), opsi A–D (satu baris atau sebaris), kunci jawaban ("Jawaban: B" / "Kunci: B" per soal, daftar "Kunci Jawaban" di akhir, atau opsi bertanda * / ✓). Pembahasan diabaikan; header/footer berulang dan nomor halaman dibuang.
+- Pratinjau dapat diedit (pertanyaan, opsi, kunci); soal yang kuncinya/opsinya belum lengkap ditandai kuning dan tidak otomatis dicentang. Simpan memakai struktur yang sama dengan input manual (`pertanyaan`, `gambarUrl:null`, `opsi[4]`, `jawabanBenar`, `kategori "Bidang - Kelas"`, `timestamp`), satu data per kelas, lewat satu `update` multi-path.
+- PDF hasil scan/gambar (tanpa teks) tidak bisa dibaca; gambar di dalam PDF tidak ikut diambil.
