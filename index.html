@@ -266,16 +266,23 @@
     }
 
     /* Baca file PDF (File/Blob) -> daftar soal. */
-    function bacaFile(file) {
+    function bacaFile(file, onProgress) {
         return file.arrayBuffer().then(function (buf) {
-            return root.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+            var tugas = root.pdfjsLib.getDocument({ data: new Uint8Array(buf) });
+            var batas = new Promise(function (ok, gagal) {
+                setTimeout(function () { gagal(new Error('pembaca PDF tidak merespons (waktu habis)')); }, 30000);
+            });
+            return Promise.race([tugas.promise, batas]);
         }).then(function (pdf) {
             var halaman = [], p = Promise.resolve();
             for (var i = 1; i <= pdf.numPages; i++) {
                 (function (no) {
                     p = p.then(function () { return pdf.getPage(no); })
                         .then(function (pg) { return pg.getTextContent(); })
-                        .then(function (tc) { halaman.push(barisDariItem(tc.items)); });
+                        .then(function (tc) {
+                            halaman.push(barisDariItem(tc.items));
+                            if (onProgress) { try { onProgress(no, pdf.numPages); } catch (e) {} }
+                        });
                 })(i);
             }
             return p.then(function () {
@@ -2073,6 +2080,7 @@
                                         <span id="label-nama-pdf-soal">Klik untuk upload PDF soal</span>
                                     </label>
                                     <input type="file" id="input-soal-pdf" accept="application/pdf,.pdf" class="hidden">
+                                    <p id="status-pdf-soal" class="text-[11px] mt-2 text-slate-600 break-words" hidden></p>
                                 </div>
                                 <form id="form-soal" class="space-y-4">
                                     <input type="hidden" id="input-soal-id" value="">
@@ -7592,8 +7600,6 @@
         // soal + kunci jawaban dibuat otomatis, ditampilkan dulu sebagai pratinjau yang bisa diperbaiki, baru disimpan.
         (function () {
             const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-            const input = document.getElementById('input-soal-pdf');
-            if (!input) return;
             let sedang = false;
 
             // Muat pdf.js: CDN dulu; kalau gagal, pakai salinan di situs sendiri (daftar-hadir/lib).
@@ -7604,10 +7610,22 @@
                     document.head.appendChild(s);
                 });
             }
+            const WORKER_LOKAL = '/daftar-hadir/lib/pdf.worker.min.js';
+            const WORKER_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
             async function muatPdfjs() {
-                try { await window.muatPustaka('pdfjs'); if (window.pdfjsLib) return; } catch (e) { console.warn('pdf.js CDN gagal, pakai salinan lokal:', e); }
-                if (!window.pdfjsLib) await muatSkrip('daftar-hadir/lib/pdf.min.js');
-                window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'daftar-hadir/lib/pdf.worker.min.js';
+                if (!window.pdfjsLib) {
+                    try { await muatSkrip('/daftar-hadir/lib/pdf.min.js'); }
+                    catch (e) { console.warn('pdf.js lokal gagal, pakai CDN:', e); await window.muatPustaka('pdfjs'); }
+                }
+                if (!window.pdfjsLib) throw new Error('pembaca PDF tidak termuat');
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_LOKAL;
+            }
+            function status(teks, galat) {
+                const el = document.getElementById('status-pdf-soal');
+                if (!el) return;
+                el.hidden = !teks;
+                el.textContent = teks || '';
+                el.className = 'text-[11px] mt-2 break-words ' + (galat ? 'text-red-600 font-semibold' : 'text-slate-600');
             }
             function tampilTeks(baris, namaFile) {
                 tutupPratinjau();
@@ -7723,22 +7741,40 @@
                 });
             }
 
-            input.addEventListener('change', async () => {
+            // Delegasi di document: tetap jalan walau panel Bank Soal digambar ulang oleh skrip lain.
+            document.addEventListener('change', async (ev) => {
+                const input = ev.target;
+                if (!input || input.id !== 'input-soal-pdf') return;
                 const file = input.files && input.files[0];
                 input.value = '';
-                if (!file || sedang) return;
-                if (!currentUser) return window.showToast('Silakan login dulu.', 'warning');
+                if (!file) return;
+                status('File dipilih: ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)');
+                if (sedang) return status('Masih membaca PDF sebelumnya, tunggu sebentar. Bila lebih dari 1 menit, muat ulang halaman (Cmd+Shift+R).', true);
+                if (!currentUser) { status('Silakan login dulu.', true); return window.showToast('Silakan login dulu.', 'warning'); }
                 const bidang = document.getElementById('input-bidang-soal').value;
                 const kelasList = Array.from(document.querySelectorAll('.kelas-soal-checkbox:checked')).map((cb) => cb.value);
-                if (!bidang || kelasList.length === 0) return window.showToast('Pilih Bidang dan minimal 1 Kelas K3 dulu (di bawah), baru upload PDF.', 'warning');
-                if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') return window.showToast('File harus berformat PDF.', 'warning');
+                if (!bidang || kelasList.length === 0) {
+                    status('Pilih Bidang dan centang minimal 1 Kelas dulu (di formulir bawah), lalu pilih file PDF lagi.', true);
+                    return window.showToast('Pilih Bidang dan minimal 1 Kelas K3 dulu (di bawah), baru upload PDF.', 'warning');
+                }
+                if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') { status('File harus berformat PDF.', true); return window.showToast('File harus berformat PDF.', 'warning'); }
                 sedang = true;
                 const label = document.getElementById('label-nama-pdf-soal');
                 const awal = label ? label.innerText : '';
                 if (label) label.innerText = 'Membaca PDF...';
                 try {
+                    status('Memuat pembaca PDF...');
                     await muatPdfjs();
-                    const r = await window.SoalPdf.bacaFile(file);
+                    const kemajuan = (n, total) => status('Membaca halaman ' + n + ' dari ' + total + '...');
+                    let r;
+                    try { r = await window.SoalPdf.bacaFile(file, kemajuan); }
+                    catch (e1) {
+                        console.warn('Baca PDF gagal, coba worker CDN:', e1);
+                        status('Mencoba cara lain membaca PDF...');
+                        window.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER_CDN;
+                        r = await window.SoalPdf.bacaFile(file, kemajuan);
+                    }
+                    status('Selesai membaca: ' + r.soal.length + ' soal ditemukan.');
                     if (r.karakter < 30) {
                         window.showToast('PDF ini berupa gambar/hasil scan, tidak ada teks yang bisa dibaca. Gunakan PDF yang teksnya bisa diblok/disalin.', 'error');
                     } else if (!r.soal.length) {
@@ -7749,6 +7785,7 @@
                     }
                 } catch (err) {
                     console.error('Gagal baca PDF soal:', err);
+                    status('Gagal membaca PDF: ' + (err && err.message ? err.message : 'sebab tidak diketahui'), true);
                     window.showToast('Gagal membaca PDF: ' + (err && err.message ? err.message : 'sebab tidak diketahui'), 'error');
                 } finally {
                     sedang = false;
