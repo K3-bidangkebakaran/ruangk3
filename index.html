@@ -7627,16 +7627,49 @@
                 el.textContent = teks || '';
                 el.className = 'text-[11px] mt-2 break-words ' + (galat ? 'text-red-600 font-semibold' : 'text-slate-600');
             }
+            // Gaya sendiri (tailwind.css situs ini statis, kelas baru tidak ikut terbuat) -> pakai CSS khusus.
+            if (!document.getElementById('gaya-impor-pdf-soal')) {
+                const st = document.createElement('style');
+                st.id = 'gaya-impor-pdf-soal';
+                st.textContent = `
+                .psl-ov{position:fixed;top:0;left:0;right:0;bottom:0;z-index:5000;background:rgba(15,23,42,.65);display:flex;align-items:center;justify-content:center;padding:12px}
+                .psl-box{background:#fff;color:#0f172a;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.35);width:100%;max-width:860px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+                .psl-head{padding:16px;border-bottom:1px solid #e2e8f0}
+                .psl-head h3{margin:0;font-size:16px;font-weight:800}
+                .psl-head p{margin:4px 0 0;font-size:12px;color:#475569;word-break:break-word}
+                .psl-body{padding:16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px}
+                .psl-foot{padding:12px 16px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+                .psl-foot label{font-size:12px;color:#475569;display:flex;align-items:center;gap:6px}
+                .psl-item{border:1px solid #e2e8f0;border-radius:8px;padding:12px}
+                .psl-item.cek{border-color:#fcd34d;background:#fffbeb}
+                .psl-item.salah{border-color:#f87171}
+                .psl-item .psl-top{font-size:12px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+                .psl-item textarea,.psl-item input[type=text],.psl-item select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box;background:#fff;color:#0f172a}
+                .psl-item textarea{width:100%;resize:vertical}
+                .psl-opsi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+                .psl-opsi div{display:flex;align-items:center;gap:6px}
+                .psl-opsi b{font-size:12px;color:#64748b;width:14px}
+                .psl-opsi input{flex:1;min-width:0}
+                .psl-kunci{margin-top:8px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px}
+                .psl-btn{padding:8px 16px;border-radius:8px;font-weight:700;font-size:14px;border:1px solid #cbd5e1;background:#fff;color:#334155;cursor:pointer}
+                .psl-btn.utama{background:#ea580c;border-color:#ea580c;color:#fff}
+                .psl-btn:disabled{opacity:.6;cursor:wait}
+                .psl-warn{color:#d97706;font-weight:600}
+                .psl-pre{padding:16px;overflow:auto;flex:1;white-space:pre-wrap;word-break:break-word;font-size:11px;line-height:1.4;background:#f8fafc;margin:0}
+                @media(max-width:640px){.psl-opsi{grid-template-columns:1fr}}`;
+                document.head.appendChild(st);
+            }
+
             function tampilTeks(baris, namaFile) {
                 tutupPratinjau();
                 const wrap = document.createElement('div');
                 wrap.id = 'modal-impor-pdf-soal';
-                wrap.className = 'fixed inset-0 z-[300] bg-slate-900/60 flex items-center justify-center p-3';
-                wrap.innerHTML = `<div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                    <div class="p-4 border-b"><h3 class="text-base font-bold text-slate-900">Soal belum dikenali</h3>
-                    <p class="text-xs text-slate-600 mt-1">Format yang dikenali: <b>1.</b> pertanyaan, opsi <b>A.</b> sampai <b>D.</b>, kunci <b>Jawaban: B</b> (per soal) atau daftar <b>Kunci Jawaban</b> di akhir. Di bawah adalah teks yang terbaca dari <b>${esc(namaFile)}</b> (${baris.length} baris) &mdash; kirim ke pengembang bila perlu.</p></div>
-                    <pre class="p-4 text-[11px] leading-snug overflow-auto flex-1 whitespace-pre-wrap break-words bg-slate-50">${esc(baris.slice(0, 80).join('\n'))}</pre>
-                    <div class="p-3 border-t text-right"><button type="button" id="pdf-soal-tutup" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold">Tutup</button></div></div>`;
+                wrap.className = 'psl-ov';
+                wrap.innerHTML = `<div class="psl-box">
+                    <div class="psl-head"><h3>Soal belum dikenali</h3>
+                    <p>Format yang dikenali: <b>1.</b> pertanyaan, opsi <b>A.</b> sampai <b>D.</b>, kunci <b>Jawaban: B</b> (per soal) atau daftar <b>Kunci Jawaban</b> di akhir. Di bawah adalah teks yang terbaca dari <b>${esc(namaFile)}</b> (${baris.length} baris) &mdash; kirim ke pengembang bila perlu.</p></div>
+                    <pre class="psl-pre">${esc(baris.slice(0, 80).join('\n'))}</pre>
+                    <div class="psl-foot" style="justify-content:flex-end"><button type="button" id="pdf-soal-tutup" class="psl-btn utama">Tutup</button></div></div>`;
                 document.body.appendChild(wrap);
                 wrap.querySelector('#pdf-soal-tutup').addEventListener('click', tutupPratinjau);
                 wrap.addEventListener('click', (e) => { if (e.target === wrap) tutupPratinjau(); });
@@ -7650,20 +7683,20 @@
                 const jml = daftar.length, jmlCek = daftar.filter(perluCek).length;
                 const wrap = document.createElement('div');
                 wrap.id = 'modal-impor-pdf-soal';
-                wrap.className = 'fixed inset-0 z-[300] bg-slate-900/60 flex items-center justify-center p-3';
+                wrap.className = 'psl-ov';
                 wrap.innerHTML = `
-                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col">
-                        <div class="p-4 border-b">
-                            <h3 class="text-base font-bold text-slate-900">Pratinjau Soal dari PDF</h3>
-                            <p class="text-xs text-slate-500 mt-1 break-words">${esc(namaFile)} &middot; ${jml} soal terbaca${jmlCek ? ` &middot; <span class="text-amber-600 font-semibold">${jmlCek} perlu dicek (kunci/opsi belum lengkap)</span>` : ''}</p>
-                            <p class="text-xs text-slate-600 mt-1">Disimpan ke: <b>${esc(bidang)}</b> &rarr; ${kelasList.map(esc).join(', ')}</p>
+                    <div class="psl-box">
+                        <div class="psl-head">
+                            <h3>Pratinjau Soal dari PDF</h3>
+                            <p>${esc(namaFile)} &middot; ${jml} soal terbaca${jmlCek ? ` &middot; <span class="psl-warn">${jmlCek} perlu dicek (kunci/opsi belum lengkap)</span>` : ''}</p>
+                            <p>Disimpan ke: <b>${esc(bidang)}</b> &rarr; ${kelasList.map(esc).join(', ')}</p>
                         </div>
-                        <div id="pdf-soal-list" class="p-4 space-y-3 overflow-y-auto flex-1"></div>
-                        <div class="p-4 border-t flex items-center justify-between gap-2 flex-wrap">
-                            <label class="text-xs text-slate-600 flex items-center gap-2"><input type="checkbox" id="pdf-soal-semua"> Pilih semua yang lengkap</label>
-                            <div class="flex gap-2">
-                                <button type="button" id="pdf-soal-batal" class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-bold text-slate-700">Batal</button>
-                                <button type="button" id="pdf-soal-simpan" class="px-4 py-2 bg-safety-500 text-white rounded-lg text-sm font-bold">Simpan</button>
+                        <div id="pdf-soal-list" class="psl-body"></div>
+                        <div class="psl-foot">
+                            <label><input type="checkbox" id="pdf-soal-semua"> Pilih semua yang lengkap</label>
+                            <div style="display:flex;gap:8px">
+                                <button type="button" id="pdf-soal-batal" class="psl-btn">Batal</button>
+                                <button type="button" id="pdf-soal-simpan" class="psl-btn utama">Simpan <span id="pdf-soal-jml"></span></button>
                             </div>
                         </div>
                     </div>`;
@@ -7671,16 +7704,14 @@
                 const list = wrap.querySelector('#pdf-soal-list');
                 list.innerHTML = daftar.map((s, i) => {
                     const cek = perluCek(s);
-                    return `<div class="pdf-soal-item border rounded-lg p-3 ${cek ? 'border-amber-300 bg-amber-50' : 'border-slate-200'}" data-i="${i}">
-                        <div class="flex items-center justify-between mb-2">
-                            <label class="text-xs font-bold text-slate-700 flex items-center gap-2"><input type="checkbox" class="pdf-soal-pilih" ${cek ? '' : 'checked'}> Soal ${i + 1}${cek ? ' <span class="text-amber-600 font-semibold">(cek dulu)</span>' : ''}</label>
+                    return `<div class="psl-item ${cek ? 'cek' : ''}" data-i="${i}">
+                        <div class="psl-top"><label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="pdf-soal-pilih" ${cek ? '' : 'checked'}> Soal ${i + 1}${cek ? ' <span class="psl-warn">(cek dulu)</span>' : ''}</label></div>
+                        <textarea rows="2" class="pdf-soal-tanya">${esc(s.pertanyaan)}</textarea>
+                        <div class="psl-opsi">
+                            ${[0, 1, 2, 3].map((k) => `<div><b>${'ABCD'[k]}</b><input type="text" value="${esc(s.opsi[k])}" data-k="${k}" class="pdf-soal-opsi"></div>`).join('')}
                         </div>
-                        <textarea rows="2" class="pdf-soal-tanya w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm outline-none">${esc(s.pertanyaan)}</textarea>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                            ${[0, 1, 2, 3].map((k) => `<div class="flex items-center gap-1"><span class="text-xs font-bold text-slate-500 w-4">${'ABCD'[k]}</span><input type="text" value="${esc(s.opsi[k])}" data-k="${k}" class="pdf-soal-opsi flex-1 px-2 py-1 border border-slate-300 rounded-lg text-sm outline-none"></div>`).join('')}
-                        </div>
-                        <div class="mt-2 flex items-center gap-2"><span class="text-xs font-semibold text-slate-700">Kunci:</span>
-                            <select class="pdf-soal-kunci px-2 py-1 border border-slate-300 rounded-lg text-sm bg-white">
+                        <div class="psl-kunci">Kunci:
+                            <select class="pdf-soal-kunci">
                                 <option value="">-- pilih --</option>
                                 ${[0, 1, 2, 3].map((k) => `<option value="${k}" ${s.kunci === k ? 'selected' : ''}>${'ABCD'[k]}</option>`).join('')}
                             </select>
@@ -7688,32 +7719,41 @@
                     </div>`;
                 }).join('');
 
+                const hitung = () => {
+                    const n = list.querySelectorAll('.pdf-soal-pilih:checked').length;
+                    const el = wrap.querySelector('#pdf-soal-jml');
+                    if (el) el.textContent = n ? `(${n} soal)` : '';
+                };
+                list.addEventListener('change', (e) => { if (e.target.classList.contains('pdf-soal-pilih')) hitung(); });
+                hitung();
+
                 const semua = wrap.querySelector('#pdf-soal-semua');
                 semua.checked = jmlCek === 0;
                 semua.addEventListener('change', () => {
-                    list.querySelectorAll('.pdf-soal-item').forEach((it) => {
+                    list.querySelectorAll('.psl-item').forEach((it) => {
                         const ok = it.querySelector('.pdf-soal-kunci').value !== '' && [...it.querySelectorAll('.pdf-soal-opsi')].every((o) => o.value.trim());
                         it.querySelector('.pdf-soal-pilih').checked = semua.checked && ok;
                     });
+                    hitung();
                 });
                 wrap.querySelector('#pdf-soal-batal').addEventListener('click', tutupPratinjau);
-                wrap.addEventListener('click', (e) => { if (e.target === wrap) tutupPratinjau(); });
 
                 wrap.querySelector('#pdf-soal-simpan').addEventListener('click', async (ev) => {
                     const tombol = ev.currentTarget;
                     const hasil = [];
                     let lewati = 0;
-                    list.querySelectorAll('.pdf-soal-item').forEach((it) => {
+                    list.querySelectorAll('.psl-item').forEach((it) => {
+                        it.classList.remove('salah');
                         if (!it.querySelector('.pdf-soal-pilih').checked) return;
                         const tanya = it.querySelector('.pdf-soal-tanya').value.trim();
                         const opsi = [...it.querySelectorAll('.pdf-soal-opsi')].map((o) => o.value.trim());
                         const kunci = it.querySelector('.pdf-soal-kunci').value;
-                        if (!tanya || opsi.some((o) => !o) || kunci === '') { lewati++; it.classList.add('border-red-400'); return; }
+                        if (!tanya || opsi.some((o) => !o) || kunci === '') { lewati++; it.classList.add('salah'); return; }
                         hasil.push({ pertanyaan: tanya, opsi, jawabanBenar: parseInt(kunci, 10) });
                     });
                     if (lewati) return window.showToast(`${lewati} soal yang dicentang belum lengkap (pertanyaan/opsi/kunci). Lengkapi dulu atau hilangkan centangnya.`, 'warning');
                     if (!hasil.length) return window.showToast('Belum ada soal yang dicentang.', 'warning');
-                    tombol.disabled = true; tombol.innerText = 'Menyimpan...';
+                    tombol.disabled = true; tombol.textContent = 'Menyimpan...';
                     try {
                         const dasar = Date.now();
                         const updates = {};
@@ -7730,13 +7770,15 @@
                             const potong = {};
                             kunciSemua.slice(i, i + 200).forEach((k) => { potong[k] = updates[k]; });
                             await update(ref(db), potong);
+                            tombol.textContent = `Menyimpan ${Math.min(i + 200, kunciSemua.length)}/${kunciSemua.length}...`;
                         }
                         tutupPratinjau();
+                        status(`${hasil.length} soal tersimpan${kelasList.length > 1 ? ` ke ${kelasList.length} kelas (${n} data)` : ''}.`);
                         window.showToast(`${hasil.length} soal tersimpan${kelasList.length > 1 ? ` ke ${kelasList.length} kelas (${n} data)` : ''}.`, 'success');
                     } catch (err) {
                         console.error('Gagal simpan soal dari PDF:', err);
-                        tombol.disabled = false; tombol.innerText = 'Simpan';
-                        window.showToast('Gagal menyimpan soal. Periksa sinyal lalu coba lagi.', 'error');
+                        tombol.disabled = false; tombol.textContent = 'Simpan';
+                        window.showToast('Gagal menyimpan soal: ' + (err && err.message ? err.message : 'periksa sinyal lalu coba lagi') + ' (izin database?)', 'error');
                     }
                 });
             }
