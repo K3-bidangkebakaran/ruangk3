@@ -9037,8 +9037,15 @@
             }).join('');
         };
 
+        // Kegiatan diubah / dihapus oleh akun lain (mis. admin utama <-> Faros): daftar Rekap ikut diperbarui otomatis (sinyal Firebase dh_upd)
+        let dhUpdOff = null, dhUpdT = 0;
+        window.dhUpdMulai = function() {
+            if (dhUpdOff || !dhIsAdmin()) return; let pertama = true;
+            try { dhUpdOff = onValue(ref(db, dhBase() + '/dh_upd'), () => { if (pertama) { pertama = false; return; } clearTimeout(dhUpdT); dhUpdT = setTimeout(() => { if (window.dhMuat) window.dhMuat(true); }, 2500); }, () => { dhUpdOff = null; }); } catch (e) { dhUpdOff = null; }
+        };
         window.dhMuat = async function(paksa) {
             if (!dhIsAdmin()) return;
+            if (window.dhUpdMulai) window.dhUpdMulai();
             if (dhBusy) { dhAgain = true; return; } // sedang memuat: ulangi sekali lagi sesudahnya (jangan dilewatkan)
             if (paksa !== true && Date.now() - dhOkAt < 4000) return; // pemicu beruntun (buka menu + pindah tab) cukup sekali
             const cfg = dhCfg();
@@ -9139,6 +9146,7 @@
             dhHapusProses.add(id); window.dhRender();
             try {
                 await dhApi('deleteEvent', { id });
+                try { await window.withTimeout(set(ref(db, dhBase() + '/dh_upd/' + id), { t: Date.now(), by: 'rekap', del: true }), 15000); } catch (e4) {} // akun lain (mis. Faros) yang masih menyimpan kegiatan ini ikut menghapus
                 dhHidden[id] = Date.now() + 600000;
                 try { const fr = document.getElementById('dh-frame'); if (fr && fr.getAttribute('src') && fr.contentWindow) fr.contentWindow.postMessage({ rk3: 'dh-del', id }, location.origin); } catch (e3) {} // aplikasi Input Kegiatan ikut menghapus salinannya
                 dhEvents = dhEvents.filter(x => x.id !== id); delete dhOpen[id];

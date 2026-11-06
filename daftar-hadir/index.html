@@ -2523,6 +2523,7 @@ function showLanding(on) {
 }
 function renderLanding() { /* layar awal hanya berisi teks; pilihan kegiatan ada di bar atas (Kegiatan Baru / Damkar / B3 / PAPA) */ }
 function applyState() {
+  try { if (S.sync && S.sync.at && !S.sync.bt && (S.sync.sv || 0) >= (S.sync.v || 0)) S.sync.bt = Merge.snap(S); } catch (_) { } // salinan yang sudah sama dengan Drive: catat sebagai dasar penggabungan
   if (landingOn && !landingInit) showLanding(false); // kegiatan dibuka / dibuat / diimpor: tutup layar awal
   T_DAY = null;
   fillForm(); renderList(); fillLap(); renderPages(); renderTtd(); renderTtdTab();
@@ -2639,7 +2640,7 @@ const Ev = {
     tombAdd(id);
     if (id === S.id) { clearTimeout(saveT); saveT = null; }
     Cloud.gone.add(id);
-    if (drive) await Cloud.queueDelete(id); // perintah hapus disimpan dulu, jadi tidak hilang walau offline / aplikasi ditutup
+    if (drive) { await Cloud.queueDelete(id); try { Pic.signal(id, true); } catch (_) { } } // perintah hapus disimpan dulu, jadi tidak hilang walau offline / aplikasi ditutup; akun / perangkat lain diberi tahu agar ikut menghapus
     await idbDel("event:" + id);
     Pic.drop(id);
     EV = EV.filter(x => x.id !== id); await idbPut(IDX, EV).catch(() => { }); if (Pic.sfxSync) Pic.sfxSync();
@@ -3989,6 +3990,62 @@ const Tenant = {
 // ukuran byte & sidik jari ringan sebuah data URL: rumus sama dengan sig_() di Code.gs (dipakai untuk TIDAK mengunggah ulang file yang sudah sama di Drive)
 const dataBytes = d => { const b = d.slice(d.indexOf(",") + 1), n = b.length; return Math.floor(n * 3 / 4) - (b.endsWith("==") ? 2 : b.endsWith("=") ? 1 : 0); };
 const sigData = d => { const b = d.slice(d.indexOf(",") + 1), n = b.length, mid = n >> 1, t = n + "|" + b.slice(0, 300) + b.substr(mid, 300) + b.slice(Math.max(0, n - 300)); let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0; } return h.toString(36); };
+/* ---------- penggabungan tiga arah: admin utama & akun Faros memakai kegiatan yang sama lewat Google Drive ----------
+   Dasar (base) = keadaan kegiatan saat terakhir sama dengan Drive (ev.sync.bt, gambar diganti sidik). Perubahan di sini dan di akun lain digabung per isian:
+   isian yang hanya berubah di salah satu sisi dipakai; bila keduanya mengubah isian yang sama, perubahan di perangkat ini menang. Peserta yang dihapus di salah satu sisi ikut terhapus. */
+const Merge = {
+  isObj: v => !!v && typeof v === "object" && !Array.isArray(v),
+  tok(v) {
+    if (typeof v === "string") return v.length > 200 ? "#" + fnv(v) : v;
+    if (Array.isArray(v)) return v.map(x => Merge.tok(x));
+    if (v && typeof v === "object") { const o = {}; Object.keys(v).sort().forEach(k => { if (v[k] !== undefined) o[k] = Merge.tok(v[k]); }); return o; }
+    return v;
+  },
+  same(x, t) { return JSON.stringify(Merge.tok(x)) === JSON.stringify(t); },
+  snap(ev) {
+    const peserta = {}, order = [];
+    (ev.peserta || []).forEach(p => { if ((p.nama || "").trim()) { peserta[p.id] = Merge.tok(p); order.push(p.id); } });
+    return { acara: Merge.tok(ev.acara || {}), wm: Merge.tok(ev.wm || {}), lap: Merge.tok(ev.lap || {}), peserta, order };
+  },
+  m3(b, l, r, path) {
+    if (Merge.same(l, b)) return r;
+    if (Merge.same(r, b)) return l;
+    if (Merge.isObj(l) && Merge.isObj(r)) {
+      const o = {}, bb = Merge.isObj(b) ? b : {};
+      new Set([...Object.keys(l), ...Object.keys(r)]).forEach(k => { const v = Merge.m3(bb[k], l[k], r[k], path + "." + k); if (v !== undefined) o[k] = v; });
+      return o;
+    }
+    if (Array.isArray(l) && Array.isArray(r) && /\.fotos$/.test(path)) { // foto dokumentasi harian: kedua sisi menambah foto -> gabungkan tanpa ganda
+      const ada = new Set(l.map(x => JSON.stringify(Merge.tok(x))));
+      return l.concat(r.filter(x => x && !ada.has(JSON.stringify(Merge.tok(x)))));
+    }
+    return l;
+  },
+  /** L = salinan di perangkat ini, R = salinan terbaru dari Drive (hasil fetchEvent). Hasil: kegiatan gabungan, atau null bila tidak aman digabung. */
+  apply(L, R) {
+    const B = L.sync && L.sync.bt; if (!B || !B.peserta || !R.sync || !R.sync.bt) return null;
+    const lm = new Map((L.peserta || []).map(p => [p.id, p])), rm = new Map((R.peserta || []).map(p => [p.id, p])), out = new Map(), gone = [];
+    new Set([...lm.keys(), ...rm.keys()]).forEach(id => {
+      const l = lm.get(id), r = rm.get(id), b = B.peserta[id];
+      if (l && r) out.set(id, Merge.m3(b, l, r, "peserta"));
+      else if (l) { if (b) gone.push(id); else out.set(id, l); } // hanya di sini: peserta baru (simpan) / sudah dihapus di akun lain (ikut dihapus)
+      else if (b) gone.push(id); else out.set(id, r);             // hanya di Drive: peserta baru dari akun lain / sudah dihapus di sini
+    });
+    const lo = (L.peserta || []).map(p => p.id).filter(id => B.peserta[id] && out.has(id)), bo = (B.order || []).filter(id => lm.has(id) && out.has(id));
+    const ikutDrive = JSON.stringify(lo) === JSON.stringify(bo), seq = [], seen = new Set(), put = p => { if (out.has(p.id) && !seen.has(p.id)) { seen.add(p.id); seq.push(p.id); } };
+    if (ikutDrive) { R.peserta.forEach(put); L.peserta.forEach(put); } else { L.peserta.forEach(put); R.peserta.forEach(put); }
+    const peserta = seq.map(id => out.get(id));
+    if ((L.peserta || []).length > 4 && peserta.length < L.peserta.length * 0.6) return null; // pengaman: gabungan yang kehilangan banyak peserta dibatalkan
+    const acara = Merge.m3(B.acara, L.acara, R.acara, "acara"), wm = Merge.m3(B.wm, L.wm || {}, R.wm || {}, "wm"), lap = Merge.m3(B.lap, L.lap || {}, R.lap || {}, "lap");
+    const hapus = [...new Set([...(L.hapus || []), ...(R.hapus || []), ...gone])].slice(-1000);
+    const sy = { ...L.sync, h: { ...R.sync.h }, bt: R.sync.bt, ru: R.sync.ru, folderUrl: R.sync.folderUrl || L.sync.folderUrl || "", at: Date.now() };
+    const M = { ...L, acara, wm, lap, peserta, hapus, sync: sy };
+    if (L.pic) M.pic = { ...L.pic, msig: "x", merged: 0 }; // hasil PIC digabung ulang pada penarikan berikutnya
+    const sama = JSON.stringify(Merge.snap(M)) === JSON.stringify(R.sync.bt); // hasil gabungan sama persis dengan Drive: tidak perlu dikirim ulang
+    sy.sv = L.sync.sv || 0; sy.v = Math.max(L.sync.v || 0, sy.sv) + (sama ? 0 : 1); if (sama) sy.sv = sy.v;
+    return M;
+  }
+};
 const Cloud = {
   cfg: { url: "", token: "", auto: true, rootUrl: "", sheetUrl: "" },
   busy: false, again: false, t: null, gone: new Set(), delBusy: false, delT: null, delErr: "", outdated: false,
@@ -4222,6 +4279,19 @@ const Cloud = {
     return n;
   },
   dirty(ev) { const s = ev.sync || {}; return (s.v || 0) > (s.sv || 0); },
+  dev() { // penanda perangkat/browser ini (supaya sinyal dari diri sendiri tidak diproses lagi)
+    if (!this._dev) { try { this._dev = localStorage.getItem("rk3_dh_dev") || ""; } catch (_) { } if (!this._dev) { this._dev = uid(); try { localStorage.setItem("rk3_dh_dev", this._dev); } catch (_) { } } }
+    return this._dev;
+  },
+  /** sinyal dari akun / perangkat lain (Firebase dh_upd): samakan dengan Drive sebentar lagi */
+  kickSoon(n) {
+    clearTimeout(this.ks);
+    this.ks = setTimeout(async () => {
+      if (!this.ready() || !navigator.onLine) return;
+      if (loadBusy || this.busy || this.recBusy || this.alBusy || this.delBusy) { if ((n || 0) < 8) this.kickSoon((n || 0) + 1); return; }
+      try { await this.reconcile(true); } catch (_) { }
+    }, n ? 3000 : 1200);
+  },
   schedule(delay) {
     if (!this.ready() || !this.cfg.auto) return;
     clearTimeout(this.t);
@@ -4268,16 +4338,37 @@ const Cloud = {
     if (!this.ready()) { if (manual) this.openSettings(); return; }
     if (this.busy) { this.again = true; return; }
     if (!navigator.onLine) { this.status("☁️ Offline – menunggu", "wait"); return; }
-    const ev = evArg || S; ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 };
+    let ev = evArg || S; ev.sync = ev.sync || { h: {}, v: 0, sv: 0, at: 0 };
     if (this.gone.has(ev.id)) return;
     if (!manual && !this.dirty(ev)) { this.status(); return; }
     if (!(ev.acara.kegiatan || "").trim() && !ev.peserta.some(p => (p.nama || "").trim())) { // kegiatan kosong tidak dikirim
       this.status(); if (manual) toast("Isi nama kegiatan / peserta dulu sebelum sinkron."); return;
     }
     this.busy = true; clearTimeout(this.t);
-    const v0 = ev.sync.v || 0;
+    let v0 = ev.sync.v || 0;
     try {
       this.status("☁️ Menyinkron…", "busy");
+      // Sebelum mengirim: pastikan Drive tidak lebih baru dari salinan ini (akun lain sudah mengubah / menghapus kegiatan ini).
+      // Dihapus di akun lain -> ikut dihapus di sini (tidak dihidupkan lagi). Lebih baru -> digabung dulu, perubahan akun lain tidak tertimpa.
+      if (ev.sync.at && ev.sync.ru) {
+        try {
+          if (!Array.isArray(this.remote) || Date.now() - (this.remoteAt || 0) > 15000) { const lr = await this.api("listEvents"); if (lr && Array.isArray(lr.events) && lr.events.length) this.setRemote(lr.events); }
+          const ent = (this.remote || []).find(x => x.id === ev.id);
+          if (!ent && Array.isArray(this.remote) && this.remote.length && Date.now() - (this.remoteAt || 0) < 60000) {
+            let hilang = false; try { await this.api("getEvent", { id: ev.id }); } catch (x) { hilang = /tidak ditemukan di Drive/i.test(String((x && x.message) || "")); }
+            if (hilang) { const nm = ev.acara.kegiatan || "(tanpa nama)"; await Ev.purge(ev.id, false); toast(`Kegiatan "${nm}" sudah dihapus dari akun lain, jadi ikut dihapus di perangkat ini.`); return; }
+          } else if (ent && (Number(ent.updated) || 0) > ev.sync.ru) {
+            const R = await this.fetchEvent(ev.id), M = Merge.apply(ev, R);
+            if (M) {
+              if (ev === S) { if (saveT || Date.now() - lastEditAt < 3000) { this.again = true; return; } S = M; await doSave(); applyState(); ev = S; }
+              else { await idbPut("event:" + M.id, M).catch(() => { }); const i = EV.findIndex(e => e.id === M.id); if (i >= 0) { EV[i] = { ...meta(M), updated: EV[i].updated }; await idbPut(IDX, EV).catch(() => { }); } Pic.mark(M.id); ev = M; }
+              v0 = ev.sync.v || 0; toast("Perubahan dari akun lain digabung dengan perubahan di perangkat ini.");
+              if (!this.dirty(ev)) { this.status(); return; }
+            }
+          }
+        } catch (x) { if (x && x.retry) throw x; /* gangguan sesaat saat memeriksa Drive: lanjut kirim seperti biasa */ }
+      }
+      const bt0 = Merge.snap(ev); // keadaan yang sedang dikirim = dasar penggabungan berikutnya
       const fl0 = this.files(ev);
       // berkas Word (daftar hadir + tanda tangan, dokumentasi foto) disusun ulang tiap sinkron; hanya diunggah bila isinya berubah
       let docs = [], docOk = true;
@@ -4347,6 +4438,7 @@ const Cloud = {
       const r = await this.api("saveEvent", { event: this.payload(ev), keys: [...keys], removed });
       removed.forEach(k => delete ev.sync.h[k]);
       ev.sync.at = Date.now(); ev.sync.sv = v0; ev.sync.folderUrl = r.folderUrl || ev.sync.folderUrl; ev.sync.ru = Number(r.updated) || 0; // Apps Script v8 mengembalikan waktu 'Diperbarui'
+      ev.sync.bt = bt0; try { Pic.signal(ev.id, false); } catch (_) { } // beri tahu akun / perangkat lain: kegiatan ini baru diperbarui di Drive
       if (ev === S) save(); else if (!this.gone.has(ev.id)) await idbPut("event:" + ev.id, JSON.parse(JSON.stringify(ev))).catch(() => { });
       this.fail = 0; this.nextAt = 0; this.lastErr = null; this.status(); this.heal();
       if (manual) toast(`Tersinkron ke Google Drive (${todo.length} file diunggah${nLewat ? `, ${nLewat} sudah ada di Drive` : ""}).`);
@@ -4414,8 +4506,8 @@ const Cloud = {
   /** keadaan salinan di perangkat ini dibanding Drive: new (belum ada) | stale (Drive lebih baru) | unsent (ada perubahan belum terkirim) | same */
   stateOf(e) {
     const loc = EV.find(x => x.id === e.id); if (!loc) return "new";
-    if (!loc.cloud) return "unsent";
     const up = Number(e.updated) || 0;
+    if (!loc.cloud) return up && loc.ru && up > loc.ru ? "conflict" : "unsent"; // conflict: ada perubahan di sini DAN Drive lebih baru (akun lain) -> digabung
     return up && up > (loc.ru || ((loc.updated || 0) + 120000)) ? "stale" : "same"; // salinan lama (belum tercatat waktunya): beri toleransi 2 menit untuk beda jam
   },
   renderRemote() {
@@ -4426,6 +4518,7 @@ const Cloud = {
       const st = this.stateOf(e);
       const aksi = st === "new" ? `<button class="btn sm primary" data-act="pull">Unduh &amp; Buka</button>`
         : st === "stale" ? `<span class="hint">⬇ Drive lebih baru</span><button class="btn sm primary" data-act="upd">Perbarui</button>`
+        : st === "conflict" ? `<span class="hint">⏳ Belum terkirim · Drive juga berubah (akan digabung)</span>`
         : st === "unsent" ? `<span class="hint">⏳ Belum terkirim ke Drive</span>`
         : `<span class="hint">✓ Sama dengan Drive</span>`;
       return `<div class="ev-item" data-id="${esc(e.id)}"><div class="info">
@@ -4454,6 +4547,7 @@ const Cloud = {
     try {
       row.querySelector(".acts").innerHTML = `<span class="hint">Menghapus…</span>`;
       await this.api("deleteEvent", { id });
+      try { Pic.signal(id, true); } catch (_) { }
       toast("Kegiatan dihapus dari Google Drive.");
     } catch (e) { toast("Gagal menghapus di Drive: " + this.friendly(e.message)); }
     this.listRemote();
@@ -4518,6 +4612,7 @@ const Cloud = {
     Object.values(ev.lap.hari).forEach(h => { h.fotos = h.fotos.filter(Boolean); });
     ev.sync = { h: {}, v: 0, sv: 0, at: Date.now(), folderUrl: r.folderUrl || "", ru };
     this.files(ev).forEach(f => ev.sync.h[f.key] = f.hash);
+    ev.sync.bt = Merge.snap(ev); // dasar penggabungan: keadaan yang sama dengan Drive
     return ev;
   },
   /** simpan kegiatan hasil unduhan ke perangkat ini TANPA membukanya */
@@ -4531,9 +4626,20 @@ const Cloud = {
   /** Samakan satu kegiatan di perangkat ini dengan Drive (kegiatan baru diunduh; yang sudah ada diperbarui). Mengembalikan true bila diganti. */
   async refresh(id, force) {
     const old = id === S.id ? S : await idbGet("event:" + id);
+    const loc0 = EV.find(x => x.id === id);
+    const lokalBerubah = !!(loc0 && !loc0.cloud) || (id === S.id && this.dirty(S)); // ada perubahan di perangkat ini yang belum terkirim
+    if (!force && lokalBerubah && !(old && old.sync && old.sync.bt)) return false; // belum punya dasar penggabungan: jangan ditimpa (seperti dulu)
+    if (!force && id === S.id && (saveT || Date.now() - lastEditAt < 10000)) { this.waitEdit = true; return false; } // sedang mengetik: coba lagi nanti
     const ev = await this.fetchEvent(id);
     if (TOMBS.has(id) || this.gone.has(id)) return false; // dihapus selagi mengunduh
     const loc = EV.find(x => x.id === id);
+    if (!force && lokalBerubah) { // ada perubahan di sini DAN di akun lain: digabung per isian, tidak ada yang ditimpa
+      if (id === S.id && (saveT || Date.now() - lastEditAt < 10000)) { this.waitEdit = true; return false; }
+      const M = Merge.apply(id === S.id ? S : old, ev); if (!M) return false;
+      if (id === S.id) { S = M; await doSave(); applyState(); } else await this.storeEv(M);
+      if (this.dirty(M)) this.schedule(1500); // hasil gabungan memuat perubahan di sini: kirim ke Drive
+      return true;
+    }
     if (!force) {
       if (loc && !loc.cloud) return false; // ada perubahan baru di perangkat ini selagi mengunduh: jangan ditimpa
       if (id === S.id && (saveT || this.dirty(S) || Date.now() - lastEditAt < 10000)) return false; // sedang diedit: coba lagi nanti
@@ -4551,7 +4657,7 @@ const Cloud = {
     try {
       const q = (await idbGet(DEL_KEY)) || [];
       const jobs = this.remoteList().filter(e => !TOMBS.has(e.id) && !q.includes(e.id)).sort((x, y) => String(y.tanggal).localeCompare(String(x.tanggal)))
-        .map(e => ({ e, st: this.stateOf(e) })).filter(j => j.st === "new" || j.st === "stale");
+        .map(e => ({ e, st: this.stateOf(e) })).filter(j => j.st === "new" || j.st === "stale" || j.st === "conflict");
       if (jobs.length) {
         toast(jobs.length === 1 ? "Menyamakan 1 kegiatan dari Google Drive…" : `Menyamakan ${jobs.length} kegiatan dari Google Drive…`);
         let i = 0;
@@ -4565,6 +4671,7 @@ const Cloud = {
       }
     } catch (_) { }
     finally { this.alBusy = false; }
+    if (this.waitEdit) { this.waitEdit = false; this.waitN = (this.waitN || 0) + 1; if (this.waitN <= 4) setTimeout(() => this.reconcile(true), 12000); } else this.waitN = 0; // kegiatan yang sedang diketik: coba lagi sebentar lagi
     if (n) {
       toast(n === 1 ? "1 kegiatan disamakan dengan Google Drive." : `${n} kegiatan disamakan dengan Google Drive.`);
       Ev.quick(); if (!$("#evModal").hidden) { Ev.render(); this.renderRemote(); }
@@ -4676,6 +4783,7 @@ const Pic = {
         d.onValue(this.r("dh_ttdp_st"), snap => this.pullTtdpSoon(250, snap.val() || {}), () => { }); // peserta tanda tangan lewat link: masuk langsung ke daftar hadir
         d.onValue(this.r("dh_nara_st"), snap => this.pullNaraSoon(250, snap.val() || {}), () => { }); // narasumber tanda tangan lewat link: masuk langsung ke baris narasumber (tanpa menunggu PIC)
         d.onValue(this.r("dh_hasil"), () => this.pullSoon(), e => { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; this.status(); });
+        d.onValue(this.r("dh_upd"), snap => this.updSoon(snap.val() || {}), () => { }); // kegiatan diubah / dihapus di akun atau perangkat lain (admin utama <-> Faros): samakan langsung
       } catch (e) { this.ready = false; this.initP = null; this.err = "net"; }
       this.status(); return this.ready;
     })();
@@ -4728,6 +4836,27 @@ const Pic = {
       else new Set([...m.keys(), ...last.keys()]).forEach(id => { if ((m.get(id) || "") !== (last.get(id) || "") && EV.some(e => e.id === id)) this.mark(id); });
       this.sfxLast = new Map(m); idbPut("pic-sfx", [...m]).catch(() => { });
     } catch (_) { }
+  },
+  seenUpd: {},
+  /** kabari akun / perangkat lain: kegiatan id baru diperbarui di Drive (del=false) atau dihapus (del=true) */
+  signal(id, del) {
+    try { if (!this.ready || !id) return; const m = { t: Date.now(), by: Cloud.dev(), del: !!del }; this.seenUpd[id] = m.t; this.d.set(this.r("dh_upd/" + id), m).catch(() => { }); } catch (_) { }
+  },
+  updSoon(obj) { clearTimeout(this.ut); this.ut = setTimeout(() => this.updRun(obj).catch(() => { }), 700); },
+  async updRun(obj) {
+    const dev = Cloud.dev(); let kick = false;
+    const done = (await idbGet("dh-upd-done")) || {};
+    for (const id of Object.keys(obj)) {
+      const m = obj[id]; if (!m || typeof m !== "object" || m.by === dev || this.seenUpd[id] === m.t) continue;
+      this.seenUpd[id] = m.t;
+      if (m.del) {
+        if (done[id] === m.t || Date.now() - (Number(m.t) || 0) > 14 * 864e5) continue; // sudah diproses / terlalu lama
+        done[id] = m.t; await idbPut("dh-upd-done", done).catch(() => { });
+        const e = EV.find(x => x.id === id);
+        if (e) { const nm = e.kegiatan || "(tanpa nama)"; await Ev.purge(id, false); toast(`Kegiatan "${nm}" dihapus dari akun lain, jadi ikut dihapus di perangkat ini.`); }
+      } else kick = true;
+    }
+    if (kick) Cloud.kickSoon();
   },
   mark(id) {
     if (!id) return;
