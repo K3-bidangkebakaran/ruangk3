@@ -87,6 +87,11 @@ window.PicFB = {
     if (!auth.currentUser) throw fail('session', 'Sesi berakhir.');
     return onValue(ref(db, `${ROOT}/dh_kegiatan`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); });
   },
+  // penanda dari admin web per kegiatan: dh_adm/{kid} = { fin: true|false, t: ms }. fin=true: kegiatan diselesaikan paksa (hilang dari daftar); fin=false: dikembalikan ke APK untuk dilengkapi.
+  watchAdm(cb, errCb) {
+    if (!auth.currentUser) throw fail('session', 'Sesi berakhir.');
+    return onValue(ref(db, `${ROOT}/dh_adm`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); });
+  },
   // selisih jam server dengan jam HP (ms): dipakai agar penanda waktu isian dari HP / akun berbeda sebanding (jam HP sering meleset)
   offset() { return new Promise(res => { let done = false; const t = setTimeout(() => { if (!done) { done = true; res(0); } }, 4000); try { onValue(ref(db, '.info/serverTimeOffset'), s => { if (!done) { done = true; clearTimeout(t); res(+s.val() || 0); } }, () => { if (!done) { done = true; clearTimeout(t); res(0); } }, { onlyOnce: true }); } catch (e) { if (!done) { done = true; clearTimeout(t); res(0); } } }); },
   async hasil(kid) { const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.'); return (await withTimeout(get(ref(db, `${ROOT}/dh_hasil/${kid}/${u.uid}`)), 20000)).val(); },

@@ -401,3 +401,8 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Gambar dikirim 2 sekaligus (sebelumnya 4), dan satu gambar yang gagal tidak lagi menghentikan gambar lain (berhenti bila 3 kali gagal).
 - `putMedia`: kiriman yang kena batas waktu tidak diulang dari nol; percobaan berikutnya memakai kiriman yang sama, dan batas waktu mengikuti ukuran gambar (90–300 detik). Mencegah antrean kiriman menumpuk dan saling memperlambat.
 - Pesan "belum terkirim" kini memuat sebab singkat; mengetuk tulisan merah menampilkan kendala sebelumnya.
+
+## v70 — Selesai hanya di 100% + Selesai paksa / Kembalikan dari Rekap web
+- APK: tombol "Selesai — sembunyikan" nonaktif sampai Pratinjau Laporan 100% (`lapCek(kid).all`); di bawah tombol tertulis persen sekarang.
+- Website (Rekap Kegiatan, `index.html` root): tiap baris punya tombol **Selesai** (paksa; kegiatan hilang dari daftar APK) dan, di tab Selesai, **Kembalikan ke APK** (muncul lagi untuk dilengkapi). Penanda disimpan di node baru `dh_adm/{kid}` = `{fin, t}`; APK memantaunya langsung (`PicFB.watchAdm`, `admGot`): tiap tindakan admin diterapkan sekali per `t` (disimpan `admT` di hasil). Isian PIC yang lebih baru dari `t` menentukan status bila PIC bertindak setelah admin (`dhSelesai`).
+- Aturan Firebase: `dh_adm` ikut aturan umum `auth != null` (baca PIC & admin, tulis admin).

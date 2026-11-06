@@ -8915,13 +8915,20 @@
         const dhSegarkanDetail = (id) => { const r = dhBarisDetail(id); if (r && r.firstElementChild) r.firstElementChild.innerHTML = dhIsiDetail(id); };
 
         /* Kegiatan SELESAI = salah satu akun PIC sudah menekan "Selesai" di APK PIC (tanda selesai ikut terkirim di dh_hasil/{kegiatan}/{akun}). */
-        let dhSel = 'jalan', dhHasilAll = null, dhHasilAt = 0, dhHasilBusy = false;
+        let dhSel = 'jalan', dhHasilAll = null, dhHasilAt = 0, dhHasilBusy = false, dhAdm = {};
         const dhBase = () => `artifacts/${cleanAppId}/public/data`;
-        const dhSelesai = (id) => !!(dhHasilAll && dhHasilAll[id] && Object.values(dhHasilAll[id]).some(x => x && typeof x === 'object' && x.selesai));
+        // Selesai = PIC menekan Selesai di APK, ATAU admin menekan Selesai (paksa) di Rekap. Tindakan admin dicatat di dh_adm/{id} = {fin, t}; isian PIC yang LEBIH BARU dari t menentukan bila PIC bertindak setelahnya.
+        const dhSelesai = (id) => {
+            const pics = (dhHasilAll && dhHasilAll[id]) ? Object.values(dhHasilAll[id]).filter(x => x && typeof x === 'object') : [], a = dhAdm[id];
+            if (!a || typeof a !== 'object') return pics.some(x => x.selesai);
+            const baru = pics.filter(x => (Number(x.upd) || 0) * 1000 > (Number(a.t) || 0));
+            return a.fin ? !(baru.length && baru.every(x => !x.selesai)) : baru.some(x => x.selesai);
+        };
         window.dhMuatHasil = async function(force) {
             if (dhHasilBusy || !dhIsAdmin()) return; if (!force && dhHasilAll && Date.now() - dhHasilAt < 20000) return;
             dhHasilBusy = true;
             try { const sn = await window.withTimeout(get(ref(db, dhBase() + '/dh_hasil')), 30000); dhHasilAll = sn.val() || {}; dhHasilAt = Date.now(); } catch (e) { /* belum bisa membaca hasil PIC: semua tetap di tab Berjalan */ }
+            try { const sa = await window.withTimeout(get(ref(db, dhBase() + '/dh_adm')), 20000); dhAdm = sa.val() || {}; } catch (e) { /* penanda admin belum terbaca: dipakai yang sudah ada */ }
             try { await dhHitungSemua(); } catch (e) { /* kelengkapan belum bisa dihitung: badge Lengkap tidak ditampilkan */ }
             finally { dhHasilBusy = false; window.dhRender(); }
         };
@@ -9022,6 +9029,7 @@
                         <button type="button" data-act="progres" data-id="${id}" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-md text-xs font-bold">Progres</button>
                         <button type="button" data-act="detail" data-id="${id}" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold">${buka ? 'Tutup' : 'Detail'}</button>
                         ${drive ? `<a href="${dhEsc(drive)}" target="_blank" rel="noopener" class="px-2.5 py-1.5 bg-safety-500 text-white rounded-md text-xs font-bold inline-block">Buka Drive ↗</a>` : ''}
+                        ${dhSelesai(e.id) ? `<button type="button" data-act="kembali" data-id="${id}" title="Kembalikan kegiatan ke APK PIC agar bisa melengkapi isian yang kurang" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md text-xs font-bold">Kembalikan ke APK</button>` : `<button type="button" data-act="fin" data-id="${id}" title="Selesaikan paksa: kegiatan hilang dari daftar APK PIC" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-xs font-bold">Selesai</button>`}
                         <button type="button" data-act="hapus" data-id="${id}" ${hapus ? 'disabled' : ''} class="px-2.5 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-md text-xs font-bold">${hapus ? 'Menghapus…' : 'Hapus'}</button>
                     </td>
                 </tr>
@@ -9107,6 +9115,24 @@
             dhMuatDetail(id);
         };
 
+        // Selesai paksa / Kembalikan ke APK: tulis penanda dh_adm/{id}; APK PIC membacanya langsung (kegiatan hilang dari daftar, atau muncul lagi untuk dilengkapi).
+        window.dhAdmSet = async function(id, fin) {
+            const e = dhById(id); if (!e || !dhIsAdmin()) return;
+            const nama = '"' + (e.kegiatan || '(tanpa nama)') + '"';
+            if (!confirm(fin ? 'Selesaikan paksa kegiatan ' + nama + '?\n\nKegiatan ditandai Selesai dan hilang dari daftar di APK PIC (walau isiannya belum lengkap). Bisa dikembalikan lagi lewat tombol "Kembalikan ke APK" di tab Selesai.'
+                : 'Kembalikan kegiatan ' + nama + ' ke APK PIC?\n\nKegiatan muncul lagi di daftar kegiatan berjalan di APK PIC supaya isian yang kurang bisa ditambahkan.')) return;
+            const rec = { fin: !!fin, t: Date.now() };
+            try {
+                await window.withTimeout(set(ref(db, dhBase() + '/dh_adm/' + id), rec), 20000);
+                dhAdm = { ...dhAdm, [id]: rec };
+                try { await window.dhMuatHasil(true); } catch (e2) {}
+                window.dhRender();
+                window.showToast(fin ? 'Kegiatan diselesaikan. Hilang dari daftar APK PIC.' : 'Kegiatan dikembalikan ke APK PIC.', 'success');
+            } catch (err) {
+                const m = String((err && err.message) || err);
+                window.showToast(/permission/i.test(m) ? 'Belum diizinkan menulis penanda (aturan Firebase dh_adm).' : 'Gagal: ' + m, 'error');
+            }
+        };
         window.dhHapus = async function(id) {
             const e = dhById(id); if (!e || !dhIsAdmin() || dhHapusProses.has(id)) return;
             if (!confirm('Hapus kegiatan "' + (e.kegiatan || '(tanpa nama)') + '" dari Google Drive?\n\nFolder kegiatan (daftar hadir Word, foto, tanda tangan) dipindah ke Sampah Drive dan barisnya dibuang dari Database Induk. Masih bisa dipulihkan dari Sampah Drive sekitar 30 hari.\n\nCatatan: jika kegiatan ini masih ada di aplikasi Daftar Hadir pada suatu perangkat, hapus juga di sana agar tidak terkirim ulang.')) return;
@@ -9130,6 +9156,8 @@
             if (b.dataset.act === 'progres') window.dhProgres(b.dataset.id);
             else if (b.dataset.act === 'detail') window.dhDetail(b.dataset.id);
             else if (b.dataset.act === 'hapus') window.dhHapus(b.dataset.id);
+            else if (b.dataset.act === 'fin') window.dhAdmSet(b.dataset.id, true);
+            else if (b.dataset.act === 'kembali') window.dhAdmSet(b.dataset.id, false);
         });
 
         // Tab Rekap / Input: aplikasi Daftar Hadir dimuat di dalam halaman ini (iframe satu origin), bukan tab baru.
