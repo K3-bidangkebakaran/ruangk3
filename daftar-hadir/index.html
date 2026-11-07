@@ -1145,10 +1145,17 @@ const ALAT_NON = ["Conveyor", "Rigger"]; // tanpa kelas
 const ALAT_SEMUA = ALAT_KELAS.concat(ALAT_NON);
 const alatLabel = x => x.kls ? `${x.k} Kelas ${x.kls}` : x.k;
 const jenisOf = a => a.jenis != null && a.jenis !== "" ? a.jenis : ((a.kegiatan || "").trim() || a.damkar || a.papa ? "lain" : "");
-const judulAngkatKelas = k => `${J_ANGKAT} (OPERATOR ${String(k).toUpperCase()})`;
+/* Rigger bukan "operator": judulnya JURU IKAT RIGGER; alat lain tetap OPERATOR <alat/kelas>. */
+const angkatLabel = ks => {
+  const u = ks.map(x => String(x).toUpperCase().replace(/\s+/g, " ").trim()).filter(Boolean), rig = u.filter(x => /RIGGER/.test(x)), lain = u.filter(x => !/RIGGER/.test(x)), o = [];
+  if (lain.length) o.push("OPERATOR " + lain.join(" / "));
+  rig.forEach(x => { x = x.replace(/^OPERATOR\s+/, "").replace(/^JURU\s+IKAT\s+/, ""); o.push("JURU IKAT " + x); });
+  return o.join(" / ");
+};
+const judulAngkatKelas = k => `${J_ANGKAT} (${angkatLabel([k])})`;
 function judulAuto(a) {
   if (a.jenis === "damkar") return a.kelasDamkar ? `${J_DAMKAR} (KELAS ${a.kelasDamkar})` : J_DAMKAR;
-  if (a.jenis === "angkat") { const ls = kelasList(a); return ls.length ? `${J_ANGKAT} (OPERATOR ${ls.map(x => x.toUpperCase()).join(" / ")})` : J_ANGKAT; }
+  if (a.jenis === "angkat") { const ls = kelasList(a); return ls.length ? `${J_ANGKAT} (${angkatLabel(ls)})` : J_ANGKAT; }
   if (a.jenis === "b3") { const ls = kelasList(a); return ls.length ? `${J_B3} (${ls.map(x => x.toUpperCase()).join(" / ")})` : J_B3; }
   return a.kegiatan;
 }
@@ -1208,7 +1215,12 @@ function migTtd(d) {
     return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, sf: sfNorm(p.sf), kelas: String(p.kelas || "").trim(), batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: String(p.ut || ""), up: String(p.up || ""), et: String(p.et || ""), hasil: p.hasil === "lulus" || p.hasil === "tidak" ? p.hasil : "" };
   });
 }
-const normalize = d => { const ev = normalize0(d); b3Rename(ev); nrMigrasi(ev); return ev; };
+function judulRigger(ev) { // judul tersimpan lama "(OPERATOR RIGGER)" -> "(JURU IKAT RIGGER)"
+  const A = ev.acara;
+  if (A && A.jenis === "angkat" && typeof A.kegiatan === "string" && A.kegiatan.startsWith(J_ANGKAT) && /RIGGER/i.test(A.kegiatan) && /OPERATOR[^()]*RIGGER/i.test(A.kegiatan)) A.kegiatan = judulAuto(A);
+  return ev;
+}
+const normalize = d => { const ev = normalize0(d); b3Rename(ev); judulRigger(ev); nrMigrasi(ev); return ev; };
 /* Bawaan kegiatan BARU: zona WITA, kota & tempat Morowali, "Sebagai" = PIC (semua bisa diubah manual). Kegiatan lama yang kolomnya belum tercatat tetap memakai bawaan lama. */
 const LEGACY_DEF = { zona: "WIB", tempat: "", kota: "Depok", jabatanTtd: "Penyelenggara" };
 const normalize0 = d => {

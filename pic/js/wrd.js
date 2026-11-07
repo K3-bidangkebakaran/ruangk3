@@ -95,7 +95,13 @@ const isB3 = a => !!a && a.jenis === "b3";
 const fotoDua = a => !!a && (!!a.damkar || a.jenis === "b3");
 const judulB3Kelas = k => `${J_B3} (${String(k).toUpperCase()})`;
 const jenisOf = a => a.jenis != null && a.jenis !== "" ? a.jenis : ((a.kegiatan || "").trim() || a.damkar || a.papa ? "lain" : "");
-const judulAngkatKelas = k => `${J_ANGKAT} (OPERATOR ${String(k).toUpperCase()})`;
+const angkatLabel = ks => {
+  const u = ks.map(x => String(x).toUpperCase().replace(/\s+/g, " ").trim()).filter(Boolean), rig = u.filter(x => /RIGGER/.test(x)), lain = u.filter(x => !/RIGGER/.test(x)), o = [];
+  if (lain.length) o.push("OPERATOR " + lain.join(" / "));
+  rig.forEach(x => { x = x.replace(/^OPERATOR\s+/, "").replace(/^JURU\s+IKAT\s+/, ""); o.push("JURU IKAT " + x); });
+  return o.join(" / ");
+};
+const judulAngkatKelas = k => `${J_ANGKAT} (${angkatLabel([k])})`;
 function kelasEv(ev, k) {
   const ks = kelasList(ev.acara), a = ev.acara, kg = (a.kegiatan || "").trim(), hk = hariKelas(ev, k);
   return {
