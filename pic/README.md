@@ -428,3 +428,6 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 - Model data: `foto, foto2…foto5` (peserta), media `f_, f2_…f5_`, flag PIC `wf, wf2…wf5`, jenis Drive `foto:, foto2:…foto5:`. Berkas Drive diberi nama "Nama (1).jpg … (5).jpg".
 - Halaman/Word Dokumentasi Peserta (mode 5 foto): 3 peserta per halaman, tiap peserta 2 baris (foto 1-3, lalu foto 4-5 + nama/instansi).
 - Code.gs naik ke API_VER 10 (website meminta versi ini): tempel ulang Code.gs terbaru di Apps Script lalu Terapkan → Kelola deployment → Versi baru.
+
+## v74 — Dokumentasi Peserta 5 foto: nama di kiri + garis pemisah
+- Tata letak mode 5 foto diubah: kolom nama/instansi ada di sisi kiri (menyatu 2 baris), 3 kolom foto di kanan (foto 1-3 baris atas, foto 4-5 baris bawah), garis tebal memisahkan satu peserta dengan peserta berikutnya. Berlaku di pratinjau (website & APK) dan Word.

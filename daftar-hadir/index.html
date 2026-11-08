@@ -375,7 +375,7 @@ table.doku tr.batal td{background:#ff6b6b;color:#000}
 table.doku tr.remedial td:not(.foto){background:#fff200;color:#000}
 table.grid.doku tr.remedial td.foto{background:transparent}
 table.doku.dk .ph{width:46mm;height:30.7mm}table.doku.dk .ph-img{width:46mm;height:30.7mm}
-table.doku.d5 td{height:33.7mm;padding:1.5mm;text-align:center}table.doku.d5 .ph,table.doku.d5 .ph-img{width:46mm;height:30.7mm}table.doku.d5 td.nama5{text-align:left;font-size:10pt;padding-left:3mm}table.doku.d5 td.nama5 div{font-size:9pt;font-weight:400;margin-top:1mm}table.doku.d5 tr.batal td{background:#ff6b6b}table.doku.d5 tr.remedial td.nama5{background:#fff200}
+table.doku.d5 td{height:31mm;padding:1.5mm;text-align:center}table.doku.d5 .ph,table.doku.d5 .ph-img{width:39mm;height:26mm}table.doku.d5 td.nama5{text-align:left;vertical-align:middle;font-size:9pt;padding-left:2.5mm;padding-right:1.5mm;word-break:break-word}table.doku.d5 tr.pst td{border-top:2.5px solid #222}table.doku.d5 td.nama5 div{font-size:8.5pt;font-weight:400;margin-top:1mm}table.doku.d5 tr.batal td{background:#ff6b6b}table.doku.d5 tr.remedial td.nama5{background:#fff200}
 table.doku.dk td{padding:2mm 1.5mm}table.doku.dk td.nama,table.doku.dk td.inst{font-size:9pt}
 table.doku.sf td{height:46mm}table.doku.sf .ph,table.doku.sf .ph-img{width:30mm;height:40mm;object-fit:cover}table.doku.sf td.nama,table.doku.sf td.inst{font-size:9.5pt}
 table.doku td.inst{font-size:9.5pt}
@@ -1543,11 +1543,12 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
       const fcell = (p, key) => { const bt = !!p.batal, rem = !bt && !!p.remedial; return `<td class="foto${bt ? " bt" : ""}">${bt ? "" : p[key] ? `<img class="ph-img" src="${p[key]}" alt="">${rem ? `<div class="bsb">DI BATCH SEBELUMNYA</div>` : ""}` : rem ? `<div class="ph bsb">DI BATCH SEBELUMNYA</div>` : `<div class="ph">${CAM}<span>Belum ada foto</span></div>`}</td>`; };
       const tr5 = c.map((p, k) => {
         const n = pi * perDk + k + 1, bt = !!p.batal, rem = !bt && !!p.remedial, cl = bt ? ' class="batal"' : rem ? ' class="remedial"' : "";
-        return `<tr${cl}>${fcell(p, "foto")}${fcell(p, "foto2")}${fcell(p, "foto3")}</tr><tr${cl}>${fcell(p, "foto4")}${fcell(p, "foto5")}<td class="nama5"><b>${n}. ${v(p.nama)}</b><div>${v(p.instansi)}</div></td></tr>`;
-      }).join("") || `<tr><td colspan="3" style="text-align:center;color:#999">Belum ada peserta</td></tr>`;
+        const c1 = bt ? ' class="batal' + (k ? " pst" : "") + '"' : rem ? ' class="remedial' + (k ? " pst" : "") + '"' : k ? ' class="pst"' : "";
+        return `<tr${c1}><td class="nama5" rowspan="2"><b>${n}. ${v(p.nama)}</b><div>${v(p.instansi)}</div></td>${fcell(p, "foto")}${fcell(p, "foto2")}${fcell(p, "foto3")}</tr><tr${cl}>${fcell(p, "foto4")}${fcell(p, "foto5")}<td class="foto kosong"></td></tr>`;
+      }).join("") || `<tr><td colspan="4" style="text-align:center;color:#999">Belum ada peserta</td></tr>`;
       html += page(`<h1>DOKUMENTASI PESERTA${pi ? " <small>(lanjutan)</small>" : ""}</h1>
       <table class="info"><tr><td class="k">Nama Kegiatan</td><td class="c">:</td><td>${v(a.kegiatan)}</td></tr></table>
-      <table class="grid doku d5"><colgroup><col style="width:58mm"><col style="width:58mm"><col style="width:58mm"></colgroup><tbody>${tr5}</tbody></table>`, "pg-dk");
+      <table class="grid doku d5"><colgroup><col style="width:44mm"><col style="width:43.3mm"><col style="width:43.3mm"><col style="width:43.4mm"></colgroup><tbody>${tr5}</tbody></table>`, "pg-dk");
       return;
     }
     const tr = c.map((p, k) => {
@@ -3688,7 +3689,7 @@ const Word = (() => {
     };
     const run = (t, o = {}) => `<w:r><w:rPr>${o.font ? `<w:rFonts w:ascii="${o.font}" w:hAnsi="${o.font}" w:cs="${o.font}"/>` : ""}${o.b ? "<w:b/>" : ""}${o.i ? "<w:i/>" : ""}${o.strike ? "<w:strike/>" : ""}${o.color ? `<w:color w:val="${o.color}"/>` : ""}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ""}${o.u ? '<w:u w:val="single"/>' : ""}</w:rPr><w:t xml:space="preserve">${X(t)}</w:t></w:r>`;
     const par = (inner, o = {}) => `<w:p><w:pPr>${o.keep ? "<w:keepNext/>" : ""}${o.pbb ? "<w:pageBreakBefore/>" : ""}<w:spacing w:before="${o.before || 0}" w:after="${o.after || 0}" w:line="${o.line || 240}" w:lineRule="auto"/>${o.ind || o.indR != null || o.hang ? `<w:ind w:left="${o.ind || 0}"${o.indR != null ? ` w:right="${o.indR}"` : ""}${o.hang ? ` w:hanging="${o.hang}"` : ""}/>` : ""}<w:jc w:val="${o.jc || "left"}"/></w:pPr>${inner}</w:p>`;
-    const cell = (w, inner, o = {}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ""}${o.vm ? `<w:vMerge${o.vm === "restart" ? ' w:val="restart"' : ""}/>` : ""}${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ""}<w:vAlign w:val="center"/></w:tcPr>${inner || par("")}</w:tc>`;
+    const cell = (w, inner, o = {}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ""}${o.vm ? `<w:vMerge${o.vm === "restart" ? ' w:val="restart"' : ""}/>` : ""}${o.top ? '<w:tcBorders><w:top w:val="single" w:sz="18" w:space="0" w:color="222222"/></w:tcBorders>' : ""}${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ""}<w:vAlign w:val="center"/></w:tcPr>${inner || par("")}</w:tc>`;
     const row = (cells, o = {}) => `<w:tr><w:trPr><w:cantSplit/>${o.head ? "<w:tblHeader/>" : ""}${o.h ? `<w:trHeight w:val="${o.h}" w:hRule="atLeast"/>` : ""}</w:trPr>${cells}</w:tr>`;
     const table = (widths, rows, o = {}) => `<w:tbl><w:tblPr><w:tblW w:w="${widths.reduce((a, b) => a + b, 0)}" w:type="dxa"/>${o.ind ? `<w:tblInd w:w="${o.ind}" w:type="dxa"/>` : ""}${o.border === false ? "" : `<w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:left w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:right w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="${o.bc || '888888'}"/></w:tblBorders>`}<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="${o.border === false ? 0 : (o.mar != null ? o.mar : 113)}" w:type="dxa"/><w:right w:w="${o.border === false ? 0 : (o.mar != null ? o.mar : 113)}" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${widths.map(w => `<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>${rows}</w:tbl>`;
 
@@ -3797,17 +3798,20 @@ const Word = (() => {
     const RED = "FF6B6B", YEL = "FFF200", pw = dkOn ? 46 : 60, ph = dkOn ? 30.7 : 40; // warna sama dengan daftar hadir
     let xml = "";
     if (lima) { // program 5 foto: tiap peserta 2 baris (foto 1-3, lalu foto 4-5 + identitas); 3 peserta per halaman
-      const w5 = [0, 1, 2].map(() => tw(CONT_W / 3)), pw5 = 46, ph5 = 30.7;
+      const wId = tw(44), wF = tw((CONT_W - 44) / 3), pw5 = 39, ph5 = 26;
       for (let j = 0, pi = 0; j < Math.max(list.length, 1); j += PER, pi++) {
         const c = list.slice(j, j + PER);
-        const fc = (p, key, keep) => { const bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : {}; return D.cell(w5[0], bt ? D.par("") : p[key] ? D.par(D.inline(p[key], pw5, ph5), { jc: "center", before: 30, after: rem ? 0 : 30, keep }) + (rem ? D.par(D.run("DI BATCH SEBELUMNYA", { b: 1, sz: 16, color: "000000" }), { jc: "center", after: 20, keep }) : "") : rem ? D.par(D.run("DI BATCH SEBELUMNYA", { b: 1, sz: 18, color: "000000" }), { jc: "center", before: 120, keep }) : D.par(D.run("Belum ada foto", { color: "999999", sz: 18 }), { jc: "center", keep }), F); };
+        const fc = (p, key, keep, top) => { const bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED, top } : { top }; return D.cell(wF, bt ? D.par("") : p[key] ? D.par(D.inline(p[key], pw5, ph5), { jc: "center", before: 30, after: rem ? 0 : 30, keep }) + (rem ? D.par(D.run("DI BATCH SEBELUMNYA", { b: 1, sz: 16, color: "000000" }), { jc: "center", after: 20, keep }) : "") : rem ? D.par(D.run("DI BATCH SEBELUMNYA", { b: 1, sz: 18, color: "000000" }), { jc: "center", before: 120, keep }) : D.par(D.run("Belum ada foto", { color: "999999", sz: 18 }), { jc: "center", keep }), F); };
         const rows5 = c.map((p, k) => {
           const bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : rem ? { fill: YEL } : {}, tc = bt || rem ? { color: "000000" } : {};
-          const idc = D.cell(w5[2], D.par(D.run(`${j + k + 1}. ${p.nama || ""}`, { ...tc, b: 1, sz: 20 }), { before: 20, after: 20 }) + D.par(D.run(p.instansi || "", { ...tc, sz: 18 })), F);
-          return D.row(fc(p, "foto", 1) + fc(p, "foto2", 1) + fc(p, "foto3", 1), { h: tw(33.7) }) + D.row(fc(p, "foto4") + fc(p, "foto5") + idc, { h: tw(33.7) });
-        }).join("") || D.row(D.cell(w5.reduce((x, y) => x + y, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: 3 }), { h: tw(12.5) });
+          const top = k ? 1 : 0; // garis tebal pemisah antar peserta
+          const idc = D.cell(wId, D.par(D.run(`${j + k + 1}. ${p.nama || ""}`, { ...tc, b: 1, sz: 18 }), { before: 20, after: 20 }) + D.par(D.run(p.instansi || "", { ...tc, sz: 17 })), { ...F, top, vm: "restart" });
+          const idv = D.cell(wId, "", { ...F, vm: "cont" });
+          const kos = D.cell(wF, D.par(""), bt ? { fill: RED } : {});
+          return D.row(idc + fc(p, "foto", 1, top) + fc(p, "foto2", 1, top) + fc(p, "foto3", 1, top), { h: tw(31) }) + D.row(idv + fc(p, "foto4") + fc(p, "foto5") + kos, { h: tw(31) });
+        }).join("") || D.row(D.cell(wId + 3 * wF, D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: 4 }), { h: tw(12.5) });
         if (pi) xml += `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
-        xml += title(D, "DOKUMENTASI PESERTA", pi) + infoTable(D, [["Nama Kegiatan", a.kegiatan]]) + gap(D) + D.table(w5, rows5);
+        xml += title(D, "DOKUMENTASI PESERTA", pi) + infoTable(D, [["Nama Kegiatan", a.kegiatan]]) + gap(D) + D.table([wId, wF, wF, wF], rows5);
       }
       return D.build(xml, ctx.kopHead, ctx.kopFoot);
     }
