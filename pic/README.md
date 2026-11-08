@@ -422,3 +422,9 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v72 — Judul laporan Rigger: JURU IKAT RIGGER
 - Laporan K3 Pesawat Angkat Pesawat Angkut kelas Rigger kini berjudul "(JURU IKAT RIGGER)", bukan "(OPERATOR RIGGER)". Alat lain tetap "(OPERATOR <alat/kelas>)". Aturan ada di `angkatLabel` (daftar-hadir/index.html, ikut ke `pic/js/wrd.js`); judul tersimpan lama dirapikan otomatis saat kegiatan dibuka (`judulRigger`).
+
+## v73 — Dokumentasi Peserta: 5 foto untuk kelas Ahli K3 Muda Lingkungan Kerja
+- Hanya program K3 Lingkungan Kerja (B3) kelas "Ahli K3 Muda Lingkungan Kerja" yang memakai 5 foto per peserta. Program B3 lain tetap 2 foto, kegiatan non-B3 tetap 1 foto. Aturannya ada di `fotoN` (daftar-hadir/index.html, salinan di pic/js/app.js dan Code.gs); kelas dicek per peserta (`p.kelas`).
+- Model data: `foto, foto2…foto5` (peserta), media `f_, f2_…f5_`, flag PIC `wf, wf2…wf5`, jenis Drive `foto:, foto2:…foto5:`. Berkas Drive diberi nama "Nama (1).jpg … (5).jpg".
+- Halaman/Word Dokumentasi Peserta (mode 5 foto): 3 peserta per halaman, tiap peserta 2 baris (foto 1-3, lalu foto 4-5 + nama/instansi).
+- Code.gs naik ke API_VER 10 (website meminta versi ini): tempel ulang Code.gs terbaru di Apps Script lalu Terapkan → Kelola deployment → Versi baru.

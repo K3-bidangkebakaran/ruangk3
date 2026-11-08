@@ -107,8 +107,10 @@ body[data-tab="data"] [data-pane="data"],body[data-tab="ttd"] [data-pane="ttd"],
 .f-filter{display:flex;gap:6px;align-items:center;font-size:12.5px}
 .f-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .f-grid.dk{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.f-grid.d5{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
 .f-bs{background:#fff200;color:#000;font-size:10.5px;font-weight:800;letter-spacing:.3px;text-align:center;padding:3px 4px;border-bottom:1px solid var(--line)}
 .f-phs{display:grid;grid-template-columns:1fr 1fr}.f-phs .f-ph:first-child{border-right:1px solid var(--line)}
+.f-phs.n5{grid-template-columns:repeat(3,1fr)}.f-phs.n5 .f-ph{border-right:1px solid var(--line);border-bottom:1px solid var(--line)}.f-phs.n5 .f-ph:nth-child(3n){border-right:0}
 .f-meta .rms{display:flex;gap:6px}
 .pv-kelas{font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid var(--line,#d6d9de);border-radius:8px;background:#fff;max-width:200px}
 .jenis-box{margin-top:8px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb}
@@ -373,6 +375,7 @@ table.doku tr.batal td{background:#ff6b6b;color:#000}
 table.doku tr.remedial td:not(.foto){background:#fff200;color:#000}
 table.grid.doku tr.remedial td.foto{background:transparent}
 table.doku.dk .ph{width:46mm;height:30.7mm}table.doku.dk .ph-img{width:46mm;height:30.7mm}
+table.doku.d5 td{height:33.7mm;padding:1.5mm;text-align:center}table.doku.d5 .ph,table.doku.d5 .ph-img{width:46mm;height:30.7mm}table.doku.d5 td.nama5{text-align:left;font-size:10pt;padding-left:3mm}table.doku.d5 td.nama5 div{font-size:9pt;font-weight:400;margin-top:1mm}table.doku.d5 tr.batal td{background:#ff6b6b}table.doku.d5 tr.remedial td.nama5{background:#fff200}
 table.doku.dk td{padding:2mm 1.5mm}table.doku.dk td.nama,table.doku.dk td.inst{font-size:9pt}
 table.doku.sf td{height:46mm}table.doku.sf .ph,table.doku.sf .ph-img{width:30mm;height:40mm;object-fit:cover}table.doku.sf td.nama,table.doku.sf td.inst{font-size:9.5pt}
 table.doku td.inst{font-size:9.5pt}
@@ -1139,6 +1142,16 @@ function b3Rename(ev) {
 const B3_PROG = [B3_RESCUE, "Ahli K3 Kimia", "Teknisi Ruang Terbatas", "Ahli K3 Muda Lingkungan Kerja", "Petugas K3 Kimia", "Teknisi K3 Deteksi Gas"];
 const isB3 = a => !!a && a.jenis === "b3";
 const fotoDua = a => !!a && (!!a.damkar || a.jenis === "b3"); // dokumentasi 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3
+/* B3 program "Ahli K3 Muda Lingkungan Kerja": dokumentasi 5 foto per peserta. Kunci foto: foto, foto2 ... foto5 (media PIC: f_, f2_ ... f5_). */
+const FOTO_KEYS = ["foto", "foto2", "foto3", "foto4", "foto5"], KELAS_FOTO5 = "ahli k3 muda lingkungan kerja";
+const fotoNo = k => (k === "foto" ? 1 : +String(k).slice(4) || 1);
+const fotoN = (a, p) => {
+  if (!a) return 1;
+  if (a.jenis === "b3") { const ks = kelasList(a), kl = String((p && p.kelas) || "").trim() || (ks.length === 1 ? ks[0] : ""); if (kl.replace(/\s+/g, " ").toLowerCase() === KELAS_FOTO5) return 5; }
+  return fotoDua(a) ? 2 : 1;
+};
+const fotoKeysP = (a, p) => FOTO_KEYS.slice(0, fotoN(a, p));
+const adaFoto = p => FOTO_KEYS.some(k => !!p[k]);
 const judulB3Kelas = k => `${J_B3} (${String(k).toUpperCase()})`;
 const ALAT_KELAS = ["Crawler Crane", "Hoist Crane", "Mobile Crane", "Portal Crane", "Truck Crane", "Gantry Crane", "Overhead Traveling Crane", "Overhead Crane"]; // punya Kelas 1, 2, 3
 const ALAT_NON = ["Conveyor", "Rigger"]; // tanpa kelas
@@ -1212,7 +1225,7 @@ function migTtd(d) {
   return (d.peserta || []).map(p => {
     const t = {}, src = p.ttd && typeof p.ttd === "object" ? p.ttd : {};
     Object.keys(src).forEach(k => { const m = /^h(\d+)$/.exec(k); const key = m ? old[+m[1] - 1] : k; if (key && src[k]) t[key] = src[k]; });
-    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", ttd: t, sf: sfNorm(p.sf), kelas: String(p.kelas || "").trim(), batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: String(p.ut || ""), up: String(p.up || ""), et: String(p.et || ""), hasil: p.hasil === "lulus" || p.hasil === "tidak" ? p.hasil : "" };
+    return { id: p.id || uid(), nama: p.nama || "", instansi: p.instansi || "", foto: p.foto || "", foto2: p.foto2 || "", foto3: p.foto3 || "", foto4: p.foto4 || "", foto5: p.foto5 || "", ttd: t, sf: sfNorm(p.sf), kelas: String(p.kelas || "").trim(), batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: String(p.ut || ""), up: String(p.up || ""), et: String(p.et || ""), hasil: p.hasil === "lulus" || p.hasil === "tidak" ? p.hasil : "" };
   });
 }
 function judulRigger(ev) { // judul tersimpan lama "(OPERATOR RIGGER)" -> "(JURU IKAT RIGGER)"
@@ -1239,7 +1252,7 @@ const normalize0 = d => {
 const meta = x => {
   const named = x.peserta.filter(p => (p.nama || "").trim() && !p.batal);
   return { id: x.id, created: x.created, updated: Date.now(), kegiatan: x.acara.kegiatan, jenis: jenisOf(x.acara), kelas: x.acara.jenis === "damkar" ? (x.acara.kelasDamkar ? "Kelas " + x.acara.kelasDamkar : "") : kelasList(x.acara).join(", "), tanggal: x.acara.tanggal, tanggal2: x.acara.tanggal2, hari: hariList(x.acara).filter(Boolean),
-           tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, fotoDua(x.acara))).length, ttd: !!x.acara.ttd,
+           tempat: x.acara.tempat, n: named.length, foto: named.filter(p => fotoOk(p, x.acara)).length, ttd: !!x.acara.ttd,
            cloud: !!(x.sync && x.sync.at && (x.sync.sv || 0) >= (x.sync.v || 0)), ru: (x.sync && x.sync.ru) || 0 }; // ru = waktu 'Diperbarui' di Drive yang terakhir cocok dengan salinan ini
 };
 /* Penanda A/B/C: bila ada lebih dari satu kegiatan dengan nama & tanggal yang sama (B3), atau kegiatan Damkar / PAPA sejenis yang berjalan bersamaan (ada hari yang sama), daftar/rekap/APK memberi huruf pembeda.
@@ -1519,15 +1532,26 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   sec.dh = html; html = "";
 
 
-  // --- dokumentasi chunks (baris Cancel merah & Remedial kuning mengikuti daftar hadir; mode Damkar = 2 kolom foto)
-  const dk = list, dkOn = fotoDua(a);
+  // --- dokumentasi chunks (baris Cancel merah & Remedial kuning mengikuti daftar hadir; mode Damkar = 2 kolom foto; program 5 foto = 3 peserta per halaman, tiap peserta 2 baris: foto 1-3 lalu foto 4-5 + identitas)
+  const dk = list, dkOn = fotoDua(a), lima = dk.some(p => fotoN(a, p) === 5), perDk = lima ? 3 : DK_PER;
   const dch = [];
-  for (let j = 0; j < dk.length; j += DK_PER) dch.push(dk.slice(j, j + DK_PER));
+  for (let j = 0; j < dk.length; j += perDk) dch.push(dk.slice(j, j + perDk));
   if (!dch.length) dch.push([]);
   const fk = dkOn ? ["foto", "foto2"] : ["foto"], nFoto = fk.length;
   dch.forEach((c, pi) => {
+    if (lima) {
+      const fcell = (p, key) => { const bt = !!p.batal, rem = !bt && !!p.remedial; return `<td class="foto${bt ? " bt" : ""}">${bt ? "" : p[key] ? `<img class="ph-img" src="${p[key]}" alt="">${rem ? `<div class="bsb">DI BATCH SEBELUMNYA</div>` : ""}` : rem ? `<div class="ph bsb">DI BATCH SEBELUMNYA</div>` : `<div class="ph">${CAM}<span>Belum ada foto</span></div>`}</td>`; };
+      const tr5 = c.map((p, k) => {
+        const n = pi * perDk + k + 1, bt = !!p.batal, rem = !bt && !!p.remedial, cl = bt ? ' class="batal"' : rem ? ' class="remedial"' : "";
+        return `<tr${cl}>${fcell(p, "foto")}${fcell(p, "foto2")}${fcell(p, "foto3")}</tr><tr${cl}>${fcell(p, "foto4")}${fcell(p, "foto5")}<td class="nama5"><b>${n}. ${v(p.nama)}</b><div>${v(p.instansi)}</div></td></tr>`;
+      }).join("") || `<tr><td colspan="3" style="text-align:center;color:#999">Belum ada peserta</td></tr>`;
+      html += page(`<h1>DOKUMENTASI PESERTA${pi ? " <small>(lanjutan)</small>" : ""}</h1>
+      <table class="info"><tr><td class="k">Nama Kegiatan</td><td class="c">:</td><td>${v(a.kegiatan)}</td></tr></table>
+      <table class="grid doku d5"><colgroup><col style="width:58mm"><col style="width:58mm"><col style="width:58mm"></colgroup><tbody>${tr5}</tbody></table>`, "pg-dk");
+      return;
+    }
     const tr = c.map((p, k) => {
-      const n = pi * DK_PER + k + 1, bt = !!p.batal, rem = !bt && !!p.remedial;
+      const n = pi * perDk + k + 1, bt = !!p.batal, rem = !bt && !!p.remedial;
       const fotos = fk.map(key => `<td class="foto">${bt ? "" : p[key] ? `<img class="ph-img" src="${p[key]}" alt="">${rem ? `<div class="bsb">DI BATCH SEBELUMNYA</div>` : ""}` : rem ? `<div class="ph bsb">DI BATCH SEBELUMNYA</div>` : `<div class="ph">${CAM}<span>Belum ada foto</span></div>`}</td>`).join("");
       return `<tr${bt ? ' class="batal"' : rem ? ' class="remedial"' : ""}><td class="no">${n}</td><td class="nama">${v(p.nama)}</td><td class="inst">${v(p.instansi)}</td>${fotos}</tr>`;
     }).join("") || `<tr><td colspan="${3 + nFoto}" style="text-align:center;color:#999">Belum ada peserta</td></tr>`;
@@ -1638,7 +1662,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   sec.rd = html; html = "";
   html = (sec.rd || "") + (sec.dh || "") + (sec.sf || "") + (sec.nl || "") + (sec.nr || "") + (sec.dy || "") + (sec.dk || "") + (sec.ln || ""); // urutan laporan: Daftar Hadir, Daftar Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta, Lulus/Tidak Lulus
   meas.innerHTML = "";
-  return { html, nd: ch.length, nk: dch.length, noFoto: dk.filter(p => !p.batal && !fotoOk(p, dkOn)).length, nPes: dk.length, nNl, nLn, nDy, nNr, nRd, nSf };
+  return { html, nd: ch.length, nk: dch.length, noFoto: dk.filter(p => !p.batal && !fotoOk(p, a)).length, nPes: dk.length, nNl, nLn, nDy, nNr, nRd, nSf };
 }
 let PV_KELAS = "*"; // pratinjau: "*" = semua kelas
 function renderPages() {
@@ -1700,27 +1724,27 @@ function renderList() {
 /* ---------- render: foto dokumentasi ---------- */
 const namaList = () => S.peserta.filter(p => (p.nama || "").trim());
 const fotoList = () => namaList().filter(p => !p.batal);
-const fotoOk = (p, dk) => (!!p.remedial && !p.batal) || (!!p.foto && (!dk || !!p.foto2)); // Remedial: foto sudah di batch sebelumnya (tidak wajib)
-const fotoKeys = () => fotoDua(S.acara) ? ["foto", "foto2"] : ["foto"];
+const fotoOk = (p, a) => (!!p.remedial && !p.batal) || fotoKeysP(a, p).every(k => !!p[k]); // Remedial: foto sudah di batch sebelumnya (tidak wajib)
+const fotoKeys = p => fotoKeysP(S.acara, p);
 function renderFoto() {
-  const el = $("#fList"), all = fotoList(), dk = fotoDua(S.acara), done = all.filter(p => fotoOk(p, dk)).length;
-  el.classList.toggle("dk", dk);
+  const el = $("#fList"), all = fotoList(), ns = [...new Set(all.map(p => fotoN(S.acara, p)))], dk = ns.some(n => n > 1), done = all.filter(p => fotoOk(p, S.acara)).length;
+  el.classList.toggle("dk", dk); el.classList.toggle("d5", ns.includes(5));
   $("#tbPeserta").textContent = all.length;
   $("#tbFoto").textContent = `${done}/${all.length}`;
-  $("#fProgTxt").textContent = all.length ? `${done} dari ${all.length} peserta sudah ada foto${dk ? " (2 foto per peserta)" : ""}` : "";
+  $("#fProgTxt").textContent = all.length ? `${done} dari ${all.length} peserta sudah ada foto${ns.length === 1 && ns[0] > 1 ? ` (${ns[0]} foto per peserta)` : ns.length > 1 ? " (jumlah foto per peserta sesuai kelas)" : ""}` : "";
   $("#fProgBar").style.width = all.length ? (done / all.length * 100) + "%" : "0";
   if (!all.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1">Belum ada peserta. Isi dulu nama peserta di tab <b>1. Kegiatan &amp; Peserta</b>.</div>`; return; }
   const only = $("#fOnlyEmpty").checked;
-  const shown = all.filter(p => !only || !fotoOk(p, dk));
+  const shown = all.filter(p => !only || !fotoOk(p, S.acara));
   if (!shown.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1">Semua peserta sudah ada foto 👍</div>`; return; }
   const slot = (p, k, lbl) => `<button class="f-ph ${p[k] ? "has" : ""}" data-act="foto" data-slot="${k}" title="${p[k] ? "Foto ulang" : "Ambil foto"}" ${p[k] ? `style="background-image:url('${p[k]}')"` : ""}>${p[k] ? "📷 Foto ulang" : "📷 " + lbl}</button>`;
-  el.innerHTML = shown.map(p => `
+  el.innerHTML = shown.map(p => { const n = fotoN(S.acara, p), ks = fotoKeysP(S.acara, p); return `
     <div class="f-tile" data-id="${p.id}">
-      ${p.remedial && !p.batal ? `<div class="f-bs">DI BATCH SEBELUMNYA</div>` : ""}${dk ? `<div class="f-phs">${slot(p, "foto", "Foto 1")}${slot(p, "foto2", "Foto 2")}</div>` : slot(p, "foto", "Ambil Foto")}
-      <div class="f-meta"><span class="no">${all.indexOf(p) + 1}.</span><span class="nm">${esc(p.nama)}${kls(p)}</span>${dk
-        ? `<span class="rms">${p.foto ? `<button class="rm" data-act="rmfoto" data-slot="foto" title="Hapus foto 1">Hapus 1</button>` : ""}${p.foto2 ? `<button class="rm" data-act="rmfoto" data-slot="foto2" title="Hapus foto 2">Hapus 2</button>` : ""}</span>`
+      ${p.remedial && !p.batal ? `<div class="f-bs">DI BATCH SEBELUMNYA</div>` : ""}${n > 1 ? `<div class="f-phs n${n}">${ks.map(k => slot(p, k, "Foto " + fotoNo(k))).join("")}</div>` : slot(p, "foto", "Ambil Foto")}
+      <div class="f-meta"><span class="no">${all.indexOf(p) + 1}.</span><span class="nm">${esc(p.nama)}${kls(p)}</span>${n > 1
+        ? `<span class="rms">${ks.filter(k => p[k]).map(k => `<button class="rm" data-act="rmfoto" data-slot="${k}" title="Hapus foto ${fotoNo(k)}">Hapus ${fotoNo(k)}</button>`).join("")}</span>`
         : (p.foto ? `<button class="rm" data-act="rmfoto" data-slot="foto" title="Hapus foto">Hapus</button>` : "")}</div>
-    </div>`).join("");
+    </div>`; }).join("");
 }
 let fT = null;
 const renderFotoSoon = () => { clearTimeout(fT); fT = setTimeout(renderFoto, 250); };
@@ -1849,7 +1873,7 @@ const Cam = {
   id: null, slot: "foto", queue: false, mode: "peserta", day: "", stream: null, facing: "environment", shot: null, tick: null,
   person() { return S.peserta.find(p => p.id === this.id); },
   nextEmpty() { // foto berikutnya yang masih kosong (peserta berikutnya; pada mode Damkar: foto 1 lalu foto 2)
-    const all = fotoList(), seq = []; all.forEach(p => fotoKeys().forEach(k => seq.push({ id: p.id, k })));
+    const all = fotoList(), seq = []; all.forEach(p => fotoKeys(p).forEach(k => seq.push({ id: p.id, k })));
     const i = seq.findIndex(t => t.id === this.id && t.k === this.slot), need = t => !S.peserta.find(p => p.id === t.id)[t.k];
     return seq.slice(i + 1).find(need) || seq.slice(0, Math.max(0, i)).find(need);
   },
@@ -1868,7 +1892,7 @@ const Cam = {
     const p = this.person(); if (!p) return;
     const all = fotoList();
     $("#cam").hidden = false; document.body.style.overflow = "hidden";
-    $("#camWho").textContent = `${all.indexOf(p) + 1}. ${p.nama}${fotoDua(S.acara) ? ` · Foto ${this.slot === "foto2" ? 2 : 1}` : ""}`;
+    $("#camWho").textContent = `${all.indexOf(p) + 1}. ${p.nama}${fotoN(S.acara, p) > 1 ? ` · Foto ${fotoNo(this.slot)}` : ""}`;
     $("#camLoc").textContent = "📍 " + wmAlamat();
     this.live();
     if (!S.wm.alamat && !Loc.busy) Loc.detect(true);
@@ -1963,7 +1987,7 @@ const Cam = {
     p[this.slot] = this.shot; renderFoto(); changed();
     const nxt = goNext && this.nextEmpty();
     if (nxt) this.open(nxt.id, this.queue, nxt.k);
-    else { this.close(); toast(`Foto ${p.nama}${fotoDua(S.acara) ? ` (foto ${this.slot === "foto2" ? 2 : 1})` : ""} tersimpan.`); }
+    else { this.close(); toast(`Foto ${p.nama}${fotoN(S.acara, p) > 1 ? ` (foto ${fotoNo(this.slot)})` : ""} tersimpan.`); }
   }
 };
 $("#camClose").onclick = () => Cam.close();
@@ -1988,7 +2012,7 @@ $("#fileCam").addEventListener("change", e => {
 $("#btnCamStart").onclick = () => {
   const all = fotoList();
   if (!all.length) { toast("Isi nama peserta dulu di tab 1."); return; }
-  let first = null; for (const p of all) { const k = fotoKeys().find(k => !p[k]); if (k) { first = { id: p.id, k }; break; } }
+  let first = null; for (const p of all) { const k = fotoKeys(p).find(k => !p[k]); if (k) { first = { id: p.id, k }; break; } }
   if (!first) { toast("Semua peserta sudah ada foto."); return; }
   Cam.open(first.id, true, first.k);
 };
@@ -3469,7 +3493,7 @@ function masukkanPeserta(list, sumber, adaInst) {
   let undo = null;
   { // impor ulang file yang sama (mis. setelah pembacaan diperbaiki): tawarkan mengganti daftar bila belum ada TTD/foto/selfie/nilai. Pilihan AMAN (tambahkan saja) selalu didahulukan; mengganti butuh konfirmasi kedua yang menyebut nama yang akan dihapus.
     const nm = S.peserta.filter(p => (p.nama || "").trim());
-    const bersih = nm.every(p => !p.foto && !p.foto2 && !p.batal && !p.remedial && !p.ut && !p.up && !p.et && !p.hasil && !(p.ttd && Object.keys(p.ttd).length) && !(p.sf && Object.keys(p.sf).length));
+    const bersih = nm.every(p => !adaFoto(p) && !p.batal && !p.remedial && !p.ut && !p.up && !p.et && !p.hasil && !(p.ttd && Object.keys(p.ttd).length) && !(p.sf && Object.keys(p.sf).length));
     const sama = list.filter(r => nm.some(p => norm(p.nama) === norm(r.nama))).length;
     if (nm.length && bersih && sama >= Math.max(3, Math.min(nm.length, list.length) * 0.5)
       && !confirm(`Sebagian besar nama di file ini sudah ada di daftar peserta (${nm.length} peserta, belum ada TTD/foto).\n\nOK = hanya TAMBAHKAN nama yang belum ada (disarankan, tidak ada nama yang hilang).\nBatal = pilihan lain: mengganti seluruh daftar.`)) {
@@ -3529,10 +3553,10 @@ async function pulihEv(id) {
   const files = r.files || {}, byId = new Map(), have = new Set(ev.peserta.map(p => p.id)), haveNm = new Set(ev.peserta.filter(p => (p.nama || "").trim()).map(p => norm(p.nama))), gone = new Set(ev.hapus || []);
   const cand = pid => { let c = byId.get(pid); if (!c) byId.set(pid, c = { id: pid, nama: "", instansi: "", kelas: "", keys: [] }); return c; };
   ((r.event && r.event.peserta) || []).forEach(p => { if (p && p.id && (p.nama || "").trim()) { const c = cand(p.id); c.nama = String(p.nama).trim(); c.instansi = p.instansi || ""; c.kelas = p.kelas || ""; c.batal = !!p.batal; c.remedial = !!p.remedial; c.ut = p.ut; c.up = p.up; c.et = p.et; c.hasil = p.hasil; } });
-  Object.keys(files).forEach(k => { const [kind, pid] = k.split(":"); if (!["foto", "foto2", "ttd", "sf"].includes(kind) || !pid) return; const c = cand(pid); c.keys.push(k); if (!c.nama) c.nama = drvNama(files[k]); });
+  Object.keys(files).forEach(k => { const [kind, pid] = k.split(":"); if (![...FOTO_KEYS, "ttd", "sf"].includes(kind) || !pid) return; const c = cand(pid); c.keys.push(k); if (!c.nama) c.nama = drvNama(files[k]); });
   const baru = [...byId.values()].filter(c => c.nama && !have.has(c.id) && !gone.has(c.id) && !haveNm.has(norm(c.nama))).sort((a, b) => a.nama.localeCompare(b.nama, "id"));
   if (!baru.length) return 0;
-  const add = baru.map(c => ({ id: c.id, nama: c.nama, instansi: c.instansi || "", foto: "", foto2: "", ttd: {}, sf: {}, kelas: c.kelas || "", batal: !!c.batal, remedial: !!c.remedial && !c.batal, ut: String(c.ut || ""), up: String(c.up || ""), et: String(c.et || ""), hasil: c.hasil === "lulus" || c.hasil === "tidak" ? c.hasil : "" }));
+  const add = baru.map(c => ({ id: c.id, nama: c.nama, instansi: c.instansi || "", foto: "", foto2: "", foto3: "", foto4: "", foto5: "", ttd: {}, sf: {}, kelas: c.kelas || "", batal: !!c.batal, remedial: !!c.remedial && !c.batal, ut: String(c.ut || ""), up: String(c.up || ""), et: String(c.et || ""), hasil: c.hasil === "lulus" || c.hasil === "tidak" ? c.hasil : "" }));
   /* terapkan perubahan ke data TERBARU (dibaca ulang tepat sebelum menulis, supaya tidak menimpa perubahan dari tab lain yang terjadi selama menunggu Drive) */
   const terapkan = async fn => {
     if (id === S.id) { fn(S); kelasTunggal(S); renderList(); changed(); return true; }
@@ -3547,7 +3571,7 @@ async function pulihEv(id) {
   if (keys.length) {
     const tmp = { peserta: add.map(a => ({ ...a, ttd: {}, sf: {} })) };
     try { await Cloud.fetchFiles(tmp, files, keys); } catch (e) { }
-    await terapkan(e => { const tujuan = new Map(e.peserta.map(p => [p.id, p])); tmp.peserta.forEach(a => { const p = tujuan.get(a.id); if (!p) return; if (a.foto && !p.foto) p.foto = a.foto; if (a.foto2 && !p.foto2) p.foto2 = a.foto2; Object.keys(a.ttd).forEach(d => { if (!p.ttd[d]) p.ttd[d] = a.ttd[d]; }); Object.keys(a.sf).forEach(d => { p.sf = p.sf || {}; p.sf[d] = { ...a.sf[d], ...(p.sf[d] || {}) }; }); }); });
+    await terapkan(e => { const tujuan = new Map(e.peserta.map(p => [p.id, p])); tmp.peserta.forEach(a => { const p = tujuan.get(a.id); if (!p) return; if (a.foto && !p.foto) p.foto = a.foto; FOTO_KEYS.forEach(fk => { if (a[fk] && !p[fk]) p[fk] = a[fk]; }); Object.keys(a.ttd).forEach(d => { if (!p.ttd[d]) p.ttd[d] = a.ttd[d]; }); Object.keys(a.sf).forEach(d => { p.sf = p.sf || {}; p.sf[d] = { ...a.sf[d], ...(p.sf[d] || {}) }; }); }); });
   }
   return add.length;
 }
@@ -3579,7 +3603,7 @@ setTimeout(() => { try { tenantAuto(); } catch (e) { } setInterval(() => { try {
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 8; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 10; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
 const REMOTE_KEY = "cloud-remote-list"; // salinan terakhir daftar kegiatan di Drive (supaya langsung tampil)
 const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
@@ -3767,11 +3791,26 @@ const Word = (() => {
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }
   function dokumentasi(ev, ctx) {
-    const D = Doc(), a = ev.acara, list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto || p.foto2), PER = 4, dkOn = fotoDua(a);
+    const D = Doc(), a = ev.acara, list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || adaFoto(p)), lima = list.some(p => fotoN(a, p) === 5), PER = lima ? 3 : 4, dkOn = fotoDua(a);
     const fk = dkOn ? ["foto", "foto2"] : ["foto"];
     const wmm = dkOn ? [9, 32, 32, ...fk.map(() => (CONT_W - 73) / 2)] : [10, 45, 44, CONT_W - 99], widths = wmm.map(tw);
     const RED = "FF6B6B", YEL = "FFF200", pw = dkOn ? 46 : 60, ph = dkOn ? 30.7 : 40; // warna sama dengan daftar hadir
     let xml = "";
+    if (lima) { // program 5 foto: tiap peserta 2 baris (foto 1-3, lalu foto 4-5 + identitas); 3 peserta per halaman
+      const w5 = [0, 1, 2].map(() => tw(CONT_W / 3)), pw5 = 46, ph5 = 30.7;
+      for (let j = 0, pi = 0; j < Math.max(list.length, 1); j += PER, pi++) {
+        const c = list.slice(j, j + PER);
+        const fc = (p, key, keep) => { const bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : {}; return D.cell(w5[0], bt ? D.par("") : p[key] ? D.par(D.inline(p[key], pw5, ph5), { jc: "center", before: 30, after: rem ? 0 : 30, keep }) + (rem ? D.par(D.run("DI BATCH SEBELUMNYA", { b: 1, sz: 16, color: "000000" }), { jc: "center", after: 20, keep }) : "") : rem ? D.par(D.run("DI BATCH SEBELUMNYA", { b: 1, sz: 18, color: "000000" }), { jc: "center", before: 120, keep }) : D.par(D.run("Belum ada foto", { color: "999999", sz: 18 }), { jc: "center", keep }), F); };
+        const rows5 = c.map((p, k) => {
+          const bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : rem ? { fill: YEL } : {}, tc = bt || rem ? { color: "000000" } : {};
+          const idc = D.cell(w5[2], D.par(D.run(`${j + k + 1}. ${p.nama || ""}`, { ...tc, b: 1, sz: 20 }), { before: 20, after: 20 }) + D.par(D.run(p.instansi || "", { ...tc, sz: 18 })), F);
+          return D.row(fc(p, "foto", 1) + fc(p, "foto2", 1) + fc(p, "foto3", 1), { h: tw(33.7) }) + D.row(fc(p, "foto4") + fc(p, "foto5") + idc, { h: tw(33.7) });
+        }).join("") || D.row(D.cell(w5.reduce((x, y) => x + y, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: 3 }), { h: tw(12.5) });
+        if (pi) xml += `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
+        xml += title(D, "DOKUMENTASI PESERTA", pi) + infoTable(D, [["Nama Kegiatan", a.kegiatan]]) + gap(D) + D.table(w5, rows5);
+      }
+      return D.build(xml, ctx.kopHead, ctx.kopFoot);
+    }
     for (let j = 0, pi = 0; j < Math.max(list.length, 1); j += PER, pi++) {
       const c = list.slice(j, j + PER);
       const th = (w, t) => D.cell(w, D.par(D.run(t, { b: 1, color: "FFFFFF", sz: 20 }), { jc: "center", before: 40, after: 40 }), { fill: "F58220" });
@@ -3907,7 +3946,7 @@ const Word = (() => {
     if (kind === "dh") return { name: `Daftar Hadir - ${nm}.docx`, bytes: daftarHadir(ev, ctx) };
     if (kind === "dk") {
       const ev2 = { ...ev, peserta: [] };
-      for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "", foto2: p.foto2 ? await kecil(p.foto2) : "" });
+      for (const p of ev.peserta) { const q = { ...p }; for (const fk of FOTO_KEYS) q[fk] = p[fk] ? await kecil(p[fk]) : ""; ev2.peserta.push(q); }
       return { name: `Dokumentasi Peserta - ${nm}.docx`, bytes: dokumentasi(ev2, ctx) };
     }
     if (kind === "sf") {
@@ -3951,9 +3990,9 @@ const Word = (() => {
     for (const [flag, kind] of [[rdOn(ev), "rd"], [true, "dh"], [LP.selfie, "sf"], [LP.nilai, "nl"], [LP.nara, "nr"], [LP.harian, "dy"], [true, "dk"], [LP.hasil, "ln"]]) {
       if (!flag) continue;
       if (kind === "dk") {
-        if (!ev.peserta.some(p => p.foto || p.foto2)) continue;
+        if (!ev.peserta.some(adaFoto)) continue;
         const ev2 = { ...ev, peserta: [] };
-        for (const p of ev.peserta) ev2.peserta.push({ ...p, foto: p.foto ? await kecil(p.foto) : "", foto2: p.foto2 ? await kecil(p.foto2) : "" });
+        for (const p of ev.peserta) { const q = { ...p }; for (const fk of FOTO_KEYS) q[fk] = p[fk] ? await kecil(p[fk]) : ""; ev2.peserta.push(q); }
         await add("doc:dk", `${NO.dk}. Dokumentasi Peserta - ${nm}.docx`, dokumentasi(ev2, ctx)); continue;
       }
       if (kind === "dh") { await add("doc:dh", `${NO.dh}. Daftar Hadir - ${nm}.docx`, daftarHadir(ev, ctx)); continue; }
@@ -4317,8 +4356,8 @@ const Cloud = {
     const out = [], add = (key, path, name, data) => out.push({ key, path, name, data, hash: fnv((ev.acara.papa && kfSet.has(path[0]) ? path.join("/") + "|" : "") + name + "|" + data) }); // folder alat ikut di hash: berkas lama otomatis pindah folder
     ev.peserta.filter(p => (p.nama || "").trim() && !p.batal).forEach(p => {
       const tag = ` [${p.id.slice(0, 5)}]`, kf = kfOf(ksl.includes(p.kelas) ? p.kelas : "");
-      if (p.foto) add("foto:" + p.id, [...kf, "Foto Dokumentasi"], safeName(p.nama) + tag + (fotoDua(ev.acara) ? " (1)" : "") + ".jpg", p.foto);
-      if (p.foto2 && fotoDua(ev.acara)) add("foto2:" + p.id, [...kf, "Foto Dokumentasi"], safeName(p.nama) + tag + " (2).jpg", p.foto2);
+      const nf = fotoN(ev.acara, p);
+      FOTO_KEYS.slice(0, nf).forEach(fk => { if (p[fk]) add(fk + ":" + p.id, [...kf, "Foto Dokumentasi"], safeName(p.nama) + tag + (nf > 1 ? ` (${fotoNo(fk)})` : "") + ".jpg", p[fk]); });
       Object.keys(p.sf || {}).sort().forEach(d => ["p", "s"].forEach(k => { const u = (p.sf[d] || {})[k]; if (u) add(`sf:${p.id}:${d}:${k}`, [...kf, "Selfie Absensi", `${d} (${toD(d) ? new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(toD(d)) : ""})`], safeName(p.nama) + tag + (k === "p" ? " - Pagi" : " - Siang") + ".jpg", u); }));
       Object.keys(p.ttd || {}).forEach(k => { if (p.ttd[k]) add(`ttd:${p.id}:${k}`, [...kf, "Tanda Tangan Peserta", `${k} (${toD(k) ? new Intl.DateTimeFormat("id-ID", { weekday: "long" }).format(toD(k)) : ""})`], safeName(p.nama) + tag + ".png", p.ttd[k]); });
     });
@@ -4343,7 +4382,7 @@ const Cloud = {
     return {
       id: ev.id, created: ev.created, acara: a, wm: ev.wm, days, lap,
       hariTanggal: hariTanggal(ev.acara, days), waktu: waktu(ev.acara),
-      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: !!p.foto, foto2: !!p.foto2, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut || "", up: p.up || "", et: p.et || "", hasil: p.hasil || "", ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
+      peserta: [...ev.peserta].filter(p => (p.nama || "").trim()).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: !!p.foto, foto2: !!p.foto2, foto3: !!p.foto3, foto4: !!p.foto4, foto5: !!p.foto5, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut || "", up: p.up || "", et: p.et || "", hasil: p.hasil || "", ttd: Object.keys(p.ttd || {}).filter(k => p.ttd[k]) }))
     };
   },
   async sync(manual, evArg) {
@@ -4567,8 +4606,7 @@ const Cloud = {
   /** pasang satu berkas hasil unduhan ke tempatnya di kegiatan */
   place(ev, k, url) {
     const [kind, pid, day, ses] = k.split(":"), p = ev.peserta.find(x => x.id === pid);
-    if (kind === "foto" && p) p.foto = url;
-    else if (kind === "foto2" && p) p.foto2 = url;
+    if (FOTO_KEYS.includes(kind) && p) p[kind] = url;
     else if (kind === "ttd" && p) p.ttd[day] = url;
     else if (kind === "sf" && p && (ses === "p" || ses === "s")) { (p.sf[day] = p.sf[day] || {})[ses] = url; }
     else if (kind === "ttd-org") ev.acara.ttd = url;
@@ -4617,7 +4655,7 @@ const Cloud = {
       id: d.id, created: d.created, wm: d.wm,
       acara: { ...d.acara, ttd: "" },
       lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [] }])), nr: Object.fromEntries(Object.entries(lp.nr || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }])), nrk: Object.fromEntries(Object.entries(lp.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }]))])) }))(d.lap || {}),
-      peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: "", foto2: "", ttd: {}, sf: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, et: p.et, hasil: p.hasil }))
+      peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: "", foto2: "", foto3: "", foto4: "", foto5: "", ttd: {}, sf: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, et: p.et, hasil: p.hasil }))
     });
     const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); // berkas Word tidak perlu diunduh
     await this.fetchFiles(ev, files, keys, prog);
@@ -4888,7 +4926,7 @@ const Pic = {
       peserta: ev.peserta.filter(p => (p.nama || "").trim()).map(p => { // wt = tanggal yang sudah ditandatangani di website, wf/wf2 = foto sudah ada di website (supaya APK tidak menampilkan "belum" untuk yang sudah selesai di web)
         const o = { id: p.id, nama: p.nama.trim(), instansi: p.instansi || "", kelas: a.papa ? (kt || p.kelas || "") : "", batal: !!p.batal, remedial: !!p.remedial && !p.batal, ut: p.ut || "", up: p.up || "", et: p.et || "", hasil: p.hasil || "" };
         const wt = {}; Object.keys(p.ttd || {}).forEach(d => { if (p.ttd[d] && hari.includes(d)) wt[d] = 1; }); if (Object.keys(wt).length) o.wt = wt;
-        if (p.foto) o.wf = 1; if (p.foto2) o.wf2 = 1; return o; }), dibuat: ev.created,
+        FOTO_KEYS.forEach(fk => { if (p[fk]) o["wf" + (fk === "foto" ? "" : fk.slice(4))] = 1; }); return o; }), dibuat: ev.created,
       lap: { rundown: ev.lap.rundown == null ? null : !!ev.lap.rundown, hn: Object.fromEntries(Object.entries(ev.lap.hari || {}).map(([d, h]) => [d, ((h && h.fotos) || []).length]).filter(([, n]) => n > 0)), selfie: !!ev.lap.selfie, nilai: !!ev.lap.nilai, evalT: false, hasil: !!ev.lap.hasil, harian: !!ev.lap.harian, nara: !!ev.lap.nara, nr: nrPic(ev.lap.nr), nrOff: b3Off(ev), nrk: isB3(a) ? Object.fromEntries(Object.entries(ev.lap.nrk || {}).map(([kk, D]) => [kk, nrPic(D)])) : {}, batch: ev.lap.batch || "", nKota: ev.lap.nKota || "", nTgl: ev.lap.nTgl || "", s1jab: ev.lap.s1.jab || "", s1nama: ev.lap.s1.nama || "", s1nip: ev.lap.s1.nip || "", s2jab: ev.lap.s2.jab || "", s2nama: ev.lap.s2.nama || "", s1ttd: ev.lap.s1.ttd ? 1 : 0, s2ttd: ev.lap.s2.ttd ? 1 : 0, materi: Object.fromEntries(Object.entries(ev.lap.hari || {}).filter(([, h]) => h.materi).map(([d, h]) => [d, h.materi])) }
     };
   },
@@ -5004,7 +5042,7 @@ const Pic = {
          Hanya kunci yang dulu diunggah perangkat ini yang bisa dihapus (admin lain / LPMI01 yang belum sinkron tidak saling menghapus). Hasil = sidik gabungan untuk `wm` di data kegiatan. --- */
   webMedia(ev) {
     const m = new Map(), a = ev.acara, hari = hariList(a).filter(Boolean), add = (k, u) => { if (typeof u === "string" && /^data:image\//.test(u)) m.set(k, u); };
-    (ev.peserta || []).forEach(p => { if (!(p.nama || "").trim()) return; add("f_" + p.id, p.foto); add("f2_" + p.id, p.foto2); Object.keys(p.ttd || {}).forEach(d => { if (hari.includes(d)) add(`s_${p.id}_${d}`, p.ttd[d]); }); });
+    (ev.peserta || []).forEach(p => { if (!(p.nama || "").trim()) return; FOTO_KEYS.forEach(fk => add("f" + (fk === "foto" ? "" : fk.slice(4)) + "_" + p.id, p[fk])); Object.keys(p.ttd || {}).forEach(d => { if (hari.includes(d)) add(`s_${p.id}_${d}`, p.ttd[d]); }); });
     const L = ev.lap || {};
     add("pic", a.ttd); add("n1", L.s1 && L.s1.ttd); add("n2", L.s2 && L.s2.ttd);
     Object.entries(L.nr || {}).forEach(([d, r]) => { if (r) add("nr_" + d, r.ttd); });
@@ -5224,7 +5262,7 @@ const Pic = {
     Object.values(byPic || {}).filter(x => x && typeof x === "object").forEach(h => {
       Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (p) Object.keys(days || {}).forEach(d => { if (hari.includes(d) && !(p.ttd && p.ttd[d])) g++; }); });
       Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid); if (p && !p.foto) g++; });
-      Object.keys(h.foto2 || {}).forEach(pid => { const p = by.get(pid); if (p && !p.foto2) g++; });
+      FOTO_KEYS.slice(1).forEach(fk => Object.keys(h[fk] || {}).forEach(pid => { const p = by.get(pid); if (p && !p[fk]) g++; }));
       if (h.ttdN1 && !(L.s1 && L.s1.ttd)) g++; if (h.ttdN2 && !(L.s2 && L.s2.ttd)) g++; if (h.ttdPic && !a.ttd) g++;
       Object.entries((h.lap && h.lap.hari) || {}).forEach(([d, hh]) => { if (hari.includes(d) && ((hh && hh.ids) || []).length && !(((L.hari || {})[d] || {}).fotos || []).length) g++; });
     });
@@ -5258,7 +5296,7 @@ const Pic = {
       }
       Object.entries(h.hadir || {}).forEach(([pid, days]) => { const p = by.get(pid); if (!p) { this.mOrphan++; return; } Object.keys(days || {}).forEach(d => { const u = media[`s_${pid}_${d}`]; if (!u && hari.includes(d) && !(p.ttd && p.ttd[d])) this.mMiss++; if (u && hari.includes(d) && (!p.ttd || p.ttd[d] !== u)) { p.ttd = p.ttd || {}; p.ttd[d] = u; n++; } }); });
       Object.keys(h.foto || {}).forEach(pid => { const p = by.get(pid), u = media["f_" + pid]; if (!p) this.mOrphan++; if (p && !u && !p.foto) this.mMiss++; if (p && u && p.foto !== u) { p.foto = u; n++; } });
-      Object.keys(h.foto2 || {}).forEach(pid => { const p = by.get(pid), u = media["f2_" + pid]; if (p && !u && !p.foto2) this.mMiss++; if (p && u && p.foto2 !== u) { p.foto2 = u; n++; } });
+      FOTO_KEYS.slice(1).forEach(fk => Object.keys(h[fk] || {}).forEach(pid => { const p = by.get(pid), u = media["f" + fk.slice(4) + "_" + pid]; if (p && !u && !p[fk]) this.mMiss++; if (p && u && p[fk] !== u) { p[fk] = u; n++; } }));
       if (h.ttdPic) last = h;
     }
     { // tanda tangan pengawas/ahli & foto dokumentasi harian dari PIC

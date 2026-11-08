@@ -5,13 +5,13 @@
 "use strict";
 let ME = { uid: "_admin", nama: "Admin" }, KEGS = {}, H = {}, P = { kl: null }, OH = {}, OHV = 0; const OVC = new Map(), KIDC = new WeakMap();
 const fnv = str => { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ':' + str.length; };
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
 function kidOf(h) { let k = KIDC.get(h); if (k && H[k] === h) return k; k = Object.keys(H).find(x => H[x] === h) || ''; if (k) KIDC.set(h, k); return k; }
 function ovBuild(kid) {
   const m = OH[kid]; if (!m || !ME) return null;
   const list = Object.entries(m).filter(([u, x]) => u !== ME.uid && x && typeof x === 'object').sort((a, b) => (a[1].upd || 0) - (b[1].upd || 0));
   if (!list.length) return null;
-  const o = { batal: {}, remedial: {}, nilai: {}, kel: {}, s: { s1: {}, s2: {} }, nKota: null, materi: {}, nr: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: false, ttdNama: '', nrT: {}, n1: false, n2: false, hf: {} };
+  const o = { batal: {}, remedial: {}, nilai: {}, kel: {}, s: { s1: {}, s2: {} }, nKota: null, materi: {}, nr: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: false, ttdNama: '', nrT: {}, n1: false, n2: false, hf: {} };
   for (const [, x] of list) {
     const u = x.upd || 0, put = (t, key, v) => { t[key] = { v, u }; };
     Object.entries(x.batal || {}).forEach(([pid, v]) => put(o.batal, pid, !!v));
@@ -28,7 +28,7 @@ function ovBuild(kid) {
     Object.entries(l.nrk || {}).forEach(([kk, D]) => Object.entries(D || {}).forEach(([d, r]) => nrPut(kk + '~' + d, r)));
     Object.entries(x.hadir || {}).forEach(([pid, days]) => Object.keys(days || {}).forEach(d => { (o.hadir[pid] = o.hadir[pid] || {})[d] = 1; }));
     Object.keys(x.foto || {}).forEach(pid => { o.foto[pid] = 1; });
-    Object.keys(x.foto2 || {}).forEach(pid => { o.foto2[pid] = 1; });
+    FOTO_KEYS.slice(1).forEach(fk => Object.keys(x[fk] || {}).forEach(pid => { o[fk][pid] = 1; }));
     if (x.ttdPic) { o.ttdPic = true; o.ttdNama = x.ttdPicNama || x.picNama || ''; }
   }
   return o;
@@ -40,7 +40,7 @@ function ovOf(h) {
 }
 const ownWins = (h, x) => !x || (h.upd || 0) >= x.u;
 const xT = (h, pid, d) => { const o = ovOf(h); return !!(o && o.hadir[pid] && o.hadir[pid][d]); };
-const xF = (h, pid, key) => { const o = ovOf(h); return !!(o && o[key === 'foto2' ? 'foto2' : 'foto'][pid]); };
+const xF = (h, pid, key) => { const o = ovOf(h); return !!(o && o[key] && o[key][pid]); };
 const xPic = h => { const o = ovOf(h); return !!(o && o.ttdPic); };
 const xNrT = (h, key) => { const o = ovOf(h); return !!(o && o.nrT[key]); };
 const nrTtdSrc = (h, k, key) => (h.nrs && h.nrs[key]) ? 'own' : xNrT(h, key) ? 'pic' : (k && nrAdmin(k, key).ttd) ? 'web' : '';
@@ -53,13 +53,17 @@ const isBatal = (h, p) => { const o = ovOf(h), x = o && o.batal[p.id]; if ((p.id
 const isRem = (h, p) => { if (isBatal(h, p)) return false; const o = ovOf(h), x = o && o.remedial[p.id]; if (h.remedial && (p.id in h.remedial) && ownWins(h, x)) return !!h.remedial[p.id]; return x ? x.v : !!p.remedial; };
 const webT = (p, d) => !!(p && p.wt && p.wt[d]);
 const sudahTtd = (h, p, d) => !!(h.hadir[p.id] && h.hadir[p.id][d]) || webT(p, d) || xT(h, p.id, d);
-const webF = (p, key) => !!(p && (key === 'foto2' ? p.wf2 : p.wf));
+const webF = (p, key) => !!(p && p[wfKey(key)]);
 const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kelasKey(p.kelas)] : null, a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); };
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); };
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; };
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; };
+const FOTO_KEYS = ['foto', 'foto2', 'foto3', 'foto4', 'foto5'], KELAS_FOTO5 = 'ahli k3 muda lingkungan kerja';
+const fotoNo = key => (key === 'foto' ? 1 : +String(key).slice(4) || 1), fMk = key => 'f' + (key === 'foto' ? '' : key.slice(4)) + '_', wfKey = key => 'wf' + (key === 'foto' ? '' : key.slice(4));
 const fotoDua = k => !!(k && (k.damkar || k.b3));
+const fotoN = (k, p) => { if (k && k.b3) { const ks = k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas)) : [], kl = String((p && p.kelas) || '').replace(/\s+/g, ' ').trim() || (ks.length === 1 ? ks[0] : ''); if (kl.toLowerCase() === KELAS_FOTO5) return 5; } return fotoDua(k) ? 2 : 1; };
+const fotoKeysP = (k, p) => FOTO_KEYS.slice(0, fotoN(k, p));
 const LAPK = k => ({ ...((k && k.lap) || {}), evalT: false });
 const nilaiOf = (h, p, f) => { const o = ovOf(h), x = o && o.nilai[p.id] && o.nilai[p.id][f]; if (h.nilai[p.id] && f in h.nilai[p.id] && ownWins(h, x)) return String(h.nilai[p.id][f] || ''); return x ? String(x.v || '') : String(p[f] || ''); };
 const kelOf = (h, p) => { const o = ovOf(h), x = o && o.kel[p.id]; if ((p.id in h.kel) && ownWins(h, x)) return h.kel[p.id]; return x ? x.v : (p.hasil || ''); };
@@ -117,7 +121,7 @@ const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(
 const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, own = (d in h.nr) ? h.nr[d] : null, ov = ovOf(h), xr = ov && ov.nr[d], base = nrAdmin(k, d); Object.keys(o).forEach(f => { const x = xr && xr[f]; let v; if (own && (f in own) && ownWins(h, x)) v = own[f]; else if (x) v = x.v; else v = own ? own[f] : base[f]; o[f] = String(v == null ? '' : v); }); const m = raw ? null : MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v70';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v73';
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
 const B3_REN = [['Petugas Penyelamat Ruang Terbatas', 'PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS']];
 function b3Ren(h) {
@@ -163,11 +167,11 @@ function lapCek(kid) {
     add(s);
   });
   // 2. Dokumentasi Peserta (foto)
-  const keys = fotoDua(k) ? ['foto', 'foto2'] : ['foto'];
+  const nMax = Math.max(1, ...(k.peserta || []).map(p => fotoN(k, p)));
   grp.forEach(g => {
-    const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('dok' + sfx(g), 'Dokumentasi Peserta' + (keys.length > 1 ? ' (2 foto per peserta)' : ''), 'dok', g);
+    const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('dok' + sfx(g), 'Dokumentasi Peserta' + (nMax > 1 ? ` (${Math.max(1, ...ps.map(p => fotoN(k, p)))} foto per peserta)` : ''), 'dok', g);
     aktif.forEach(p => {
-      const th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = isRem(h, p) || th.every(t => t.st !== 'none');
+      const keys = fotoKeysP(k, p), th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = isRem(h, p) || th.every(t => t.st !== 'none');
       s.total++; if (lengkap) s.ok++; s.rows.push({ t: p.nama, s: isRem(h, p) ? 'DI BATCH SEBELUMNYA (remedial)' : '', st: lengkap ? 'ok' : 'bad', thumbs: th });
     });
     if (ps.length > aktif.length) s.info.push(`${ps.length - aktif.length} peserta Cancel (tidak dihitung).`);

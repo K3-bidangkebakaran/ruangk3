@@ -36,7 +36,7 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, kl: null, day: 0, q: '', err: '' }; // kl: alat/kelas yang sedang dibuka (kegiatan PAPA)
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 /* ---------- hasil akun PIC lain (sinkron antar akun) ----------
    Semua akun PIC melihat kegiatan yang sama, jadi hasil kerja satu akun harus tampak di akun lain TANPA menunggu admin membuka website.
@@ -48,7 +48,7 @@ function ovBuild(kid) {
   const m = OH[kid]; if (!m || !ME) return null;
   const list = Object.entries(m).filter(([u, x]) => u !== ME.uid && x && typeof x === 'object').sort((a, b) => (a[1].upd || 0) - (b[1].upd || 0));
   if (!list.length) return null;
-  const o = { batal: {}, remedial: {}, nilai: {}, kel: {}, s: { s1: {}, s2: {} }, nKota: null, materi: {}, nr: {}, hadir: {}, foto: {}, foto2: {}, ttdPic: false, ttdNama: '', nrT: {}, n1: false, n2: false, hf: {} };
+  const o = { batal: {}, remedial: {}, nilai: {}, kel: {}, s: { s1: {}, s2: {} }, nKota: null, materi: {}, nr: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: false, ttdNama: '', nrT: {}, n1: false, n2: false, hf: {} };
   for (const [, x] of list) {
     const u = x.upd || 0, put = (t, key, v) => { t[key] = { v, u }; };
     Object.entries(x.batal || {}).forEach(([pid, v]) => put(o.batal, pid, !!v));
@@ -65,7 +65,7 @@ function ovBuild(kid) {
     Object.entries(l.nrk || {}).forEach(([kk, D]) => Object.entries(D || {}).forEach(([d, r]) => nrPut(kk + '~' + d, r)));
     Object.entries(x.hadir || {}).forEach(([pid, days]) => Object.keys(days || {}).forEach(d => { (o.hadir[pid] = o.hadir[pid] || {})[d] = 1; }));
     Object.keys(x.foto || {}).forEach(pid => { o.foto[pid] = 1; });
-    Object.keys(x.foto2 || {}).forEach(pid => { o.foto2[pid] = 1; });
+    FOTO_KEYS.slice(1).forEach(fk => Object.keys(x[fk] || {}).forEach(pid => { o[fk][pid] = 1; }));
     if (x.ttdPic) { o.ttdPic = true; o.ttdNama = x.ttdPicNama || x.picNama || ''; }
   }
   return o;
@@ -77,7 +77,7 @@ function ovOf(h) {
 }
 const ownWins = (h, x) => !x || (h.upd || 0) >= x.u; // isian sendiri dipakai bila tidak ada isian akun lain yang lebih baru
 const xT = (h, pid, d) => { const o = ovOf(h); return !!(o && o.hadir[pid] && o.hadir[pid][d]); };      // TTD peserta sudah ada dari akun PIC lain
-const xF = (h, pid, key) => { const o = ovOf(h); return !!(o && o[key === 'foto2' ? 'foto2' : 'foto'][pid]); }; // foto sudah ada dari akun PIC lain
+const xF = (h, pid, key) => { const o = ovOf(h); return !!(o && o[key] && o[key][pid]); }; // foto sudah ada dari akun PIC lain
 const xPic = h => { const o = ovOf(h); return !!(o && o.ttdPic); };
 const xNrT = (h, key) => { const o = ovOf(h); return !!(o && o.nrT[key]); };     // TTD narasumber sudah ada dari akun PIC lain
 const nrTtdSrc = (h, k, key) => (h.nrs && h.nrs[key]) ? 'own' : xNrT(h, key) ? 'pic' : (k && nrAdmin(k, key).ttd) ? 'web' : ''; // asal TTD narasumber: HP ini / PIC lain / website
@@ -99,7 +99,7 @@ function xmPlan(kid) { // daftar gambar akun PIC LAIN yang tercatat di server: [
   Object.entries(m).filter(([u, x]) => u !== ME.uid && x && typeof x === 'object').sort((a, b) => (a[1].upd || 0) - (b[1].upd || 0)).forEach(([uid, x]) => {
     const nama = x.picNama || 'PIC lain', mh = x.mh || {}, add = key => { if (!own.has(key)) out.set(key, { key, uid, nama, hs: String(mh[key] || '') }); };
     Object.entries(x.hadir || {}).forEach(([pid, days]) => Object.keys(days || {}).forEach(d => add(`s_${pid}_${d}`)));
-    Object.keys(x.foto || {}).forEach(pid => add('f_' + pid)); Object.keys(x.foto2 || {}).forEach(pid => add('f2_' + pid));
+    FOTO_KEYS.forEach(fk => Object.keys(x[fk] || {}).forEach(pid => add(fMk(fk) + pid)));
     if (x.ttdPic) add('pic'); if (x.ttdN1) add('n1'); if (x.ttdN2) add('n2');
     const l = x.lap || {}, nrT = (key, r) => { if (r && typeof r === 'object' && r.ttd) add('nr_' + key); };
     Object.entries(l.nr || {}).forEach(([d, r]) => nrT(d, r)); Object.entries(l.nrk || {}).forEach(([kk, D]) => Object.entries(D || {}).forEach(([d, r]) => nrT(kk + '~' + d, r)));
@@ -158,16 +158,20 @@ const isRem = (h, p) => { if (isBatal(h, p)) return false; const o = ovOf(h), x 
 /* Data yang sudah diisi di WEBSITE (dikirim admin lewat kegiatan): wt = tanggal TTD peserta, wf/wf2 = foto. Dianggap sudah beres di APK. */
 const webT = (p, d) => !!(p && p.wt && p.wt[d]);
 const sudahTtd = (h, p, d) => !!(h.hadir[p.id] && h.hadir[p.id][d]) || webT(p, d) || xT(h, p.id, d);
-const webF = (p, key) => !!(p && (key === 'foto2' ? p.wf2 : p.wf));
+const webF = (p, key) => !!(p && p[wfKey(key)]);
 const fotoAda = (h, p, key) => !!(h[key] && h[key][p.id]) || webF(p, key) || xF(h, p.id, key);
 // hari yang dipakai peserta: alat selain Kelas 1 pada kegiatan >4 hari hanya 4 hari pertama (k.hk[kunciAlat] dikirim website)
 const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kelasKey(p.kelas)] : null, a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); };
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); }; // hari yang tampil di tab absensi: alat selain Kelas 1 hanya 4 hari
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); if (!h.foto2) h.foto2 = {}; ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
-const fotoDua = k => !!(k && (k.damkar || k.b3)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
-const fotoLengkap = (k, h, p) => isRem(h, p) || (fotoAda(h, p, 'foto') && (!fotoDua(k) || fotoAda(h, p, 'foto2'))); // Remedial: fotonya sudah di batch sebelumnya (tidak wajib)
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const FOTO_KEYS = ['foto', 'foto2', 'foto3', 'foto4', 'foto5'], KELAS_FOTO5 = 'ahli k3 muda lingkungan kerja'; // program B3 "Ahli K3 Muda Lingkungan Kerja": 5 foto per peserta
+const fotoNo = key => (key === 'foto' ? 1 : +String(key).slice(4) || 1), fMk = key => 'f' + (key === 'foto' ? '' : key.slice(4)) + '_', wfKey = key => 'wf' + (key === 'foto' ? '' : key.slice(4));
+const fotoDua = k => !!(k && (k.damkar || k.b3));
+const fotoN = (k, p) => { if (k && k.b3) { const ks = k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas)) : [], kl = String((p && p.kelas) || '').replace(/\s+/g, ' ').trim() || (ks.length === 1 ? ks[0] : ''); if (kl.toLowerCase() === KELAS_FOTO5) return 5; } return fotoDua(k) ? 2 : 1; };
+const fotoKeysP = (k, p) => FOTO_KEYS.slice(0, fotoN(k, p)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
+const fotoLengkap = (k, h, p) => isRem(h, p) || fotoKeysP(k, p).every(key => fotoAda(h, p, key)); // Remedial: fotonya sudah di batch sebelumnya (tidak wajib)
 const LAPK = k => ({ ...((k && k.lap) || {}), evalT: false }); // tidak ada kolom Nilai Evaluasi Teori terpisah: Nilai Ujian Teori = Nilai Evaluasi Teori
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
 // nilai/kelulusan: isian PIC (bila ada) menimpa isian dari admin
@@ -249,7 +253,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v72';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v73';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -535,7 +539,7 @@ const mediaList = h => {
   const out = [];
   Object.keys(h.hadir).forEach(pid => Object.keys(h.hadir[pid]).forEach(d => { if (h.hadir[pid][d]) out.push([`s_${pid}_${d}`, h.hadir[pid][d]]); }));
   Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) out.push([`f_${pid}`, h.foto[pid]]); });
-  Object.keys(h.foto2 || {}).forEach(pid => { if (h.foto2[pid]) out.push([`f2_${pid}`, h.foto2[pid]]); });
+  FOTO_KEYS.slice(1).forEach(fk => Object.keys(h[fk] || {}).forEach(pid => { if (h[fk][pid]) out.push([`${fMk(fk)}${pid}`, h[fk][pid]]); }));
   if (h.ttdPic) out.push(['pic', h.ttdPic]);
   if (h.n1) out.push(['n1', h.n1]);
   if (h.n2) out.push(['n2', h.n2]);
@@ -556,12 +560,12 @@ function pending() {
 const flags = h => {
   const hadir = {}; Object.keys(h.hadir).forEach(pid => { const m = {}; Object.keys(h.hadir[pid]).forEach(d => { if (h.hadir[pid][d]) m[d] = 1; }); if (Object.keys(m).length) hadir[pid] = m; });
   const foto = {}; Object.keys(h.foto).forEach(pid => { if (h.foto[pid]) foto[pid] = 1; });
-  const foto2 = {}; Object.keys(h.foto2 || {}).forEach(pid => { if (h.foto2[pid]) foto2[pid] = 1; });
+  const fx = {}; FOTO_KEYS.slice(1).forEach(fk => { const o = {}; Object.keys(h[fk] || {}).forEach(pid => { if (h[fk][pid]) o[pid] = 1; }); fx[fk] = o; });
   const hari = {}; new Set([...Object.keys(h.materi || {}), ...Object.keys(h.hfoto || {})]).forEach(d => { hari[d] = { ids: ((h.hfoto || {})[d] || []).map(f => f.i) }; if (d in (h.materi || {})) hari[d].materi = String(h.materi[d] || ''); });
   const nr = {}, nrk = {}; new Set([...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})]).forEach(d => { const o = { ...((h.nr || {})[d] || {}) }; if ((h.nrs || {})[d]) o.ttd = 1; const m = NRK_RE.exec(d); if (m[1]) (nrk[m[1]] = nrk[m[1]] || {})[m[2]] = o; else nr[d] = o; });
   const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari, nr, nrk }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
   const mh = {}; mediaList(h).forEach(([k]) => { if (h.sent[k]) mh[k] = h.sent[k]; }); // sidik gambar yang sudah terkirim: website hanya mengunduh gambar yang berubah
-  return { dev: DEV, mh, nilai: h.nilai || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, foto2, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, admT: h.admT || 0, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
+  return { dev: DEV, mh, nilai: h.nilai || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, ...fx, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, admT: h.admT || 0, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
 /* ---------- toast ---------- */
@@ -595,7 +599,7 @@ async function svMerge(kid, h) {
   const jobs = [], gone = h.gone || [], want = (key, ada, set) => { if (!ada && !gone.includes(key)) jobs.push([key, set]); };
   Object.entries(sv.hadir || {}).forEach(([pid, days]) => Object.keys(days || {}).forEach(d => want(`s_${pid}_${d}`, h.hadir[pid] && h.hadir[pid][d], u => { (h.hadir[pid] = h.hadir[pid] || {})[d] = u; })));
   Object.keys(sv.foto || {}).forEach(pid => want(`f_${pid}`, h.foto[pid], u => { h.foto[pid] = u; }));
-  Object.keys(sv.foto2 || {}).forEach(pid => want(`f2_${pid}`, (h.foto2 || {})[pid], u => { (h.foto2 = h.foto2 || {})[pid] = u; }));
+  FOTO_KEYS.slice(1).forEach(fk => Object.keys(sv[fk] || {}).forEach(pid => want(`${fMk(fk)}${pid}`, (h[fk] || {})[pid], u => { (h[fk] = h[fk] || {})[pid] = u; })));
   if (sv.ttdPic) { want('pic', h.ttdPic, u => { h.ttdPic = u; if (!h.ttdPicNama) h.ttdPicNama = sv.ttdPicNama || ''; }); }
   if (sv.ttdN1) want('n1', h.n1, u => { h.n1 = u; }); if (sv.ttdN2) want('n2', h.n2, u => { h.n2 = u; });
   const nrT = (key, r) => { if (r && r.ttd) want('nr_' + key, (h.nrs || {})[key], u => { (h.nrs = h.nrs || {})[key] = u; }); };
@@ -663,8 +667,7 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
       if (key === 'n2') return !!sv.ttdN2;
       if (key.startsWith('nr_')) return !!((nrSv(key.slice(3)) || {}).ttd);
       if (key in ids) return true;
-      if (key.startsWith('f2_')) return !!(sv.foto2 && sv.foto2[key.slice(3)]);
-      if (key.startsWith('f_')) return !!(sv.foto && sv.foto[key.slice(2)]);
+      { const fm = /^f([2-5]?)_/.exec(key); if (fm) { const fk = fm[1] ? 'foto' + fm[1] : 'foto'; return !!(sv[fk] && sv[fk][key.slice(fm[0].length)]); } }
       if (key.startsWith('s_') && key.length > 13) { const date = key.slice(-10), pid = key.slice(2, -11); return !!(sv.hadir && sv.hadir[pid] && sv.hadir[pid][date]); }
       return false;
     };
@@ -675,8 +678,7 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
       else if (key === 'n2') h.n2 = d;
       else if (key.startsWith('nr_')) h.nrs[key.slice(3)] = d;
       else if (key in ids) { const [dd, ii] = ids[key]; (h.hfoto[dd] = h.hfoto[dd] || []).push({ i: ii, u: d }); }
-      else if (key.startsWith('f2_')) h.foto2[key.slice(3)] = d;
-      else if (key.startsWith('f_')) h.foto[key.slice(2)] = d;
+      else if (/^f[2-5]?_/.test(key)) { const fm = /^f([2-5]?)_/.exec(key), fk = fm[1] ? 'foto' + fm[1] : 'foto'; (h[fk] = h[fk] || {})[key.slice(fm[0].length)] = d; }
       else { const date = key.slice(-10), pid = key.slice(2, -11); (h.hadir[pid] = h.hadir[pid] || {})[date] = d; }
       h.sent[key] = fnv(d);
     });
@@ -831,11 +833,11 @@ function lapCek(kid) {
     add(s);
   });
   // 2. Dokumentasi Peserta (foto)
-  const keys = fotoDua(k) ? ['foto', 'foto2'] : ['foto'];
+  const nMax = Math.max(1, ...(k.peserta || []).map(p => fotoN(k, p)));
   grp.forEach(g => {
-    const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('dok' + sfx(g), 'Dokumentasi Peserta' + (keys.length > 1 ? ' (2 foto per peserta)' : ''), 'dok', g);
+    const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('dok' + sfx(g), 'Dokumentasi Peserta' + (nMax > 1 ? ` (${Math.max(1, ...ps.map(p => fotoN(k, p)))} foto per peserta)` : ''), 'dok', g);
     aktif.forEach(p => {
-      const th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = isRem(h, p) || th.every(t => t.st !== 'none');
+      const keys = fotoKeysP(k, p), th = keys.map((key, i) => { const own = h[key] && h[key][p.id]; return { pv: `p|${p.id}|${key}`, lb: keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto', src: own || '', st: own ? 'own' : webF(p, key) ? 'web' : xF(h, p.id, key) ? 'x' : 'none' }; }), lengkap = isRem(h, p) || th.every(t => t.st !== 'none');
       s.total++; if (lengkap) s.ok++; s.rows.push({ t: p.nama, s: isRem(h, p) ? 'DI BATCH SEBELUMNYA (remedial)' : '', st: lengkap ? 'ok' : 'bad', thumbs: th });
     });
     if (ps.length > aktif.length) s.info.push(`${ps.length - aktif.length} peserta Cancel (tidak dihitung).`);
@@ -974,9 +976,9 @@ function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin 
     tglTtd: k.tglTtd || '', jabatanTtd: k.jabTtd || '', namaTtd: k.namaTtd || h.ttdPicNama || (ov && ov.ttdNama) || '', ttd: h.ttdPic || xmGet(kid, 'pic') || wmGet(kid, 'pic') || (k.ttdWeb ? FLAG.sig : ''), barisKosong: k.bk || 0, damkar: !!k.damkar };
   const peserta = (k.peserta || []).filter(p => (p.nama || '').trim()).map(p => {
     const ttd = {}; days.forEach(d => { const u = (h.hadir[p.id] && h.hadir[p.id][d]) || xmGet(kid, `s_${p.id}_${d}`) || wmGet(kid, `s_${p.id}_${d}`); if (u) ttd[d] = u; else if (webT(p, d) || xT(h, p.id, d)) ttd[d] = FLAG.sig; });
-    const fo = key => (h[key] && h[key][p.id]) || xmGet(kid, (key === 'foto2' ? 'f2_' : 'f_') + p.id) || wmGet(kid, (key === 'foto2' ? 'f2_' : 'f_') + p.id) || ((webF(p, key) || xF(h, p.id, key)) ? FLAG.foto : '');
+    const fo = key => (h[key] && h[key][p.id]) || xmGet(kid, fMk(key) + p.id) || wmGet(kid, fMk(key) + p.id) || ((webF(p, key) || xF(h, p.id, key)) ? FLAG.foto : '');
     const sf = {}; days.forEach(d => ['p', 's'].forEach(s => { const u = sfd[`${p.id}~${d}~${s}`]; if (u) (sf[d] = sf[d] || {})[s] = u; }));
-    return { id: p.id, nama: p.nama, instansi: p.instansi || '', kelas: p.kelas || '', batal: isBatal(h, p), remedial: isRem(h, p), ut: nilaiOf(h, p, 'ut'), up: nilaiOf(h, p, 'up'), et: nilaiOf(h, p, 'et'), hasil: kelOf(h, p), foto: fo('foto'), foto2: fo('foto2'), ttd, sf };
+    return { id: p.id, nama: p.nama, instansi: p.instansi || '', kelas: p.kelas || '', batal: isBatal(h, p), remedial: isRem(h, p), ut: nilaiOf(h, p, 'ut'), up: nilaiOf(h, p, 'up'), et: nilaiOf(h, p, 'et'), hasil: kelOf(h, p), foto: fo('foto'), foto2: fo('foto2'), foto3: fo('foto3'), foto4: fo('foto4'), foto5: fo('foto5'), ttd, sf };
   });
   const hari = {}, px = xmPlan(kid);
   days.forEach(d => {
@@ -1200,8 +1202,8 @@ function render() {
     const s = stat(kid, curKl(k)), hh = hOf(kid);
     h = appbar('Dokumentasi Peserta', subK(k), true) + `<div class="screen"><div class="row" style="align-items:center"><span class="pill ${s.foto === s.aktif && s.aktif ? 'ok' : ''}">${s.foto}/${s.aktif} foto</span></div>
       <div class="photos${fotoDua(k) ? ' dk' : ''}">${urutKelas(k, pesKl(k)).map(p => {
-        const cx = isBatal(hh, p), rm = isRem(hh, p), keys = fotoDua(k) ? ['foto', 'foto2'] : ['foto'];
-        const slot = (key, i) => { const f0 = hh[key] && hh[key][p.id], xk = (key === 'foto2' ? 'f2_' : 'f_') + p.id, wo = !f0 && !xmGet(kid, xk) && wmGet(kid, xk), xo = !f0 && (xmGet(kid, xk) || wo), f = f0 || xo, xi = xo ? xmPlan(kid).find(x => x.key === xk) : null, wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = fotoDua(k) ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}" data-act="pv" data-pv="p|${esc(p.id)}|${key}" title="Ketuk untuk memperbesar">${xi ? `<span class="by">Oleh: ${esc(xi.nama)}</span>` : wo ? '<span class="by">Dari website</span>' : f0 && ME && ME.nama ? `<span class="by">Oleh: Anda (${esc(ME.nama)})</span>` : ''}` : (cx ? 'Batal ikut' : wf ? `<span data-act="pv" data-pv="p|${esc(p.id)}|${key}" style="cursor:pointer">${webF(p, key) ? '✔ Sudah ada (website)' : xF(hh, p.id, key) ? (online() ? '✔ Sudah ada (PIC lain)<br><small>Memuat foto…</small>' : '✔ Sudah ada (PIC lain)<br><small>Butuh sinyal untuk melihat</small>') : '✔ Sudah ada'}<br><small>Ketuk untuk lihat</small></span>` : 'Belum ada foto')}</div>${cx ? '' : `<div class="slbtns"><button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button><label class="btn sm filebtn" data-up-l>⬆ Unggah<input type="file" accept="image/*" data-up="1" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="Unggah ${lb.toLowerCase()} ${esc(p.nama)} dari galeri"></label></div>`}</div>`; };
+        const cx = isBatal(hh, p), rm = isRem(hh, p), keys = fotoKeysP(k, p);
+        const slot = (key, i) => { const f0 = hh[key] && hh[key][p.id], xk = fMk(key) + p.id, wo = !f0 && !xmGet(kid, xk) && wmGet(kid, xk), xo = !f0 && (xmGet(kid, xk) || wo), f = f0 || xo, xi = xo ? xmPlan(kid).find(x => x.key === xk) : null, wf = !f && (webF(p, key) || xF(hh, p.id, key)), lb = keys.length > 1 ? 'Foto ' + (i + 1) : 'Foto'; return `<div class="slot"><div class="img">${f ? `<img src="${f}" alt="${lb} ${esc(p.nama)}" data-act="pv" data-pv="p|${esc(p.id)}|${key}" title="Ketuk untuk memperbesar">${xi ? `<span class="by">Oleh: ${esc(xi.nama)}</span>` : wo ? '<span class="by">Dari website</span>' : f0 && ME && ME.nama ? `<span class="by">Oleh: Anda (${esc(ME.nama)})</span>` : ''}` : (cx ? 'Batal ikut' : wf ? `<span data-act="pv" data-pv="p|${esc(p.id)}|${key}" style="cursor:pointer">${webF(p, key) ? '✔ Sudah ada (website)' : xF(hh, p.id, key) ? (online() ? '✔ Sudah ada (PIC lain)<br><small>Memuat foto…</small>' : '✔ Sudah ada (PIC lain)<br><small>Butuh sinyal untuk melihat</small>') : '✔ Sudah ada'}<br><small>Ketuk untuk lihat</small></span>` : 'Belum ada foto')}</div>${cx ? '' : `<div class="slbtns"><button type="button" class="btn sm" data-act="foto" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="${f || wf ? 'Ganti' : 'Ambil'} ${lb.toLowerCase()} ${esc(p.nama)}">${f || wf ? 'Ganti ' : 'Ambil '}${lb.toLowerCase()}</button><label class="btn sm filebtn" data-up-l>⬆ Unggah<input type="file" accept="image/*" data-up="1" data-pid="${esc(p.id)}" data-slot="${key}" aria-label="Unggah ${lb.toLowerCase()} ${esc(p.nama)} dari galeri"></label></div>`}</div>`; };
         return `<div class="ph${cx ? ' cx' : rm ? ' rm' : ''}"><div class="slots">${keys.map(slot).join('')}</div>${rm && !cx ? '<div class="bsb">DI BATCH SEBELUMNYA</div>' : ''}<div class="cap"><b>${esc(p.nama)}</b>${p.instansi || p.kelas ? `<small>${instKel(p)}</small>` : ''}${cx ? '<span class="pill bad">Cancel</span>' : rm ? '<span class="pill warn">Remedial</span>' : ''}</div></div>`; }).join('')}</div>
       <p class="hint">Foto bisa diambil langsung dari kamera (otomatis diberi watermark: nama peserta, kegiatan, titik lokasi, tanggal, jam) atau <b>diunggah dari galeri HP</b> (tombol ⬆ Unggah; watermark memuat nama, kegiatan, tempat, dan tanggal foto). Ketuk foto untuk memperbesar. Ukurannya diperkecil agar cepat terkirim di sinyal lemah.</p></div>`;
   }
@@ -1476,7 +1478,7 @@ function camFallback(msg) {
 function openCam(kid, pid, slot, hari) {
   const k0 = KEGS[kid], p = hari ? { nama: '' } : (k0 && k0.peserta.find(x => x.id === pid)); if (!k0 || !p) return;
   const k = (!hari && papaOf(k0) && p.kelas) ? { ...k0, nama: `${k0.nama} – ${p.kelas}` } : k0; // foto peserta PAPA: nama alat ikut di watermark
-  const judul = hari ? `Dokumentasi Day ${(k.tgl || []).indexOf(hari) + 1} · ${tglPendek(hari)}` : `${p.nama}${fotoDua(k) ? ' · Foto ' + (slot === 'foto2' ? 2 : 1) : ''}`;
+  const judul = hari ? `Dokumentasi Day ${(k.tgl || []).indexOf(hari) + 1} · ${tglPendek(hari)}` : `${p.nama}${fotoN(k, p) > 1 ? ' · Foto ' + fotoNo(slot) : ''}`;
   camClose();
   const el = document.createElement('div'); el.className = 'cam'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Kamera dokumentasi');
   el.innerHTML = `<div class="camtop"><button type="button" class="btn sm" data-act="camx">✕ Tutup</button><div class="camsel"><b>${esc(judul)}</b><span id="camSt"></span><button type="button" class="btn sm" id="camLoc" data-act="camloc" hidden>Ulangi lokasi</button><small id="camDiag" style="opacity:.7;font-size:10.5px"></small></div><button type="button" class="btn sm" data-act="camflip" aria-label="Balik kamera depan/belakang">⟲ Balik</button></div>
@@ -1485,7 +1487,7 @@ function openCam(kid, pid, slot, hari) {
     <div class="cambar"><div id="camLive"><button type="button" class="shutter" id="camShot" data-act="camshot" aria-label="Ambil foto" disabled></button></div>
     <div id="camRev" class="row" style="justify-content:center;gap:12px" hidden><button type="button" class="btn" data-act="camretake">Ulangi</button><button type="button" class="btn pri" data-act="camuse">Pakai foto</button></div></div>`;
   document.body.appendChild(el);
-  CAM = { el, mode: getMode(), kid, pid, k, hari: hari || '', slot: slot === 'foto2' ? 'foto2' : 'foto', nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
+  CAM = { el, mode: getMode(), kid, pid, k, hari: hari || '', slot: FOTO_KEYS.includes(slot) ? slot : 'foto', nama: p.nama, facing: 'environment', stream: null, live: false, review: null, pos: (POS && Date.now() - POS.t < 120000) ? POS : null, locErr: '', waited: false, watch: null };
   camLocStart();
   CAM.tick = setInterval(() => { camWm(); camLayout(); }, 1000); camWm(); camStatus(); camStart(); camLayout();
 }
@@ -1526,7 +1528,7 @@ function camSave(url) {
 /* ---------- unggah foto dari galeri + pratinjau ---------- */
 async function uploadFoto(inp) {
   const kid = P.kid, k0 = kid && KEGS[kid], files = [...(inp.files || [])].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name || ''));
-  const hari = inp.dataset.hari || '', pid = inp.dataset.pid || '', slot = inp.dataset.slot === 'foto2' ? 'foto2' : 'foto';
+  const hari = inp.dataset.hari || '', pid = inp.dataset.pid || '', slot = FOTO_KEYS.includes(inp.dataset.slot) ? inp.dataset.slot : 'foto';
   inp.value = ''; UPL = 0;
   if (!k0 || !files.length) { if (k0) toast('Berkas bukan gambar. Pilih foto (JPG/PNG).'); return; }
   const p = hari ? { nama: '' } : k0.peserta.find(x => x.id === pid); if (!p) return;
@@ -1550,8 +1552,8 @@ function pvInfo(key) { // judul + gambar (bila ada di HP ini)
   if (t === 'x') { const x = xmPlan(kid).find(y => y.key === a), m = /^d_(\d{4}-\d{2}-\d{2})_/.exec(a), i = m ? ((k && k.tgl) || []).indexOf(m[1]) : -1; const w = !x && /^wd_(\d{4}-\d{2}-\d{2})_/.exec(a), j = w ? ((k && k.tgl) || []).indexOf(w[1]) : i; return { src: xmGet(kid, a) || wmGet(kid, a), cap: `Dokumentasi${j >= 0 ? ' Day ' + (j + 1) + ' · ' + tglPendek((m || w)[1]) : ''}${x ? ' · oleh ' + x.nama : w ? ' · dari website' : ''}`, remoteKey: w ? '' : a }; }
   if (t === 's') { const [pid, d, ses] = a.split('~'), p = k && k.peserta.find(x => x.id === pid), i = ((k && k.tgl) || []).indexOf(d); return { src: (SFD[kid] || {})[a] || '', cap: `${p ? p.nama : 'Peserta'} · Selfie ${SFSES[ses] || ses}${i >= 0 ? ' · Day ' + (i + 1) + ' · ' + tglPendek(d) : ''}`, remoteSf: a, sfKey: a }; }
   if (t === 'd') { const f = (h.hfoto[a] || []).find(x => String(x.i) === b), i = ((k && k.tgl) || []).indexOf(a); return { src: f ? f.u : '', cap: `Dokumentasi Day ${i + 1} · ${tglPendek(a)} · oleh Anda` }; }
-  const p = k && k.peserta.find(x => x.id === a), xk = (b === 'foto2' ? 'f2_' : 'f_') + a, own = (h[b] && h[b][a]) || '', xi = !own && xmPlan(kid).find(y => y.key === xk);
-  return { src: own || xmGet(kid, xk) || wmGet(kid, xk), cap: `${p ? p.nama : ''}${fotoDua(k) ? ' · Foto ' + (b === 'foto2' ? 2 : 1) : ''}${xi ? ' · oleh ' + xi.nama : own ? ' · oleh Anda' : ''}`, remote: p ? { pid: a, slot: b } : null };
+  const p = k && k.peserta.find(x => x.id === a), xk = fMk(b) + a, own = (h[b] && h[b][a]) || '', xi = !own && xmPlan(kid).find(y => y.key === xk);
+  return { src: own || xmGet(kid, xk) || wmGet(kid, xk), cap: `${p ? p.nama : ''}${p && fotoN(k, p) > 1 ? ' · Foto ' + fotoNo(b) : ''}${xi ? ' · oleh ' + xi.nama : own ? ' · oleh Anda' : ''}`, remote: p ? { pid: a, slot: b } : null };
 }
 function pvClose() { if (PV) { PV.el.remove(); PV = null; } }
 async function pvShow(i) {
@@ -1563,7 +1565,7 @@ async function pvShow(i) {
   if (!src && inf.remoteSf && fbOk() && window.PicFB.selfieOne && online()) { msg.hidden = false; msg.textContent = 'Memuat selfie…'; try { src = await window.PicFB.selfieOne(P.kid, inf.remoteSf); } catch (e) { src = ''; } if (!PV || PV.seq !== mine) return; if (src && typeof src === 'string') { (SFD[P.kid] = SFD[P.kid] || {})[inf.remoteSf] = src; } }
   if (!src && (inf.remote || inf.remoteKey) && fbOk() && window.PicFB.mediaOne && online()) { // foto dari akun PIC lain: ambil dari server
     msg.hidden = false; msg.textContent = 'Memuat foto…';
-    try { src = await window.PicFB.mediaOne(P.kid, inf.remoteKey || ((inf.remote.slot === 'foto2' ? 'f2_' : 'f_') + inf.remote.pid)); } catch (e) { src = ''; }
+    try { src = await window.PicFB.mediaOne(P.kid, inf.remoteKey || (fMk(inf.remote.slot) + inf.remote.pid)); } catch (e) { src = ''; }
     if (!PV || PV.seq !== mine) return;
   }
   if (src && typeof src === 'string') { im.src = src; im.hidden = false; msg.hidden = true; }
