@@ -20,7 +20,7 @@
  */
 
 const ROOT_NAME = 'Daftar Hadir & Dokumentasi - LPMI';
-const API_VER = 5; // dibaca aplikasi lewat aksi 'ping' untuk memastikan Code.gs sudah versi terbaru
+const API_VER = 10; // dibaca aplikasi lewat aksi 'ping' untuk memastikan Code.gs sudah versi terbaru
 const PARENT_NAME = 'Ruangk3.com'; // folder induk di Google Drive (dicari lewat nama, ID tidak disimpan di repo)
 const SHEET_NAME = 'Database Induk - Daftar Hadir LPMI';
 const MAX_DAYS = 7;
@@ -66,7 +66,7 @@ function gantiKodeAkses() {
  * Folder tujuan harus bisa diedit oleh akun yang men-deploy script ini.
  */
 function pindahKeFolderBaru() {
-  const LINK_TUJUAN = 'TEMPEL_LINK_FOLDER_DI_SINI';
+  const LINK_TUJUAN = 'https://drive.google.com/drive/folders/1zgLNRM25O-BYf_5HeWfWOJaMF9eDK8Uq?usp=sharing';
   if (String(LINK_TUJUAN).indexOf('TEMPEL_LINK') >= 0) throw new Error('Link/ID folder tujuan belum diisi. Ganti TEMPEL_LINK_FOLDER_DI_SINI dengan link folder Google Drive tujuan.');
   const m = String(LINK_TUJUAN).match(/folders\/([-\w]{15,})/) || String(LINK_TUJUAN).match(/^([-\w]{15,})$/);
   if (!m) throw new Error('Link/ID folder tujuan belum diisi. Ganti TEMPEL_LINK_FOLDER_DI_SINI dengan link folder Google Drive tujuan.');
@@ -108,8 +108,38 @@ function pindahKeFolderBaru() {
 
 /* =========================== HTTP =========================== */
 
-function doGet() {
+function doGet(e) {
+  const t = e && e.parameter && e.parameter.agenda;
+  if (t) { // langganan Kalender Mac/iCloud: alamat rahasia (?agenda=TOKEN) mengembalikan file jadwal .ics
+    const asli = PropertiesService.getScriptProperties().getProperty('AGENDA_TOKEN');
+    const f = asli && String(t) === asli ? agendaFile_(false) : null;
+    const isi = f ? f.getBlob().getDataAsString('UTF-8') : 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//RuangK3//Kalender Kegiatan//ID\r\nEND:VCALENDAR\r\n';
+    return ContentService.createTextOutput(isi).setMimeType(ContentService.MimeType.ICAL);
+  }
   return out_({ ok: true, app: 'lpmi-daftar-hadir', message: 'Backend aktif. Data dikirim dari aplikasi Daftar Hadir & Dokumentasi.' });
+}
+
+/* ---- Agenda: jadwal Kalender Kegiatan RuangK3 untuk langganan Kalender Mac/iCloud ---- */
+function agendaToken_() {
+  const p = PropertiesService.getScriptProperties();
+  let t = p.getProperty('AGENDA_TOKEN');
+  if (!t) { t = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''); p.setProperty('AGENDA_TOKEN', t); }
+  return t;
+}
+function agendaFile_(buat) {
+  const p = PropertiesService.getScriptProperties();
+  const id = p.getProperty('AGENDA_FILE');
+  if (id) { try { const f = DriveApp.getFileById(id); if (!f.isTrashed()) return f; } catch (e) { } }
+  if (!buat) return null;
+  const f = getRoot_().createFile('Agenda RuangK3.ics', 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR\r\n', 'text/calendar');
+  p.setProperty('AGENDA_FILE', f.getId());
+  return f;
+}
+function agendaSimpan_(req) {
+  const ics = String(req.ics || '');
+  if (!/^BEGIN:VCALENDAR/.test(ics) || ics.length > 3000000) return { ok: false, error: 'Data agenda tidak valid' };
+  agendaFile_(true).setContent(ics);
+  return { ok: true, token: agendaToken_(), n: Number(req.n) || 0 };
 }
 
 function doPost(e) {
@@ -121,7 +151,8 @@ function doPost(e) {
 
   const lock = LockService.getScriptLock();
   try {
-    if (req.action !== 'getFile' && req.action !== 'ping') lock.waitLock(30000);
+    // aksi baca-saja (ping, getFile, listEvents, getEvent, fileSizes) tidak perlu antre di kunci: Rekap & pengecekan tidak ikut macet saat ada unggahan besar
+    if (!/^(ping|getFile|getFiles|listEvents|getEvent|fileSizes|tenants)$/.test(String(req.action))) lock.waitLock(60000);
     switch (req.action) {
       case 'ping': return out_({ ok: true, ver: API_VER, rootUrl: getRoot_().getUrl(), sheetUrl: getSheet_().getUrl(), pic: picOtomatisInfo_() });
       case 'uploadFile': return out_(uploadFile_(req));
@@ -130,7 +161,11 @@ function doPost(e) {
       case 'listEvents': return out_(listEvents_());
       case 'getEvent': return out_(getEvent_(req));
       case 'getFile': return out_(getFile_(req));
+      case 'getFiles': return out_(getFiles_(req));
       case 'deleteEvent': return out_(deleteEvent_(req));
+      case 'fileSizes': return out_(fileSizes_(req));
+      case 'tenants': return out_(tenants_());
+      case 'agendaSimpan': return out_(agendaSimpan_(req));
       default: return out_({ ok: false, error: 'Aksi tidak dikenal: ' + req.action });
     }
   } catch (err) {
@@ -224,6 +259,11 @@ function folderName_(ev) {
   return (a.tanggal || 'tanpa-tanggal') + ' - ' + String(a.folderNama || a.kegiatan || 'Kegiatan tanpa nama').replace(/[\\/]/g, '-');
 }
 
+/** "11/11" yang terlanjur diubah Sheets jadi tanggal dikembalikan ke teks bulan/hari */
+function frac_(v) {
+  if (v instanceof Date) return (v.getMonth() + 1) + '/' + v.getDate();
+  return v == null ? '' : String(v);
+}
 function findEventRow_(sh, id) {
   const last = sh.getLastRow();
   if (last < 2) return -1;
@@ -281,6 +321,176 @@ function writeText_(folder, name, text) {
 }
 function readMap_(folder) { const t = readText_(folder, '_files.json'); return t ? JSON.parse(t) : {}; }
 function writeMap_(folder, map) { writeText_(folder, '_files.json', JSON.stringify(map)); }
+/** Sidik jari ringan sebuah gambar (panjang + 3 cuplikan base64). Rumus sama persis dengan di aplikasi web (sigData). */
+function sig_(b64) {
+  const n = b64.length, m = n >> 1;
+  const s = n + '|' + b64.substr(0, 300) + b64.substr(m, 300) + b64.substr(Math.max(0, n - 300));
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0; }
+  return h.toString(36);
+}
+
+/**
+ * Daftar file yang sudah ada di Drive untuk satu kegiatan: nama, subfolder, ukuran & sidik jari.
+ * Aplikasi memakainya untuk TIDAK mengunggah ulang file yang sama (mis. foto/TTD yang sudah dikirim otomatis dari APK).
+ * Hanya membaca peta file; tidak membuat folder.
+ */
+function fileSizes_(req) {
+  const folder = findEventFolder_(String(req.eventId || ''));
+  const out = {};
+  if (!folder) return { ok: true, files: out };
+  let map = {}; try { map = readMap_(folder); } catch (e) { }
+  Object.keys(map).forEach(function (k) {
+    const en = map[k];
+    if (en && en.sz != null && en.g) out[k] = { n: en.name, p: en.p === undefined ? '' : en.p, s: en.sz, g: en.g };
+  });
+  return { ok: true, files: out };
+}
+
+/* =========================== DATABASE TENANT IMIP ===========================
+ * Spreadsheet "Database Tenant IMIP" (di folder Daftar Hadir di Drive) = daftar perusahaan tenant kawasan IMIP.
+ * Aplikasi Daftar Hadir memakainya untuk mengubah singkatan perusahaan peserta (mis. "BDM") menjadi nama lengkap
+ * ("PT BintangDelapan Mineral"). Isi bisa diubah / ditambah langsung di Google Sheets:
+ *  - tambah tenant baru = tambah baris (kolom "Nama Perusahaan" dan "Singkatan" wajib terisi)
+ *  - singkatan lain untuk perusahaan yang sama = isi kolom "Alias" (pisahkan dengan koma)
+ *  - singkatan yang dipakai dua perusahaan sekaligus TIDAK diubah otomatis (ambigu); beri alias yang berbeda.
+ * Sheet dibuat otomatis (dari daftar bawaan di bawah) saat pertama kali diminta aplikasi; setelah itu isinya tidak ditimpa lagi.
+ */
+const TENANT_NAME = 'Database Tenant IMIP';
+const TENANT_HEAD = ['No', 'Nama Perusahaan', 'Singkatan', 'Alias (pisahkan koma)', 'Status Singkatan', 'Kategori', 'Sumber', 'Keterangan'];
+const TENANT_SEED = [ // [nama, singkatan, status singkatan, kategori, sumber, keterangan]
+  ["PT BintangDelapan Mineral", "BDM", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Pendiri kawasan IMIP (bersama Tsingshan Group)"],
+  ["PT Sulawesi Mining Investment", "SMI", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "JV BDM–Tsingshan; Nickel Pig Iron & stainless steel"],
+  ["PT Indonesia Guang Ching Nickel and Stainless Steel Industry", "GCNS", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Nickel Pig Iron, Steel Slab, Hot Rolling Coil"],
+  ["PT Indonesia Tsingshan Stainless Steel", "ITSS", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "NPI, Stainless/Carbon Steel Slab, Ferrosilicon, Sulfuric Acid, dll."],
+  ["PT Indonesia Ruipu Nickel and Chrome Alloy", "IRNC", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Tsingshan Steel Indonesia", "TSI", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Dexin Steel Indonesia", "DSI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Hengjaya Nickel Industry", "HNI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Ranger Nickel Industry", "RNI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Cahaya Smelter Indonesia", "CSI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Bukit Smelter Indonesia", "BSI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Lestari Smelter Indonesia", "LSI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Huayue Nickel Cobalt", "HNC", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Klaster material baterai"],
+  ["PT QMB New Energy Materials", "QMB", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Smelter HPAL; sudah berproduksi (Mar 2026)"],
+  ["PT Lestari Hua Metal Indonesia", "LHMI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Walsin Nickel Industrial Indonesia", "WNII", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Ocean Sky Metal Industry", "OSMI", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Kinrui New Technologies Indonesia", "KNTI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "ANTARA menulis: Kinrui New Energy Technologies Indonesia"],
+  ["PT Hua Chin Aluminum Indonesia", "HCAI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Qing Feng Ferrochrome", "QFF", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Zhao Hui Nickel", "ZHN", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Yong Wang Indonesia", "YWI", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Huaneng Metal Industry", "HMI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Inisial sama dengan PT Hongli Metal Industry"],
+  ["PT Qing Shui Eco Material", "QSEM", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Risun Wei Shan Indonesia", "RWSI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Oracle Nickel Indonesia", "ONI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT CNGR Ding Xing New Energy", "CDXNE", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Detian Coking Indonesia", "DCI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Merdeka Tsingshan Indonesia", "MTI", "Terkonfirmasi", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Zhongtsing New Energy", "ZNE", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Chengtok Lithium Indonesia", "CLI", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Kinxiang New Energy Technologies Indonesia", "KNETI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Qing Kota Metal Indonesia", "QKM", "Terkonfirmasi", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", "Menerapkan Supercritical Boiler (ANTARA, Jul 2026)"],
+  ["PT BTR New Energy Materials", "BTR", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Sulawesi Nickel Cobalt", "SNC", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Sulawesi Manganese Recycle", "SMR", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Fajar Metal Industry", "FMI", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Teluk Metal Industry", "TMI", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Mars Metal Industry", "MMI", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Hongli Metal Industry", "HMI", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", "Inisial sama dengan PT Huaneng Metal Industry"],
+  ["PT Cantostar Air Indonesia", "CAI", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Green Eco Nickel", "GEN", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", "Smelter HPAL; masih konstruksi (Mar 2026)"],
+  ["PT Seawing New Energy", "SNE", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Honch New Energy", "HNE", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Decho New Energy", "DNE", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Chengseng New Energy", "CNE", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT ESG New Energy Material", "ESG", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", "Smelter HPAL; masih konstruksi (Mar 2026)"],
+  ["PT Indonesia Qingmei Energy Materials", "IQEM", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", "Produk MHP (bahan baku baterai); di bawah GEM Co., Ltd."],
+  ["PT Meiming New Energy Material", "MNEM", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", "Smelter HPAL; masih konstruksi (Mar 2026)"],
+  ["PT Xinheng Metal Indonesia", "XMI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Produk Stainless Steel Slab"],
+  ["PT Dinson Lithium Indonesia", "DLI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Produk Lithium Hydroxide; grup Tsingshan"],
+  ["PT Guangchingde Metal Rolling", "GMR", "Perlu dicek", "Konstruksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Tsingcheng Technology Indonesia", "TTI", "Perlu dicek", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", ""],
+  ["PT Anlun New Material Technology", "YNAL", "Terkonfirmasi", "Produksi", "Situs resmi IMIP (imip.co.id/tenant)", "Situs IMIP menyebutnya PT YNAL"],
+  ["PT Morowali Power Mandiri", "MPM", "Perlu dicek", "Produksi", "ANTARA Sulteng (Des 2024)", "Tidak ada di daftar situs resmi"],
+  ["PT Indonesia Puqing Recycling Technology", "IPRT", "Perlu dicek", "Produksi", "ANTARA Sulteng (Des 2024)", "Tidak ada di daftar situs resmi"],
+  ["PT Indopower Cahaya Nusantara", "ICN", "Perlu dicek", "Konstruksi", "ANTARA Sulteng (Des 2024)", "Tidak ada di daftar situs resmi"],
+  ["PT Landseadoor International Shipping", "LIS", "Perlu dicek", "Pendukung", "ANTARA Sulteng (Des 2024)", "Pelayaran domestik–internasional"],
+  ["PT Tsinda Shipyard Indonesia", "TSYI", "Perlu dicek", "Pendukung", "ANTARA Sulteng (Des 2024)", "Galangan kapal / docking"],
+  ["PT Berkah Morowali", "BM", "Perlu dicek", "Pendukung", "ANTARA Sulteng (Des 2024)", ""],
+  ["PT Dila Samudera Indah", "DSI", "Perlu dicek", "Pendukung", "ANTARA Sulteng (Des 2024)", "Inisial sama dengan PT Dexin Steel Indonesia"],
+  ["PT Logistics Angin Selatan", "LAS", "Terkonfirmasi", "Pendukung", "Laporan Trend Asia", "Logistik/kontraktor di kawasan"],
+  ["PT Logistika Utama Jaya", "LUJ", "Terkonfirmasi", "Pendukung", "Laporan Trend Asia", "Logistik/kontraktor di kawasan"],
+  ["PT Perintis Makmur Indonesia", "PMI", "Terkonfirmasi", "Pendukung", "Laporan Trend Asia", "Dikenal juga sebagai PMKI"]
+];
+
+function tenantOpen_(id) {
+  if (!id) return null;
+  try { const f = DriveApp.getFileById(id); if (!f.isTrashed()) return SpreadsheetApp.openById(id); } catch (e) { }
+  return null;
+}
+
+function tenantSheet_() {
+  const props = PropertiesService.getScriptProperties();
+  let ss = tenantOpen_(props.getProperty('TENANT_SS'));
+  if (ss) return ss;
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    ss = tenantOpen_(props.getProperty('TENANT_SS')); // dicek ulang: mungkin sudah dibuat permintaan lain
+    if (ss) return ss;
+    const root = getRoot_();
+    const it = root.getFilesByName(TENANT_NAME); // properti hilang tetapi filenya masih ada: pakai lagi, jangan buat ganda
+    while (it.hasNext()) {
+      const f = it.next();
+      if (!f.isTrashed() && f.getMimeType() === MimeType.GOOGLE_SHEETS) { props.setProperty('TENANT_SS', f.getId()); return SpreadsheetApp.openById(f.getId()); }
+    }
+    ss = SpreadsheetApp.create(TENANT_NAME);
+    DriveApp.getFileById(ss.getId()).moveTo(root);
+    const sh = ss.getSheets()[0]; sh.setName('Tenant');
+    const rows = TENANT_SEED.map(function (r, i) { return [i + 1, r[0], r[1], '', r[2], r[3], r[4], r[5]]; });
+    sh.getRange(1, 1, 1, TENANT_HEAD.length).setValues([TENANT_HEAD]).setFontWeight('bold').setBackground('#1f2937').setFontColor('#ffffff');
+    if (rows.length) sh.getRange(2, 1, rows.length, TENANT_HEAD.length).setValues(rows);
+    sh.setFrozenRows(1);
+    [50, 330, 90, 170, 130, 100, 260, 360].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+    const pt = ss.insertSheet('Petunjuk');
+    pt.getRange(1, 1, 7, 1).setValues([
+      ['Database Tenant IMIP — dipakai aplikasi Daftar Hadir untuk melengkapi nama perusahaan peserta'],
+      ['1. Peserta yang kolom perusahaannya hanya singkatan (mis. BDM) otomatis diganti nama lengkap sesuai sheet "Tenant".'],
+      ['2. Tambah tenant baru: tambah baris di bawah pada sheet "Tenant" (kolom Nama Perusahaan dan Singkatan wajib diisi).'],
+      ['3. Singkatan lain untuk perusahaan yang sama: isi kolom "Alias (pisahkan koma)", contoh: PT BDM, BDM Tbk.'],
+      ['4. Singkatan yang dipakai dua perusahaan (mis. DSI, HMI) tidak diganti otomatis. Beri salah satunya alias yang berbeda.'],
+      ['5. Perubahan terbaca aplikasi saat aplikasi dibuka, atau tekan tombol "Lengkapi nama perusahaan" di tab Kegiatan & Peserta.'],
+      ['6. Jangan mengubah judul kolom pada baris pertama sheet "Tenant". Kolom lain (Status, Kategori, Sumber, Keterangan) bebas.']
+    ]);
+    pt.setColumnWidth(1, 760); pt.getRange(1, 1).setFontWeight('bold');
+    props.setProperty('TENANT_SS', ss.getId());
+    return ss;
+  } finally { lock.releaseLock(); }
+}
+
+/** Baca database tenant: [{ n: nama lengkap, s: singkatan, a: [alias...] }] */
+function tenants_() {
+  const ss = tenantSheet_();
+  const sh = ss.getSheetByName('Tenant') || ss.getSheets()[0];
+  const last = sh.getLastRow();
+  const out = [];
+  if (last >= 2) {
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (h) { return String(h || '').toLowerCase().trim(); });
+    const col = function (rx) { for (let i = 0; i < head.length; i++) if (rx.test(head[i])) return i; return -1; };
+    const cn = col(/^nama/), cs = col(/^singkatan/), ca = col(/^alias/), ct = col(/^status/); // ct: kolom "Status Singkatan" (Terkonfirmasi / Perlu dicek)
+    if (cn < 0) throw new Error('Sheet "Tenant": kolom "Nama Perusahaan" tidak ditemukan (jangan ubah judul kolom).');
+    sh.getRange(2, 1, last - 1, sh.getLastColumn()).getValues().forEach(function (r) {
+      const n = String(r[cn] || '').replace(/\s+/g, ' ').trim();
+      if (!n) return;
+      const s = cs >= 0 ? String(r[cs] || '').trim() : '';
+      const a = ca >= 0 ? String(r[ca] || '').split(/[,;\n]/).map(function (x) { return x.trim(); }).filter(String) : [];
+      out.push({ n: n, s: s, a: a, k: ct >= 0 && /^terkonfirmasi/i.test(String(r[ct] || '').trim()) ? 1 : 0 }); // k=1: singkatan terkonfirmasi (menang bila singkatan sama dipakai dua perusahaan)
+    });
+  }
+  return { ok: true, tenants: out, url: ss.getUrl(), n: out.length };
+}
+
 function fileUrl_(id) { return 'https://drive.google.com/file/d/' + id + '/view'; }
 
 /* =========================== AKSI =========================== */
@@ -290,12 +500,13 @@ function uploadFile_(req) {
   const folder = eventFolder_(req.eventId, req.event);
   const m = /^data:([^;]+);base64,(.*)$/.exec(req.dataUrl || '');
   if (!m) throw new Error('Format file tidak valid');
-  const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], req.name);
+  const bytes = Utilities.base64Decode(m[2]);
+  const blob = Utilities.newBlob(bytes, m[1], req.name);
   const map = readMap_(folder);
   if (map[req.key]) { try { DriveApp.getFileById(map[req.key].id).setTrashed(true); } catch (e) { } }
   const f = sub_(folder, req.path).createFile(blob);
   f.setDescription('lpmi-key=' + req.key);
-  map[req.key] = { id: f.getId(), name: req.name, p: (req.path || []).join('/') };
+  map[req.key] = { id: f.getId(), name: req.name, p: (req.path || []).join('/'), sz: bytes.length, g: sig_(m[2]) };
   writeMap_(folder, map);
   return { ok: true, id: f.getId(), url: f.getUrl() };
 }
@@ -316,13 +527,14 @@ function uploadFiles_(req) {
     list.forEach(function (f) {
       const m = /^data:([^;]+);base64,(.*)$/.exec(f.dataUrl || '');
       if (!m) throw new Error('Format file tidak valid: ' + f.name);
-      const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], f.name);
+      const bytes = Utilities.base64Decode(m[2]);
+      const blob = Utilities.newBlob(bytes, m[1], f.name);
       if (map[f.key]) { try { DriveApp.getFileById(map[f.key].id).setTrashed(true); } catch (e) { } }
       const pk = (f.path || []).join('/');
       const dir = subs[pk] || (subs[pk] = sub_(folder, f.path));
       const file = dir.createFile(blob);
       file.setDescription('lpmi-key=' + f.key);
-      map[f.key] = { id: file.getId(), name: f.name, p: pk };
+      map[f.key] = { id: file.getId(), name: f.name, p: pk, sz: bytes.length, g: sig_(m[2]) };
       n++;
     });
   } finally { writeMap_(folder, map); }
@@ -359,7 +571,9 @@ function saveEvent_(req) {
     pes.length, fotoN + '/' + pes.length, ttdN + '/' + (pes.length * days.length), map['ttd-org'] ? 'Sudah' : 'Belum',
     folder.getUrl(), now, folder.getId()];
   const row = findEventRow_(ks, ev.id);
-  if (row < 0) ks.appendRow(vals); else ks.getRange(row, 1, 1, vals.length).setValues([vals]);
+  const rw = row < 0 ? ks.getLastRow() + 1 : row; // kolom "x/y" ditulis sebagai TEKS (jika tidak, Sheets mengubah mis. 11/11 jadi tanggal)
+  ks.getRange(rw, KI('Foto Terisi') + 1, 1, 2).setNumberFormat('@');
+  ks.getRange(rw, 1, 1, vals.length).setValues([vals]);
 
   // sheet Peserta (baris kegiatan ini ditulis ulang)
   const ps = ss.getSheetByName('Peserta');
@@ -374,7 +588,7 @@ function saveEvent_(req) {
   if (last > 1) ps.getRange(2, 1, last - 1, PES_HEAD.length).clearContent();
   if (rows.length) ps.getRange(2, 1, rows.length, PES_HEAD.length).setValues(rows);
 
-  return { ok: true, folderUrl: folder.getUrl() };
+  return { ok: true, folderUrl: folder.getUrl(), updated: now.getTime() };
 }
 
 function fmtDate_(v) {
@@ -394,7 +608,7 @@ function listEvents_() {
       return {
         id: String(r[0]), kegiatan: r[1], tanggal: fmtDate_(r[2]), tanggal2: fmtDate_(r[3]), jumlahHari: r[4],
         hari: String(r[KI('Daftar Tanggal')] || '').split(/\s*,\s*/).filter(String),
-        tempat: r[KI('Tempat')], n: r[KI('Jumlah Peserta')], foto: r[KI('Foto Terisi')], ttdPeserta: r[KI('TTD Peserta Terisi')],
+        tempat: r[KI('Tempat')], n: r[KI('Jumlah Peserta')], foto: frac_(r[KI('Foto Terisi')]), ttdPeserta: frac_(r[KI('TTD Peserta Terisi')]),
         ttdOrg: r[KI('TTD Penyelenggara')], folderUrl: r[KI('Folder Drive')],
         updated: upd instanceof Date ? upd.getTime() : upd
       };
@@ -464,6 +678,20 @@ function getFile_(req) {
   if (String(f.getDescription() || '').indexOf('lpmi-key=') !== 0) throw new Error('File tidak diizinkan');
   const b = f.getBlob();
   return { ok: true, dataUrl: 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes()) };
+}
+
+/** Ambil BANYAK file sekaligus (satu permintaan) supaya mengunduh satu kegiatan ke perangkat lain jauh lebih cepat. */
+function getFiles_(req) {
+  const ids = (req.ids || []).slice(0, 12), out = {};
+  ids.forEach(function (id) {
+    try {
+      const f = DriveApp.getFileById(id);
+      if (String(f.getDescription() || '').indexOf('lpmi-key=') !== 0) { out[id] = null; return; }
+      const b = f.getBlob();
+      out[id] = 'data:' + b.getContentType() + ';base64,' + Utilities.base64Encode(b.getBytes());
+    } catch (e) { out[id] = null; }
+  });
+  return { ok: true, files: out };
 }
 
 /* =========================== OTOMATIS: HASIL APK PORTAL PIC → GOOGLE DRIVE ===========================
@@ -617,7 +845,7 @@ function picKid_(kid, k, nodes, t0) {
   const peserta = (k.peserta || []).filter(function (p) { return p && String(p.nama || '').trim(); });
   const lp0 = k.lap || {};
   const batal = {}; peserta.forEach(function (p) { batal[p.id] = !!p.batal; });
-  const foto = {}, foto2 = {}, hadir = {}, nrNama = {};
+  const foto = {}, foto2 = {}, fotoX = { foto3: {}, foto4: {}, foto5: {} }, hadir = {}, nrNama = {};
   const papa = !!k.papa, kls = (k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.keys(k.kelas).map(function (x) { return k.kelas[x]; })) : []).filter(String);
   const kfOf = function (lbl) { return papa ? [safeName_(kls.indexOf(lbl) >= 0 ? lbl : 'Tanpa kelas')] : []; }; // PAPA: tiap alat punya subfolder sendiri
   const kkMap = {}; kls.forEach(function (l) { kkMap[kelasKey_(l)] = l; });
@@ -630,6 +858,7 @@ function picKid_(kid, k, nodes, t0) {
     Object.keys(h.hadir || {}).forEach(function (pid) { Object.keys(h.hadir[pid] || {}).forEach(function (d) { hadir[pid + '|' + d] = 1; }); });
     Object.keys(h.foto || {}).forEach(function (pid) { foto[pid] = 1; });
     Object.keys(h.foto2 || {}).forEach(function (pid) { foto2[pid] = 1; });
+    ['foto3', 'foto4', 'foto5'].forEach(function (fk) { Object.keys(h[fk] || {}).forEach(function (pid) { fotoX[fk][pid] = 1; }); });
     const lp = h.lap || {};
     if (lp.s1 && 'nama' in lp.s1) s1n = lp.s1.nama || '';
     if (lp.s2 && 'nama' in lp.s2) s2n = lp.s2.nama || '';
@@ -643,8 +872,10 @@ function picKid_(kid, k, nodes, t0) {
   peserta.forEach(function (p) {
     if (batal[p.id]) return;
     const tag = ' [' + String(p.id).slice(0, 5) + ']', nm = safeName_(p.nama), kf = kfOf(p.kelas);
-    if (foto[p.id]) want.push({ key: 'foto:' + p.id, mk: 'f_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + (k.damkar ? ' (1)' : '') + '.jpg' });
-    if (foto2[p.id] && k.damkar) want.push({ key: 'foto2:' + p.id, mk: 'f2_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + ' (2).jpg' });
+    const klp = String(p.kelas || '').replace(/\s+/g, ' ').trim() || (kls.length === 1 ? kls[0] : ''), nf = (k.b3 && klp.toLowerCase() === 'ahli k3 muda lingkungan kerja') ? 5 : ((k.damkar || k.b3) ? 2 : 1);
+    if (foto[p.id]) want.push({ key: 'foto:' + p.id, mk: 'f_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + (nf > 1 ? ' (1)' : '') + '.jpg' });
+    if (foto2[p.id] && nf >= 2) want.push({ key: 'foto2:' + p.id, mk: 'f2_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + ' (2).jpg' });
+    [3, 4, 5].forEach(function (n) { if (nf >= n && fotoX['foto' + n][p.id]) want.push({ key: 'foto' + n + ':' + p.id, mk: 'f' + n + '_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + ' (' + n + ').jpg' }); });
     hari.forEach(function (d) {
       if (hadir[p.id + '|' + d]) want.push({ key: 'ttd:' + p.id + ':' + d, mk: 's_' + p.id + '_' + d, path: kf.concat(['Tanda Tangan Peserta', d + ' (' + hariNama_(d) + ')']), kf: papa, name: nm + tag + '.png' });
     });
@@ -703,14 +934,15 @@ function picKid_(kid, k, nodes, t0) {
           const pk = t.w.path.join('/'), pathOk = en && (en.p === undefined ? !t.w.kf : en.p === pk); // berkas lama di folder yang salah (mis. sebelum ada folder per alat) diunggah ulang ke folder yang benar
           if (en && en.name === t.w.name && pathOk) {
             if (en.h) sama = en.h === t.h;
-            else { try { const f0 = DriveApp.getFileById(en.id); sama = !f0.isTrashed() && f0.getSize() === bytes.length; } catch (e) { } } // diunggah web: samakan lewat ukuran
+            else if (en.sz != null && en.g) sama = en.sz === bytes.length && en.g === sig_(m[2]); // diunggah web (versi baru): cukup bandingkan ukuran + sidik jari, tanpa membuka Drive
+            else { try { const f0 = DriveApp.getFileById(en.id); sama = !f0.isTrashed() && f0.getSize() === bytes.length; } catch (e) { } } // diunggah web (versi lama): samakan lewat ukuran
           }
-          if (sama) { map[t.w.key] = { id: en.id, name: en.name, h: t.h, e: t.e, p: en.p === undefined ? pk : en.p }; return; }
+          if (sama) { map[t.w.key] = { id: en.id, name: en.name, h: t.h, e: t.e, p: en.p === undefined ? pk : en.p, sz: bytes.length, g: sig_(m[2]) }; return; }
           if (en) { try { DriveApp.getFileById(en.id).setTrashed(true); } catch (e) { } }
           const dir = subs[pk] || (subs[pk] = sub_(folder, t.w.path));
           const file = dir.createFile(Utilities.newBlob(bytes, m[1], t.w.name));
           file.setDescription('lpmi-key=' + t.w.key);
-          map[t.w.key] = { id: file.getId(), name: t.w.name, h: t.h, e: t.e, p: pk };
+          map[t.w.key] = { id: file.getId(), name: t.w.name, h: t.h, e: t.e, p: pk, sz: bytes.length, g: sig_(m[2]) };
           nFile++;
         });
       } finally { writeMap_(folder, map); }
@@ -723,7 +955,7 @@ function picKid_(kid, k, nodes, t0) {
       peserta.forEach(function (p) { // peserta yang kemudian ditandai batal: file-nya dibuang, sama seperti di web
         if (!batal[p.id]) return;
         Object.keys(map).forEach(function (key) {
-          if (key === 'foto:' + p.id || key === 'foto2:' + p.id || key.indexOf('ttd:' + p.id + ':') === 0) {
+          if (key === 'foto:' + p.id || key === 'foto2:' + p.id || key === 'foto3:' + p.id || key === 'foto4:' + p.id || key === 'foto5:' + p.id || key.indexOf('ttd:' + p.id + ':') === 0) {
             try { DriveApp.getFileById(map[key].id).setTrashed(true); } catch (e) { }
             delete map[key]; ubah = true;
           }
@@ -742,6 +974,7 @@ function picSheet_(kid, folder, map, hari, pes) {
   const fotoN = pes.filter(function (p) { return map['foto:' + p.id]; }).length;
   let ttdN = 0;
   pes.forEach(function (p) { hari.forEach(function (d) { if (map['ttd:' + p.id + ':' + d]) ttdN++; }); });
+  ks.getRange(row, KI('Foto Terisi') + 1, 1, 2).setNumberFormat('@');
   ks.getRange(row, KI('Foto Terisi') + 1, 1, 3).setValues([[fotoN + '/' + pes.length, ttdN + '/' + (pes.length * hari.length), map['ttd-org'] ? 'Sudah' : 'Belum']]);
   ks.getRange(row, KI('Diperbarui') + 1).setValue(now);
   const ps = ss.getSheetByName('Peserta'), last = ps.getLastRow();
