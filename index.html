@@ -2865,6 +2865,18 @@
             else if (n.startsWith('8')) n = '62' + n;
             return /^\d{9,15}$/.test(n) ? n : '';
         };
+        window.pesanTugasWA = function(nama, namaKeg, pjk3, tanggal) {
+            return `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`;
+        };
+        /* Tombol "WA" di daftar kegiatan: kirim (ulang) pemberitahuan tugas ke tim kapan saja */
+        window.kirimWAKegiatan = function(id) {
+            const k = dataKegiatanAll.find(x => x.id === id);
+            if (!k) return window.showToast('Data kegiatan tidak ditemukan.', 'error');
+            const tim = dataTimAll.find(t => t.id === k.idTim);
+            if (!tim) return window.showToast('Tim untuk kegiatan ini tidak ditemukan.', 'warning');
+            if (!tim.hp) return window.showToast('Tim ' + tim.nama + ' belum punya nomor HP. Isi dulu di Kelola Akun Tim.', 'warning');
+            window.tawarkanWA(tim.nama, tim.hp, window.pesanTugasWA(tim.nama, k.namaKegiatan, k.pjk3, k.tanggal));
+        };
         window.tawarkanWA = function(nama, hp, pesan) {
             const no = window.nomorWA(hp);
             if (!no) return window.showToast('Nomor HP tim ' + nama + ' tidak valid. Perbaiki di Kelola Akun Tim.', 'warning');
@@ -6205,16 +6217,16 @@
                 } else {
                     dataToSave.timestamp = Date.now(); 
                     const pr = window.simpanKegiatanAman('set', push(ref(db, pathKegiatan)).key, dataToSave); // kunci dibuat dulu: kirim ulang memakai kunci yang sama, jadi tidak pernah dobel
-                    const st = await window.tungguTulis(pr, 10000, 'Kegiatan');
                     
-                    if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { 
+                    if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { // kartu "Kirim WhatsApp" langsung tampil, tidak menunggu balasan server
                         const timData = dataTimAll.find(t => t.id === idTim); 
                         if (timData && timData.hp) { 
-                            window.tawarkanWA(timData.nama, timData.hp, `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${timData.nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`); 
+                            window.tawarkanWA(timData.nama, timData.hp, window.pesanTugasWA(timData.nama, namaKeg, pjk3, tanggal)); 
                         } else if (timData) {
                             window.showToast('Tim ' + timData.nama + ' belum punya nomor HP. Isi dulu di Kelola Akun Tim agar bisa kirim WhatsApp.', 'warning');
                         }
                     }
+                    const st = await window.tungguTulis(pr, 10000, 'Kegiatan');
                     
                     btn.innerText = st === 'ok' ? "Tersimpan!" : "Tersimpan (menunggu server)";
                     if (st === 'ok') window.showToast("Kegiatan berhasil ditambahkan.", "success");
@@ -8212,7 +8224,7 @@
                             
                             let aksiHtml = '';
                             if(isBisaEdit) { 
-                                aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; 
+                                aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.kirimWAKegiatan('${k.id}')" title="Kirim pemberitahuan ke WhatsApp tim" class="text-emerald-600 hover:text-emerald-800 px-1.5 py-1 bg-emerald-50 rounded mr-1 text-[10px] font-bold">WA</button><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; 
                             }
                             
                             const tdTeam = isBisaLihatTim ? `<td class="px-5 py-3 text-xs text-slate-700 font-medium align-top">${k.namaTim}</td>` : '';

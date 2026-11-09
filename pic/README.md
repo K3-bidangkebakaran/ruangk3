@@ -431,3 +431,7 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 
 ## v74 — Dokumentasi Peserta 5 foto: nama di kiri + garis pemisah
 - Tata letak mode 5 foto diubah: kolom nama/instansi ada di sisi kiri (menyatu 2 baris), 3 kolom foto di kanan (foto 1-3 baris atas, foto 4-5 baris bawah), garis tebal memisahkan satu peserta dengan peserta berikutnya. Berlaku di pratinjau (website & APK) dan Word.
+
+## v75 — Kegiatan: tombol "Kirim WhatsApp" lebih cepat + tombol WA di tiap baris kegiatan
+- Kartu "Kirim WhatsApp" kini langsung tampil begitu tugas disimpan (tidak menunggu balasan server).
+- Tabel kegiatan (Admin) punya tombol hijau "WA" per kegiatan: membuka kartu yang sama untuk mengirim (ulang) pemberitahuan tugas ke tim kapan saja (`window.kirimWAKegiatan`). Teks pesan dari `window.pesanTugasWA`.
