@@ -471,3 +471,7 @@ Firebase Console → Realtime Database → Rules, di dalam `artifacts → k3-keb
 }
 ```
 Catatan: seperti selfie, pengunggah dan PIC sama-sama login Firebase (anonim vs akun), jadi aturan tidak bisa membedakan; yang dijaga: foto tidak bisa ditimpa (sekali tulis, boleh dihapus), ukuran dibatasi, dan daftar kegiatan tidak bisa dicacah. Link memuat ID kegiatan acak; pemegang link bisa melihat nama peserta kegiatan itu.
+
+## v76 — K3 Lingkungan Kerja (B3): nama kegiatan di layar program = "K3 LKBB (nama program)"
+- Di layar program (Portal PIC) kegiatan K3 Lingkungan Kerja, judul layar kini "K3 LKBB (Teknisi Ruang Terbatas)" (dengan tanggal · tempat di bawahnya), dan subjudul layar isian di dalam program (Absensi TTD, Dokumentasi Peserta, Nilai, Narasumber) memakai nama yang sama. Fungsi: `kegKl` / `subK` di `pic/js/app.js`.
+- Hanya untuk `k.b3`. K3 Pesawat Angkat & Angkut (PAPA) dan kegiatan lain tidak berubah. Judul laporan (Word/pratinjau) tidak berubah.

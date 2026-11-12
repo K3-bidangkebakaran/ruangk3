@@ -253,7 +253,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v75';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v76';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -278,7 +278,8 @@ const klGroups = k => { const ks = kelasArr(k).filter(Boolean), ps = (k && k.pes
 const curKl = k => (papaOf(k) && P.kl != null) ? P.kl : undefined; // alat yang sedang dibuka (undefined = semua peserta)
 const pesKl = k => pesByKl(k, curKl(k));
 const kNama = k => k.nama + (k.sfx ? ' (' + k.sfx + ')' : ''); // huruf A/B/C bila ada kegiatan kembar (nama & tanggal sama); hanya untuk tampilan layar
-const subK = k => curKl(k) !== undefined ? klLabel(P.kl) : kNama(k); // subjudul layar: nama alat (PAPA) atau nama kegiatan
+const kegKl = (k, kl) => 'K3 LKBB (' + klLabel(kl) + ')'; // K3 Lingkungan Kerja (B3): nama kegiatan di layar program = "K3 LKBB (nama program)"; Pesawat Angkat & Angkut tidak berubah
+const subK = k => curKl(k) !== undefined ? (k.b3 ? kegKl(k, P.kl) : klLabel(P.kl)) : kNama(k); // subjudul layar: nama alat (PAPA) / "K3 LKBB (program)" (B3) atau nama kegiatan
 const nrPfx = k => (k && k.b3 && papaOf(k) && P.kl) ? kelasKey(P.kl) + '~' : ''; // B3: narasumber tiap program sendiri (kunci '<kunciProgram>~tanggal'); // v21: absensi narasumber SATU untuk semua alat (kunci = tanggal saja); data lama per alat digabung oleh nrGabung
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
 const nrOffOf = (k, key) => !!((LAPK(k).nrOff || {})[key]); // hari/baris yang dihapus admin di website
@@ -1217,7 +1218,7 @@ function render() {
         <button class="btn" type="button" data-act="dlnil"${ln.nilai && !DLB ? '' : ' disabled'}>${DLB === 'nilai' ? 'Menyusun berkas…' : 'Download Daftar Nilai (PDF)'}</button></div>`; })();
     const tDhr = ln.harian ? (() => { const n = Object.values(hh.hfoto).reduce((a, x) => a + x.length, 0); return `<button type="button" class="tile" data-act="go" data-to="dhr"><span class="ic">${I.cam}</span><span><b>Dokumentasi Harian</b><small>${n} foto · ${(k.tgl || []).length} hari${papa ? ' · satu untuk semua ' + (k.b3 ? 'program' : 'alat') : ''}</small></span>${I.chev}</button>`; })() : '';
     if (alat) {
-      h = appbar(klLabel(P.kl), k.nama, true) + `<div class="screen">
+      h = appbar(k.b3 ? kegKl(k, P.kl) : klLabel(P.kl), k.b3 ? rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : '') : k.nama, true) + `<div class="screen">
       <div class="hint">${k.b3 ? 'Program' : 'Alat'}: <b>${esc(klLabel(P.kl))}</b> · ${s.aktif + s.batal} peserta. Semua isian di bawah ini khusus ${k.b3 ? 'program' : 'alat'} ini.</div>
       ${tAbs}${tDok}${tNil}${k.b3 ? tNar : ''}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}</div>
