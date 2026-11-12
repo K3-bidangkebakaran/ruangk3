@@ -435,3 +435,39 @@ Di menu kegiatan (dan di layar alat/program) ada tombol **Pratinjau Laporan**. L
 ## v75 — Kegiatan: tombol "Kirim WhatsApp" lebih cepat + tombol WA di tiap baris kegiatan
 - Kartu "Kirim WhatsApp" kini langsung tampil begitu tugas disimpan (tidak menunggu balasan server).
 - Tabel kegiatan (Admin) punya tombol hijau "WA" per kegiatan: membuka kartu yang sama untuk mengirim (ulang) pemberitahuan tugas ke tim kapan saja (`window.kirimWAKegiatan`). Teks pesan dari `window.pesanTugasWA`.
+
+## v75 — Link Foto Dokumentasi (halaman `ruangk3.com/foto/`)
+Di kegiatan (Portal PIC) ada tile **Link Foto Dokumentasi**. PIC membagikan satu link (`https://ruangk3.com/foto/?k={kid}`) ke pihak lain untuk memotret **Dokumentasi Harian** dan **Dokumentasi Peserta**.
+- Halaman selalu menampilkan pesan: "Upload foto sesuai dengan tanggal kegiatan, tidak perlu mengupload foto dari timestamp atau aplikasi lain."
+- **Hanya aktif pada tanggal kegiatan** (jam server Firebase, zona waktu kegiatan). Sebelum tanggal itu, setelah selesai, atau di hari yang bukan hari kegiatan: ditolak dan jadwal ditampilkan. Pembatasan ini dijaga di halaman (bukan di aturan database).
+- Foto **hanya dari kamera langsung** (kamera belakang; bisa diputar ke depan) + cadangan kamera bawaan HP (`capture`); tanpa galeri. Bila cadangan memakai berkas, tanggal berkas harus hari ini. Foto diberi watermark (nama peserta bila foto peserta, nama kegiatan, tempat, tanggal-jam dari jam server), maks. 1280 px, JPEG 0,72. Harian dipotong 3:2 (sama seperti kamera PIC); peserta utuh.
+- Dokumentasi Peserta: pengunggah memilih nama (daftar + `t/n foto`); tiap peserta dibatasi `n` foto (1 / 2 Damkar & B3 / 5 kelas Ahli K3 Muda Lingkungan Kerja) dan dicek ulang ke server sebelum kirim. Peserta Cancel/Remedial tidak tampil.
+- PIC (akun yang membuka layar link, `h.fshared`) mengambil foto otomatis (pendengar realtime `dh_foto_st` + putaran 20 detik + tombol "Ambil foto masuk sekarang"): harian ditambahkan ke `h.hfoto[tanggal]` (id `w<acak>`), peserta mengisi **slot foto pertama yang kosong** (`fotoKeysP`/`fotoAda`). Sesudah itu jalur lama (kirim `dh_media`, website, Word, Drive) berlaku tanpa perubahan. Foto di server dihapus setelah diambil.
+- Dobel dicegah dengan **klaim transaksi** pada penanda `dh_foto_st/{kid}/{kunci}` (hanya satu akun/HP yang menang). Foto yang tidak bisa ditempatkan (peserta Cancel/Remedial, tanggal di luar kegiatan, slot penuh) tetap di server dan dilewati.
+- PIC menerbitkan info ke `dh_foto/{kid}` (nama, tgl[], tempat, kota, zona, `harian` bila Laporan memakai Dokumentasi Harian, peserta[{id,nama,instansi,kelas,n,t}]); diperbarui tiap 20 detik bila berubah. Layar link harus dibuka sekali di HP PIC agar link aktif.
+
+| Node | Isi |
+|---|---|
+| `dh_foto/{kid}` | info untuk halaman foto (diterbitkan aplikasi PIC) |
+| `dh_foto_in/{kid}/{kunci}` | foto (dataURL JPEG), sekali tulis; kunci = `h~{tanggal}~{acak}` (harian) atau `p~{idPeserta}~{acak}` (peserta); dibuang PIC setelah diambil (sementara, tidak perlu dicadangkan) |
+| `dh_foto_st/{kid}/{kunci}` | penanda waktu server (angka); dibuang saat diklaim PIC |
+
+### WAJIB: tambahkan aturan Firebase untuk link foto
+Firebase Console → Realtime Database → Rules, di dalam `artifacts → k3-kebakaran-app-v5 → public → data` (gabungkan, jangan menimpa aturan lain):
+
+```json
+"dh_foto": {
+  "$kid": { ".read": "auth != null", ".write": "auth != null" }
+},
+"dh_foto_st": {
+  ".read": "auth != null",
+  "$kid": { "$k": { ".write": "auth != null && (!data.exists() || !newData.exists())", ".validate": "newData.isNumber()" } }
+},
+"dh_foto_in": {
+  "$kid": {
+    ".read": "auth != null",
+    "$k": { ".write": "auth != null && (!data.exists() || !newData.exists())", ".validate": "newData.isString() && newData.val().length < 450000 && newData.val().matches(/^data:image\\/jpeg;base64,/)" }
+  }
+}
+```
+Catatan: seperti selfie, pengunggah dan PIC sama-sama login Firebase (anonim vs akun), jadi aturan tidak bisa membedakan; yang dijaga: foto tidak bisa ditimpa (sekali tulis, boleh dihapus), ukuran dibatasi, dan daftar kegiatan tidak bisa dicacah. Link memuat ID kegiatan acak; pemegang link bisa melihat nama peserta kegiatan itu.

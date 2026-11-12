@@ -253,7 +253,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v74';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v75';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -444,6 +444,64 @@ function startTtdp() {
   const uid = ME.uid; ttdpUid = uid;
   try { ttdpOff = window.PicFB.watchTtdp(st => { if (ME && ME.uid === uid) ttdpGot(st).catch(() => { }); }, () => { if (ttdpUid === uid) { ttdpOff = null; ttdpUid = null; } }); } catch (e) { ttdpOff = null; ttdpUid = null; }
 }
+/* ---------- Link foto dokumentasi (halaman ruangk3.com/foto/) ----------
+   PIC membagikan satu link ke pihak lain. Pihak lain memilih Dokumentasi Harian / Dokumentasi Peserta, lalu memotret langsung dari kamera HP-nya (hanya pada tanggal kegiatan).
+   Foto masuk ke dh_foto_in/{kid}/{kunci} + penanda dh_foto_st/{kid}/{kunci}. Akun PIC yang membuka layar link ini (h.fshared) mengambil fotonya, memasukkannya ke Dokumentasi Harian / slot foto peserta yang kosong,
+   lalu membuang foto di server. Penanda "diklaim" lewat transaksi (hanya satu akun yang menang), jadi foto tidak dobel walau beberapa HP / akun PIC terbuka bersamaan. */
+const fotoLink = kid => `${location.origin}/foto/?k=${encodeURIComponent(kid)}`;
+function fotoInfo(kid) { // isi yang dibaca halaman foto: hanya peserta yang ikut (bukan cancel / remedial) beserta jumlah foto & yang sudah terisi
+  const k = KEGS[kid], h = hOf(kid), ln = LAPK(k);
+  const peserta = (k.peserta || []).filter(p => (p.nama || '').trim() && !isBatal(h, p) && !isRem(h, p)).map(p => { const ks = fotoKeysP(k, p); return { id: p.id, nama: p.nama.trim(), instansi: p.instansi || '', kelas: p.kelas ? String(p.kelas) : '', n: ks.length, t: ks.filter(f => fotoAda(h, p, f)).length }; });
+  return { nama: k.nama || '', tgl: (k.tgl || []).filter(Boolean), tempat: k.tempat || '', kota: k.kota || '', zona: k.zona || 'WIB', harian: !!ln.harian, peserta };
+}
+const FPUB = {}, FSKIP = new Set(), FTMSG = {}; let FOTOST = {}, fotoBusy = false, fotoOff = null, fotoUid = null, fotoWarn = false;
+async function fotoPublish(kid, force) { // terbitkan / perbarui info di server; lempar error bila gagal
+  const info = fotoInfo(kid), hs = fnv(JSON.stringify(info));
+  if (!force && FPUB[kid] === hs) return info;
+  await window.PicFB.fotoPub(kid, info); FPUB[kid] = hs; return info;
+}
+async function fotoOpen(kid) { // layar link dibuka: aktifkan (kegiatan ini ikut diambil fotonya) lalu terbitkan info
+  const h = hOf(kid); if (!h.fshared) { h.fshared = true; saveH(kid); }
+  const say = m => { FTMSG[kid] = m; const e = $('#ftStat'); if (e) e.textContent = m; };
+  if (!fbOk() || !online()) { say('Butuh internet dan login untuk mengaktifkan link.'); return; }
+  try { await fotoPublish(kid, true); say('✔ Link aktif. Foto dari link otomatis masuk ke HP ini.'); fotoGot(null).catch(() => { }); }
+  catch (e) { say('Link belum bisa diaktifkan. ' + friendlyErr(e)); }
+}
+async function fotoGot(st) { // ambil foto kiriman link -> Dokumentasi Harian / slot foto peserta yang masih kosong
+  if (st) FOTOST = st; if (fotoBusy || !fbOk() || !online()) return 0; fotoBusy = true; let n = 0;
+  try {
+    const todo = [];
+    for (const kid of Object.keys(FOTOST)) { const h = H[kid], k = KEGS[kid], sm = FOTOST[kid]; if (!h || !k || !h.fshared || !sm || typeof sm !== 'object') continue; Object.keys(sm).forEach(key => todo.push([+sm[key] || 0, kid, key])); }
+    todo.sort((a, b) => a[0] - b[0]);
+    for (const [, kid, key] of todo) {
+      const sk = kid + '|' + key; if (FSKIP.has(sk)) continue;
+      const h = hOf(kid), k = KEGS[kid], m = /^([hp])~([^~]+)~([a-z0-9]+)$/i.exec(key); if (!m) { FSKIP.add(sk); continue; }
+      let slot = '', p = null;
+      if (m[1] === 'h') { if (!(k.tgl || []).includes(m[2])) { FSKIP.add(sk); continue; } }
+      else { p = (k.peserta || []).find(x => x.id === m[2]); if (!p || isBatal(h, p) || isRem(h, p)) { FSKIP.add(sk); continue; } slot = fotoKeysP(k, p).find(f => !fotoAda(h, p, f)) || ''; if (!slot) { FSKIP.add(sk); if (!fotoWarn) { fotoWarn = true; toast(`Foto ${p.nama} sudah lengkap: foto dari link ditahan di server.`); } continue; } }
+      let u; try { u = await window.PicFB.fotoOne(kid, key); } catch (e) { continue; } // dicoba lagi pada putaran berikutnya
+      if (typeof u !== 'string' || !/^data:image\/jpeg;base64,/.test(u)) { FSKIP.add(sk); continue; }
+      let won = false; try { won = await window.PicFB.fotoClaim(kid, key); } catch (e) { continue; }
+      if (!won) continue; // akun / HP lain sudah mengambilnya
+      if (m[1] === 'h') (h.hfoto[m[2]] = h.hfoto[m[2]] || []).push({ i: 'w' + m[3], u }); else h[slot][p.id] = u;
+      n++; touch(kid); window.PicFB.fotoDrop(kid, key).catch(() => { });
+    }
+  } finally { fotoBusy = false; }
+  if (n) { toast(n === 1 ? '1 foto dari link masuk' : `${n} foto dari link masuk`); renderSoft(); Object.keys(H).forEach(kid => { if (H[kid] && H[kid].fshared && KEGS[kid]) fotoPublish(kid).catch(() => { }); }); }
+  return n;
+}
+function fotoTick() { // tiap 20 dtk: perbarui info (jumlah foto terisi) + coba ambil foto yang tertunda
+  if (!fbOk() || !online()) return;
+  Object.keys(H).forEach(kid => { if (H[kid] && H[kid].fshared && KEGS[kid]) fotoPublish(kid).catch(() => { }); });
+  fotoGot(null).catch(() => { });
+}
+function startFoto() {
+  if (!fbOk() || !window.PicFB.watchFoto || (fotoOff && fotoUid === ME.uid)) return;
+  if (fotoOff) { try { fotoOff(); } catch (e) { } } fotoOff = null;
+  const uid = ME.uid; fotoUid = uid;
+  try { fotoOff = window.PicFB.watchFoto(st => { if (ME && ME.uid === uid) fotoGot(st).catch(() => { }); }, () => { if (fotoUid === uid) { fotoOff = null; fotoUid = null; } }); } catch (e) { fotoOff = null; fotoUid = null; }
+}
+const fotoMenunggu = kid => Object.keys(FOTOST[kid] || {}).filter(key => !FSKIP.has(kid + '|' + key)).length;
 let hasilOff = null, hasilUid = null, hasilSig = '', restoring = new Set(), hasilDenied = 0; // hasilDenied: aturan Firebase menolak membaca hasil akun PIC lain
 function stopHasil() { if (ownOff) { try { ownOff(); } catch (e) { } } ownOff = null; ownSig = ''; if (hasilOff) { try { hasilOff(); } catch (e) { } } hasilOff = null; hasilUid = null; hasilSig = ''; OH = {}; OHV++; }
 let ownOff = null, ownSig = '';
@@ -682,7 +740,7 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
       else { const date = key.slice(-10), pid = key.slice(2, -11); (h.hadir[pid] = h.hadir[pid] || {})[date] = d; }
       h.sent[key] = fnv(d);
     });
-    if (old) { if (H[kid] !== old || old.dirty || old.upd !== upd0) return; ['nshared', 'naraSeen', 'tshared', 'ttdpSeen', 'tnShared'].forEach(f => { h[f] = old[f] || {}; }); if (old.goneAt) h.goneAt = old.goneAt; }
+    if (old) { if (H[kid] !== old || old.dirty || old.upd !== upd0) return; ['nshared', 'naraSeen', 'tshared', 'ttdpSeen', 'tnShared'].forEach(f => { h[f] = old[f] || {}; }); if (old.fshared) h.fshared = true; if (old.goneAt) h.goneAt = old.goneAt; }
     nrGabung(h, KEGS[kid]); H[kid] = h; await saveH(kid); renderSoft();
   } catch (e) { /* dicoba lagi saat tarik data berikutnya */ } finally { restoring.delete(kid); }
 }
@@ -738,7 +796,7 @@ function admGot(obj) { ADM_LAST = obj; // tiap tindakan admin (waktu t lebih bar
 }
 function stopWatch() { stopAdm(); if (watchOff) { try { watchOff(); } catch (e) { } } watchOff = null; watchUid = null; watchGot = 0; }
 function startWatch() {
-  startNara(); startTtdp(); startHasil(); startAdm();
+  startNara(); startTtdp(); startFoto(); startHasil(); startAdm();
   if (!fbOk() || !window.PicFB.watchKegiatan) return;
   if (watchOff && watchUid === ME.uid) return;
   stopWatch();
@@ -770,7 +828,7 @@ async function doLogin(user, pw) {
 }
 async function doLogout(force, msg) {
   if (!force && pending()) { askLogout(); return; }
-  stopWatch(); stopHasil(); if (naraOff) { try { naraOff(); } catch (e) { } } naraOff = null; naraUid = null; if (ttdpOff) { try { ttdpOff(); } catch (e) { } } ttdpOff = null; ttdpUid = null; lastSrv = '';
+  stopWatch(); stopHasil(); if (naraOff) { try { naraOff(); } catch (e) { } } naraOff = null; naraUid = null; if (ttdpOff) { try { ttdpOff(); } catch (e) { } } ttdpOff = null; ttdpUid = null; if (fotoOff) { try { fotoOff(); } catch (e) { } } fotoOff = null; fotoUid = null; FOTOST = {}; lastSrv = '';
   try { if (window.PicFB) await window.PicFB.logout(); } catch (e) {}
   ME = null; KEGS = {}; const ks = Object.keys(H); H = {};
   await iDel('me'); await iDel('kegs'); await Promise.all(ks.map(k => iDel('h:' + k)));
@@ -1148,6 +1206,7 @@ function render() {
     const tTtn = ln.nilai ? `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>Pengawas ${nTtd(hh, 1, k) ? '✔ sudah TTD' : '– belum TTD'} · Ahli K3 ${nTtd(hh, 2, k) ? '✔ sudah TTD' : '– belum TTD'}</small></span>${I.chev}</button>` : '';
     const tNar = (ln.nara && (!k.b3 || alat)) ? (() => { const ds = (k.b3 ? absDays(k) : (k.tgl || [])).filter(d => !nrOffOf(k, nrPfx(k) + d)), pf = nrPfx(k), n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && nrTtd(hh, pf + d, k); }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
     const tSf = ln.selfie && !alat ? `<button type="button" class="tile" data-act="go" data-to="sfl"><span class="ic">${I.cam}</span><span><b>Link Absen Selfie Peserta</b><small>Bagikan ke peserta · pagi &amp; siang</small></span>${I.chev}</button><button type="button" class="tile" data-act="go" data-to="sfm"><span class="ic">${I.cam}</span><span><b>Hasil Selfie Peserta</b><small>Lihat foto · hapus bila salah, peserta selfie ulang</small></span>${I.chev}</button>` : '';
+    const tFt = !alat ? `<button type="button" class="tile" data-act="go" data-to="ftl"><span class="ic">${I.cam}</span><span><b>Link Foto Dokumentasi</b><small>Bagikan ke pihak lain · foto harian &amp; peserta, hanya pada tanggal kegiatan</small></span>${I.chev}</button>` : '';
     const tLap = (() => { const c = lapCek(kid); return `<button type="button" class="tile lap${c.all ? ' ok' : ''}" data-act="go" data-to="lap"><span class="ic">${I.list}</span><span><b>Pratinjau Laporan</b><small>${c.all ? 'Laporan lengkap ✔' : c.pct + '% lengkap · ' + (c.secs.length - c.nOk) + ' bagian masih kurang'} — cek sebelum selesai</small></span>${I.chev}</button>`; })();
     const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
     const btnSelesai = alat ? '' : (() => { const c = lapCek(kid), ok = !!c.all; return `<button class="btn${ok ? ' pri' : ''}" type="button" data-act="selesai" ${ok ? '' : 'disabled aria-disabled="true"'} style="margin-top:6px${ok ? '' : ';opacity:.5'}">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">${ok ? 'Pratinjau Laporan sudah 100%. Tekan Selesai bila semua isian sudah final. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.' : `Tombol Selesai aktif setelah Pratinjau Laporan mencapai <b>100%</b> (sekarang ${c.pct}%). Lengkapi bagian yang masih kurang di Pratinjau Laporan.`}</p>`; })();
@@ -1169,12 +1228,12 @@ function render() {
       ${klGroups(k).map(g => { const sg = stat(kid, g.kl); return `<button type="button" class="kcard" data-act="alat" data-kl="${esc(g.kl)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(klLabel(g.kl))}</h3></div>
         <div class="meta"><span>${g.n} peserta</span></div>${g.kl ? '' : '<p class="hint" style="margin:4px 0 0">Alat peserta ini belum dipilih di website (tab Kegiatan &amp; Peserta). Pilih alatnya supaya masuk ke alat yang benar.</p>'}<div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
       <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua ${k.b3 ? 'program' : 'alat'}</h2></div>
-      ${tSf}${tDhr}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}${tWrd}
+      ${tSf}${tDhr}${tFt}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">${k.b3 ? 'Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua program. Absensi Narasumber ada di dalam tiap program.' : 'Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1.'} Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}${dlCard}</div>`;
     } else {
       h = appbar(kNama(k), rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
-      ${tAbs}${tSf}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}${tLap}${tWrd}
+      ${tAbs}${tSf}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}${tFt}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}${dlCard}</div>`;
     }
@@ -1263,6 +1322,18 @@ function render() {
         <div class="field"><label for="sfLinkD">Link darurat selfie</label><input id="sfLinkD" readonly value="${esc(link + '&darurat=1')}" onfocus="this.select()"></div>
         <div class="row"><button type="button" class="btn pri" data-act="sfdcopy">Salin link darurat</button><button type="button" class="btn" data-act="sfdshare">🚨 Bagikan link darurat</button></div></div>` : ''}
       <p class="hint">Absen <b>pagi</b> sebelum jam 12.00 dan absen <b>siang</b> jam 12.00 ke atas (mengikuti zona waktu kegiatan). Link hanya berlaku pada hari kegiatan. Setiap peserta hanya bisa sekali per sesi; bila salah foto, hapus selfie-nya lewat <b>Hasil Selfie Peserta</b> (atau admin di Daftar Hadir) agar peserta bisa mengulang. Hasilnya otomatis masuk ke laporan setelah Daftar Hadir.</p></div>`;
+  } else if (P.screen === 'ftl') {
+    const link = fotoLink(kid), hh = hOf(kid), nW = fotoMenunggu(kid);
+    h = appbar('Link Foto Dokumentasi', k.nama, true) + `<div class="screen">
+      <div class="hint">Bagikan link ini ke pihak lain (mis. lewat WhatsApp) untuk mengambil foto <b>Dokumentasi Harian</b> dan <b>Dokumentasi Peserta</b>. Fotonya diambil langsung dari kamera lewat halaman link, otomatis diberi watermark tanggal, jam, dan tempat.</div>
+      <div class="card2"><b>Aturan link</b><div class="hint">Link hanya bisa dipakai pada <b>tanggal kegiatan</b> (${esc(rentang(k.tgl))}). Sebelum tanggal itu, halaman link menolak dan menampilkan jadwalnya. Yang membuka link melihat pesan: <i>"Upload foto sesuai dengan tanggal kegiatan, tidak perlu mengupload foto dari timestamp atau aplikasi lain."</i></div></div>
+      <div class="field"><label for="ftLink">Link foto dokumentasi</label><input id="ftLink" readonly value="${esc(link)}" onfocus="this.select()"></div>
+      <button type="button" class="btn pri" data-act="ftcopy">Salin link</button>
+      <button type="button" class="btn" data-act="ftshare">Bagikan (WhatsApp, dll.)</button>
+      <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman link (uji)</a>
+      <button type="button" class="btn" data-act="ftpull">Ambil foto masuk sekarang${nW ? ` (${nW} menunggu)` : ''}</button>
+      <div class="hint" id="ftStat">${esc(FTMSG[kid] || 'Mengaktifkan link…')}</div>
+      <p class="hint">Foto dari link otomatis masuk saat HP ini terbuka dan ada sinyal: foto harian ditambahkan ke <b>Dokumentasi Harian</b> pada tanggal fotonya, foto peserta mengisi <b>slot foto yang masih kosong</b> (maksimal sesuai jumlah foto peserta itu). Bila ada foto yang salah, hapus seperti biasa di Dokumentasi Harian / Dokumentasi Peserta. Layar ini harus dibuka sekali di HP PIC agar link aktif.</p></div>`;
   } else if (P.screen === 'dhr') {
     const hh = hOf(kid), days = k.tgl || [];
     h = appbar('Dokumentasi Harian', k.nama, true) + `<div class="screen">${days.map((d, i) => `<div class="card2" data-day="${esc(d)}"><b>Day ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
@@ -1605,8 +1676,11 @@ document.addEventListener('click', e => {
   else if (a === 'sfdcopy') { const t = $('#sfLinkD').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link darurat disalin'), () => { $('#sfLinkD').select(); toast('Tahan lalu pilih Salin'); }); }
   else if (a === 'sfdshare') { const t = $('#sfLinkD').value, msg = `Link DARURAT absen selfie (untuk yang belum selfie) ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Absen Selfie Darurat', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
   else if (a === 'sfshare') { const t = $('#sfLink').value, msg = `Absen selfie ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Absen Selfie', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
+  else if (a === 'ftcopy') { const t = $('#ftLink').value; copyText(t).then(() => toast('Link disalin'), () => { $('#ftLink').select(); toast('Tahan lalu pilih Salin'); }); }
+  else if (a === 'ftshare') { const t = $('#ftLink').value, msg = `Upload foto dokumentasi ${k ? k.nama : 'kegiatan'} (hanya bisa pada tanggal kegiatan): ${t}`; if (navigator.share) navigator.share({ title: 'Upload Foto Dokumentasi', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
+  else if (a === 'ftpull' && k) { if (!fbOk() || !online()) { toast('Butuh internet dan login.'); return; } toast('Memeriksa foto masuk…'); (window.PicFB.fotoStAll ? window.PicFB.fotoStAll() : Promise.resolve(FOTOST)).then(st => fotoGot(st)).then(n => { toast(n ? `${n} foto masuk` : 'Belum ada foto baru'); render(); }).catch(e => toast('Gagal memeriksa. ' + friendlyErr(e))); }
   else if (a === 'alat') { P.kl = b.dataset.kl; P.screen = 'alat'; P.q = ''; render(); }
-  else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; P.from = null; render(); }
+  else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; P.from = null; render(); if (P.screen === 'ftl' && kid) fotoOpen(kid); }
   else if (a === 'wrdgo' && k) { P.screen = 'wrd'; P.from = 'lap'; P.kl = null; render(); }
   else if (a === 'wtab') { P.wd = b.dataset.d; render(); }
   else if (a === 'wgrp') { P.wk = +b.dataset.i; render(); }
@@ -1707,7 +1781,7 @@ document.addEventListener('submit', async e => {
 window.addEventListener('online', () => { renderPill(); pull(true); sync(); });
 window.addEventListener('offline', () => renderPill());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderPill(); pull(true); sync(); } });
-setInterval(() => { if (ME && online()) { pull(); sync(); } }, 20000); // cadangan bila pendengar realtime putus
+setInterval(() => { if (ME && online()) { pull(); sync(); fotoTick(); } }, 20000); // cadangan bila pendengar realtime putus
 window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
 
 /* ---------- pembaruan aplikasi ----------

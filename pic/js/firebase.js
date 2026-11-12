@@ -11,7 +11,7 @@
 //   dh_media/{kid}/{key}      gambar (dataURL): s_<pid>_<tanggal> = TTD peserta, f_<pid> = foto, pic = TTD PIC
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getDatabase, ref, get, set, remove, onValue } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
+import { getDatabase, ref, get, set, remove, onValue, runTransaction } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg',
@@ -120,6 +120,14 @@ window.PicFB = {
   async naraTtd(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), 40000)).val(); },
   async naraReset(kid, key) { await Promise.all([remove(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_st/${kid}/${key}`))].map(p => p.catch(() => {}))); },
   async naraCabut(kid, key) { await Promise.all([remove(ref(db, `${ROOT}/dh_nara/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_ttd/${kid}/${key}`)), remove(ref(db, `${ROOT}/dh_nara_st/${kid}/${key}`))].map(p => p.catch(() => {}))); },
+  // Link foto dokumentasi (halaman ruangk3.com/foto/): info -> dh_foto/{kid}; foto -> dh_foto_in/{kid}/{kunci}; penanda -> dh_foto_st/{kid}/{kunci}
+  // Klaim = transaksi yang membuang penanda: hanya satu akun yang menang (committed), jadi foto tidak dobel.
+  async fotoPub(kid, info) { await withTimeout(set(ref(db, `${ROOT}/dh_foto/${kid}`), clean({ ...info, upd: Date.now() })), 30000); },
+  watchFoto(cb, errCb) { return onValue(ref(db, `${ROOT}/dh_foto_st`), (snap) => cb(snap.val() || {}), (e) => { if (errCb) errCb(e); }); },
+  async fotoStAll() { return (await withTimeout(get(ref(db, `${ROOT}/dh_foto_st`)), 30000)).val() || {}; },
+  async fotoOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_foto_in/${kid}/${key}`)), 60000)).val() || ''; },
+  async fotoClaim(kid, key) { const r = await withTimeout(runTransaction(ref(db, `${ROOT}/dh_foto_st/${kid}/${key}`), cur => (cur == null ? undefined : null)), 30000); return !!(r && r.committed); },
+  async fotoDrop(kid, key) { await withTimeout(remove(ref(db, `${ROOT}/dh_foto_in/${kid}/${key}`)), 30000); },
   // Link tanda tangan peserta (halaman ruangk3.com/ttd/): daftar nama -> dh_ttdp/{kid}/{kl}; TTD -> dh_ttdp_ttd/{kid}/{kl}/{pid~tgl}; penanda waktu -> dh_ttdp_st
   async ttdpPub(kid, kl, info) { await withTimeout(set(ref(db, `${ROOT}/dh_ttdp/${kid}/${kl}`), clean({ ...info, upd: Date.now() })), 30000); },
   async ttdpGet(kid, kl, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_ttdp_ttd/${kid}/${kl}/${key}`)), 40000)).val(); },
