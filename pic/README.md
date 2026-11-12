@@ -479,3 +479,5 @@ Catatan: seperti selfie, pengunggah dan PIC sama-sama login Firebase (anonim vs 
 - **v77**: daftar kegiatan di beranda dan judul layar kegiatan untuk K3 Lingkungan Kerja tampil "K3 LKBB (nama program)" (beberapa program: dipisah koma). Pesawat Angkat & Angkut dan kegiatan lain tidak berubah; judul laporan tidak berubah.
 
 - **v78-v79**: pop up pengingat "Kegiatan belum lengkap". Muncul setiap aplikasi dibuka / login (dan setelah >10 menit di latar), hanya berisi kegiatan yang tanggalnya sudah lewat, belum lengkap, belum ditandai selesai, dan nama PIC di kegiatan (kolom Nama penandatangan) cocok dengan nama akun yang masuk (cadangan: nirwanakrisna28@gmail.com = Nirwana, kipli.lpmi@gmail.com = Rafli, lihat ING_HINT di app.js). Tombol "Nanti" menutup; mengetuk kegiatan langsung membukanya.
+
+- **v80**: pengecualian 1 foto per peserta untuk kegiatan K3 LKBB Teknisi Ruang Terbatas 29 Okt - 2 Nov 2026 saja (FOTO_SATU di app.js dan daftar-hadir/index.html; daftar lain tidak berubah). Laporan memakai format 1 foto.

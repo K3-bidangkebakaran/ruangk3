@@ -847,6 +847,8 @@ function picKid_(kid, k, nodes, t0) {
   const batal = {}; peserta.forEach(function (p) { batal[p.id] = !!p.batal; });
   const foto = {}, foto2 = {}, fotoX = { foto3: {}, foto4: {}, foto5: {} }, hadir = {}, nrNama = {};
   const papa = !!k.papa, kls = (k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.keys(k.kelas).map(function (x) { return k.kelas[x]; })) : []).filter(String);
+  // pengecualian: K3 LKBB Teknisi Ruang Terbatas 29 Okt - 2 Nov 2026 hanya 1 foto per peserta (sama dengan website & APK)
+  const tgS = (Array.isArray(k.tgl) ? k.tgl : Object.keys(k.tgl || {}).map(function (x) { return k.tgl[x]; })).filter(String).sort(), fotoSatu = !!k.b3 && tgS.length > 0 && tgS[0] === '2026-10-29' && tgS[tgS.length - 1] === '2026-11-02' && kls.some(function (x) { return String(x).replace(/\s+/g, ' ').trim().toLowerCase() === 'teknisi ruang terbatas'; });
   const kfOf = function (lbl) { return papa ? [safeName_(kls.indexOf(lbl) >= 0 ? lbl : 'Tanpa kelas')] : []; }; // PAPA: tiap alat punya subfolder sendiri
   const kkMap = {}; kls.forEach(function (l) { kkMap[kelasKey_(l)] = l; });
   let s1n = lp0.s1nama || '', s2n = lp0.s2nama || '', last = null;
@@ -872,7 +874,7 @@ function picKid_(kid, k, nodes, t0) {
   peserta.forEach(function (p) {
     if (batal[p.id]) return;
     const tag = ' [' + String(p.id).slice(0, 5) + ']', nm = safeName_(p.nama), kf = kfOf(p.kelas);
-    const klp = String(p.kelas || '').replace(/\s+/g, ' ').trim() || (kls.length === 1 ? kls[0] : ''), nf = (k.b3 && klp.toLowerCase() === 'ahli k3 muda lingkungan kerja') ? 5 : ((k.damkar || k.b3) ? 2 : 1);
+    const klp = String(p.kelas || '').replace(/\s+/g, ' ').trim() || (kls.length === 1 ? kls[0] : ''), nf = fotoSatu ? 1 : (k.b3 && klp.toLowerCase() === 'ahli k3 muda lingkungan kerja') ? 5 : ((k.damkar || k.b3) ? 2 : 1);
     if (foto[p.id]) want.push({ key: 'foto:' + p.id, mk: 'f_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + (nf > 1 ? ' (1)' : '') + '.jpg' });
     if (foto2[p.id] && nf >= 2) want.push({ key: 'foto2:' + p.id, mk: 'f2_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + ' (2).jpg' });
     [3, 4, 5].forEach(function (n) { if (nf >= n && fotoX['foto' + n][p.id]) want.push({ key: 'foto' + n + ':' + p.id, mk: 'f' + n + '_' + p.id, path: kf.concat(['Foto Dokumentasi']), kf: papa, name: nm + tag + ' (' + n + ').jpg' }); });

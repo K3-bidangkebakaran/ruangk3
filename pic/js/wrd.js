@@ -92,10 +92,19 @@ function kelasList(a) {
 const J_DAMKAR = "K3 PENANGGULANGAN KEBAKARAN", J_ANGKAT = "K3 PESAWAT ANGKAT PESAWAT ANGKUT";
 const J_B3 = "K3 LINGKUNGAN KERJA BAHAN BERBAHAYA DAN BERACUN";
 const isB3 = a => !!a && a.jenis === "b3";
-const fotoDua = a => !!a && (!!a.damkar || a.jenis === "b3");
+const FOTO_SATU = [{ kelas: "teknisi ruang terbatas", awal: "2026-10-29", akhir: "2026-11-02" }];
+const fotoSatu = a => {
+  if (!a || a.jenis !== "b3") return false;
+  let h = []; try { h = hariList(a).filter(Boolean); } catch (e) { }
+  if (!h.length) return false;
+  const ks = kelasList(a).map(x => String(x || "").replace(/\s+/g, " ").trim().toLowerCase());
+  return FOTO_SATU.some(r => r.awal === h[0] && r.akhir === h[h.length - 1] && ks.includes(r.kelas));
+};
+const fotoDua = a => !!a && !fotoSatu(a) && (!!a.damkar || a.jenis === "b3");
 const FOTO_KEYS = ["foto", "foto2", "foto3", "foto4", "foto5"], KELAS_FOTO5 = "ahli k3 muda lingkungan kerja";
 const fotoN = (a, p) => {
   if (!a) return 1;
+  if (fotoSatu(a)) return 1;
   if (a.jenis === "b3") { const ks = kelasList(a), kl = String((p && p.kelas) || "").trim() || (ks.length === 1 ? ks[0] : ""); if (kl.replace(/\s+/g, " ").toLowerCase() === KELAS_FOTO5) return 5; }
   return fotoDua(a) ? 2 : 1;
 };
