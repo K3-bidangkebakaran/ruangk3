@@ -475,3 +475,5 @@ Catatan: seperti selfie, pengunggah dan PIC sama-sama login Firebase (anonim vs 
 ## v76 — K3 Lingkungan Kerja (B3): nama kegiatan di layar program = "K3 LKBB (nama program)"
 - Di layar program (Portal PIC) kegiatan K3 Lingkungan Kerja, judul layar kini "K3 LKBB (Teknisi Ruang Terbatas)" (dengan tanggal · tempat di bawahnya), dan subjudul layar isian di dalam program (Absensi TTD, Dokumentasi Peserta, Nilai, Narasumber) memakai nama yang sama. Fungsi: `kegKl` / `subK` di `pic/js/app.js`.
 - Hanya untuk `k.b3`. K3 Pesawat Angkat & Angkut (PAPA) dan kegiatan lain tidak berubah. Judul laporan (Word/pratinjau) tidak berubah.
+
+- **v77**: daftar kegiatan di beranda dan judul layar kegiatan untuk K3 Lingkungan Kerja tampil "K3 LKBB (nama program)" (beberapa program: dipisah koma). Pesawat Angkat & Angkut dan kegiatan lain tidak berubah; judul laporan tidak berubah.
