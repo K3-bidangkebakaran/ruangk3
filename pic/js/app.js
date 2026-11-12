@@ -253,7 +253,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v77';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v78';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -820,6 +820,36 @@ async function pull(force) {
   } catch (e) { pullErr = friendlyErr(e); }
 }
 
+/* ---------- Pop up pengingat: kegiatan sudah lewat tapi belum lengkap, hanya untuk PIC pemilik kegiatan (nama PIC di kegiatan = nama akun) ---------- */
+const ING_HINT = { 'nirwanakrisna28@gmail.com': ['nirwana'], 'kipli.lpmi@gmail.com': ['rafli', 'kipli'] }; // cadangan bila nama akun tidak mirip nama PIC di kegiatan
+const ingTok = t => String(t || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+function ingKata() { // kata-kata nama PIC untuk akun yang sedang masuk
+  const u = String((ME && ME.user) || '').trim().toLowerCase(), set = new Set([...(ING_HINT[u] || []), ...(ING_HINT[u + '@gmail.com'] || [])]);
+  ingTok(ME && ME.nama).filter(t => t.length >= 4).forEach(t => set.add(t)); return set;
+}
+function ingMilik(k) { const t = ingTok(k && k.namaTtd); if (!t.length) return false; const w = ingKata(); return t.some(x => w.has(x)); }
+function ingDaftar() {
+  return Object.keys(KEGS).filter(kid => { const k = KEGS[kid]; return k && !(H[kid] && H[kid].selesai) && ingMilik(k) && statusKeg(kid)[0] === 'Belum lengkap'; })
+    .sort((a, b) => String((KEGS[b].tgl || [])[0] || '').localeCompare(String((KEGS[a].tgl || [])[0] || '')))
+    .map(kid => { let kurang = []; try { kurang = lapCek(kid).secs.filter(x => x.st !== 'ok').map(x => (x.grp ? x.grp + ' – ' : '') + x.judul + (x.kosong ? ' (belum ada data)' : ' (' + x.ok + '/' + x.total + ')')); } catch (e) { } return { kid, k: KEGS[kid], kurang }; });
+}
+let INGAT = false, INGT = null;
+function ingatkan(paksa) {
+  if (!ME || P.screen === 'login') return;
+  if (INGAT && !paksa) return;
+  if (!Object.keys(KEGS).length) return;
+  const ov = $('#ovl'); if (!ov) return;
+  if (busy() || ov.innerHTML.trim()) { clearTimeout(INGT); INGT = setTimeout(() => ingatkan(paksa), 4000); return; } // layar sedang dipakai (kamera, TTD, isian): tunggu
+  const d = ingDaftar(); INGAT = true; if (!d.length) return;
+  ov.innerHTML = `<div class="overlay"><div class="sheet" role="dialog" aria-modal="true" aria-label="Pengingat kegiatan belum lengkap"><b style="font-family:var(--f-display);font-size:17px">⚠ Kegiatan belum lengkap</b>
+    <div class="hint">Halo ${esc(ME.nama || '')}, ${d.length} kegiatan Anda sudah lewat tanggalnya tetapi laporannya masih ada yang kurang. Ketuk kegiatan untuk melengkapi.</div>
+    ${d.map(x => `<button type="button" class="kcard" data-act="ingopen" data-id="${esc(x.kid)}"><h3>${esc(namaTampil(x.k))}</h3><small>${esc(rentang(x.k.tgl))}${x.k.tempat ? ' · ' + esc(x.k.tempat) : ''}</small>
+      <small style="color:#b91c1c">Kurang: ${x.kurang.slice(0, 4).map(esc).join('; ')}${x.kurang.length > 4 ? ` dan ${x.kurang.length - 4} lainnya` : ''}</small></button>`).join('')}
+    <div class="row end"><button type="button" class="btn" data-act="padno">Nanti</button></div></div></div>`;
+}
+let INGH = 0;
+document.addEventListener('visibilitychange', () => { if (document.hidden) INGH = Date.now(); else if (INGH && Date.now() - INGH > 10 * 60 * 1000) { INGAT = false; INGH = 0; clearTimeout(INGT); INGT = setTimeout(() => ingatkan(), 2500); } }); // dibuka lagi setelah >10 menit di latar: ingatkan lagi
+
 /* ---------- login / keluar ---------- */
 async function doLogin(user, pw) {
   if (!window.PicFB) throw new Error(online() ? 'Layanan login belum siap. Muat ulang aplikasi lalu coba lagi.' : 'Tidak ada sinyal. Masuk pertama kali membutuhkan internet.');
@@ -827,11 +857,13 @@ async function doLogin(user, pw) {
   ME = me; await iPut('me', ME);
   P = { screen: 'home', kid: null, day: 0, q: '', err: '' };
   render(); startWatch(); pull(); sync();
+  INGAT = false; clearTimeout(INGT); INGT = setTimeout(() => ingatkan(), 6000);
 }
 async function doLogout(force, msg) {
   if (!force && pending()) { askLogout(); return; }
   stopWatch(); stopHasil(); if (naraOff) { try { naraOff(); } catch (e) { } } naraOff = null; naraUid = null; if (ttdpOff) { try { ttdpOff(); } catch (e) { } } ttdpOff = null; ttdpUid = null; if (fotoOff) { try { fotoOff(); } catch (e) { } } fotoOff = null; fotoUid = null; FOTOST = {}; lastSrv = '';
   try { if (window.PicFB) await window.PicFB.logout(); } catch (e) {}
+  INGAT = false; clearTimeout(INGT); { const ov = $('#ovl'); if (ov) ov.innerHTML = ''; }
   ME = null; KEGS = {}; const ks = Object.keys(H); H = {};
   await iDel('me'); await iDel('kegs'); await Promise.all(ks.map(k => iDel('h:' + k)));
   P = { screen: 'login', kid: null, day: 0, q: '', err: msg || '' }; render();
@@ -1663,6 +1695,7 @@ document.addEventListener('click', e => {
   if (a === 'bukalagi') { const id = b.dataset.id, h = hOf(id); h.selesai = false; touch(id); render(); toast('Kegiatan dibuka lagi.'); return; }
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { const e0 = syncErr; syncErr = ''; sync(); pull(true); toast(e0 ? 'Mengirim ulang. Kendala sebelumnya: ' + e0 : 'Memeriksa dan mengirim data…'); } }
+  else if (a === 'ingopen') { $('#ovl').innerHTML = ''; P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = ((KEGS[P.kid] || {}).tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'back') { // dari layar per alat (abs/dok/nil/nar) kembali ke menu alat; dari menu alat ke daftar alat
     if (P.from === 'lap' && P.screen !== 'lap') { P.screen = 'lap'; P.kl = null; P.from = null; }
@@ -1843,7 +1876,7 @@ window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
   }
   render();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
-  if (ME && window.PicFB) { await window.PicFB.ready; if (window.PicFB.uid() !== ME.uid) { /* sesi Firebase habis: data tetap bisa dipakai, kirim butuh login ulang */ syncErr = ''; } pull(); sync(); }
+  if (ME && window.PicFB) { await window.PicFB.ready; if (window.PicFB.uid() !== ME.uid) { /* sesi Firebase habis: data tetap bisa dipakai, kirim butuh login ulang */ syncErr = ''; } pull(); sync(); clearTimeout(INGT); INGT = setTimeout(() => ingatkan(), 5000); }
 })();
 window.__pic = { get H() { return H; }, get KEGS() { return KEGS; }, sync, pull, pending };
 })();
