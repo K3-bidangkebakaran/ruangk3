@@ -496,6 +496,114 @@
             100%{ transform:translateY(150px) rotate(var(--rot)); opacity:0; }
         }
 
+/* ===== Rekap Kegiatan: grafik & filter (tahun, bulan, jenis) ===== */
+#dh-view-rekap .rk-sec{display:flex;flex-direction:column;gap:20px;margin-bottom:24px}
+#dh-view-rekap .rk-card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:24px 26px;min-width:0;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+#dh-view-rekap .rk-row{display:flex;flex-wrap:wrap;gap:16px;align-items:stretch}
+#dh-view-rekap .rk-h3{margin:0;font-size:18px;font-weight:800;color:#0f172a}
+#dh-view-rekap .rk-sub{margin:4px 0 0;font-size:13px;color:#475569}
+#dh-view-rekap .rk-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+#dh-view-rekap .rk-lbl{font-size:13px;font-weight:600;color:#475569;margin-left:4px}
+#dh-view-rekap .rk-sel{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #cbd5e1;border-radius:12px;padding:0 6px 0 14px;font-size:13px;font-weight:600;color:#475569}
+#dh-view-rekap .rk-sel select{border:0;background:transparent;font:inherit;font-size:14px;font-weight:700;color:#0f172a;padding:10px 8px;outline:none;cursor:pointer}
+#dh-view-rekap .rk-sel:focus-within{outline:2px solid #23864a;outline-offset:2px}
+#dh-view-rekap .rk-chip{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:9px 14px;font-size:13px;font-weight:600;border:1px solid #0f172a;background:#fff;color:#0f172a;cursor:pointer}
+#dh-view-rekap .rk-chip.off{border-color:#cbd5e1;background:#f6f8f7;color:#64748b}
+#dh-view-rekap .rk-chip b{font-weight:800}
+#dh-view-rekap .rk-dot{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;box-sizing:border-box}
+#dh-view-rekap .rk-chip.off .rk-dot{background:transparent !important;border:2px solid currentColor}
+#dh-view-rekap .rk-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+#dh-view-rekap .rk-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;gap:6px}
+#dh-view-rekap .rk-kpi span:first-child{font-size:12px;font-weight:700;letter-spacing:.06em;color:#64748b;text-transform:uppercase}
+#dh-view-rekap .rk-kpi .v{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:#0f172a}
+#dh-view-rekap .rk-kpi .s{font-size:13px;color:#475569}
+#dh-view-rekap .rk-pill{font-size:12px;font-weight:700;color:#475569;background:#eef2ef;border-radius:999px;padding:6px 12px;white-space:nowrap}
+#dh-view-rekap .rk-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-start}
+#dh-view-rekap .rk-barwrap{display:flex;gap:6px;min-width:0;margin-top:18px}
+#dh-view-rekap .rk-yax{position:relative;width:26px;height:240px;flex:none}
+#dh-view-rekap .rk-yax span{position:absolute;right:0;font-size:11px;color:#64748b;font-variant-numeric:tabular-nums}
+#dh-view-rekap .rk-bsc{flex:1 1 0;min-width:0;overflow-x:auto;padding-top:4px}
+#dh-view-rekap .rk-bin{min-width:440px;position:relative}
+#dh-view-rekap .rk-grid{position:absolute;left:0;right:0;top:0;height:240px}
+#dh-view-rekap .rk-grid i{position:absolute;left:0;right:0;height:1px;background:#e8edea}
+#dh-view-rekap .rk-grid i.z{background:#cbd5e1}
+#dh-view-rekap .rk-cols{position:relative;display:flex}
+#dh-view-rekap .rk-col{flex:1 1 0;min-width:0;border:0;padding:0;background:transparent;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;font:inherit}
+#dh-view-rekap .rk-plot{position:relative;height:240px;display:flex;align-items:flex-end;justify-content:center}
+#dh-view-rekap .rk-band{position:absolute;left:4px;right:4px;top:0;bottom:0;border-radius:10px;background:transparent}
+#dh-view-rekap .rk-col.sel .rk-band{background:rgba(35,134,74,.10)}
+#dh-view-rekap .rk-col:hover .rk-band{background:rgba(15,23,42,.05)}
+#dh-view-rekap .rk-col.sel:hover .rk-band{background:rgba(35,134,74,.14)}
+#dh-view-rekap .rk-stack{position:relative;display:flex;flex-direction:column-reverse;gap:2px;transition:opacity .12s}
+#dh-view-rekap .rk-stack i{display:block;width:24px;border-radius:0}
+#dh-view-rekap .rk-stack i:last-child{border-radius:4px 4px 0 0}
+#dh-view-rekap .rk-cols:hover .rk-stack{opacity:.45}
+#dh-view-rekap .rk-cols .rk-col:hover .rk-stack{opacity:1}
+#dh-view-rekap .rk-tot{position:absolute;left:0;right:0;text-align:center;font-size:13px;font-weight:800;color:#0f172a}
+#dh-view-rekap .rk-col:hover .rk-tot{display:none}
+#dh-view-rekap .rk-ml{padding:10px 0 0;font-size:12px;text-align:center;font-weight:600;color:#475569}
+#dh-view-rekap .rk-col.sel .rk-ml{font-weight:800;color:#176535}
+#dh-view-rekap .rk-col.fut .rk-ml{color:#94a3b8}
+#dh-view-rekap .rk-tip{display:none;position:absolute;z-index:6;width:200px;box-sizing:border-box;text-align:left;background:#0f172a;border-radius:12px;padding:12px 14px;box-shadow:0 10px 30px rgba(15,23,42,.25);pointer-events:none;color:#e2e8f0}
+#dh-view-rekap .rk-col:hover .rk-tip,#dh-view-rekap .rk-col:focus-visible .rk-tip,#dh-view-rekap .rk-hit:hover .rk-tip,#dh-view-rekap .rk-hit:focus-visible .rk-tip{display:block}
+#dh-view-rekap .rk-tip .m{font-size:12px;font-weight:600;color:#cbd5e1}
+#dh-view-rekap .rk-tip .t{font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin:2px 0 8px}
+#dh-view-rekap .rk-tip .r{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:4px}
+#dh-view-rekap .rk-tip .r i{display:inline-block;width:12px;height:3px;border-radius:2px;flex:none}
+#dh-view-rekap .rk-tip .r span{flex-grow:1}
+#dh-view-rekap .rk-tip .r b{color:#fff}
+#dh-view-rekap .rk-tip .p{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.15);font-size:12px;color:#cbd5e1}
+#dh-view-rekap .rk-legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;color:#475569;align-items:center;padding-left:32px;margin-top:14px}
+#dh-view-rekap .rk-legend span{display:inline-flex;align-items:center;gap:8px}
+#dh-view-rekap .rk-kick{font-size:12px;font-weight:700;letter-spacing:.06em;color:#64748b}
+#dh-view-rekap .rk-hero{display:flex;align-items:flex-end;gap:12px;margin:14px 0 16px}
+#dh-view-rekap .rk-hero b{font-size:64px;font-weight:800;letter-spacing:-.04em;line-height:1;color:#0f172a}
+#dh-view-rekap .rk-hero span{font-size:14px;color:#475569;padding-bottom:8px;line-height:1.35}
+#dh-view-rekap .rk-seg{display:flex;gap:2px;height:8px}
+#dh-view-rekap .rk-seg i{display:block;height:8px;border-radius:999px}
+#dh-view-rekap .rk-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+#dh-view-rekap .rk-li{display:flex;align-items:center;gap:10px;font-size:13px;color:#334155}
+#dh-view-rekap .rk-li span:nth-child(2){flex-grow:1}
+#dh-view-rekap .rk-li b{font-size:15px;color:#0f172a}
+#dh-view-rekap .rk-hr{height:1px;background:#e2e8f0;margin:18px 0}
+#dh-view-rekap .rk-met{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+#dh-view-rekap .rk-met div:first-child{display:flex;justify-content:space-between;font-size:13px;color:#334155}
+#dh-view-rekap .rk-met .tr{height:8px;border-radius:999px;background:#dcefe3;overflow:hidden}
+#dh-view-rekap .rk-met .tr i{display:block;height:8px;border-radius:999px;background:#23864a}
+#dh-view-rekap .rk-stats{display:flex;gap:32px;flex-wrap:wrap}
+#dh-view-rekap .rk-stats div div:first-child{font-size:11px;font-weight:700;letter-spacing:.06em;color:#64748b}
+#dh-view-rekap .rk-stats div div:last-child{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.25;color:#0f172a}
+#dh-view-rekap .rk-lw{position:relative;margin-top:20px}
+#dh-view-rekap .rk-lw svg{display:block;width:100%;height:auto}
+#dh-view-rekap .rk-lw .yl{position:absolute;left:0;transform:translateY(-120%);font-size:11px;color:#64748b;font-variant-numeric:tabular-nums}
+#dh-view-rekap .rk-lw .vl{position:absolute;transform:translate(-50%,-165%);font-weight:700;color:#0f172a;pointer-events:none}
+#dh-view-rekap .rk-hits{position:absolute;left:0;right:0;top:0;bottom:0}
+#dh-view-rekap .rk-hit{position:absolute;top:0;bottom:0;border:0;padding:0;background:transparent;cursor:pointer}
+#dh-view-rekap .rk-hit .vl2{display:none;position:absolute;top:7%;bottom:14%;left:50%;width:1px;background:#94a3b8}
+#dh-view-rekap .rk-hit .hd{display:none;position:absolute;left:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#008300;border:2px solid #fff;box-sizing:content-box}
+#dh-view-rekap .rk-hit:hover .vl2,#dh-view-rekap .rk-hit:hover .hd,#dh-view-rekap .rk-hit:focus-visible .vl2,#dh-view-rekap .rk-hit:focus-visible .hd{display:block}
+#dh-view-rekap .rk-hit .rk-tip{width:auto;white-space:nowrap;top:0;left:50%;transform:translateX(-50%);text-align:left}
+#dh-view-rekap .rk-hit.f .rk-tip{left:0;transform:none}
+#dh-view-rekap .rk-hit.l .rk-tip{left:auto;right:0;transform:none}
+#dh-view-rekap .rk-lm{position:relative;height:20px;margin-top:-6px}
+#dh-view-rekap .rk-lm span{position:absolute;top:0;transform:translateX(-50%);font-size:12px;font-weight:600;color:#475569}
+#dh-view-rekap .rk-lm span.sel{font-weight:800;color:#176535}
+#dh-view-rekap .rk-lm span.fut{color:#94a3b8}
+#dh-view-rekap .rk-kr{display:flex;flex-direction:column;gap:8px}
+#dh-view-rekap .rk-kr .t{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+#dh-view-rekap .rk-kr .t span:first-child{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:#0f172a}
+#dh-view-rekap .rk-kr .t span:last-child{font-size:13px;color:#475569;white-space:nowrap}
+#dh-view-rekap .rk-kr .t b{font-size:16px;color:#0f172a}
+#dh-view-rekap .rk-kr .tr{height:8px;border-radius:999px;background:#eef2ef;overflow:hidden}
+#dh-view-rekap .rk-kr .tr i{display:block;height:8px;border-radius:999px}
+#dh-view-rekap .rk-mini{min-width:96px}
+#dh-view-rekap .rk-mini .tr{height:6px;border-radius:999px;background:#e2e8f0;margin-top:5px;overflow:hidden}
+#dh-view-rekap .rk-mini .tr i{display:block;height:6px;border-radius:999px}
+#dh-view-rekap .rk-org{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:4px 11px}
+#dh-view-rekap .rk-org.ok{background:#e8f5ec;color:#176535}
+#dh-view-rekap .rk-org.no{background:#f1f5f9;color:#475569}
+#dh-view-rekap .rk-empty{font-size:14px;color:#64748b;text-align:center;padding:24px 0}
+
         #dh-tabs-sel{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
         #dh-tabs-sel button{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:700;border:1px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer}
         #dh-tabs-sel button.on{background:#0f172a;color:#fff;border-color:#0f172a}
@@ -2188,12 +2296,6 @@
                             </div>
                             </div>
                         </div>
-                        <ol class="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-200 border-t border-slate-200">
-                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">1</span><span class="text-xs"><b class="block text-slate-800">Buat kegiatan</b><span class="text-slate-500">Nama, tanggal, dan tempat</span></span></li>
-                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">2</span><span class="text-xs"><b class="block text-slate-800">Isi peserta</b><span class="text-slate-500">Upload Excel atau input manual</span></span></li>
-                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">3</span><span class="text-xs"><b class="block text-slate-800">Foto &amp; tanda tangan</b><span class="text-slate-500">Diambil langsung di lokasi</span></span></li>
-                        <li class="bg-slate-50 px-4 py-3 flex items-start gap-3"><span class="w-6 h-6 rounded-full bg-safety-500 text-white text-xs font-bold flex items-center justify-center shrink-0">4</span><span class="text-xs"><b class="block text-slate-800">Tersimpan di Drive</b><span class="text-slate-500">Word, foto, dan TTD per kegiatan</span></span></li>
-                        </ol>
                     </div>
 
                     <!-- Tab 1: rekap kegiatan dari Google Drive -->
@@ -2218,13 +2320,35 @@
                             </form>
                         </div>
                         <p id="dh-status" class="hidden mt-4 text-xs rounded-lg p-3"></p>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
-                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total kegiatan</p><p id="dh-stat-total" class="text-2xl font-bold text-slate-900 mt-1">0</p></div>
-                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total peserta</p><p id="dh-stat-peserta" class="text-2xl font-bold text-slate-900 mt-1">0</p></div>
-                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">TTD penyelenggara</p><p id="dh-stat-org" class="text-2xl font-bold text-slate-900 mt-1">0</p></div>
-                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Diperbarui 7 hari terakhir</p><p id="dh-stat-baru" class="text-2xl font-bold text-slate-900 mt-1">0</p></div>
                         </div>
-                        </div>
+                    <div class="rk-sec" id="rk-sec">
+                        <section class="rk-filter" aria-label="Filter rekap kegiatan">
+                            <label class="rk-sel">Tahun <select id="rk-tahun" aria-label="Tahun"></select></label>
+                            <label class="rk-sel">Bulan <select id="rk-bulan" aria-label="Bulan"></select></label>
+                            <span class="rk-lbl">Jenis kegiatan</span>
+                            <span id="rk-jenis" style="display:contents"></span>
+                        </section>
+                        <section class="rk-kpis" aria-label="Ringkasan kegiatan">
+                            <div class="rk-kpi"><span>Total kegiatan</span><span class="v" id="dh-stat-total">0</span><span class="s" id="rk-s-total"></span></div>
+                            <div class="rk-kpi"><span>Total peserta</span><span class="v" id="dh-stat-peserta">0</span><span class="s" id="rk-s-pes"></span></div>
+                            <div class="rk-kpi"><span>Sedang berjalan</span><span class="v" id="dh-stat-run">0</span><span class="s" id="rk-s-run"></span></div>
+                            <div class="rk-kpi"><span>TTD penyelenggara</span><span class="v" id="dh-stat-org">0</span><span class="s" id="rk-s-org"></span></div>
+                        </section>
+                        <section class="rk-row">
+                            <div class="rk-card" style="flex:2 1 560px">
+                                <div class="rk-head">
+                                    <div><h3 class="rk-h3">Jumlah kelas per bulan</h3><p class="rk-sub">Kegiatan dihitung pada bulan tanggal mulainya. Klik sebuah bulan untuk menyaring seluruh halaman ke bulan itu.</p></div>
+                                    <span class="rk-pill" id="rk-range"></span>
+                                </div>
+                                <div id="rk-bar"></div>
+                            </div>
+                            <aside class="rk-card" style="flex:1 1 320px" id="rk-side"></aside>
+                        </section>
+                        <section class="rk-row">
+                            <div class="rk-card" style="flex:5 1 640px" id="rk-line"></div>
+                            <div class="rk-card" style="flex:2 1 300px" id="rk-komp"></div>
+                        </section>
+                    </div>
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                         <div id="dh-tabs-sel" role="tablist" aria-label="Status kegiatan"><button type="button" role="tab" data-sel="jalan" class="on">Berjalan<i id="dh-n-jalan">0</i></button><button type="button" role="tab" data-sel="selesai">Selesai<i id="dh-n-selesai">–</i></button></div>
                         <div class="flex flex-col md:flex-row gap-3 mb-4">
@@ -2864,6 +2988,18 @@
             if (n.startsWith('0')) n = '62' + n.slice(1);
             else if (n.startsWith('8')) n = '62' + n;
             return /^\d{9,15}$/.test(n) ? n : '';
+        };
+        window.pesanTugasWA = function(nama, namaKeg, pjk3, tanggal) {
+            return `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`;
+        };
+        /* Tombol "WA" di daftar kegiatan: kirim (ulang) pemberitahuan tugas ke tim kapan saja */
+        window.kirimWAKegiatan = function(id) {
+            const k = dataKegiatanAll.find(x => x.id === id);
+            if (!k) return window.showToast('Data kegiatan tidak ditemukan.', 'error');
+            const tim = dataTimAll.find(t => t.id === k.idTim);
+            if (!tim) return window.showToast('Tim untuk kegiatan ini tidak ditemukan.', 'warning');
+            if (!tim.hp) return window.showToast('Tim ' + tim.nama + ' belum punya nomor HP. Isi dulu di Kelola Akun Tim.', 'warning');
+            window.tawarkanWA(tim.nama, tim.hp, window.pesanTugasWA(tim.nama, k.namaKegiatan, k.pjk3, k.tanggal));
         };
         window.tawarkanWA = function(nama, hp, pesan) {
             const no = window.nomorWA(hp);
@@ -6205,16 +6341,16 @@
                 } else {
                     dataToSave.timestamp = Date.now(); 
                     const pr = window.simpanKegiatanAman('set', push(ref(db, pathKegiatan)).key, dataToSave); // kunci dibuat dulu: kirim ulang memakai kunci yang sama, jadi tidak pernah dobel
-                    const st = await window.tungguTulis(pr, 10000, 'Kegiatan');
                     
-                    if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { 
+                    if (idTim !== 'admin_utama' && idTim !== 'eldi_123' && !isBidang) { // kartu "Kirim WhatsApp" langsung tampil, tidak menunggu balasan server
                         const timData = dataTimAll.find(t => t.id === idTim); 
                         if (timData && timData.hp) { 
-                            window.tawarkanWA(timData.nama, timData.hp, `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${timData.nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`); 
+                            window.tawarkanWA(timData.nama, timData.hp, window.pesanTugasWA(timData.nama, namaKeg, pjk3, tanggal)); 
                         } else if (timData) {
                             window.showToast('Tim ' + timData.nama + ' belum punya nomor HP. Isi dulu di Kelola Akun Tim agar bisa kirim WhatsApp.', 'warning');
                         }
                     }
+                    const st = await window.tungguTulis(pr, 10000, 'Kegiatan');
                     
                     btn.innerText = st === 'ok' ? "Tersimpan!" : "Tersimpan (menunggu server)";
                     if (st === 'ok') window.showToast("Kegiatan berhasil ditambahkan.", "success");
@@ -8212,7 +8348,7 @@
                             
                             let aksiHtml = '';
                             if(isBisaEdit) { 
-                                aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; 
+                                aksiHtml = `<td class="px-5 py-3 whitespace-nowrap text-right"><button onclick="window.kirimWAKegiatan('${k.id}')" title="Kirim pemberitahuan ke WhatsApp tim" class="text-emerald-600 hover:text-emerald-800 px-1.5 py-1 bg-emerald-50 rounded mr-1 text-[10px] font-bold">WA</button><button onclick="window.editKegiatan('${k.id}')" class="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 rounded mr-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button><button onclick="window.hapusKegiatan('${k.id}')" class="text-red-500 hover:text-red-700 p-1 bg-red-50 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>`; 
                             }
                             
                             const tdTeam = isBisaLihatTim ? `<td class="px-5 py-3 text-xs text-slate-700 font-medium align-top">${k.namaTim}</td>` : '';
@@ -9461,25 +9597,121 @@
         document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && document.getElementById('dhp-bg')) dhProgTutup(); });
         document.getElementById('dh-tabs-sel')?.addEventListener('click', (ev) => { const b = ev.target.closest('button[data-sel]'); if (!b) return; dhSel = b.dataset.sel; window.dhRender(); window.dhMuatHasil(); });
 
+        /* ===== Rekap: grafik kelas & peserta per bulan + filter tahun / bulan / jenis (semua dihitung dari daftar kegiatan Drive: dhEvents) ===== */
+        const RK_KEYS = ['angkat', 'b3', 'damkar', 'lain'];
+        const RK_J = { angkat: { n: 'Pesawat Angkat & Angkut', c: '#2a78d6' }, b3: { n: 'K3 Lingkungan Kerja (LKBB)', c: '#eb6834' }, damkar: { n: 'Penanggulangan Kebakaran', c: '#1baf7a' }, lain: { n: 'Lainnya', c: '#8a94a6' } };
+        const RK_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const RK_MONL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const rkSt = { year: 0, month: -1, off: {} };
+        const rkNorm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+        const rkJenis = (e) => { const t = rkNorm(e.kegiatan); if (/bahan berbahaya|ruang terbatas|lingkungan kerja|lkbb/.test(t)) return 'b3'; if (/kebakaran|damkar|pemadam/.test(t)) return 'damkar'; if (/pesawat angkat|pesawat angkut|papa|hoist|crane|forklift|conveyor|rigger/.test(t)) return 'angkat'; return 'lain'; };
+        const rkYM = (e) => { const m = /^(\d{4})-(\d{2})/.exec(String(e.tanggal || '')); return m ? { y: +m[1], m: +m[2] - 1 } : null; };
+        const rkFrac = (v) => { const m = /^(\d+)\s*\/\s*(\d+)$/.exec(String(v == null ? '' : v).trim()); return m ? [+m[1], +m[2]] : [0, 0]; };
+        // dipakai tabel: kegiatan yang lolos filter tahun / bulan / jenis (kegiatan tanpa tanggal tidak pernah disembunyikan)
+        const rkPass = (e) => { const ym = rkYM(e); if (!ym) return true; if (rkSt.year && ym.y !== rkSt.year) return false; if (rkSt.month >= 0 && ym.m !== rkSt.month) return false; return !rkSt.off[rkJenis(e)]; };
+        const rkMiniBar = (v) => { const [a, b] = rkFrac(v); if (!b) return dhEsc(v || '–'); const p = Math.round(a / b * 100); return `<div class="rk-mini"><span>${dhEsc(v)}</span><div class="tr"><i style="width:${p}%;background:${p >= 100 ? '#0ca30c' : '#eda100'}"></i></div></div>`; };
+        const rkOrg = (v) => { const s = String(v || ''); return s === 'Sudah' ? '<span class="rk-org ok">✔ Sudah</span>' : (s ? `<span class="rk-org no">— ${dhEsc(s)}</span>` : '–'); };
+        const rkDotS = (c) => `background:${c}`;
+        function rkRender() {
+            const sec = document.getElementById('rk-sec'); if (!sec) return;
+            const $ = (id) => document.getElementById(id);
+            const ev = dhEvents.filter(e => rkYM(e));
+            const thisY = new Date().getFullYear(), thisM = new Date().getMonth();
+            const years = [...new Set(ev.map(e => rkYM(e).y))].sort((a, b) => b - a); if (!years.length) years.push(thisY);
+            if (!years.includes(rkSt.year)) rkSt.year = years.includes(thisY) ? thisY : years[0];
+            const year = rkSt.year, yd = ev.filter(e => rkYM(e).y === year);
+            const on = (k) => !rkSt.off[k];
+            const actY = yd.filter(e => on(rkJenis(e)));
+            const minM = yd.length ? Math.min(...yd.map(e => rkYM(e).m)) : 0, months = []; for (let m = minM; m <= 11; m++) months.push(m);
+            const selM = months.includes(rkSt.month) ? rkSt.month : -1; rkSt.month = selM;
+            const act = selM >= 0 ? actY.filter(e => rkYM(e).m === selM) : actY;
+            const scope = (selM >= 0 ? RK_MONL[selM] : 'Semua bulan') + ' ' + year;
+            const NOW = year === thisY ? thisM : (year > thisY ? -1 : 11);
+            const nOf = (e) => Number(e.n) || 0;
+            // --- pilihan tahun & bulan
+            const sy = $('rk-tahun'), sm = $('rk-bulan');
+            const yh = years.map(y => `<option value="${y}"${y === year ? ' selected' : ''}>${y}</option>`).join(''); if (sy.innerHTML !== yh) sy.innerHTML = yh;
+            const mh = '<option value="-1">Semua bulan</option>' + RK_MONL.map((n, i) => `<option value="${i}"${i === selM ? ' selected' : ''}>${n}</option>`).join(''); if (sm.innerHTML !== mh) sm.innerHTML = mh;
+            // --- chip jenis (tiga jenis utama selalu tampil; "Lainnya" hanya bila ada)
+            const jk = RK_KEYS.filter(k => k !== 'lain' || yd.some(e => rkJenis(e) === 'lain'));
+            $('rk-jenis').innerHTML = jk.map(k => `<button type="button" class="rk-chip${on(k) ? '' : ' off'}" data-jenis="${k}" aria-pressed="${on(k)}"><span class="rk-dot" style="${rkDotS(RK_J[k].c)}"></span><span>${RK_J[k].n}</span><b>${yd.filter(e => rkJenis(e) === k).length}</b></button>`).join('');
+            // --- kartu ringkasan
+            const sumP = act.reduce((a, e) => a + nOf(e), 0), nOrg = act.filter(e => e.ttdOrg === 'Sudah').length, nSel = act.filter(e => dhSelesai(e.id)).length, nRun = act.length - nSel;
+            const set = (id, t) => { const el = $(id); if (el) el.textContent = t; };
+            set('dh-stat-total', act.length); set('rk-s-total', selM >= 0 ? 'pada ' + RK_MONL[selM] + ' ' + year : 'sepanjang tahun ' + year);
+            set('dh-stat-peserta', sumP); set('rk-s-pes', act.length ? 'rata-rata ' + Math.round(sumP / act.length) + ' peserta per kelas' : 'belum ada peserta');
+            set('dh-stat-run', dhHasilAll ? nRun : '–'); set('rk-s-run', dhHasilAll ? nSel + ' kegiatan sudah selesai' : 'status selesai sedang dimuat');
+            set('dh-stat-org', nOrg + '/' + act.length); set('rk-s-org', (act.length - nOrg) + ' kegiatan belum ditandatangani');
+            // --- hitungan per bulan
+            const cnt = months.map(m => { const per = {}; RK_KEYS.forEach(k => per[k] = 0); let pes = 0; actY.filter(e => rkYM(e).m === m).forEach(e => { per[rkJenis(e)]++; pes += nOf(e); }); return { m, per, total: RK_KEYS.reduce((a, k) => a + per[k], 0), pes }; });
+            // --- grafik batang bertumpuk: jumlah kelas
+            const mx = Math.max(0, ...cnt.map(c => c.total)); let step, ymax;
+            if (mx <= 8) { ymax = mx <= 4 ? 4 : (mx <= 6 ? 6 : 8); step = 2; } else { step = mx <= 16 ? 4 : (mx <= 40 ? 10 : 20); ymax = Math.ceil(mx / step) * step; }
+            const PH = 240, unit = PH / ymax, tick = []; for (let v = 0; v <= ymax; v += step) tick.push(v);
+            const nC = cnt.length;
+            const cols = cnt.map((c, i) => {
+                const segs = RK_KEYS.filter(k => c.per[k] > 0).map(k => `<i style="height:${c.per[k] * unit - 2}px;background:${RK_J[k].c}"></i>`).join('');
+                const totH = c.total ? c.total * unit - 2 : 0;
+                const pos = i <= 1 ? 'left:0' : (i >= nC - 2 ? 'right:0' : 'left:50%;transform:translateX(-50%)');
+                const rows = RK_KEYS.filter(k => on(k) && c.per[k] > 0).map(k => `<div class="r"><i style="background:${RK_J[k].c}"></i><span>${RK_J[k].n}</span><b>${c.per[k]}</b></div>`).join('');
+                const fut = year > thisY || (year === thisY && c.m > thisM);
+                return `<button type="button" class="rk-col${c.m === selM ? ' sel' : ''}${fut ? ' fut' : ''}" data-m="${c.m}" aria-label="${RK_MONL[c.m]} ${year}: ${c.total} kelas, ${c.pes} peserta"><div class="rk-plot"><div class="rk-band"></div><div class="rk-stack">${segs}</div>${c.total ? `<span class="rk-tot" style="bottom:${totH + 6}px">${c.total}</span>` : ''}<div class="rk-tip" style="bottom:${totH + 16}px;${pos}"><div class="m">${RK_MONL[c.m]} ${year}</div><div class="t">${c.total} kelas</div>${rows}<div class="p">${c.pes} peserta</div></div></div><div class="rk-ml">${RK_MON[c.m]}</div></button>`;
+            }).join('');
+            const grid = tick.map(v => `<i class="${v === 0 ? 'z' : ''}" style="bottom:${v * unit}px"></i>`).join(''), yax = tick.map(v => `<span style="bottom:${v * unit - 8}px">${v}</span>`).join('');
+            const legend = RK_KEYS.filter(k => on(k) && (k !== 'lain' || jk.includes('lain'))).map(k => `<span><i class="rk-dot" style="${rkDotS(RK_J[k].c)}"></i>${RK_J[k].n}</span>`).join('');
+            $('rk-bar').innerHTML = `<div class="rk-barwrap"><div class="rk-yax" aria-hidden="true">${yax}</div><div class="rk-bsc"><div class="rk-bin"><div class="rk-grid" aria-hidden="true">${grid}</div><div class="rk-cols">${cols}</div></div></div></div><div class="rk-legend">${legend}</div>`;
+            set('rk-range', RK_MON[months[0]] + ' – Des ' + year);
+            // --- panel samping: semua bulan / bulan terpilih
+            const per = {}; RK_KEYS.forEach(k => per[k] = act.filter(e => rkJenis(e) === k).length);
+            const parts = RK_KEYS.filter(k => on(k) && per[k] > 0).map(k => `<i style="background:${RK_J[k].c};flex:${per[k]} 1 0"></i>`).join('') || '<i style="background:#e2e8f0;flex:1 1 0"></i>';
+            const rowsS = RK_KEYS.filter(k => on(k) && (k !== 'lain' || jk.includes('lain'))).map(k => `<div class="rk-li"><span class="rk-dot" style="${rkDotS(RK_J[k].c)}"></span><span>${RK_J[k].n}</span><b>${per[k]}</b></div>`).join('');
+            const fa = act.reduce((a, e) => a + rkFrac(e.foto)[0], 0), fb = act.reduce((a, e) => a + rkFrac(e.foto)[1], 0), pc = (a, b) => b ? Math.round(a / b * 100) : 0;
+            const met = [['Laporan selesai', dhHasilAll ? nSel + '/' + act.length : '–', dhHasilAll ? pc(nSel, act.length) : 0], ['TTD penyelenggara', nOrg + '/' + act.length, pc(nOrg, act.length)], ['Foto terisi', fa + '/' + fb, pc(fa, fb)]]
+                .map(m => `<div class="rk-met"><div><span>${m[0]}</span><b>${m[1]} · ${m[2]}%</b></div><div class="tr"><i style="width:${m[2]}%"></i></div></div>`).join('');
+            $('rk-side').innerHTML = `<span class="rk-kick">${selM >= 0 ? 'BULAN TERPILIH' : 'SEMUA BULAN'}</span><div style="font-size:18px;font-weight:800;margin-top:2px">${selM >= 0 ? RK_MONL[selM] + ' ' + year : 'Tahun ' + year}</div><div class="rk-hero"><b>${act.length}</b><span>kelas<br>${sumP} peserta</span></div><div class="rk-seg" role="img" aria-label="Pembagian kelas menurut jenis, ${scope}">${parts}</div><div class="rk-list">${rowsS}</div><div class="rk-hr"></div><span class="rk-kick">KELENGKAPAN ARSIP</span>${met}`;
+            // --- garis peserta per bulan (besar, tiap bulan berlabel)
+            const W = 760, H = 280, PX = 46, BASE = 240, TOP = 34, nM = months.length, stp = nM > 1 ? (W - 2 * PX) / (nM - 1) : 0;
+            const upto = Math.max(1, months.filter(m => NOW >= 0 && m <= NOW).length);
+            const pm = Math.max(1, ...cnt.map(c => c.pes)), ymaxP = Math.max(40, Math.ceil(pm / 40) * 40), xs = months.map((m, i) => nM > 1 ? PX + i * stp : W / 2), yOf = (v) => BASE - v / ymaxP * (BASE - TOP);
+            const pts = cnt.slice(0, upto).map((c, i) => [xs[i], yOf(c.pes)]);
+            const path = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' '), area = path + ` L${pts[pts.length - 1][0].toFixed(1)} ${BASE} L${pts[0][0].toFixed(1)} ${BASE} Z`;
+            const gv = [0, 1, 2, 3, 4].map(q => ymaxP * q / 4), si = months.indexOf(selM), bw = Math.min(stp || 60, 60);
+            const totP = cnt.slice(0, upto).reduce((a, c) => a + c.pes, 0); let peak = cnt[0]; cnt.slice(0, upto).forEach(c => { if (c.pes > peak.pes) peak = c; });
+            const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Peserta per bulan tahun ${year}: ${cnt.slice(0, upto).map(c => RK_MON[c.m] + ' ' + c.pes).join(', ')}">${gv.map(v => `<line x1="0" x2="${W}" y1="${yOf(v)}" y2="${yOf(v)}" stroke="#e8edea" stroke-width="1"/>`).join('')}${si >= 0 ? `<rect x="${xs[si] - bw / 2}" y="${TOP - 20}" width="${bw}" height="${BASE - TOP + 20}" rx="10" fill="#23864a" fill-opacity="0.10"/>` : ''}<path d="${area}" fill="#008300" fill-opacity="0.1"/><path d="${path}" fill="none" stroke="#008300" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#008300" stroke="#fff" stroke-width="2"/>`).join('')}</svg>`;
+            const yl = gv.map(v => `<span class="yl" style="top:${yOf(v) / H * 100}%">${Math.round(v)}</span>`).join('');
+            const vl = pts.map((p, i) => `<span class="vl" style="left:${p[0] / W * 100}%;top:${p[1] / H * 100}%;font-size:${cnt[i] === peak ? 15 : 12}px;font-weight:${cnt[i] === peak ? 800 : 700}">${cnt[i].pes}</span>`).join('');
+            const hits = months.map((m, i) => i < upto ? `<button type="button" class="rk-hit${i === 0 ? ' f' : (i === nM - 1 ? ' l' : '')}" data-m="${m}" aria-label="${RK_MONL[m]}: ${cnt[i].pes} peserta" style="left:${(xs[i] - (stp || W) / 2) / W * 100}%;width:${(stp || W) / W * 100}%"><i class="vl2"></i><i class="hd" style="top:${pts[i][1] / H * 100}%"></i><div class="rk-tip"><div class="m">${RK_MONL[m]} ${year}</div><div style="font-size:18px;font-weight:800;color:#fff">${cnt[i].pes} peserta <span style="font-size:12px;font-weight:600;color:#cbd5e1">· ${cnt[i].total} kelas</span></div></div></button>` : '').join('');
+            const lm = months.map((m, i) => `<span class="${m === selM ? 'sel' : (i >= upto ? 'fut' : '')}" style="left:${xs[i] / W * 100}%">${RK_MON[m]}</span>`).join('');
+            $('rk-line').innerHTML = `<div class="rk-head" style="align-items:flex-end"><div><h3 class="rk-h3" style="font-size:20px">Peserta per bulan</h3><p class="rk-sub">Total peserta dari semua kelas yang mulai pada bulan itu · Tahun ${year}</p></div><div class="rk-stats"><div><div>TOTAL SETAHUN</div><div>${totP} peserta</div></div><div><div>RATA-RATA / BULAN</div><div>${Math.round(totP / upto)} peserta</div></div><div><div>PUNCAK</div><div>${peak && peak.pes ? RK_MON[peak.m] + ' · ' + peak.pes : '–'}</div></div></div></div><div class="rk-lw">${svg}${yl}${vl}<div class="rk-hits">${hits}</div></div><div class="rk-lm">${lm}</div>`;
+            // --- komposisi jenis
+            const kr = RK_KEYS.filter(k => on(k) && (k !== 'lain' || jk.includes('lain'))).map(k => ({ k, n: per[k], pes: act.filter(e => rkJenis(e) === k).reduce((a, e) => a + nOf(e), 0) })).sort((a, b) => b.n - a.n), kmax = Math.max(1, ...kr.map(x => x.n));
+            $('rk-komp').innerHTML = `<h3 class="rk-h3">Komposisi jenis kegiatan</h3><p class="rk-sub">${scope}, mengikuti filter di atas.</p><div style="display:flex;flex-direction:column;gap:20px;margin:20px 0">${kr.map(x => `<div class="rk-kr"><div class="t"><span><i class="rk-dot" style="${rkDotS(RK_J[x.k].c)}"></i>${RK_J[x.k].n}</span><span><b>${x.n}</b> kelas · ${x.pes} peserta</span></div><div class="tr"><i style="width:${Math.round(x.n / kmax * 100)}%;background:${RK_J[x.k].c}"></i></div></div>`).join('') || '<div class="rk-empty">Semua jenis dimatikan. Nyalakan salah satu di baris filter.</div>'}</div><div style="display:flex;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:14px;font-size:13px;color:#475569"><span>Total</span><b style="color:#0f172a">${act.length} kelas · ${sumP} peserta</b></div>`;
+        }
+        window.rkRender = rkRender;
+        document.addEventListener('click', (ev) => {
+            const t = ev.target.closest && ev.target.closest('#dh-view-rekap [data-m], #dh-view-rekap [data-jenis]'); if (!t) return;
+            if (t.dataset.jenis) rkSt.off[t.dataset.jenis] = !rkSt.off[t.dataset.jenis];
+            else { const m = +t.dataset.m; rkSt.month = rkSt.month === m ? -1 : m; }
+            window.dhRender();
+        });
+        ['rk-tahun', 'rk-bulan'].forEach(id => document.getElementById(id)?.addEventListener('change', (ev) => { if (id === 'rk-tahun') { rkSt.year = +ev.target.value; rkSt.month = -1; } else rkSt.month = +ev.target.value; window.dhRender(); }));
+
         window.dhRender = function() {
             const tb = document.getElementById('dh-tbody'); if (!tb) return;
             const q = (document.getElementById('dh-filter-cari')?.value || '').toLowerCase().trim();
             const st = document.getElementById('dh-filter-status')?.value || '';
             const setTxt = (id, t) => { const el = document.getElementById(id); if (el) el.innerText = t; };
             const minggu = Date.now() - 7 * 864e5;
-            setTxt('dh-stat-total', dhEvents.length);
-            setTxt('dh-stat-peserta', dhEvents.reduce((a, e) => a + (Number(e.n) || 0), 0));
-            setTxt('dh-stat-org', dhEvents.filter(e => e.ttdOrg === 'Sudah').length);
-            setTxt('dh-stat-baru', dhEvents.filter(e => dhMs(e.updated) > minggu).length);
+            try { rkRender(); } catch (er) { console.error('rkRender', er); }
             const kosong = (t) => '<tr><td colspan="9" class="px-3 py-6 text-center text-xs text-slate-500 italic">' + t + '</td></tr>';
             if (!dhEvents.length) {
                 tb.innerHTML = kosong(dhLoading ? 'Memuat kegiatan dari Google Drive…' : (dhGalat ? 'Belum bisa memuat kegiatan. Tekan tombol Segarkan untuk mencoba lagi.' : (dhCfg() ? 'Belum ada kegiatan. Buat kegiatan di aplikasi Daftar Hadir; kegiatan muncul di sini setelah tersimpan ke Google Drive.' : 'Hubungkan Google Drive lewat tombol Pengaturan Drive untuk melihat kegiatan.')));
                 return;
             }
-            const nSel = dhEvents.filter(e => dhSelesai(e.id)).length;
-            setTxt('dh-n-jalan', dhEvents.length - nSel); setTxt('dh-n-selesai', dhHasilAll ? nSel : '–');
+            const dasar = dhEvents.filter(rkPass), nSel = dasar.filter(e => dhSelesai(e.id)).length;
+            setTxt('dh-n-jalan', dasar.length - nSel); setTxt('dh-n-selesai', dhHasilAll ? nSel : '–');
             document.querySelectorAll('#dh-tabs-sel button').forEach(b => b.classList.toggle('on', b.dataset.sel === dhSel));
-            const rows = dhEvents.filter(e =>
+            const rows = dasar.filter(e =>
                 (dhSel === 'selesai') === dhSelesai(e.id) &&
                 (!st || (st === 'lengkap') === dhLengkap(e)) &&
                 (!q || `${e.kegiatan} ${e.tempat}`.toLowerCase().includes(q)));
@@ -9496,9 +9728,9 @@
                     <td class="px-3 py-2 text-xs">${dhEsc(tgl)}<br><span class="text-[10px] text-slate-500">${dhEsc(e.jumlahHari || 1)} hari</span></td>
                     <td class="px-3 py-2 text-xs text-slate-600 whitespace-normal min-w-[140px]">${dhEsc(e.tempat || '–')}</td>
                     <td class="px-3 py-2 text-xs">${dhEsc(e.n || 0)}</td>
-                    <td class="px-3 py-2 text-xs">${dhEsc(e.foto || '–')}</td>
-                    <td class="px-3 py-2 text-xs">${dhEsc(e.ttdPeserta || '–')}</td>
-                    <td class="px-3 py-2 text-xs">${dhEsc(e.ttdOrg || '–')}</td>
+                    <td class="px-3 py-2 text-xs">${rkMiniBar(e.foto)}</td>
+                    <td class="px-3 py-2 text-xs">${rkMiniBar(e.ttdPeserta)}</td>
+                    <td class="px-3 py-2 text-xs">${rkOrg(e.ttdOrg)}</td>
                     <td class="px-3 py-2 text-right space-x-1">
                         <button type="button" data-act="progres" data-id="${id}" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-md text-xs font-bold">Progres</button>
                         <button type="button" data-act="detail" data-id="${id}" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold">${buka ? 'Tutup' : 'Detail'}</button>
