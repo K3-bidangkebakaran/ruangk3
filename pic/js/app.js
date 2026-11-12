@@ -255,7 +255,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v80';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v81';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -560,6 +560,13 @@ function rentang(d) {
   const a = new Date(d[0] + 'T00:00:00'), b = new Date(d[d.length - 1] + 'T00:00:00');
   return a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear() ? `${a.getDate()} – ${tglPanjang(d[d.length - 1])}` : `${tglPendek(d[0])} – ${tglPanjang(d[d.length - 1])}`;
 }
+const WA_SELESAI = '6285856848758'; // +62 858-5684-8758: tujuan pemberitahuan kegiatan selesai
+function waSelesai(kid) { // buka WhatsApp dengan pesan "kegiatan selesai" (dipanggil dari ketukan tombol Selesai)
+  const k = KEGS[kid] || {}, pic = String(k.namaTtd || '').trim() || (ME && ME.nama) || '';
+  const msg = `*KEGIATAN SELESAI*\n\nKegiatan berikut sudah diselesaikan (laporan 100% lengkap):\n\n📌 *Kegiatan:* ${namaTampil(k)}\n📅 *Tanggal:* ${rentang(k.tgl)}\n📍 *Tempat:* ${k.tempat || '-'}\n👤 *PIC:* ${pic}\n\nTrims.`;
+  const url = 'https://wa.me/' + WA_SELESAI + '?text=' + encodeURIComponent(msg);
+  try { const w = window.open(url, '_blank'); if (!w) location.href = url; } catch (e) { location.href = url; }
+}
 const todayIso = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const jamNow = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + '.' + String(d.getMinutes()).padStart(2, '0'); };
 
@@ -835,6 +842,10 @@ function ingDaftar() {
     .sort((a, b) => String((KEGS[b].tgl || [])[0] || '').localeCompare(String((KEGS[a].tgl || [])[0] || '')))
     .map(kid => { let kurang = []; try { kurang = lapCek(kid).secs.filter(x => x.st !== 'ok').map(x => (x.grp ? x.grp + ' – ' : '') + x.judul + (x.kosong ? ' (belum ada data)' : ' (' + x.ok + '/' + x.total + ')')); } catch (e) { } return { kid, k: KEGS[kid], kurang }; });
 }
+function ingLengkap() { // kegiatan milik akun ini yang laporannya sudah 100% tetapi belum ditekan Selesai
+  return Object.keys(KEGS).filter(kid => { const k = KEGS[kid]; return k && !(H[kid] && H[kid].selesai) && ingMilik(k) && lapSemua(kid); })
+    .sort((a, b) => String((KEGS[b].tgl || [])[0] || '').localeCompare(String((KEGS[a].tgl || [])[0] || ''))).map(kid => ({ kid, k: KEGS[kid] }));
+}
 let INGAT = false, INGT = null, INGHTML = ''; // INGHTML: isi pop up yang sedang tampil (render() membuat ulang #ovl, jadi pop up dipasang lagi sampai ditutup)
 function ingatkan(paksa) {
   if (!ME || P.screen === 'login') return;
@@ -842,11 +853,11 @@ function ingatkan(paksa) {
   if (!Object.keys(KEGS).length) return;
   const ov = $('#ovl'); if (!ov) return;
   if (busy() || ov.innerHTML.trim()) { clearTimeout(INGT); INGT = setTimeout(() => ingatkan(paksa), 4000); return; } // layar sedang dipakai (kamera, TTD, isian): tunggu
-  const d = ingDaftar(); INGAT = true; if (!d.length) return;
-  ov.innerHTML = INGHTML = `<div class="overlay"><div class="sheet" role="dialog" aria-modal="true" aria-label="Pengingat kegiatan belum lengkap"><b style="font-family:var(--f-display);font-size:17px">⚠ Kegiatan belum lengkap</b>
-    <div class="hint">Halo ${esc(ME.nama || '')}, ${d.length} kegiatan Anda sudah lewat tanggalnya tetapi laporannya masih ada yang kurang. Ketuk kegiatan untuk melengkapi.</div>
-    ${d.map(x => `<button type="button" class="kcard" data-act="ingopen" data-id="${esc(x.kid)}"><h3>${esc(namaTampil(x.k))}</h3><small>${esc(rentang(x.k.tgl))}${x.k.tempat ? ' · ' + esc(x.k.tempat) : ''}</small>
-      <small style="color:#b91c1c">Kurang: ${x.kurang.slice(0, 4).map(esc).join('; ')}${x.kurang.length > 4 ? ` dan ${x.kurang.length - 4} lainnya` : ''}</small></button>`).join('')}
+  const d = ingDaftar(), L = ingLengkap(); INGAT = true; if (!d.length && !L.length) return;
+  const kartu = (x, sel) => `<button type="button" class="kcard" data-act="ingopen" data-id="${esc(x.kid)}"${sel ? ' data-sel="1"' : ''}><h3>${esc(namaTampil(x.k))}</h3><small>${esc(rentang(x.k.tgl))}${x.k.tempat ? ' · ' + esc(x.k.tempat) : ''}</small>${sel ? '<small style="color:#15803d">Laporan sudah 100%. Ketuk, lalu tekan tombol Selesai di bagian bawah.</small>' : `<small style="color:#b91c1c">Kurang: ${x.kurang.slice(0, 4).map(esc).join('; ')}${x.kurang.length > 4 ? ` dan ${x.kurang.length - 4} lainnya` : ''}</small>`}</button>`;
+  ov.innerHTML = INGHTML = `<div class="overlay"><div class="sheet" role="dialog" aria-modal="true" aria-label="Pengingat kegiatan"><b style="font-family:var(--f-display);font-size:17px">${L.length && !d.length ? '✔ Kegiatan sudah 100%' : d.length && !L.length ? '⚠ Kegiatan belum lengkap' : '🔔 Pengingat kegiatan'}</b>
+    ${L.length ? `<div class="hint" style="color:#15803d"><b>Sudah 100%:</b> ${L.length} kegiatan Anda sudah lengkap. Silakan tekan <b>Selesai</b> supaya admin mendapat kabar.</div>${L.map(x => kartu(x, true)).join('')}` : ''}
+    ${d.length ? `<div class="hint"><b>Belum lengkap:</b> ${d.length} kegiatan Anda sudah lewat tanggalnya tetapi laporannya masih ada yang kurang. Ketuk kegiatan untuk melengkapi.</div>${d.map(x => kartu(x, false)).join('')}` : ''}
     <div class="row end"><button type="button" class="btn" data-act="padno">Nanti</button></div></div></div>`;
 }
 let INGH = 0;
@@ -1245,7 +1256,7 @@ function render() {
     const tFt = !alat ? `<button type="button" class="tile" data-act="go" data-to="ftl"><span class="ic">${I.cam}</span><span><b>Link Foto Dokumentasi</b><small>Bagikan ke pihak lain · foto harian &amp; peserta, hanya pada tanggal kegiatan</small></span>${I.chev}</button>` : '';
     const tLap = (() => { const c = lapCek(kid); return `<button type="button" class="tile lap${c.all ? ' ok' : ''}" data-act="go" data-to="lap"><span class="ic">${I.list}</span><span><b>Pratinjau Laporan</b><small>${c.all ? 'Laporan lengkap ✔' : c.pct + '% lengkap · ' + (c.secs.length - c.nOk) + ' bagian masih kurang'} — cek sebelum selesai</small></span>${I.chev}</button>`; })();
     const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
-    const btnSelesai = alat ? '' : (() => { const c = lapCek(kid), ok = !!c.all; return `<button class="btn${ok ? ' pri' : ''}" type="button" data-act="selesai" ${ok ? '' : 'disabled aria-disabled="true"'} style="margin-top:6px${ok ? '' : ';opacity:.5'}">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">${ok ? 'Pratinjau Laporan sudah 100%. Tekan Selesai bila semua isian sudah final. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar.' : `Tombol Selesai aktif setelah Pratinjau Laporan mencapai <b>100%</b> (sekarang ${c.pct}%). Lengkapi bagian yang masih kurang di Pratinjau Laporan.`}</p>`; })();
+    const btnSelesai = alat ? '' : (() => { const c = lapCek(kid), ok = !!c.all; return `<button class="btn${ok ? ' pri' : ''}" type="button" data-act="selesai" ${ok ? '' : 'disabled aria-disabled="true"'} style="margin-top:6px${ok ? '' : ';opacity:.5'}">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">${ok ? 'Pratinjau Laporan sudah 100%. Tekan Selesai bila semua isian sudah final. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar. WhatsApp akan terbuka otomatis untuk mengirim kabar selesai ke admin.' : `Tombol Selesai aktif setelah Pratinjau Laporan mencapai <b>100%</b> (sekarang ${c.pct}%). Lengkapi bagian yang masih kurang di Pratinjau Laporan.`}</p>`; })();
     const dlCard = alat ? '' : (() => {
       const lengkap = lapSemua(kid), selesai = !!hh.selesai, ok = lengkap && selesai, cat = ok ? 'Laporan lengkap dan sudah ditandai Selesai. Siap diunduh sebagai PDF (satu berkas berisi seluruh laporan).' : !lengkap ? 'Belum bisa diunduh: Pratinjau Laporan belum lengkap. Lengkapi dulu semua bagian yang masih kurang.' : 'Laporan sudah lengkap. Tekan tombol ✔ Selesai di atas, lalu tombol download ini aktif.';
       return `<div class="card2 dlbox${ok ? ' ok' : ''}"><b>⬇ Download Laporan</b><div class="hint">${cat}${ln.nilai ? ' Daftar Nilai (PDF) bisa diunduh kapan saja, walau laporan belum lengkap.' : ''}</div>
@@ -1693,11 +1704,11 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 window.addEventListener('focus', () => setTimeout(() => { if (UPL) UPL = Math.min(UPL, Date.now() + 4000); }, 0)); // pemilih tertutup (dipilih / dibatalkan): sisakan beberapa detik untuk menerima berkas
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, kid = P.kid, k = kid && KEGS[kid];
-  if (a === 'selesai' && k) { const c = lapCek(kid); if (!c.all) { toast('Belum bisa: Pratinjau Laporan baru ' + c.pct + '%. Tombol Selesai aktif setelah 100%.'); return; } if (!confirm('Pratinjau Laporan sudah 100%.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)')) return; const h = hOf(kid); h.selesai = true; touch(kid); render(); toast('Kegiatan ditandai selesai. Laporan lengkap — tombol Download Laporan sudah aktif di bawah.'); setTimeout(() => { const e = $('.dlbox'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 150); return; }
+  if (a === 'selesai' && k) { const c = lapCek(kid); if (!c.all) { toast('Belum bisa: Pratinjau Laporan baru ' + c.pct + '%. Tombol Selesai aktif setelah 100%.'); return; } if (!confirm('Pratinjau Laporan sudah 100%.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)\n\nSetelah itu WhatsApp akan terbuka untuk mengirim pemberitahuan selesai.')) return; const h = hOf(kid); h.selesai = true; touch(kid); render(); toast('Kegiatan ditandai selesai. Laporan lengkap — tombol Download Laporan sudah aktif di bawah.'); waSelesai(kid); setTimeout(() => { const e = $('.dlbox'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 150); return; }
   if (a === 'bukalagi') { const id = b.dataset.id, h = hOf(id); h.selesai = false; touch(id); render(); toast('Kegiatan dibuka lagi.'); return; }
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { const e0 = syncErr; syncErr = ''; sync(); pull(true); toast(e0 ? 'Mengirim ulang. Kendala sebelumnya: ' + e0 : 'Memeriksa dan mengirim data…'); } }
-  else if (a === 'ingopen') { INGHTML = ''; $('#ovl').innerHTML = ''; P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = ((KEGS[P.kid] || {}).tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
+  else if (a === 'ingopen') { INGHTML = ''; $('#ovl').innerHTML = ''; if (b.dataset.sel) setTimeout(() => { const e = $('[data-act=selesai]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 250); P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = ((KEGS[P.kid] || {}).tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
   else if (a === 'back') { // dari layar per alat (abs/dok/nil/nar) kembali ke menu alat; dari menu alat ke daftar alat
     if (P.from === 'lap' && P.screen !== 'lap') { P.screen = 'lap'; P.kl = null; P.from = null; }

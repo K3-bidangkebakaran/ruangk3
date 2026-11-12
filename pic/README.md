@@ -481,3 +481,5 @@ Catatan: seperti selfie, pengunggah dan PIC sama-sama login Firebase (anonim vs 
 - **v78-v79**: pop up pengingat "Kegiatan belum lengkap". Muncul setiap aplikasi dibuka / login (dan setelah >10 menit di latar), hanya berisi kegiatan yang tanggalnya sudah lewat, belum lengkap, belum ditandai selesai, dan nama PIC di kegiatan (kolom Nama penandatangan) cocok dengan nama akun yang masuk (cadangan: nirwanakrisna28@gmail.com = Nirwana, kipli.lpmi@gmail.com = Rafli, lihat ING_HINT di app.js). Tombol "Nanti" menutup; mengetuk kegiatan langsung membukanya.
 
 - **v80**: pengecualian 1 foto per peserta untuk kegiatan K3 LKBB Teknisi Ruang Terbatas 29 Okt - 2 Nov 2026 saja (FOTO_SATU di app.js dan daftar-hadir/index.html; daftar lain tidak berubah). Laporan memakai format 1 foto.
+
+- **v81**: pop up pengingat juga memuat kegiatan yang sudah 100% (ingatkan tekan Selesai). Saat PIC menekan Selesai, WhatsApp terbuka otomatis ke +62 858-5684-8758 dengan pesan "KEGIATAN SELESAI" (WA_SELESAI & waSelesai di app.js).
