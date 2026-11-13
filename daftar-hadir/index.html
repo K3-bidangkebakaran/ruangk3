@@ -727,8 +727,9 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 
       <div class="lap-box" id="lpSecNl" hidden>
         <h3>Link Nilai untuk Narasumber</h3>
-        <div class="hint">Kirim link ini ke narasumber (WhatsApp). Narasumber membuka link di HP, mengisi namanya, lalu memberi <b>Nilai Praktek</b> (dan <b>Nilai Seminar</b> untuk kelas Ahli) tiap peserta. Nilai otomatis masuk ke Daftar Nilai di website dan aplikasi PIC. Narasumber boleh memperbaiki nilai; yang dipakai adalah nilai terakhir yang dikirim. Peserta Cancel tidak tampil di link.</div>
-        <div class="field"><label for="lpNlLink">Link nilai narasumber</label><div class="lap-2" style="grid-template-columns:1fr auto"><input id="lpNlLink" readonly><button class="btn sm" type="button" id="lpNlCopy">Salin link</button></div></div>
+        <div class="hint">Kirim link ini ke narasumber (WhatsApp). Link <b>Nilai Praktek</b> dan link <b>Nilai Seminar</b> (khusus kelas Ahli) dipisah, jadi bisa dikirim ke narasumber yang berbeda. Narasumber membuka link di HP, mengisi namanya, lalu mengetik nilai tiap peserta. Nilai otomatis masuk ke Daftar Nilai di website dan aplikasi PIC. Narasumber boleh memperbaiki nilai; yang dipakai adalah nilai terakhir yang dikirim. Peserta Cancel tidak tampil di link.</div>
+        <div class="field"><label for="lpNlLink">Link Nilai Praktek</label><div class="lap-2" style="grid-template-columns:1fr auto"><input id="lpNlLink" readonly><button class="btn sm" type="button" id="lpNlCopy">Salin link</button></div></div>
+        <div class="field" id="lpNlSmBox" hidden><label for="lpNlSmLink">Link Nilai Seminar</label><div class="lap-2" style="grid-template-columns:1fr auto"><input id="lpNlSmLink" readonly><button class="btn sm" type="button" id="lpNlSmCopy">Salin link</button></div></div>
         <div class="hint" id="lpNlStat"></div>
       </div>
 
@@ -1279,7 +1280,7 @@ function migAcara(a, hasHari) {
 /* Absen selfie: p.sf = { "<tanggal ISO>": { p: dataURL pagi, s: dataURL siang } } */
 const sfNorm = x => { const o = {}; if (x && typeof x === "object") Object.keys(x).forEach(d => { const v = x[d]; if (!v || typeof v !== "object") return; const t = {}; ["p", "s"].forEach(k => { if (typeof v[k] === "string" && v[k]) t[k] = v[k]; }); if (Object.keys(t).length) o[d] = t; }); return o; };
 const sfCount = p => Object.values(p.sf || {}).reduce((n, v) => n + (v && v.p ? 1 : 0) + (v && v.s ? 1 : 0), 0);
-const nlLink = id => `${location.origin}/nilai/?k=${encodeURIComponent(id)}`;
+const nlLink = (id, j) => `${location.origin}/nilai/?k=${encodeURIComponent(id)}&j=${j || "up"}`;
 const sfLink = id => `${location.origin}/selfie/?k=${encodeURIComponent(id)}`;
 function migTtd(d) {
   const a = d.acara || {}, old = hariList(Array.isArray(a.hari) && a.hari.length ? { hari: a.hari } : { tanggal: a.tanggal, tanggal2: a.tanggal2 });
@@ -3012,7 +3013,7 @@ function renderLap() {
   const L = S.lap, days = hariList(S.acara).filter(Boolean), nilai = L.nilai, hasil = L.hasil;
   { const rc = document.querySelector("#lapBox [data-lpc=rundown]"); if (rc) rc.checked = rdOn(S); const sc = document.querySelector("#lapBox [data-lpc=sem]"); if (sc) sc.checked = semOn(S); }
   $("#lpSecSf").hidden = !L.selfie; if (L.selfie) renderSf();
-  { const bx = $("#lpSecNl"); if (bx) { bx.hidden = !nilai; if (nilai) { if (!Pic.nlAsk) Pic.nlAsk = new Set(); if (!Pic.nlAsk.has(S.id)) { Pic.nlAsk.add(S.id); Pic.mark(S.id); } /* daftar nama untuk link narasumber diterbitkan saat kotak link tampil */ const lk = $("#lpNlLink"); if (lk && document.activeElement !== lk) lk.value = nlLink(S.id); const sem = semOn(S), ps = S.peserta.filter(p => (p.nama || "").trim() && !p.batal), n = ps.filter(p => p.nl && p.nl.up).length, m = ps.filter(p => p.nl && p.nl.sm).length; $("#lpNlStat").textContent = `Nilai praktek dari narasumber sudah masuk untuk ${n} dari ${ps.length} peserta` + (sem ? `; nilai seminar untuk ${m} peserta.` : ".") + " (Nilai yang diketik di sini tetap bisa diubah.)"; } } }
+  { const bx = $("#lpSecNl"); if (bx) { bx.hidden = !nilai; if (nilai) { if (!Pic.nlAsk) Pic.nlAsk = new Set(); if (!Pic.nlAsk.has(S.id)) { Pic.nlAsk.add(S.id); Pic.mark(S.id); } /* daftar nama untuk link narasumber diterbitkan saat kotak link tampil */ const lk = $("#lpNlLink"); if (lk && document.activeElement !== lk) lk.value = nlLink(S.id, "up"); const sem = semOn(S), lk2 = $("#lpNlSmLink"); $("#lpNlSmBox").hidden = !sem; if (lk2 && document.activeElement !== lk2) lk2.value = sem ? nlLink(S.id, "sm") : ""; ps = S.peserta.filter(p => (p.nama || "").trim() && !p.batal), n = ps.filter(p => p.nl && p.nl.up).length, m = ps.filter(p => p.nl && p.nl.sm).length; $("#lpNlStat").textContent = `Nilai praktek dari narasumber sudah masuk untuk ${n} dari ${ps.length} peserta` + (sem ? `; nilai seminar untuk ${m} peserta.` : ".") + " (Nilai yang diketik di sini tetap bisa diubah.)"; } } }
   $("#lpSecSign").hidden = !nilai; $("#lpSecPes").hidden = !(nilai || hasil); $("#lpSecHari").hidden = !L.harian; $("#lpSecNr").hidden = !(L.nara || rdOn(S));
   [["#lpT1", L.s1.ttd], ["#lpT2", L.s2.ttd]].forEach(([s, u]) => { const t = $(s); t.style.backgroundImage = u ? `url('${u}')` : ""; t.textContent = u ? "" : "Belum ada"; });
   $("#lpDl").innerHTML = [["rd", "Rundown", rdOn(S)], ["dh", "Daftar Hadir", true], ["sf", "Absen Selfie", L.selfie], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true], ["ln", "Daftar Peserta Lulus/Tidak Lulus", hasil]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
@@ -3134,7 +3135,7 @@ $("#lapBox").addEventListener("click", e => {
     changed(); return;
   }
   if (b.dataset.dl) { unduhLap(b.dataset.dl); return; }
-  if (b.id === "lpNlCopy") { const t = $("#lpNlLink").value; Pic.mark(S.id); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Link nilai disalin."), () => { $("#lpNlLink").select(); toast("Tekan Salin/Copy pada kotak link yang terpilih."); }); return; }
+  if (b.id === "lpNlCopy" || b.id === "lpNlSmCopy") { const inp = $(b.id === "lpNlCopy" ? "#lpNlLink" : "#lpNlSmLink"), t = inp.value; Pic.mark(S.id); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(b.id === "lpNlCopy" ? "Link Nilai Praktek disalin." : "Link Nilai Seminar disalin."), () => { inp.select(); toast("Tekan Salin/Copy pada kotak link yang terpilih."); }); return; }
   if (b.id === "lpSfCopy") { const t = $("#lpSfLink").value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Link selfie disalin."), () => { $("#lpSfLink").select(); toast("Tekan Salin/Copy pada kotak link yang terpilih."); }); return; }
   if (b.dataset.sfdel) { const [pid, d, k] = b.dataset.sfdel.split("|"); Pic.hapusSelfie(S, pid, d, k).then(ok => { if (ok) { changed(); renderLap(); toast("Selfie dihapus. Peserta bisa mengulang."); } }); return; }
   const day = b.closest(".lp-day");

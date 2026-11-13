@@ -284,7 +284,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v83';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v84';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -1418,14 +1418,18 @@ function render() {
         <div class="row"><button type="button" class="btn pri" data-act="sfdcopy">Salin link darurat</button><button type="button" class="btn" data-act="sfdshare">🚨 Bagikan link darurat</button></div></div>` : ''}
       <p class="hint">Absen <b>pagi</b> sebelum jam 12.00 dan absen <b>siang</b> jam 12.00 ke atas (mengikuti zona waktu kegiatan). Link hanya berlaku pada hari kegiatan. Setiap peserta hanya bisa sekali per sesi; bila salah foto, hapus selfie-nya lewat <b>Hasil Selfie Peserta</b> (atau admin di Daftar Hadir) agar peserta bisa mengulang. Hasilnya otomatis masuk ke laporan setelah Daftar Hadir.</p></div>`;
   } else if (P.screen === 'nlk') {
-    const link = `${location.origin}/nilai/?k=${encodeURIComponent(kid)}`, sm = semPic(k, LAPK(k)), hh = hOf(kid), ps = (k.peserta || []).filter(p => (p.nama || '').trim() && !isBatal(hh, p)), nUp = ps.filter(p => nilaiOf(hh, p, 'up')).length, nSm = ps.filter(p => nilaiOf(hh, p, 'sm')).length;
+    const link = `${location.origin}/nilai/?k=${encodeURIComponent(kid)}&j=up`, linkSm = `${location.origin}/nilai/?k=${encodeURIComponent(kid)}&j=sm`, sm = semPic(k, LAPK(k)), hh = hOf(kid), ps = (k.peserta || []).filter(p => (p.nama || '').trim() && !isBatal(hh, p)), nUp = ps.filter(p => nilaiOf(hh, p, 'up')).length, nSm = ps.filter(p => nilaiOf(hh, p, 'sm')).length;
     h = appbar('Link Nilai Narasumber', k.nama, true) + `<div class="screen">
-      <div class="hint">Kirim link ini ke narasumber (mis. lewat WhatsApp). Narasumber mengisi namanya, lalu mengetik <b>Nilai Praktek</b>${sm ? ' dan <b>Nilai Seminar</b>' : ''} tiap peserta. Tidak perlu login. Nilai masuk otomatis ke menu <b>Nilai &amp; Kelulusan</b> dan ke Daftar Hadir di website.</div>
-      <div class="field"><label for="nlLink">Link nilai narasumber</label><input id="nlLink" readonly value="${esc(link)}" onfocus="this.select()"></div>
-      <button type="button" class="btn pri" data-act="nlcopy">Salin link</button>
-      <button type="button" class="btn" data-act="nlshare">Bagikan (WhatsApp, dll.)</button>
+      <div class="hint">Kirim link ke narasumber (mis. lewat WhatsApp). ${sm ? 'Link <b>Nilai Praktek</b> dan link <b>Nilai Seminar</b> dipisah, jadi bisa dikirim ke narasumber yang berbeda. ' : ''}Narasumber mengisi namanya, lalu mengetik nilai tiap peserta. Tidak perlu login. Nilai masuk otomatis ke menu <b>Nilai &amp; Kelulusan</b> dan ke Daftar Hadir di website.</div>
+      <div class="card2"><b>Link Nilai Praktek</b>
+      <div class="field"><label for="nlLink">Link Nilai Praktek</label><input id="nlLink" readonly value="${esc(link)}" onfocus="this.select()"></div>
+      <div class="row"><button type="button" class="btn pri" data-act="nlcopy">Salin link</button><button type="button" class="btn" data-act="nlshare">Bagikan</button></div>
+      <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman Nilai Praktek (uji)</a></div>
+      ${sm ? `<div class="card2"><b>Link Nilai Seminar</b>
+      <div class="field"><label for="nlLinkSm">Link Nilai Seminar</label><input id="nlLinkSm" readonly value="${esc(linkSm)}" onfocus="this.select()"></div>
+      <div class="row"><button type="button" class="btn pri" data-act="nlcopysm">Salin link</button><button type="button" class="btn" data-act="nlsharesm">Bagikan</button></div>
+      <a class="btn" href="${esc(linkSm)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman Nilai Seminar (uji)</a></div>` : ''}
       <button type="button" class="btn" data-act="nlreload">Ambil nilai terbaru sekarang</button>
-      <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman nilai (uji)</a>
       <div class="bars" style="padding:4px 2px">${bar('Nilai Praktek', nUp, ps.length)}${sm ? bar('Nilai Seminar', nSm, ps.length) : ''}</div>
       <p class="hint">Bila PIC atau admin mengetik nilai yang sama, yang dipakai adalah isian <b>paling baru</b>. Boleh diperbaiki kapan saja.</p></div>`;
   } else if (P.screen === 'ftl') {
@@ -1779,8 +1783,8 @@ document.addEventListener('click', e => {
     P.q = ''; render();
   }
   else if ((a === 'tpshare' || a === 'tpcopy' || a === 'tpdshare' || a === 'tpdcopy') && k) ttdpShare(b, a, k, kid);
-  else if (a === 'nlcopy') { const t = $('#nlLink').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link disalin'), () => { $('#nlLink').select(); toast('Tahan lalu pilih Salin'); }); }
-  else if (a === 'nlshare') { const t = $('#nlLink').value, msg = `Input nilai peserta ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Input Nilai Peserta', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
+  else if (a === 'nlcopy' || a === 'nlcopysm') { const inp = $(a === 'nlcopy' ? '#nlLink' : '#nlLinkSm'), t = inp.value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(a === 'nlcopy' ? 'Link Nilai Praktek disalin' : 'Link Nilai Seminar disalin'), () => { inp.select(); toast('Tahan lalu pilih Salin'); }); }
+  else if (a === 'nlshare' || a === 'nlsharesm') { const smL = a === 'nlsharesm', t = $(smL ? '#nlLinkSm' : '#nlLink').value, msg = `Input ${smL ? 'Nilai Seminar' : 'Nilai Praktek'} peserta ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Input Nilai Peserta', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
   else if (a === 'nlreload') { if (!online()) toast('Belum ada sinyal.'); else nilaiPull(kid, true).then(n => { toast(n ? n + ' nilai baru diambil.' : 'Belum ada nilai baru.'); }); }
   else if (a === 'sfcopy') { const t = $('#sfLink').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link disalin'), () => { $('#sfLink').select(); toast('Tahan lalu pilih Salin'); }); }
   else if (a === 'sfdcopy') { const t = $('#sfLinkD').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link darurat disalin'), () => { $('#sfLinkD').select(); toast('Tahan lalu pilih Salin'); }); }
