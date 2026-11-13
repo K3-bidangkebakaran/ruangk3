@@ -59,7 +59,34 @@ const MATERI_KAT = [
   { id: "lkm4", judul: "Ahli K3 Muda LK Hari 4 – Sistem Informasi & Sampel Ergonomi/Psikologi", grp: "*", isi: ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi", "Praktek pengumpulan sampel faktor ergonomi dan psikologi"], sesi: [["Sistim informasi lingkungan kerja"], ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi"], ["Teknik pengumpulan sampel faktor ergonomi dan psikologi"], ["Praktek pengumpulan sampel faktor ergonomi dan psikologi"]] },
   { id: "lkm5", judul: "Ahli K3 Muda LK Hari 5 – Sampel Fisika/Kimia/Biologi, PKL & Pelaporan", grp: "*", isi: ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi", "Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"], sesi: [["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi"], ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi"], ["PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi"], ["Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"]] },
   { id: "lkm6", judul: "Ahli K3 Muda LK Hari 6 – Uji Kompetensi", grp: "*", isi: ["Uji Kompetensi"], sesi: [["Uji Kompetensi"], ["Uji Kompetensi"], ["Uji Kompetensi"], ["Uji Kompetensi"]] },
-  { id: "lkm7", judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: "*", isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"], ["Seminar Hasil Pengukuran dan Evaluasi Praktek"], ["Seminar Hasil Pengukuran dan Evaluasi Praktek"]] }
+  { id: "lkm7", judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: "*", isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"], sesi: [["Evaluasi Teori"], ["Evaluasi Teori"], ["Seminar Hasil Pengukuran dan Evaluasi Praktek"], ["Seminar Hasil Pengukuran dan Evaluasi Praktek"]] },
+  /* Ahli K3 Pesawat Tenaga dan Produksi (26 hari, materi per hari sesuai rundown; narasumber diisi sendiri) */
+  {"id": "ptp1", "judul": "Ahli K3 PTP Hari 1 – UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja dst.", "grp": "*", "isi": ["UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja", "Permen No. 38 / 2016 Tentang Pesawat Tenaga dan Produksi"], "sesi": [["UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja"], ["UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja"], ["Permen No. 38 / 2016 Tentang Pesawat Tenaga dan Produksi"], ["Permen No. 38 / 2016 Tentang Pesawat Tenaga dan Produksi"]]},
+  {"id": "ptp2", "judul": "Ahli K3 PTP Hari 2 – Kebijakan K3 & Job Safety Analysis", "grp": "*", "isi": ["Kebijakan K3", "Job Safety Analysis"], "sesi": [["Kebijakan K3"], ["Kebijakan K3"], ["Job Safety Analysis"], ["Job Safety Analysis"]]},
+  {"id": "ptp3", "judul": "Ahli K3 PTP Hari 3 – Sistem Manajemen K3 & Investigasi Kecelakaan Kerja", "grp": "*", "isi": ["Sistem Manajemen K3", "Investigasi Kecelakaan Kerja"], "sesi": [["Sistem Manajemen K3"], ["Sistem Manajemen K3"], ["Investigasi Kecelakaan Kerja"], ["Investigasi Kecelakaan Kerja"]]},
+  {"id": "ptp4", "judul": "Ahli K3 PTP Hari 4 – Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya"], "sesi": [["Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya"], ["Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya"], ["Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya"], ["Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya"]]},
+  {"id": "ptp5", "judul": "Ahli K3 PTP Hari 5 – Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya"], "sesi": [["Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya"], ["Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya"], ["Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya"], ["Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya"]]},
+  {"id": "ptp6", "judul": "Ahli K3 PTP Hari 6 – Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)", "grp": "*", "isi": ["Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)"], "sesi": [["Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)"], ["Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)"], ["Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)"], ["Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)"]]},
+  {"id": "ptp7", "judul": "Ahli K3 PTP Hari 7 – Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya"], "sesi": [["Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya"], ["Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya"], ["Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya"], ["Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya"]]},
+  {"id": "ptp8", "judul": "Ahli K3 PTP Hari 8 – Kelistrikan dan Alat Kontrol Otomatis", "grp": "*", "isi": ["Kelistrikan dan Alat Kontrol Otomatis"], "sesi": [["Kelistrikan dan Alat Kontrol Otomatis"], ["Kelistrikan dan Alat Kontrol Otomatis"], ["Kelistrikan dan Alat Kontrol Otomatis"], ["Kelistrikan dan Alat Kontrol Otomatis"]]},
+  {"id": "ptp9", "judul": "Ahli K3 PTP Hari 9 – Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln", "grp": "*", "isi": ["Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln"], "sesi": [["Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln"], ["Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln"], ["Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln"], ["Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln"]]},
+  {"id": "ptp10", "judul": "Ahli K3 PTP Hari 10 – Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik", "grp": "*", "isi": ["Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik"], "sesi": [["Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik"], ["Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik"], ["Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik"], ["Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik"]]},
+  {"id": "ptp11", "judul": "Ahli K3 PTP Hari 11 – Teknik Pondasi & Pemeriksaan dan Pengujian Pondasi", "grp": "*", "isi": ["Teknik Pondasi", "Pemeriksaan dan Pengujian Pondasi"], "sesi": [["Teknik Pondasi"], ["Teknik Pondasi"], ["Pemeriksaan dan Pengujian Pondasi"], ["Pemeriksaan dan Pengujian Pondasi"]]},
+  {"id": "ptp12", "judul": "Ahli K3 PTP Hari 12 – Pemeriksaan/Pengujian Mesin Perkakas dan Produksi", "grp": "*", "isi": ["Pemeriksaan/Pengujian Mesin Perkakas dan Produksi"], "sesi": [["Pemeriksaan/Pengujian Mesin Perkakas dan Produksi"], ["Pemeriksaan/Pengujian Mesin Perkakas dan Produksi"], ["Pemeriksaan/Pengujian Mesin Perkakas dan Produksi"], ["Pemeriksaan/Pengujian Mesin Perkakas dan Produksi"]]},
+  {"id": "ptp13", "judul": "Ahli K3 PTP Hari 13 – Penyusunan Inspection Test Plan (ITP)", "grp": "*", "isi": ["Penyusunan Inspection Test Plan (ITP)"], "sesi": [["Penyusunan Inspection Test Plan (ITP)"], ["Penyusunan Inspection Test Plan (ITP)"], ["Penyusunan Inspection Test Plan (ITP)"], ["Penyusunan Inspection Test Plan (ITP)"]]},
+  {"id": "ptp14", "judul": "Ahli K3 PTP Hari 14 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], "sesi": [["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"]]},
+  {"id": "ptp15", "judul": "Ahli K3 PTP Hari 15 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], "sesi": [["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"]]},
+  {"id": "ptp16", "judul": "Ahli K3 PTP Hari 16 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar) dst.", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "Mekanikal Teknik Terapan/ Elemen Mesin"], "sesi": [["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"], ["Mekanikal Teknik Terapan/ Elemen Mesin"], ["Mekanikal Teknik Terapan/ Elemen Mesin"]]},
+  {"id": "ptp17", "judul": "Ahli K3 PTP Hari 17 – Membaca Gambar Teknik & Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi", "grp": "*", "isi": ["Membaca Gambar Teknik", "Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi"], "sesi": [["Membaca Gambar Teknik"], ["Membaca Gambar Teknik"], ["Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi"], ["Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi"]]},
+  {"id": "ptp18", "judul": "Ahli K3 PTP Hari 18 – Pengetahuan Bahan & Korosi dan Pencegahannya", "grp": "*", "isi": ["Pengetahuan Bahan", "Korosi dan Pencegahannya"], "sesi": [["Pengetahuan Bahan"], ["Pengetahuan Bahan"], ["Korosi dan Pencegahannya"], ["Korosi dan Pencegahannya"]]},
+  {"id": "ptp19", "judul": "Ahli K3 PTP Hari 19 – Praktek Kerja Lapangan I (Mesin Penggerak Mula)", "grp": "*", "isi": ["Praktek Kerja Lapangan I (Mesin Penggerak Mula)"], "sesi": [["Praktek Kerja Lapangan I (Mesin Penggerak Mula)"], ["Praktek Kerja Lapangan I (Mesin Penggerak Mula)"], ["Praktek Kerja Lapangan I (Mesin Penggerak Mula)"], ["Praktek Kerja Lapangan I (Mesin Penggerak Mula)"]]},
+  {"id": "ptp20", "judul": "Ahli K3 PTP Hari 20 – Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)", "grp": "*", "isi": ["Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)"], "sesi": [["Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)"], ["Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)"], ["Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)"], ["Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)"]]},
+  {"id": "ptp21", "judul": "Ahli K3 PTP Hari 21 – Praktek Kerja Lapangan III (Furnace / Kiln)", "grp": "*", "isi": ["Praktek Kerja Lapangan III (Furnace / Kiln)"], "sesi": [["Praktek Kerja Lapangan III (Furnace / Kiln)"], ["Praktek Kerja Lapangan III (Furnace / Kiln)"], ["Praktek Kerja Lapangan III (Furnace / Kiln)"], ["Praktek Kerja Lapangan III (Furnace / Kiln)"]]},
+  {"id": "ptp22", "judul": "Ahli K3 PTP Hari 22 – Penyusunan Laporan Riksa Uji", "grp": "*", "isi": ["Penyusunan Laporan Riksa Uji"], "sesi": [["Penyusunan Laporan Riksa Uji"], ["Penyusunan Laporan Riksa Uji"], ["Penyusunan Laporan Riksa Uji"], ["Penyusunan Laporan Riksa Uji"]]},
+  {"id": "ptp23", "judul": "Ahli K3 PTP Hari 23 – Penyusunan Laporan Riksa Uji", "grp": "*", "isi": ["Penyusunan Laporan Riksa Uji"], "sesi": [["Penyusunan Laporan Riksa Uji"], ["Penyusunan Laporan Riksa Uji"], ["Penyusunan Laporan Riksa Uji"], ["Penyusunan Laporan Riksa Uji"]]},
+  {"id": "ptp24", "judul": "Ahli K3 PTP Hari 24 – Ujian Tulis Online di Teman K3", "grp": "*", "isi": ["Ujian Tulis Online di Teman K3"], "sesi": [["Ujian Tulis Online di Teman K3"], ["Ujian Tulis Online di Teman K3"], ["Ujian Tulis Online di Teman K3"], ["Ujian Tulis Online di Teman K3"]]},
+  {"id": "ptp25", "judul": "Ahli K3 PTP Hari 25 – Seminar & Interview", "grp": "*", "isi": ["Seminar", "Interview"], "sesi": [["Seminar"], ["Seminar"], ["Interview"], ["Interview"]]},
+  {"id": "ptp26", "judul": "Ahli K3 PTP Hari 26 – Penyusunan OJT", "grp": "*", "isi": ["Penyusunan OJT"], "sesi": [["Penyusunan OJT"], ["Penyusunan OJT"], ["Penyusunan OJT"], ["Penyusunan OJT"]]}
 ];
 const naraNew = () => ({ kid: "", nama: "", nip: "", inst: "", mid: "", mtxt: "", ttd: "" });
 const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4;
@@ -78,11 +105,14 @@ function nrMigrasi(ev) { // isian narasumber per alat (versi sebelumnya, lap.nrk
   L.nrk = {};
 }
 const lapDefault = () => ({
-  nilai: true, evalT: false, hasil: true, harian: true, nara: true, selfie: false, rundown: null, nr: {}, nrk: {}, nrOffK: {}, batch: "", nKota: "", nTgl: "",
+  nilai: true, evalT: false, hasil: true, harian: true, nara: true, selfie: false, sem: null, rundown: null, nr: {}, nrk: {}, nrOffK: {}, batch: "", nKota: "", nTgl: "",
   s1: { jab: "PENGAWAS KETENAGAKERJAAN\nSULAWESI TENGAH", nama: "", nip: "", ttd: "" },
   s2: { jab: "AHLI PENANGGULANGAN KEBAKARAN", nama: "", ttd: "" },
   hari: {}
 });
+const AHLI_RX = /ahli[^()/]*(muda[^()/]*(lingkungan|\blk\b)|lingkungan\s*kerja|pesawat\s*angkat|pesawat\s*angkut|\bpapa\b|kebakaran|damkar|pesawat\s*tenaga|\bptp\b)/i;
+const ahliOn = a => { if (!a) return false; const t = [a.kegiatan, ...kelasList(a), a.kelasDamkar ? "Kelas " + a.kelasDamkar : ""].join(" | "); return AHLI_RX.test(t); };
+const semOn = ev => { const L = (ev && ev.lap) || {}; return L.sem != null ? !!L.sem : ahliOn(ev && ev.acara); };
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function kelasList(a) {
   const o = [], src = Array.isArray(a && a.kelas) ? a.kelas : String((a && a.kelas) || "").split(/\r?\n/);
@@ -91,7 +121,10 @@ function kelasList(a) {
 }
 const J_DAMKAR = "K3 PENANGGULANGAN KEBAKARAN", J_ANGKAT = "K3 PESAWAT ANGKAT PESAWAT ANGKUT";
 const J_B3 = "K3 LINGKUNGAN KERJA BAHAN BERBAHAYA DAN BERACUN";
-const isB3 = a => !!a && a.jenis === "b3";
+const isB3 = a => !!a && (a.jenis === "b3" || a.jenis === "ptp");
+const J_PTP = "K3 PESAWAT TENAGA DAN PRODUKSI";
+const isPtp = a => !!a && a.jenis === "ptp";
+const judulProgKelas = (a, k) => (isPtp(a) ? `${J_PTP} (${String(k).toUpperCase()})` : judulB3Kelas(k));
 const FOTO_SATU = [{ kelas: "teknisi ruang terbatas", awal: "2026-10-29", akhir: "2026-11-02" }];
 const fotoSatu = a => {
   if (!a || a.jenis !== "b3") return false;
@@ -100,12 +133,12 @@ const fotoSatu = a => {
   const ks = kelasList(a).map(x => String(x || "").replace(/\s+/g, " ").trim().toLowerCase());
   return FOTO_SATU.some(r => r.awal === h[0] && r.akhir === h[h.length - 1] && ks.includes(r.kelas));
 };
-const fotoDua = a => !!a && !fotoSatu(a) && (!!a.damkar || a.jenis === "b3");
+const fotoDua = a => !!a && !fotoSatu(a) && (!!a.damkar || isB3(a));
 const FOTO_KEYS = ["foto", "foto2", "foto3", "foto4", "foto5"], KELAS_FOTO5 = "ahli k3 muda lingkungan kerja";
 const fotoN = (a, p) => {
   if (!a) return 1;
   if (fotoSatu(a)) return 1;
-  if (a.jenis === "b3") { const ks = kelasList(a), kl = String((p && p.kelas) || "").trim() || (ks.length === 1 ? ks[0] : ""); if (kl.replace(/\s+/g, " ").toLowerCase() === KELAS_FOTO5) return 5; }
+  if (isB3(a)) { const ks = kelasList(a), kl = String((p && p.kelas) || "").trim() || (ks.length === 1 ? ks[0] : ""); if (kl.replace(/\s+/g, " ").toLowerCase() === KELAS_FOTO5) return 5; }
   return fotoDua(a) ? 2 : 1;
 };
 const fotoKeysP = (a, p) => FOTO_KEYS.slice(0, fotoN(a, p));
@@ -124,7 +157,7 @@ function kelasEv(ev, k) {
   return {
     ...ev, kelasNama: k,
     peserta: ev.peserta.filter(p => (p.nama || "").trim() && (k ? p.kelas === k : !ks.includes(p.kelas))),
-    acara: { ...a, kegiatan: k ? (a.jenis === "angkat" ? judulAngkatKelas(k) : a.jenis === "b3" ? judulB3Kelas(k) : (kg ? kg + " \u2013 " + k : k)) : a.kegiatan, ...(hk ? { hari: hk, tanggal: hk[0], tanggal2: hk[hk.length - 1] } : {}) }, // alat selain Kelas 1: hanya 4 hari pertama
+    acara: { ...a, kegiatan: k ? (a.jenis === "angkat" ? judulAngkatKelas(k) : isB3(a) ? judulProgKelas(a, k) : (kg ? kg + " \u2013 " + k : k)) : a.kegiatan, ...(hk ? { hari: hk, tanggal: hk[0], tanggal2: hk[hk.length - 1] } : {}) }, // alat selain Kelas 1: hanya 4 hari pertama
     lap: isB3(a) // B3: narasumber tiap program sendiri-sendiri (lap.nrk[kunciProgram]); alat lain: satu isian untuk semua
       ? { ...ev.lap, nr: ((ev.lap.nrk || {})[kelasKey(k)]) || {}, nrOff: ((ev.lap.nrOffK || {})[kelasKey(k)]) || {}, nrHari: hariKelas(ev, k) }
       : { ...ev.lap, nr: ev.lap.nr || {}, nrHari: hariKelas(ev, k) } // narasumber: satu isian untuk semua alat; hari yang dicetak mengikuti kelas
@@ -137,7 +170,7 @@ function kelasGroups(ev) { // [{kelas, ev}] ; bukan PAPA = satu kelompok tanpa n
   [...kelasList(ev.acara), ""].forEach(k => { const e = kelasEv(ev, k); if (e.peserta.length) out.push({ kelas: k, ev: e }); });
   return out.length ? out : [{ kelas: "", ev: kelasEv(ev, "") }];
 }
-const judulDasar = a => ((a && a.jenis) === "angkat" ? J_ANGKAT : (a && a.jenis) === "b3" ? J_B3 : String((a && a.kegiatan) || "").trim());
+const judulDasar = a => ((a && a.jenis) === "angkat" ? J_ANGKAT : (a && a.jenis) === "b3" ? J_B3 : (a && a.jenis) === "ptp" ? J_PTP : String((a && a.kegiatan) || "").trim());
 const fmtTglPendek = iso => {
   if (!iso) return "";
   const d = new Date(iso + "T00:00:00");
@@ -175,7 +208,7 @@ const CAM = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke=
 let PAGE_X = "";
 const page = (inner, cls) => `<section class="page ${cls}${/pg-lap/.test(cls) && PAGE_X ? " " + PAGE_X : ""}"><img class="kop-head" src="${KOP_HEAD}" alt=""><div class="content">${inner}</div><img class="kop-foot" src="${KOP_FOOT}" alt=""></section>`;
 const v = x => esc(x) || "&nbsp;";
-const DK_PER = 4, MAX_DAYS = 14;
+const DK_PER = 4, MAX_DAYS = 26;
 const toD = iso => { const d = new Date((iso || "") + "T00:00:00"); return isNaN(d) ? null : d; };
 const isoOf = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 function hariList(a) {
@@ -187,6 +220,13 @@ function hariList(a) {
   let e = toD(a.tanggal2); if (!e || e < s) e = s;
   const out = [];
   for (const d = new Date(s); d <= e && out.length < MAX_DAYS; d.setDate(d.getDate() + 1)) out.push(isoOf(d));
+  return out;
+}
+const HARI_TABEL = 13, HARI_SATU = 14;
+function hariGrup(days) {
+  if (days.length <= HARI_SATU) return [days];
+  const n = Math.ceil(days.length / HARI_TABEL), sz = Math.ceil(days.length / n), out = [];
+  for (let i = 0; i < days.length; i += sz) out.push(days.slice(i, i + sz));
   return out;
 }
 const hariPendek = iso => { const d = toD(iso); return d ? d.getDate() + "/" + (d.getMonth() + 1) + "/" + String(d.getFullYear()).slice(2) : ""; };
@@ -212,8 +252,9 @@ function lapTexts(ev) {
     days: days.map((iso, i) => { const x = toD(iso); return { iso, title: `DAY ${i + 1} (${x.getDate()} ${BLN_UP(x.getMonth())} ${x.getFullYear()})` }; })
   };
 }
-const rdOn = ev => { const r = (ev.lap || {}).rundown; return r == null ? (jenisOf(ev.acara) === "angkat" || jenisOf(ev.acara) === "b3") : !!r; };
+const rdOn = ev => { const r = (ev.lap || {}).rundown; return r == null ? (jenisOf(ev.acara) === "angkat" || isB3(ev.acara)) : !!r; };
 const RD_A = [["07.45 – 08.00", "open"], ["08.00 – 10.00", "s"], ["10.00 – 10.15", "br"], ["10.15 – 12.00", "s"], ["12.00 – 13.00", "iso"], ["13.00 – 15.00", "s"], ["15.00 – 15.15", "br"], ["15.15 – 17.00", "s"]];
+const RD_P = [["07.30 – 08.00", "open"], ...RD_A.slice(1)];
 const RD_B = [["08.00 – 08.15", "open"], ["08.15 – 10.00", "s"], ["10.00 – 10.15", "br"], ["10.15 – 12.00", "s"], ["12.00 – 13.00", "iso"], ["13.00 – 17.00", "s"]];
 const RD_TXT = { open: ["Pembukaan, Registrasi, (Absen Pagi)"], openB: ["Pembukaan, (Absen Pagi)"], b3a: ["Pembukaan, Absensi"], b3: ["Absensi Peserta"], br: ["Coffee Break"], iso: ["ISOMA"] };
 const rdRole = (inst, nama) => { const t = /wasnaker/i.test(inst || "") ? "Wasnaker" : String(inst || "").trim(); return t && t !== String(nama || "").trim() ? t : ""; };
@@ -235,7 +276,7 @@ function rdBuild(ev) { // [{ iso, i, rows:[{w, k, t:[], app, pj, ns}] }]
       const b = blocks[j], cut = Math.min(total - 4, b.ses.length - 1);
       if (cut > 0) { const t = b.ses.splice(b.ses.length - cut, cut); b.ses[b.ses.length - 1].lines.push(...t.flatMap(x => x.lines)); total -= cut; }
     }
-    const B = total > 0 && total <= 3, grid = B ? RD_B : RD_A, flat = [];
+    const B = total > 0 && total <= 3, grid = B ? RD_B : (isPtp(ev.acara) ? RD_P : RD_A), flat = [];
     blocks.forEach((b, bi) => b.ses.forEach(se => flat.push({ ...se, bi })));
     let si = 0; const rows = grid.map(([w, k]) => {
       if (k === "s") { const se = flat[si++]; return { w, k, t: se ? se.lines : [], app: se ? se.app : "", bi: se ? se.bi : -1 }; }
@@ -268,36 +309,41 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
     <tr><td class="k">Waktu</td><td class="c">:</td><td>${v(waktu(a))}</td></tr>
     <tr><td class="k">Tempat</td><td class="c">:</td><td>${v(a.tempat)}</td></tr></table>`;
   const infoMini = `<table class="info"><tr><td class="k">Kegiatan</td><td class="c">:</td><td>${v(a.kegiatan)}</td></tr></table>`;
-  const cols = multi
-    ? `<colgroup><col style="width:${dense ? 8 : 9}mm"><col style="width:${dense ? 31 : days.length > 4 ? 40 : 46}mm"><col style="width:${dense ? 26 : days.length > 4 ? 30 : 34}mm">${days.map(() => "<col>").join("")}<col style="width:${dense ? 17 : days.length > 4 ? 22 : 24}mm"></colgroup>`
-    : `<colgroup><col style="width:9mm"><col><col style="width:46mm"><col style="width:42mm"><col style="width:26mm"></colgroup>`;
-  const thead = multi
-    ? `<thead><tr><th rowspan="2">No</th><th rowspan="2">Nama Peserta</th><th rowspan="2">Instansi / Perusahaan</th><th colspan="${days.length}">${dense ? "Tanda Tangan (Hari ke-)" : "Tanda Tangan"}</th><th rowspan="2">Keterangan</th></tr>
-       <tr class="days">${days.map((d, k) => `<th>${dense ? k + 1 : "Hari " + (k + 1)}<br><span>${esc(dense ? hariPendek(d).split("/").slice(0, 2).join("/") : hariPendek(d))}</span></th>`).join("")}</tr></thead>`
-    : `<thead><tr><th>No</th><th>Nama Peserta</th><th>Instansi / Perusahaan</th><th>Tanda Tangan</th><th>Keterangan</th></tr></thead>`;
-  const nCol = 4 + days.length;
   const sign = `<div class="sign-block" title="Klik untuk menggoreskan tanda tangan penyelenggara"><div>${esc(a.kota || "")}${a.kota ? ", " : ""}${esc(fmtTglPendek(a.tglTtd))}<br>${esc(a.jabatanTtd || "")}${a.jabatanTtd ? "," : ""}</div><div class="space">${a.ttd ? `<img class="ttd-img" src="${a.ttd}" alt="">` : (orgLocked() ? `<span class="sign-hint">🔒 TTD mulai ${esc(fmtTglPendek(lastDay(a)))}</span>` : `<span class="sign-hint">✍️ Klik untuk tanda tangan</span>`)}</div><div>( ${a.namaTtd ? "<b><u>" + esc(a.namaTtd) + "</u></b>" : dots} )</div></div>`;
-
-  // --- daftar hadir: pagination by measuring real height (handles long names that wrap)
-  const tbl = body => `<table class="grid${multi ? " multi" : ""}${dense ? " dense" : ""}">${cols}${thead}<tbody>${body}</tbody></table>`;
-  const sigImg = (p, k, cls) => !p.batal && p.ttd && days[k] && p.ttd[days[k]] ? `<span class="sig-cell ${cls}"><img src="${p.ttd[days[k]]}" alt=""></span>` : "";
-  const rowHtml = (p, no) => {
-    const rem = !!p.remedial && !p.batal, lastK = days.length - 1;
-    const ttd = multi
-      ? days.map((d, k) => rem && k < lastK ? `<td class="sign"></td>` : `<td class="sign${rem ? " lastd" : ""}"><span class="ttd l">${no}.</span>${sigImg(p, k, "c")}</td>`).join("")
-      : `<td class="sign${rem ? " lastd" : ""}"><span class="ttd ${no % 2 ? "l" : "r"}">${no}.</span>${sigImg(p, 0, no % 2 ? "l" : "r")}</td>`;
-    const cls = p.batal ? "batal" : rem ? "remedial" : "";
-    return `<tr${cls ? ` class="${cls}" title="${p.batal ? "Cancel" : "Remedial (hanya hari terakhir)"}"` : ""}><td class="no">${no}</td><td>${v(p.nama)}</td><td>${v(p.instansi)}</td>${ttd}<td class="ket">${p.batal ? "Cancel" : rem ? "Remedial" : ""}</td></tr>`;
-  };
-  const dhBody = (c, pi, start, withSign) => `<h1>DAFTAR HADIR PESERTA${pi ? " <small>(lanjutan)</small>" : ""}</h1>${pi ? infoMini : info}
-      ${c.length ? tbl(c.map((p, k) => rowHtml(p, start + k + 1)).join("")) : (pi ? "" : tbl(`<tr><td colspan="${nCol}" style="text-align:center;color:#999">Belum ada peserta</td></tr>`))}
-      ${withSign ? sign : ""}`;
   const meas = measurer();
   const fits = (body, cls) => {
     meas.innerHTML = `<section class="page ${cls || ""}"><div class="content">${body}</div></section>`;
     const c = meas.querySelector(".content"), last = c.lastElementChild;
     return !last || last.getBoundingClientRect().bottom <= c.getBoundingClientRect().bottom + 0.5;
   };
+  let html = "", nDh = 0; const sec = {}; // urutan cetak: Daftar Hadir, Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta, Lulus/Tidak Lulus
+  const daysAll = days, grupHari = hariGrup(daysAll);
+  grupHari.forEach((days, gi) => { // satu tabel daftar hadir per kelompok hari (kegiatan <= 14 hari = satu kelompok)
+  const multi = days.length > 1, dense = multi && days.length > 7, gOff = grupHari.slice(0, gi).reduce((n, g) => n + g.length, 0), gLast = gi === grupHari.length - 1;
+  const grpLbl = grupHari.length > 1 ? ` <small>(Hari ke-${gOff + 1} s.d. ${gOff + days.length})</small>` : "";
+  const cols = multi
+    ? `<colgroup><col style="width:${dense ? 8 : 9}mm"><col style="width:${dense ? 31 : days.length > 4 ? 40 : 46}mm"><col style="width:${dense ? 26 : days.length > 4 ? 30 : 34}mm">${days.map(() => "<col>").join("")}<col style="width:${dense ? 17 : days.length > 4 ? 22 : 24}mm"></colgroup>`
+    : `<colgroup><col style="width:9mm"><col><col style="width:46mm"><col style="width:42mm"><col style="width:26mm"></colgroup>`;
+  const thead = multi
+    ? `<thead><tr><th rowspan="2">No</th><th rowspan="2">Nama Peserta</th><th rowspan="2">Instansi / Perusahaan</th><th colspan="${days.length}">${dense ? "Tanda Tangan (Hari ke-)" : "Tanda Tangan"}</th><th rowspan="2">Keterangan</th></tr>
+       <tr class="days">${days.map((d, k) => `<th>${dense ? gOff + k + 1 : "Hari " + (gOff + k + 1)}<br><span>${esc(dense ? hariPendek(d).split("/").slice(0, 2).join("/") : hariPendek(d))}</span></th>`).join("")}</tr></thead>`
+    : `<thead><tr><th>No</th><th>Nama Peserta</th><th>Instansi / Perusahaan</th><th>Tanda Tangan</th><th>Keterangan</th></tr></thead>`;
+  const nCol = 4 + days.length;
+
+  // --- daftar hadir: pagination by measuring real height (handles long names that wrap)
+  const tbl = body => `<table class="grid${multi ? " multi" : ""}${dense ? " dense" : ""}">${cols}${thead}<tbody>${body}</tbody></table>`;
+  const sigImg = (p, k, cls) => !p.batal && p.ttd && days[k] && p.ttd[days[k]] ? `<span class="sig-cell ${cls}"><img src="${p.ttd[days[k]]}" alt=""></span>` : "";
+  const rowHtml = (p, no) => {
+    const rem = !!p.remedial && !p.batal, lastK = daysAll.length - 1;
+    const ttd = multi
+      ? days.map((d, k) => rem && gOff + k < lastK ? `<td class="sign"></td>` : `<td class="sign${rem ? " lastd" : ""}"><span class="ttd l">${no}.</span>${sigImg(p, k, "c")}</td>`).join("")
+      : `<td class="sign${rem ? " lastd" : ""}"><span class="ttd ${no % 2 ? "l" : "r"}">${no}.</span>${sigImg(p, 0, no % 2 ? "l" : "r")}</td>`;
+    const cls = p.batal ? "batal" : rem ? "remedial" : "";
+    return `<tr${cls ? ` class="${cls}" title="${p.batal ? "Cancel" : "Remedial (hanya hari terakhir)"}"` : ""}><td class="no">${no}</td><td>${v(p.nama)}</td><td>${v(p.instansi)}</td>${ttd}<td class="ket">${p.batal ? "Cancel" : rem ? "Remedial" : ""}</td></tr>`;
+  };
+  const dhBody = (c, pi, start, withSign) => `<h1>DAFTAR HADIR PESERTA${grpLbl}${pi ? " <small>(lanjutan)</small>" : ""}</h1>${pi ? infoMini : info}
+      ${c.length ? tbl(c.map((p, k) => rowHtml(p, start + k + 1)).join("")) : (pi ? "" : tbl(`<tr><td colspan="${nCol}" style="text-align:center;color:#999">Belum ada peserta</td></tr>`))}
+      ${withSign ? sign : ""}`;
   const ch = []; let cur = [], start = 0;
   for (const r of rows) {
     cur.push(r);
@@ -306,15 +352,15 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
     }
   }
   ch.push(cur);
-  { // pastikan blok tanda tangan muat di halaman terakhir
+  if (gLast) { // pastikan blok tanda tangan muat di halaman terakhir
     const li = ch.length - 1, lastStart = rows.length - ch[li].length, moved = [];
     while (ch[li].length > 1 && !fits(dhBody(ch[li], li, lastStart, true))) moved.unshift(ch[li].pop());
     if (moved.length) ch.push(moved);
   }
   meas.innerHTML = "";
-
-  let html = "", no0 = 0; const sec = {}; // urutan cetak: Daftar Hadir, Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta, Lulus/Tidak Lulus
-  ch.forEach((c, pi) => { html += page(dhBody(c, pi, no0, pi === ch.length - 1), "pg-dh"); no0 += c.length; });
+  let no0 = 0;
+  ch.forEach((c, pi) => { html += page(dhBody(c, pi, no0, gLast && pi === ch.length - 1), "pg-dh"); no0 += c.length; }); nDh += ch.length;
+  });
   sec.dh = html; html = "";
 
 
@@ -388,7 +434,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   sec.sf = html; html = "";
   if (L.nilai) {
     const rows = lpPeserta.filter(p => !p.batal);
-    const eT = false, tbl = (c, st) => `<table class="lap nl">${colg(eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th>${eT ? "<th>NILAI EVALUASI TEORI</th>" : ""}</tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td>${eT ? `<td class="c">${esc(p.et || "")}</td>` : ""}</tr>`).join("") || empty(eT ? 6 : 5)}</tbody></table>`;
+    const eT = semOn(S), tbl = (c, st) => `<table class="lap nl">${colg(eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th>${eT ? "<th>NILAI SEMINAR</th>" : ""}</tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td>${eT ? `<td class="c">${esc(p.sm || "")}</td>` : ""}</tr>`).join("") || empty(eT ? 6 : 5)}</tbody></table>`;
     const sg = s => `<div class="lp-sg"><div class="jab">${esc(s.jab || "").replace(/\n/g, "<br>")}</div><div class="sp">${s.ttd ? `<img src="${s.ttd}" alt="">` : ""}</div><div class="nm">${esc(s.nama || "") || "&nbsp;"}</div>${s.nip ? `<div class="nip">NIP. ${esc(s.nip)}</div>` : ""}</div>`;
     const head = pi => pi ? `<div class="lp-h">DAFTAR NILAI PESERTA <small>(lanjutan)</small></div><div class="lp-gap"></div>`
       : `<div class="lp-h">DAFTAR NILAI PESERTA</div><div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.tgl1)}</div><div class="lp-gap"></div>`;
@@ -449,7 +495,7 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   sec.rd = html; html = "";
   html = (sec.rd || "") + (sec.dh || "") + (sec.sf || "") + (sec.nl || "") + (sec.nr || "") + (sec.dy || "") + (sec.dk || "") + (sec.ln || ""); // urutan laporan: Daftar Hadir, Daftar Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta, Lulus/Tidak Lulus
   meas.innerHTML = "";
-  return { html, nd: ch.length, nk: dch.length, noFoto: dk.filter(p => !p.batal && !fotoOk(p, a)).length, nPes: dk.length, nNl, nLn, nDy, nNr, nRd, nSf };
+  return { html, nd: nDh, nk: dch.length, noFoto: dk.filter(p => !p.batal && !fotoOk(p, a)).length, nPes: dk.length, nNl, nLn, nDy, nNr, nRd, nSf };
 }
 const fotoOk = (p, a) => (!!p.remedial && !p.batal) || fotoKeysP(a, p).every(k => !!p[k]);
 const BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -567,11 +613,12 @@ const Word = (() => {
   // GARIS tidak dipakai lagi (coretan diganti warna stabilo); dibiarkan agar perubahan kecil.
   const GARIS = (() => { try { const c = document.createElement("canvas"); c.width = 600; c.height = 4; const x = c.getContext("2d"); x.fillStyle = "#222"; x.fillRect(0, 0, 600, 4); return c.toDataURL("image/png"); } catch (e) { return ""; } })();
   function daftarHadir(ev, ctx) {
-    const D = Doc(), a = ev.acara, days = ctx.days, multi = days.length > 1;
+    const D = Doc(), a = ev.acara, daysAll = ctx.days;
     const list = ev.peserta.filter(p => (p.nama || "").trim() || p.instansi || p.foto);
     const kosong = Array.from({ length: Math.max(0, +a.barisKosong || 0) }, () => ({ nama: "", instansi: "" }));
     const rows = list.concat(kosong);
-    const nd = days.length;
+    const tabel = (days, gOff) => {
+    const nd = days.length, multi = nd > 1;
     let widths;
     const dense = multi && nd > 7; // 8 hari ke atas (mis. 12 hari): kolom hari dibuat ramping
     const kw = tw(dense ? 17 : multi ? (nd > 4 ? 22 : 24) : 26); // lebar kolom Keterangan (kolom terakhir)
@@ -583,7 +630,7 @@ const Word = (() => {
     let head;
     if (multi) {
       head = D.row(th(widths[0], "No", { vm: "restart" }) + th(widths[1], "Nama Peserta", { vm: "restart" }) + th(widths[2], "Instansi / Perusahaan", { vm: "restart" }) + th(widths.slice(3, 3 + nd).reduce((s, w) => s + w, 0), dense ? "Tanda Tangan (Hari ke-)" : "Tanda Tangan", { span: nd }) + th(kw, "Keterangan", { vm: "restart", sz: dense ? 15 : 18 }), { head: 1 })
-        + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(dense ? String(k + 1) : `Hari ${k + 1}`, { b: 1, color: "FFFFFF", sz: dense ? 16 : 17 }), { jc: "center", before: 20 }) + D.par(D.run(dense ? ctx.pendek(d).split("/").slice(0, 2).join("/") : ctx.pendek(d), { color: "FFFFFF", sz: dense ? 12 : 16 }), { jc: "center", after: 20 }), TH)).join("") + th(kw, "", { vm: "cont" }), { head: 1 });
+        + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(dense ? String(gOff + k + 1) : `Hari ${gOff + k + 1}`, { b: 1, color: "FFFFFF", sz: dense ? 16 : 17 }), { jc: "center", before: 20 }) + D.par(D.run(dense ? ctx.pendek(d).split("/").slice(0, 2).join("/") : ctx.pendek(d), { color: "FFFFFF", sz: dense ? 12 : 16 }), { jc: "center", after: 20 }), TH)).join("") + th(kw, "", { vm: "cont" }), { head: 1 });
     } else head = D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Instansi / Perusahaan") + th(widths[3], "Tanda Tangan") + th(kw, "Keterangan", { sz: 18 }), { head: 1 });
     // Warna stabilo: Cancel = merah sampai kolom Keterangan; Remedial = kuning sampai kolom TTD sebelum hari terakhir (TTD hari terakhir & Keterangan tanpa warna)
     const RED = "FF6B6B", YEL = "FFF200";
@@ -598,18 +645,22 @@ const Word = (() => {
       const ket = D.cell(kw, D.par(D.run(bt ? "Cancel" : rem ? "Remedial" : "", { b: 1, sz: 18, color: "000000" }), { jc: "center" }), bt ? { fill: RED } : {});
       let tt;
       if (bt) tt = (multi ? days.map((_, k) => D.cell(widths[3 + k], D.par(""), F)).join("") : D.cell(widths[3], D.par(""), F)); // cancel: tanpa nomor & tanda tangan
-      else if (multi) tt = days.map((_, k) => rem && k < nd - 1 ? D.cell(widths[3 + k], D.par(""), F) : sig(k, widths[3 + k], true)).join(""); // remedial: hanya hari terakhir
+      else if (multi) tt = days.map((_, k) => rem && gOff + k < daysAll.length - 1 ? D.cell(widths[3 + k], D.par(""), F) : sig(k, widths[3 + k], true)).join(""); // remedial: hanya hari terakhir
       else tt = sig(0, widths[3], no % 2 === 1);
       return D.row(base + tt + ket, { h: tw(12.5) });
     }).join("") || D.row(D.cell(widths.reduce((s, w) => s + w, 0), D.par(D.run("Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: widths.length }), { h: tw(12.5) });
 
+    return D.table(widths, head + body, dense ? { mar: 45 } : {});
+    };
     const sp = tw(62), indent = tw(CONT_W - 62);
     const sign = D.par(D.run(`${a.kota || ""}${a.kota ? ", " : ""}${ctx.tglTtd || ""}`), { jc: "center", ind: indent, before: tw(5), keep: 1 })
       + D.par(D.run(a.jabatanTtd ? a.jabatanTtd + "," : ""), { jc: "center", ind: indent, keep: 1 })
       + D.par(a.ttd ? D.inline(a.ttd, 58, 18) : "", { jc: "center", ind: indent, before: a.ttd ? 40 : tw(18), after: a.ttd ? 40 : 0, keep: 1 })
       + D.par(a.namaTtd ? D.run("( ", {}) + D.run(a.namaTtd, { b: 1, u: 1 }) + D.run(" )") : D.run("( ................................ )"), { jc: "center", ind: indent });
-    const bodyXml = title(D, "DAFTAR HADIR PESERTA") + infoTable(D, [["Kegiatan", a.kegiatan], ["Tanggal", ctx.hariTanggal], ["Waktu", ctx.waktu], ["Tempat", a.tempat]]) + gap(D)
-      + D.table(widths, head + body, dense ? { mar: 45 } : {}) + sign;
+    const grp = hariGrup(daysAll);
+    const bodyXml = grp.map((g, gi) => (gi ? `<w:p><w:r><w:br w:type="page"/></w:r></w:p>` : "") + title(D, "DAFTAR HADIR PESERTA" + (grp.length > 1 ? ` (HARI KE-${grp.slice(0, gi).reduce((n, x) => n + x.length, 0) + 1} S.D. ${grp.slice(0, gi).reduce((n, x) => n + x.length, 0) + g.length})` : ""))
+      + infoTable(D, [["Kegiatan", a.kegiatan], ["Tanggal", ctx.hariTanggal], ["Waktu", ctx.waktu], ["Tempat", a.tempat]]) + gap(D)
+      + tabel(g, grp.slice(0, gi).reduce((n, x) => n + x.length, 0))).join("") + sign;
     return D.build(bodyXml, ctx.kopHead, ctx.kopFoot);
   }
 
@@ -686,11 +737,11 @@ const Word = (() => {
   const lapEmpty = (D, Wm) => D.row(D.cell(tw(Wm.reduce((a, b) => a + b, 0)), D.par(lr(D, "Belum ada peserta", { color: "999999" }), { jc: "center" }), { span: Wm.length }), { h: tw(4.8) });
 
   function nilai(ev, ctx) {
-    const D = Doc(), L = ev.lap || {}, T = ctx.lap, eT = false, Wm = eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35], W = Wm.map(tw);
+    const D = Doc(), L = ev.lap || {}, T = ctx.lap, eT = semOn(ev), Wm = eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35], W = Wm.map(tw);
     const rows = ev.peserta.filter(p => (p.nama || "").trim() && !p.batal);
     const body = rows.map((p, i) => D.row(
       D.cell(W[0], D.par(lr(D, i + 1), { jc: "center" })) + D.cell(W[1], D.par(lr(D, upc(p.nama)))) + D.cell(W[2], D.par(lr(D, upc(p.instansi))))
-      + D.cell(W[3], D.par(lr(D, p.ut || ""), { jc: "center" })) + D.cell(W[4], D.par(lr(D, p.up || ""), { jc: "center" })) + (eT ? D.cell(W[5], D.par(lr(D, p.et || ""), { jc: "center" })) : ""), { h: tw(4.8) })).join("") || lapEmpty(D, Wm);
+      + D.cell(W[3], D.par(lr(D, p.ut || ""), { jc: "center" })) + D.cell(W[4], D.par(lr(D, p.up || ""), { jc: "center" })) + (eT ? D.cell(W[5], D.par(lr(D, p.sm || ""), { jc: "center" })) : ""), { h: tw(4.8) })).join("") || lapEmpty(D, Wm);
     const blk = s => {
       const lines = String(s.jab || "").split("\n"); while (lines.length < 2) lines.push("");
       return lines.map(l => D.par(l ? lr(D, l) : "", { jc: "center" })).join("")
@@ -700,7 +751,7 @@ const Word = (() => {
     };
     const sign = D.table([tw(87), tw(87)], D.row(D.cell(tw(87), blk(L.s1 || {})) + D.cell(tw(87), blk(L.s2 || {}))), { border: false });
     const xml = lapTitle(D, "DAFTAR NILAI PESERTA") + lapTitle(D, T.keg) + lapTitle(D, "TANGGAL : " + T.tgl1, { sz: 26, after: 3 })
-      + lapTable(D, Wm, lapHead(D, Wm, ["NO", "NAMA", "INSTANSI", "NILAI UJIAN TEORI", "NILAI UJIAN PRAKTEK", ...(eT ? ["NILAI EVALUASI TEORI"] : [])], "FFD84A") + body)
+      + lapTable(D, Wm, lapHead(D, Wm, ["NO", "NAMA", "INSTANSI", "NILAI UJIAN TEORI", "NILAI UJIAN PRAKTEK", ...(eT ? ["NILAI SEMINAR"] : [])], "FFD84A") + body)
       + D.par(lr(D, T.ttd), { jc: "center", ind: tw(87), before: tw(4), keep: 1 }) + sign;
     return D.build(xml, ctx.kopHead, ctx.kopFoot);
   }

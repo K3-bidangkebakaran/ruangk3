@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="id">
+<head>
+<script>/* buka lewat https: penyimpanan browser http & https terpisah */if(location.protocol==='http:'&&/(^|\.)ruangk3\.com$/.test(location.hostname))location.replace('https://'+location.host+location.pathname+location.search);</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Nilai Peserta</title>
+<meta name="theme-color" content="#14201a">
+<link rel="icon" href="../pic/icons/icon-192.png">
+<style>
+:root{
+  --bg:#eef0ea; --surface:#fff; --surface-2:#f6f7f2; --ink:#17201b; --muted:#5b665e; --line:#d9ded5;
+  --brand:#f6c800; --brand-ink:#1e1a00; --chrome:#14201a; --chrome-ink:#f2f5ee; --chrome-muted:#a9b6ac;
+  --ok:#14804a; --ok-soft:#dcf2e5; --bad:#b42318; --bad-soft:#fde2df; --warn:#a85a05; --warn-soft:#fdebcf; --focus:#1d4ed8;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#0d120f; --surface:#161d18; --surface-2:#1c2520; --ink:#eef1ec; --muted:#9aa69d; --line:#2b362e; --chrome:#0a0f0c;
+  --ok:#4ade80; --ok-soft:#10301d; --bad:#f87171; --bad-soft:#3b1512; --warn:#fbbf24; --warn-soft:#3a2a08; --focus:#7aa2ff; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+#app{min-height:100vh;max-width:640px;margin:0 auto;background:var(--surface);display:flex;flex-direction:column}
+@media (min-width:680px){#app{border-inline:1px solid var(--line)}}
+.bar{background:var(--chrome);color:var(--chrome-ink);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;gap:10px;align-items:center}
+.bar img{width:36px;height:36px;border-radius:9px;flex:none}
+.bar b{display:block;font-size:16px;line-height:1.2}
+.bar small{display:block;color:var(--chrome-muted);font-size:12px;overflow-wrap:anywhere}
+main{flex:1;display:flex;flex-direction:column;gap:12px;padding:16px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+h2{margin:0;font-size:19px;line-height:1.25}
+.hint{color:var(--muted);font-size:13.5px}
+.note{border-radius:12px;padding:12px 14px;font-size:14.5px}
+.note.err{background:var(--bad-soft);color:var(--bad)}
+.note.okk{background:var(--ok-soft);color:var(--ok)}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+label.f{display:grid;gap:4px;font-weight:700;font-size:14.5px}
+input[type=text],select{width:100%;min-height:46px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--surface);font-size:16px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 16px;font-weight:700;min-height:48px;width:100%}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.list{display:grid;gap:10px}
+.p{border:1px solid var(--line);border-radius:14px;background:var(--surface-2);padding:10px 12px;display:grid;gap:8px}
+.p .nm{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start}
+.p .no{color:var(--muted);font-size:13px;text-align:right;padding-top:2px}
+.p .nm b{display:block;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.p .nm small{display:block;color:var(--muted);font-size:12.5px;overflow-wrap:anywhere}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.fields label{display:grid;gap:3px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.fields input{text-align:center;font-weight:700;font-size:18px}
+.st{font-size:12px;min-height:16px;color:var(--muted)}
+.st.ok{color:var(--ok)} .st.bad{color:var(--bad)}
+.p.done{border-color:var(--ok)}
+.sticky{position:sticky;top:0;background:var(--surface);padding:8px 0;z-index:2;display:grid;gap:8px}
+.cnt{font-size:13.5px;color:var(--muted)}
+.spin{width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp 1s linear infinite;margin:30px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="bar"><img src="../pic/icons/icon-192.png" alt=""><div><b id="barTtl">Nilai Peserta</b><small id="barSub">Memuat…</small></div></header>
+  <main id="main"><div class="spin" role="status" aria-label="Memuat"></div></main>
+</div>
+<script type="module">
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const KID = (new URLSearchParams(location.search).get("k") || "").trim();
+const NAMA_KEY = "rk3_nilai_nara";
+const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (_) { } };
+/* ---------- akses data (Firebase; window.__NL_FB dipakai untuk uji) ---------- */
+async function backend() {
+  if (window.__NL_FB) return window.__NL_FB;
+  const V = "https://www.gstatic.com/firebasejs/11.6.1/", ROOT = "artifacts/k3-kebakaran-app-v5/public/data";
+  const [a, au, d] = await Promise.all([import(V + "firebase-app.js"), import(V + "firebase-auth.js"), import(V + "firebase-database.js")]);
+  const app = a.initializeApp({ apiKey: "AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg", authDomain: "portal-k3-bidang-kebakaran.firebaseapp.com", databaseURL: "https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "portal-k3-bidang-kebakaran", appId: "1:497833559757:web:01c2de15cd5f56dbb18b84" }, "nilai");
+  const auth = au.getAuth(app), db = d.getDatabase(app), R = p => d.ref(db, `${ROOT}/${p}`);
+  const to = (pr, ms, m) => { let t; return Promise.race([pr, new Promise((_, rj) => { t = setTimeout(() => rj(new Error(m || "Koneksi terlalu lambat.")), ms); })]).finally(() => clearTimeout(t)); };
+  await to(au.signInAnonymously(auth), 20000, "Tidak bisa terhubung. Cek internet lalu muat ulang halaman.");
+  return {
+    info: async k => (await to(d.get(R(`dh_nilai/${k}`)), 20000)).val(),
+    masuk: async k => (await to(d.get(R(`dh_nilai_in/${k}`)), 20000)).val() || {},
+    async put(k, key, v, nara) { await to(d.set(R(`dh_nilai_in/${k}/${key}`), { v, n: nara, t: d.serverTimestamp() }), 30000, "Pengiriman terlalu lambat."); await to(d.set(R(`dh_nilai_st/${k}`), d.serverTimestamp()), 30000); },
+  };
+}
+/* ---------- state ---------- */
+let FB = null, INFO = null, IN = {}, KELAS = "";
+const main = $("#main");
+const fail = msg => { $("#barSub").textContent = ""; main.innerHTML = `<div class="note err">${esc(msg)}</div><button class="btn" id="reload">Muat ulang</button>`; $("#reload").onclick = () => location.reload(); };
+const tglPendek = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); return m ? `${+m[3]}/${+m[2]}/${m[1]}` : ""; };
+async function boot() {
+  if (!KID) return fail("Link tidak lengkap. Minta link nilai yang benar dari panitia.");
+  try { FB = await backend(); } catch (e) { return fail(e.message || "Tidak bisa terhubung."); }
+  try { [INFO, IN] = await Promise.all([FB.info(KID), FB.masuk(KID)]); }
+  catch (e) { return fail(/permission/i.test(e.message || "") ? "Halaman ini belum bisa dibuka (akses ditolak). Hubungi panitia." : (e.message || "Gagal memuat data.")); }
+  if (!INFO || !INFO.nama) return fail("Link nilai ini belum aktif atau sudah tidak berlaku. Hubungi panitia.");
+  $("#barSub").textContent = INFO.nama;
+  tampil();
+}
+const nilaiAda = (pid, f) => { const x = IN[pid + "~" + f]; return x && typeof x === "object" ? String(x.v == null ? "" : x.v) : ""; };
+function daftar() { const ps = INFO.peserta ? (Array.isArray(INFO.peserta) ? INFO.peserta : Object.values(INFO.peserta)) : []; return ps.filter(p => p && p.nama && (!KELAS || p.kelas === KELAS)); }
+function tampil() {
+  const kls = INFO.kelas ? (Array.isArray(INFO.kelas) ? INFO.kelas : Object.values(INFO.kelas)) : [], sem = !!INFO.sem;
+  const tgl = INFO.tgl ? (Array.isArray(INFO.tgl) ? INFO.tgl : Object.values(INFO.tgl)) : [], rentang = tgl.length ? (tgl.length > 1 ? tglPendek(tgl[0]) + " – " + tglPendek(tgl[tgl.length - 1]) : tglPendek(tgl[0])) : "";
+  main.innerHTML = `<h2>Input nilai peserta</h2>
+    <div class="hint">${esc(INFO.nama)}${rentang ? " · " + esc(rentang) : ""}${INFO.tempat ? " · " + esc(INFO.tempat) : ""}</div>
+    <div class="note warn">Isi <b>nama Anda</b> dulu, lalu ketik nilai tiap peserta. Nilai tersimpan otomatis begitu kolom selesai diisi (pindah kolom / tekan Enter). Boleh dikosongkan atau diperbaiki lagi nanti; yang dipakai adalah nilai terakhir.</div>
+    <label class="f">Nama narasumber<input type="text" id="nara" autocomplete="name" placeholder="Contoh: Repy, S.T" value="${esc(lsGet(NAMA_KEY))}"></label>
+    ${kls.length > 1 ? `<label class="f">Program / kelas<select id="kelas"><option value="">Semua (${kls.length} program)</option>${kls.map(k => `<option value="${esc(k)}"${k === KELAS ? " selected" : ""}>${esc(k)}</option>`).join("")}</select></label>` : ""}
+    <div class="cnt" id="cnt"></div>
+    <div class="list" id="list"></div>
+    <div id="msg"></div>`;
+  $("#nara").addEventListener("input", e => lsSet(NAMA_KEY, e.target.value.trim()));
+  if ($("#kelas")) $("#kelas").addEventListener("change", e => { KELAS = e.target.value; isi(); });
+  $("#list").addEventListener("change", simpan);
+  $("#list").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("input")) { e.preventDefault(); const all = [...document.querySelectorAll("#list input")], i = all.indexOf(e.target); (all[i + 1] || e.target).focus(); e.target.blur(); } });
+  isi();
+}
+function isi() {
+  const ps = daftar(), sem = !!INFO.sem; let terisi = 0;
+  $("#list").innerHTML = ps.length ? ps.map((p, i) => {
+    const up = nilaiAda(p.id, "up"), sm = nilaiAda(p.id, "sm"); if (up || sm) terisi++;
+    return `<div class="p${up && (!sem || sm) ? " done" : ""}" data-id="${esc(p.id)}"><div class="nm"><span class="no">${i + 1}</span><div><b>${esc(p.nama)}</b><small>${esc(p.instansi || "")}</small></div></div>
+      <div class="fields"><label>Nilai Praktek<input type="text" inputmode="text" maxlength="8" data-f="up" value="${esc(up)}" autocomplete="off" aria-label="Nilai Praktek ${esc(p.nama)}"></label>${sem ? `<label>Nilai Seminar<input type="text" inputmode="text" maxlength="8" data-f="sm" value="${esc(sm)}" autocomplete="off" aria-label="Nilai Seminar ${esc(p.nama)}"></label>` : ""}</div>
+      <div class="st" data-st></div></div>`;
+  }).join("") : `<div class="hint">Belum ada peserta di kegiatan ini.</div>`;
+  $("#cnt").textContent = `${ps.length} peserta · ${terisi} sudah punya nilai`;
+}
+async function simpan(e) {
+  const inp = e.target; if (!inp.matches("input[data-f]")) return;
+  const card = inp.closest(".p"), st = card.querySelector("[data-st]"), nama = ($("#nara").value || "").trim();
+  if (!nama) { st.className = "st bad"; st.textContent = "Isi nama narasumber di atas dulu."; $("#nara").focus(); return; }
+  const f = inp.dataset.f, v = inp.value.trim().replace(/,/g, "."), key = card.dataset.id + "~" + f;
+  inp.value = v; if ((nilaiAda(card.dataset.id, f)) === v) { st.textContent = ""; return; }
+  st.className = "st"; st.textContent = "Menyimpan…"; inp.disabled = true;
+  try { await FB.put(KID, key, v, nama.slice(0, 60)); IN[key] = { v, n: nama, t: Date.now() }; st.className = "st ok"; st.textContent = "✓ Tersimpan"; card.classList.toggle("done", !!nilaiAda(card.dataset.id, "up") && (!INFO.sem || !!nilaiAda(card.dataset.id, "sm"))); const ps = daftar(); $("#cnt").textContent = `${ps.length} peserta · ${ps.filter(p => nilaiAda(p.id, "up") || nilaiAda(p.id, "sm")).length} sudah punya nilai`; }
+  catch (er) { st.className = "st bad"; st.textContent = "Gagal menyimpan: " + ((er && er.message) || "cek internet") + ". Ketuk kolom lalu pindah lagi untuk mencoba ulang."; }
+  finally { inp.disabled = false; }
+}
+boot();
+</script>
+</body>
+</html>

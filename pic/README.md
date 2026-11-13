@@ -483,3 +483,40 @@ Catatan: seperti selfie, pengunggah dan PIC sama-sama login Firebase (anonim vs 
 - **v80**: pengecualian 1 foto per peserta untuk kegiatan K3 LKBB Teknisi Ruang Terbatas 29 Okt - 2 Nov 2026 saja (FOTO_SATU di app.js dan daftar-hadir/index.html; daftar lain tidak berubah). Laporan memakai format 1 foto.
 
 - **v81**: pop up pengingat juga memuat kegiatan yang sudah 100% (ingatkan tekan Selesai). Saat PIC menekan Selesai, WhatsApp terbuka otomatis ke +62 858-5684-8758 dengan pesan "KEGIATAN SELESAI" (WA_SELESAI & waSelesai di app.js).
+
+## v82 — Nilai Seminar (kelas Ahli), bidang K3 PTP, kegiatan > 14 hari, Link Nilai Narasumber
+- **Bidang baru K3 PTP** (Pesawat Tenaga dan Produksi): jenis `ptp`, program/kelas "Ahli K3 Pesawat Tenaga dan Produksi", rundown 26 hari. Cara kerjanya sama dengan B3 (`k.b3` = true, satu program = satu kelas). Di APK tampil "K3 PTP (nama program)" (`b3Pfx`).
+- **Nilai Seminar**: kolom/isian hanya untuk kelas Ahli (Ahli K3 Muda Lingkungan Kerja, Pesawat Angkat & Angkut, Penanggulangan Kebakaran, Pesawat Tenaga dan Produksi). Website mengirim `lap.sem` (boolean); kegiatan lama dikenali dari nama (`semPic`/`AHLI_RX`). Isian `h.nilai[pid].sm`; tampil di Nilai & Kelulusan, daftar cek laporan, dan Daftar Nilai (Word/pratinjau).
+- **Link Nilai Narasumber** (halaman `/nilai/?k=<kid>`, tanpa login): narasumber mengetik namanya sekali (disimpan di HP-nya), lalu mengisi Nilai Praktek (+ Seminar) tiap peserta. Di APK: tile "Link Nilai Narasumber" (layar kegiatan). Di website: Laporan > Daftar Nilai > kotak "Link nilai untuk narasumber".
+- Nilai terbaru menang: tiap isian membawa waktu server (`t`). Nilai PIC memakai `h.nlT[pid][f]` (= `nowS()`); website memakai `p.nl[f]`. APK membaca `dh_nilai_in` lewat `nilaiPull` (saat kegiatan dibuka, tiap 20 detik di layar Nilai/Link, dan tombol "Ambil nilai terbaru").
+- Kegiatan boleh sampai 26 hari. Daftar hadir > 14 hari dibagi beberapa tabel (maks. 13 hari per tabel, "Hari ke-X s.d. Y"); tanda tangan hanya di tabel terakhir.
+- Rekap (panel admin) punya jenis baru "Pesawat Tenaga & Produksi (PTP)".
+
+Node Firebase baru (aturan HARUS ditambahkan Adrian di Firebase Console, di dalam `artifacts → k3-kebakaran-app-v5 → public → data`; gabungkan, jangan menimpa):
+
+| Node | Isi |
+|---|---|
+| `dh_nilai/{kid}` | info halaman narasumber: `{nama, tgl[], tempat, sem, kelas[], peserta[{id,nama,instansi,kelas}], upd}` (ditulis website; hanya bila "Nilai" dicentang di Laporan) |
+| `dh_nilai_in/{kid}/{pid~up|pid~sm}` | `{v: nilai (teks ≤12), n: nama narasumber, t: waktu server}` (boleh ditimpa: nilai terakhir yang dipakai) |
+| `dh_nilai_st/{kid}` | penanda waktu server (angka) bahwa ada nilai baru |
+
+```json
+"dh_nilai": {
+  "$kid": { ".read": "auth != null", ".write": "auth != null" }
+},
+"dh_nilai_st": {
+  ".read": "auth != null",
+  "$kid": { ".write": "auth != null", ".validate": "newData.isNumber()" }
+},
+"dh_nilai_in": {
+  "$kid": {
+    ".read": "auth != null",
+    "$k": {
+      ".write": "auth != null",
+      ".validate": "newData.hasChildren(['v','n','t']) && newData.child('v').isString() && newData.child('v').val().length <= 12 && newData.child('n').isString() && newData.child('n').val().length <= 60 && newData.child('t').isNumber()"
+    }
+  }
+}
+```
+Catatan: seperti selfie/foto, narasumber (anonim) dan PIC (akun) sama-sama login Firebase sehingga aturan tidak bisa membedakan; yang dijaga adalah bentuk & ukuran isian. Link berisi ID kegiatan acak. `Code.gs` tidak berubah.
+

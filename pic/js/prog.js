@@ -5,7 +5,7 @@
 "use strict";
 let ME = { uid: "_admin", nama: "Admin" }, KEGS = {}, H = {}, P = { kl: null }, OH = {}, OHV = 0; const OVC = new Map(), KIDC = new WeakMap();
 const fnv = str => { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ':' + str.length; };
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, nlT: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
 function kidOf(h) { let k = KIDC.get(h); if (k && H[k] === h) return k; k = Object.keys(H).find(x => H[x] === h) || ''; if (k) KIDC.set(h, k); return k; }
 function ovBuild(kid) {
   const m = OH[kid]; if (!m || !ME) return null;
@@ -58,7 +58,7 @@ const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kela
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); };
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; };
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'nlT', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; };
 const FOTO_KEYS = ['foto', 'foto2', 'foto3', 'foto4', 'foto5'], KELAS_FOTO5 = 'ahli k3 muda lingkungan kerja';
 const fotoNo = key => (key === 'foto' ? 1 : +String(key).slice(4) || 1), fMk = key => 'f' + (key === 'foto' ? '' : key.slice(4)) + '_', wfKey = key => 'wf' + (key === 'foto' ? '' : key.slice(4));
 const FOTO_SATU = [{ kelas: 'teknisi ruang terbatas', awal: '2026-10-29', akhir: '2026-11-02' }];
@@ -67,6 +67,8 @@ const fotoDua = k => !!(k && !fotoSatu(k) && (k.damkar || k.b3));
 const fotoN = (k, p) => { if (fotoSatu(k)) return 1; if (k && k.b3) { const ks = k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas)) : [], kl = String((p && p.kelas) || '').replace(/\s+/g, ' ').trim() || (ks.length === 1 ? ks[0] : ''); if (kl.toLowerCase() === KELAS_FOTO5) return 5; } return fotoDua(k) ? 2 : 1; };
 const fotoKeysP = (k, p) => FOTO_KEYS.slice(0, fotoN(k, p));
 const LAPK = k => ({ ...((k && k.lap) || {}), evalT: false });
+const AHLI_RX = /ahli[^()/]*(muda[^()/]*(lingkungan|\blk\b)|lingkungan\s*kerja|pesawat\s*angkat|pesawat\s*angkut|\bpapa\b|kebakaran|damkar|pesawat\s*tenaga|\bptp\b)/i;
+const semPic = (k, ln) => ln && ln.sem != null ? !!ln.sem : AHLI_RX.test([k && k.nama, ...kelasArr(k || {})].join(' | '));
 const nilaiOf = (h, p, f) => { const o = ovOf(h), x = o && o.nilai[p.id] && o.nilai[p.id][f]; if (h.nilai[p.id] && f in h.nilai[p.id] && ownWins(h, x)) return String(h.nilai[p.id][f] || ''); return x ? String(x.v || '') : String(p[f] || ''); };
 const kelOf = (h, p) => { const o = ovOf(h), x = o && o.kel[p.id]; if ((p.id in h.kel) && ownWins(h, x)) return h.kel[p.id]; return x ? x.v : (p.hasil || ''); };
 const nilaiLengkap = (h, ln, p) => (!ln.nilai || !!(nilaiOf(h, p, 'ut') || nilaiOf(h, p, 'up'))) && (!(ln.nilai && ln.evalT) || !!nilaiOf(h, p, 'et')) && (!ln.hasil || !!kelOf(h, p));
@@ -117,13 +119,40 @@ const MATERI_KAT = [
   { id: 'lkm4', judul: "Ahli K3 Muda LK Hari 4 – Sistem Informasi & Sampel Ergonomi/Psikologi", grp: '*', isi: ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi", "Praktek pengumpulan sampel faktor ergonomi dan psikologi"] },
   { id: 'lkm5', judul: "Ahli K3 Muda LK Hari 5 – Sampel Fisika/Kimia/Biologi, PKL & Pelaporan", grp: '*', isi: ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi", "Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"] },
   { id: 'lkm6', judul: "Ahli K3 Muda LK Hari 6 – Uji Kompetensi", grp: '*', isi: ["Uji Kompetensi"] },
-  { id: 'lkm7', judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] }
+  { id: 'lkm7', judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] },
+  // Ahli K3 Pesawat Tenaga dan Produksi (PTP): 26 hari (salinan dari website, tanpa jadwal sesi)
+  {"id": "ptp1", "judul": "Ahli K3 PTP Hari 1 – UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja dst.", "grp": "*", "isi": ["UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja", "Permen No. 38 / 2016 Tentang Pesawat Tenaga dan Produksi"]},
+  {"id": "ptp2", "judul": "Ahli K3 PTP Hari 2 – Kebijakan K3 & Job Safety Analysis", "grp": "*", "isi": ["Kebijakan K3", "Job Safety Analysis"]},
+  {"id": "ptp3", "judul": "Ahli K3 PTP Hari 3 – Sistem Manajemen K3 & Investigasi Kecelakaan Kerja", "grp": "*", "isi": ["Sistem Manajemen K3", "Investigasi Kecelakaan Kerja"]},
+  {"id": "ptp4", "judul": "Ahli K3 PTP Hari 4 – Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya"]},
+  {"id": "ptp5", "judul": "Ahli K3 PTP Hari 5 – Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya"]},
+  {"id": "ptp6", "judul": "Ahli K3 PTP Hari 6 – Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)", "grp": "*", "isi": ["Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)"]},
+  {"id": "ptp7", "judul": "Ahli K3 PTP Hari 7 – Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya"]},
+  {"id": "ptp8", "judul": "Ahli K3 PTP Hari 8 – Kelistrikan dan Alat Kontrol Otomatis", "grp": "*", "isi": ["Kelistrikan dan Alat Kontrol Otomatis"]},
+  {"id": "ptp9", "judul": "Ahli K3 PTP Hari 9 – Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln", "grp": "*", "isi": ["Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln"]},
+  {"id": "ptp10", "judul": "Ahli K3 PTP Hari 10 – Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik", "grp": "*", "isi": ["Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik"]},
+  {"id": "ptp11", "judul": "Ahli K3 PTP Hari 11 – Teknik Pondasi & Pemeriksaan dan Pengujian Pondasi", "grp": "*", "isi": ["Teknik Pondasi", "Pemeriksaan dan Pengujian Pondasi"]},
+  {"id": "ptp12", "judul": "Ahli K3 PTP Hari 12 – Pemeriksaan/Pengujian Mesin Perkakas dan Produksi", "grp": "*", "isi": ["Pemeriksaan/Pengujian Mesin Perkakas dan Produksi"]},
+  {"id": "ptp13", "judul": "Ahli K3 PTP Hari 13 – Penyusunan Inspection Test Plan (ITP)", "grp": "*", "isi": ["Penyusunan Inspection Test Plan (ITP)"]},
+  {"id": "ptp14", "judul": "Ahli K3 PTP Hari 14 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"]},
+  {"id": "ptp15", "judul": "Ahli K3 PTP Hari 15 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"]},
+  {"id": "ptp16", "judul": "Ahli K3 PTP Hari 16 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar) dst.", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "Mekanikal Teknik Terapan/ Elemen Mesin"]},
+  {"id": "ptp17", "judul": "Ahli K3 PTP Hari 17 – Membaca Gambar Teknik & Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi", "grp": "*", "isi": ["Membaca Gambar Teknik", "Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi"]},
+  {"id": "ptp18", "judul": "Ahli K3 PTP Hari 18 – Pengetahuan Bahan & Korosi dan Pencegahannya", "grp": "*", "isi": ["Pengetahuan Bahan", "Korosi dan Pencegahannya"]},
+  {"id": "ptp19", "judul": "Ahli K3 PTP Hari 19 – Praktek Kerja Lapangan I (Mesin Penggerak Mula)", "grp": "*", "isi": ["Praktek Kerja Lapangan I (Mesin Penggerak Mula)"]},
+  {"id": "ptp20", "judul": "Ahli K3 PTP Hari 20 – Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)", "grp": "*", "isi": ["Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)"]},
+  {"id": "ptp21", "judul": "Ahli K3 PTP Hari 21 – Praktek Kerja Lapangan III (Furnace / Kiln)", "grp": "*", "isi": ["Praktek Kerja Lapangan III (Furnace / Kiln)"]},
+  {"id": "ptp22", "judul": "Ahli K3 PTP Hari 22 – Penyusunan Laporan Riksa Uji", "grp": "*", "isi": ["Penyusunan Laporan Riksa Uji"]},
+  {"id": "ptp23", "judul": "Ahli K3 PTP Hari 23 – Penyusunan Laporan Riksa Uji", "grp": "*", "isi": ["Penyusunan Laporan Riksa Uji"]},
+  {"id": "ptp24", "judul": "Ahli K3 PTP Hari 24 – Ujian Tulis Online di Teman K3", "grp": "*", "isi": ["Ujian Tulis Online di Teman K3"]},
+  {"id": "ptp25", "judul": "Ahli K3 PTP Hari 25 – Seminar & Interview", "grp": "*", "isi": ["Seminar", "Interview"]},
+  {"id": "ptp26", "judul": "Ahli K3 PTP Hari 26 – Penyusunan OJT", "grp": "*", "isi": ["Penyusunan OJT"]}
 ];
 const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(k).nrk || {})[m[1]] || {})[m[2]] || {}) : ((LAPK(k).nr || {})[key] || {}); };
 const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, own = (d in h.nr) ? h.nr[d] : null, ov = ovOf(h), xr = ov && ov.nr[d], base = nrAdmin(k, d); Object.keys(o).forEach(f => { const x = xr && xr[f]; let v; if (own && (f in own) && ownWins(h, x)) v = own[f]; else if (x) v = x.v; else v = own ? own[f] : base[f]; o[f] = String(v == null ? '' : v); }); const m = raw ? null : MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v81';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v82';
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
 const B3_REN = [['Petugas Penyelamat Ruang Terbatas', 'PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS']];
 function b3Ren(h) {
@@ -216,7 +245,7 @@ function lapCek(kid) {
     const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('nil' + sfx(g), 'Nilai & Kelulusan', 'nil', g);
     aktif.forEach(p => {
       const ok = nilaiLengkap(h, ln, p), ut = nilaiOf(h, p, 'ut'), up = nilaiOf(h, p, 'up'), kv = kelOf(h, p), ch = [];
-      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); if (ln.evalT) { const et = nilaiOf(h, p, 'et'); ch.push(['Evaluasi ' + (et || '–'), et ? 'ok' : 'bad']); } }
+      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); if (semPic(k, ln)) { const sm = nilaiOf(h, p, 'sm'); ch.push(['Seminar ' + (sm || '–'), sm ? 'ok' : 'warn']); } if (ln.evalT) { const et = nilaiOf(h, p, 'et'); ch.push(['Evaluasi ' + (et || '–'), et ? 'ok' : 'bad']); } }
       if (ln.hasil) ch.push([kv === 'lulus' ? 'Lulus' : kv === 'tidak' ? 'Tidak lulus' : 'Belum diisi', kv ? 'ok' : 'bad']);
       s.total++; if (ok) s.ok++; s.rows.push({ t: p.nama, st: ok ? 'ok' : 'bad', chips: ch });
     });

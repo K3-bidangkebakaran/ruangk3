@@ -36,7 +36,7 @@ let KEGS = {};            // kid -> kegiatan dari server
 let H = {};               // kid -> hasil kerja di HP
 let P = { screen: 'login', kid: null, kl: null, day: 0, q: '', err: '' }; // kl: alat/kelas yang sedang dibuka (kegiatan PAPA)
 let syncing = false, syncErr = '', lastSync = 0, pullErr = '';
-const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
+const newH = () => ({ batal: {}, remedial: {}, hadir: {}, foto: {}, foto2: {}, foto3: {}, foto4: {}, foto5: {}, ttdPic: '', ttdPicNama: '', upd: 0, rev: 0, dirty: false, sent: {}, nilai: {}, nlT: {}, kel: {}, lapN: {}, materi: {}, hfoto: {}, n1: '', n2: '', gone: [], nr: {}, nrs: {}, nshared: {}, naraSeen: {}, tshared: {}, ttdpSeen: {}, tnShared: {}, selesai: false });
 // batal: PIC bisa menandai (true) atau mencabut (false) secara eksplisit; bila belum disentuh, ikut tanda dari admin (peserta.batal)
 /* ---------- hasil akun PIC lain (sinkron antar akun) ----------
    Semua akun PIC melihat kegiatan yang sama, jadi hasil kerja satu akun harus tampak di akun lain TANPA menunggu admin membuka website.
@@ -165,7 +165,7 @@ const hariPeserta = (k, p) => { const hk = k && k.hk && p && p.kelas ? k.hk[kela
 const perluHari = (h, p, d, days, k) => { if (isBatal(h, p)) return false; const pd = k ? hariPeserta(k, p) : days; return pd.includes(d) && (!isRem(h, p) || d === pd[pd.length - 1]); };
 const absDays = k => { const kl = k && curKl(k), hk = kl && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); }; // hari yang tampil di tab absensi: alat selain Kelas 1 hanya 4 hari
 const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
-const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
+const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'nlT', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const FOTO_KEYS = ['foto', 'foto2', 'foto3', 'foto4', 'foto5'], KELAS_FOTO5 = 'ahli k3 muda lingkungan kerja'; // program B3 "Ahli K3 Muda Lingkungan Kerja": 5 foto per peserta
 const fotoNo = key => (key === 'foto' ? 1 : +String(key).slice(4) || 1), fMk = key => 'f' + (key === 'foto' ? '' : key.slice(4)) + '_', wfKey = key => 'wf' + (key === 'foto' ? '' : key.slice(4));
 const FOTO_SATU = [{ kelas: 'teknisi ruang terbatas', awal: '2026-10-29', akhir: '2026-11-02' }]; // pengecualian: kegiatan ini hanya 1 foto per peserta (sama dengan website)
@@ -175,6 +175,8 @@ const fotoN = (k, p) => { if (fotoSatu(k)) return 1; if (k && k.b3) { const ks =
 const fotoKeysP = (k, p) => FOTO_KEYS.slice(0, fotoN(k, p)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
 const fotoLengkap = (k, h, p) => isRem(h, p) || fotoKeysP(k, p).every(key => fotoAda(h, p, key)); // Remedial: fotonya sudah di batch sebelumnya (tidak wajib)
 const LAPK = k => ({ ...((k && k.lap) || {}), evalT: false }); // tidak ada kolom Nilai Evaluasi Teori terpisah: Nilai Ujian Teori = Nilai Evaluasi Teori
+const AHLI_RX = /ahli[^()/]*(muda[^()/]*(lingkungan|\blk\b)|lingkungan\s*kerja|pesawat\s*angkat|pesawat\s*angkut|\bpapa\b|kebakaran|damkar|pesawat\s*tenaga|\bptp\b)/i;
+const semPic = (k, ln) => ln && ln.sem != null ? !!ln.sem : AHLI_RX.test([k && k.nama, ...kelasArr(k || {})].join(' | ')); // Nilai Seminar hanya untuk kelas Ahli (website mengirim lap.sem; kegiatan lama dikenali dari namanya)
 const me4 = () => String((ME && ME.uid) || 'x').replace(/[^a-z0-9]/gi, '').slice(0, 4).toLowerCase() || 'x';
 // nilai/kelulusan: isian PIC (bila ada) menimpa isian dari admin
 const nilaiOf = (h, p, f) => { const o = ovOf(h), x = o && o.nilai[p.id] && o.nilai[p.id][f]; if (h.nilai[p.id] && f in h.nilai[p.id] && ownWins(h, x)) return String(h.nilai[p.id][f] || ''); return x ? String(x.v || '') : String(p[f] || ''); };
@@ -244,7 +246,34 @@ const MATERI_KAT = [
   { id: 'lkm4', judul: "Ahli K3 Muda LK Hari 4 – Sistem Informasi & Sampel Ergonomi/Psikologi", grp: '*', isi: ["Sistim informasi lingkungan kerja", "Teknik pengumpulan sampel faktor ergonomi dan psikologi", "Praktek pengumpulan sampel faktor ergonomi dan psikologi"] },
   { id: 'lkm5', judul: "Ahli K3 Muda LK Hari 5 – Sampel Fisika/Kimia/Biologi, PKL & Pelaporan", grp: '*', isi: ["Teknik pengumpulan sampel faktor fisika, kimia, dan biologi", "PKL Pengukuran Ventilasi Industri, pengumpulan sampel faktor fisika, kimia, biologi", "Penyusunan Pelaporan Hasil Pengukuran sesuai Permenaker No. 5 Tahun 2018"] },
   { id: 'lkm6', judul: "Ahli K3 Muda LK Hari 6 – Uji Kompetensi", grp: '*', isi: ["Uji Kompetensi"] },
-  { id: 'lkm7', judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] }
+  { id: 'lkm7', judul: "Ahli K3 Muda LK Hari 7 – Evaluasi Teori & Seminar", grp: '*', isi: ["Evaluasi Teori", "Seminar Hasil Pengukuran dan Evaluasi Praktek"] },
+  // Ahli K3 Pesawat Tenaga dan Produksi (PTP): 26 hari (salinan dari website, tanpa jadwal sesi)
+  {"id": "ptp1", "judul": "Ahli K3 PTP Hari 1 – UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja dst.", "grp": "*", "isi": ["UU. No. 1 Tahun 1970, Tentang Keselamatan Kerja", "Permen No. 38 / 2016 Tentang Pesawat Tenaga dan Produksi"]},
+  {"id": "ptp2", "judul": "Ahli K3 PTP Hari 2 – Kebijakan K3 & Job Safety Analysis", "grp": "*", "isi": ["Kebijakan K3", "Job Safety Analysis"]},
+  {"id": "ptp3", "judul": "Ahli K3 PTP Hari 3 – Sistem Manajemen K3 & Investigasi Kecelakaan Kerja", "grp": "*", "isi": ["Sistem Manajemen K3", "Investigasi Kecelakaan Kerja"]},
+  {"id": "ptp4", "judul": "Ahli K3 PTP Hari 4 – Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Mesin Perkakas dan Produksi serta Perlengkapannya"]},
+  {"id": "ptp5", "judul": "Ahli K3 PTP Hari 5 – Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Penggerak Mula termasuk Transmisi Tenaga Mekanik dan Perlengkapannya"]},
+  {"id": "ptp6", "judul": "Ahli K3 PTP Hari 6 – Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)", "grp": "*", "isi": ["Pengelasan dan Pengujian Tidak Merusak (Non Destructive Test)"]},
+  {"id": "ptp7", "judul": "Ahli K3 PTP Hari 7 – Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya", "grp": "*", "isi": ["Jenis-Jenis Tanur (Furnace), Kiln dan Perlengkapannya"]},
+  {"id": "ptp8", "judul": "Ahli K3 PTP Hari 8 – Kelistrikan dan Alat Kontrol Otomatis", "grp": "*", "isi": ["Kelistrikan dan Alat Kontrol Otomatis"]},
+  {"id": "ptp9", "judul": "Ahli K3 PTP Hari 9 – Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln", "grp": "*", "isi": ["Pemeriksaan/Pengujian Tanur (Furnace) dan Kiln"]},
+  {"id": "ptp10", "judul": "Ahli K3 PTP Hari 10 – Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik", "grp": "*", "isi": ["Pemeriksaan/Pengujian Penggerak Mula termasuk Transmisi Tenaga Mekanik"]},
+  {"id": "ptp11", "judul": "Ahli K3 PTP Hari 11 – Teknik Pondasi & Pemeriksaan dan Pengujian Pondasi", "grp": "*", "isi": ["Teknik Pondasi", "Pemeriksaan dan Pengujian Pondasi"]},
+  {"id": "ptp12", "judul": "Ahli K3 PTP Hari 12 – Pemeriksaan/Pengujian Mesin Perkakas dan Produksi", "grp": "*", "isi": ["Pemeriksaan/Pengujian Mesin Perkakas dan Produksi"]},
+  {"id": "ptp13", "judul": "Ahli K3 PTP Hari 13 – Penyusunan Inspection Test Plan (ITP)", "grp": "*", "isi": ["Penyusunan Inspection Test Plan (ITP)"]},
+  {"id": "ptp14", "judul": "Ahli K3 PTP Hari 14 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"]},
+  {"id": "ptp15", "judul": "Ahli K3 PTP Hari 15 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)"]},
+  {"id": "ptp16", "judul": "Ahli K3 PTP Hari 16 – Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar) dst.", "grp": "*", "isi": ["Dasar - Dasar Penilaian Perhitungan Konstruksi Pesawat Tenaga dan Produksi (Standar)", "Mekanikal Teknik Terapan/ Elemen Mesin"]},
+  {"id": "ptp17", "judul": "Ahli K3 PTP Hari 17 – Membaca Gambar Teknik & Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi", "grp": "*", "isi": ["Membaca Gambar Teknik", "Proses Pembuatan, Pemasangan dan Perbaikan/Modifikasi"]},
+  {"id": "ptp18", "judul": "Ahli K3 PTP Hari 18 – Pengetahuan Bahan & Korosi dan Pencegahannya", "grp": "*", "isi": ["Pengetahuan Bahan", "Korosi dan Pencegahannya"]},
+  {"id": "ptp19", "judul": "Ahli K3 PTP Hari 19 – Praktek Kerja Lapangan I (Mesin Penggerak Mula)", "grp": "*", "isi": ["Praktek Kerja Lapangan I (Mesin Penggerak Mula)"]},
+  {"id": "ptp20", "judul": "Ahli K3 PTP Hari 20 – Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)", "grp": "*", "isi": ["Praktek Kerja Lapangan II (Mesin Perkakas dan Produksi)"]},
+  {"id": "ptp21", "judul": "Ahli K3 PTP Hari 21 – Praktek Kerja Lapangan III (Furnace / Kiln)", "grp": "*", "isi": ["Praktek Kerja Lapangan III (Furnace / Kiln)"]},
+  {"id": "ptp22", "judul": "Ahli K3 PTP Hari 22 – Penyusunan Laporan Riksa Uji", "grp": "*", "isi": ["Penyusunan Laporan Riksa Uji"]},
+  {"id": "ptp23", "judul": "Ahli K3 PTP Hari 23 – Penyusunan Laporan Riksa Uji", "grp": "*", "isi": ["Penyusunan Laporan Riksa Uji"]},
+  {"id": "ptp24", "judul": "Ahli K3 PTP Hari 24 – Ujian Tulis Online di Teman K3", "grp": "*", "isi": ["Ujian Tulis Online di Teman K3"]},
+  {"id": "ptp25", "judul": "Ahli K3 PTP Hari 25 – Seminar & Interview", "grp": "*", "isi": ["Seminar", "Interview"]},
+  {"id": "ptp26", "judul": "Ahli K3 PTP Hari 26 – Penyusunan OJT", "grp": "*", "isi": ["Penyusunan OJT"]}
 ];
 const naraOf = id => NARA_KAT.find(n => n.id === id) || null;
 const materiOpsi = (kid, inst) => { const n = naraOf(kid), w = inst ? /wasnaker/i.test(String(inst)) : !!(n && n.grp === 'wasnaker'); return w ? MATERI_KAT.filter(m => m.grp === 'wasnaker' || m.grp === '*') : MATERI_KAT; }; // semua materi terbuka, kecuali narasumber Wasnaker (hanya materi Wasnaker + umum)
@@ -255,7 +284,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v81';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v82';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -279,9 +308,10 @@ const pesByKl = (k, kl) => { const ps = (k && k.peserta) || []; return kl == nul
 const klGroups = k => { const ks = kelasArr(k).filter(Boolean), ps = (k && k.peserta) || [], g = ks.map(l => ({ kl: l, n: ps.filter(p => p.kelas === l).length })); const rest = ps.filter(p => !ks.includes(p.kelas)).length; if (rest) g.push({ kl: '', n: rest }); return g.filter(x => x.n); };
 const curKl = k => (papaOf(k) && P.kl != null) ? P.kl : undefined; // alat yang sedang dibuka (undefined = semua peserta)
 const pesKl = k => pesByKl(k, curKl(k));
-const namaTampil = k => { if (k && k.b3) { const ks = kelasArr(k).map(x => String(x || '').trim()).filter(Boolean); if (ks.length) return 'K3 LKBB (' + ks.join(', ') + ')'; } return (k && k.nama) || ''; }; // K3 Lingkungan Kerja (B3): di layar tampil "K3 LKBB (nama program)" (seperti K3 Penanggulangan Kebakaran (KELAS D)); Pesawat Angkat & Angkut tetap nama asli
+const b3Pfx = k => k && k.jenis === 'ptp' ? 'K3 PTP' : 'K3 LKBB'; // PTP = K3 Pesawat Tenaga dan Produksi (cara kerjanya sama dengan B3: satu program = satu kelas)
+const namaTampil = k => { if (k && k.b3) { const ks = kelasArr(k).map(x => String(x || '').trim()).filter(Boolean); if (ks.length) return b3Pfx(k) + ' (' + ks.join(', ') + ')'; } return (k && k.nama) || ''; }; // K3 Lingkungan Kerja (B3): di layar tampil "K3 LKBB (nama program)" (seperti K3 Penanggulangan Kebakaran (KELAS D)); Pesawat Angkat & Angkut tetap nama asli
 const kNama = k => namaTampil(k) + (k.sfx ? ' (' + k.sfx + ')' : ''); // huruf A/B/C bila ada kegiatan kembar (nama & tanggal sama); hanya untuk tampilan layar
-const kegKl = (k, kl) => 'K3 LKBB (' + klLabel(kl) + ')'; // K3 Lingkungan Kerja (B3): nama kegiatan di layar program = "K3 LKBB (nama program)"; Pesawat Angkat & Angkut tidak berubah
+const kegKl = (k, kl) => b3Pfx(k) + ' (' + klLabel(kl) + ')'; // K3 Lingkungan Kerja (B3): nama kegiatan di layar program = "K3 LKBB (nama program)"; Pesawat Angkat & Angkut tidak berubah
 const subK = k => curKl(k) !== undefined ? (k.b3 ? kegKl(k, P.kl) : klLabel(P.kl)) : kNama(k); // subjudul layar: nama alat (PAPA) / "K3 LKBB (program)" (B3) atau nama kegiatan
 const nrPfx = k => (k && k.b3 && papaOf(k) && P.kl) ? kelasKey(P.kl) + '~' : ''; // B3: narasumber tiap program sendiri (kunci '<kunciProgram>~tanggal'); // v21: absensi narasumber SATU untuk semua alat (kunci = tanggal saja); data lama per alat digabung oleh nrGabung
 // baris narasumber per hari: kunci 'YYYY-MM-DD' = baris utama, 'YYYY-MM-DD_2..4' = narasumber tambahan di hari yang sama
@@ -634,7 +664,7 @@ const flags = h => {
   const nr = {}, nrk = {}; new Set([...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})]).forEach(d => { const o = { ...((h.nr || {})[d] || {}) }; if ((h.nrs || {})[d]) o.ttd = 1; const m = NRK_RE.exec(d); if (m[1]) (nrk[m[1]] = nrk[m[1]] || {})[m[2]] = o; else nr[d] = o; });
   const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari, nr, nrk }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
   const mh = {}; mediaList(h).forEach(([k]) => { if (h.sent[k]) mh[k] = h.sent[k]; }); // sidik gambar yang sudah terkirim: website hanya mengunduh gambar yang berubah
-  return { dev: DEV, mh, nilai: h.nilai || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, ...fx, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, admT: h.admT || 0, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
+  return { dev: DEV, mh, nilai: h.nilai || {}, nlT: h.nlT || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, ...fx, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, admT: h.admT || 0, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
 /* ---------- toast ---------- */
@@ -985,7 +1015,7 @@ function lapCek(kid) {
     const ps = urutKelas(k, pesByKl(k, g.kl)), aktif = ps.filter(p => !isBatal(h, p)), s = base('nil' + sfx(g), 'Nilai & Kelulusan', 'nil', g);
     aktif.forEach(p => {
       const ok = nilaiLengkap(h, ln, p), ut = nilaiOf(h, p, 'ut'), up = nilaiOf(h, p, 'up'), kv = kelOf(h, p), ch = [];
-      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); if (ln.evalT) { const et = nilaiOf(h, p, 'et'); ch.push(['Evaluasi ' + (et || '–'), et ? 'ok' : 'bad']); } }
+      if (ln.nilai) { ch.push(['Teori ' + (ut || '–'), ut ? 'ok' : 'bad']); ch.push(['Praktek ' + (up || '–'), up ? 'ok' : 'warn']); if (semPic(k, ln)) { const sm = nilaiOf(h, p, 'sm'); ch.push(['Seminar ' + (sm || '–'), sm ? 'ok' : 'warn']); } if (ln.evalT) { const et = nilaiOf(h, p, 'et'); ch.push(['Evaluasi ' + (et || '–'), et ? 'ok' : 'bad']); } }
       if (ln.hasil) ch.push([kv === 'lulus' ? 'Lulus' : kv === 'tidak' ? 'Tidak lulus' : 'Belum diisi', kv ? 'ok' : 'bad']);
       s.total++; if (ok) s.ok++; s.rows.push({ t: p.nama, st: ok ? 'ok' : 'bad', chips: ch });
     });
@@ -1031,6 +1061,17 @@ const FLAG = {
   sig: svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36"><text x="30" y="27" text-anchor="middle" font-family="Arial" font-size="26" fill="#2e7d5b">✔</text></svg>'),
   foto: svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200"><rect width="300" height="200" fill="#eef5f1"/><text x="150" y="95" text-anchor="middle" font-family="Arial" font-size="30" fill="#2e7d5b">✔ Foto sudah ada</text><text x="150" y="130" text-anchor="middle" font-family="Arial" font-size="20" fill="#5b7f6d">(website / PIC lain)</text></svg>')
 };
+const NLS = {}; let nlBusy = false; // NLS[kid] = penanda dh_nilai_st terakhir yang sudah dibaca
+async function nilaiPull(kid, force) { // nilai dari link narasumber -> h.nilai (yang lebih baru menang; waktu PIC = h.nlT)
+  const k = KEGS[kid]; if (nlBusy || !k || !LAPK(k).nilai || !fbOk() || !window.PicFB.nilaiIn || !online()) return 0; nlBusy = true;
+  try {
+    const st = await window.PicFB.nilaiSt(kid); if (!st || (!force && NLS[kid] === st)) return 0;
+    const inn = await window.PicFB.nilaiIn(kid), h = hOf(kid), ids = new Set((k.peserta || []).map(p => p.id)); let n = 0;
+    Object.entries(inn).forEach(([key, x]) => { const [pid, f] = String(key).split('~'); if (!x || typeof x !== 'object' || (f !== 'up' && f !== 'sm') || !ids.has(pid)) return; const t = +x.t || 0, cur = (h.nlT[pid] && h.nlT[pid][f]) || 0; if (t <= cur) return; (h.nilai[pid] = h.nilai[pid] || {})[f] = String(x.v == null ? '' : x.v); (h.nlT[pid] = h.nlT[pid] || {})[f] = t; n++; });
+    NLS[kid] = st; if (n) { touch(kid); renderSoft(); }
+    return n;
+  } catch (e) { return 0; } finally { nlBusy = false; }
+}
 const SFD = {}, SFP = {}, SFS = {}, SFT = {}; let sfBusy = false; // selfie peserta untuk pratinjau: SFD[kid][pid~tgl~p|s] = gambar; SFS = penanda di server; SFT = penanda waktu gambar yang sudah dibaca
 async function sfLoad(kid) { // selfie dibaca dari server hanya saat tab "Absen Selfie" / layar "Hasil Selfie" dibuka
   if (sfBusy || !fbOk() || !window.PicFB.selfieSt || !online()) return false; sfBusy = true; const D = SFD[kid] = SFD[kid] || {}, T = SFT[kid] = SFT[kid] || {};
@@ -1083,7 +1124,7 @@ function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin 
     const ttd = {}; days.forEach(d => { const u = (h.hadir[p.id] && h.hadir[p.id][d]) || xmGet(kid, `s_${p.id}_${d}`) || wmGet(kid, `s_${p.id}_${d}`); if (u) ttd[d] = u; else if (webT(p, d) || xT(h, p.id, d)) ttd[d] = FLAG.sig; });
     const fo = key => (h[key] && h[key][p.id]) || xmGet(kid, fMk(key) + p.id) || wmGet(kid, fMk(key) + p.id) || ((webF(p, key) || xF(h, p.id, key)) ? FLAG.foto : '');
     const sf = {}; days.forEach(d => ['p', 's'].forEach(s => { const u = sfd[`${p.id}~${d}~${s}`]; if (u) (sf[d] = sf[d] || {})[s] = u; }));
-    return { id: p.id, nama: p.nama, instansi: p.instansi || '', kelas: p.kelas || '', batal: isBatal(h, p), remedial: isRem(h, p), ut: nilaiOf(h, p, 'ut'), up: nilaiOf(h, p, 'up'), et: nilaiOf(h, p, 'et'), hasil: kelOf(h, p), foto: fo('foto'), foto2: fo('foto2'), foto3: fo('foto3'), foto4: fo('foto4'), foto5: fo('foto5'), ttd, sf };
+    return { id: p.id, nama: p.nama, instansi: p.instansi || '', kelas: p.kelas || '', batal: isBatal(h, p), remedial: isRem(h, p), ut: nilaiOf(h, p, 'ut'), up: nilaiOf(h, p, 'up'), sm: nilaiOf(h, p, 'sm'), et: nilaiOf(h, p, 'et'), hasil: kelOf(h, p), foto: fo('foto'), foto2: fo('foto2'), foto3: fo('foto3'), foto4: fo('foto4'), foto5: fo('foto5'), ttd, sf };
   });
   const hari = {}, px = xmPlan(kid);
   days.forEach(d => {
@@ -1098,7 +1139,7 @@ function wrdEv(kid, k) { // susun "kegiatan" seperti di website dari data admin 
     kls.forEach(l => { const kk = kelasKey(l), pf = kk + '~', o = {}; keysOf(pf, Object.keys((ln.nrk || {})[kk] || {})).forEach(key => { o[key.slice(pf.length)] = row(key); }); nrk[kk] = o; });
     Object.keys(ln.nrOff || {}).forEach(key => { const m = NRK_RE.exec(key); if (ln.nrOff[key] && m[1]) (nrOffK[m[1]] = nrOffK[m[1]] || {})[m[2]] = 1; });
   } else { keysOf('', Object.keys(ln.nr || {})).forEach(key => { nr[key] = row(key); }); Object.keys(ln.nrOff || {}).forEach(key => { if (ln.nrOff[key]) nrOff[key] = 1; }); }
-  const lap = { nilai: !!ln.nilai, evalT: !!ln.evalT, hasil: !!ln.hasil, harian: !!ln.harian, nara: !!ln.nara, selfie: !!ln.selfie, rundown: ln.rundown == null ? null : !!ln.rundown, batch: ln.batch || '', nKota: kotaOf(h, k), nTgl: ln.nTgl || '',
+  const lap = { nilai: !!ln.nilai, evalT: !!ln.evalT, sem: semPic(k, ln), hasil: !!ln.hasil, harian: !!ln.harian, nara: !!ln.nara, selfie: !!ln.selfie, rundown: ln.rundown == null ? null : !!ln.rundown, batch: ln.batch || '', nKota: kotaOf(h, k), nTgl: ln.nTgl || '',
     s1: { jab: ln.s1jab || '', nama: lapNama(h, k, 's1', 'nama'), nip: lapNama(h, k, 's1', 'nip'), ttd: n1 }, s2: { jab: ln.s2jab || '', nama: lapNama(h, k, 's2', 'nama'), nip: '', ttd: n2 }, hari, nr, nrk, nrOff, nrOffK };
   const hk = {}; Object.entries(k.hk || {}).forEach(([kk, v]) => { hk[kk] = arr(v); });
   return { id: kid, created: k.dibuat || 0, acara: a, peserta, lap, hkMap: hk };
@@ -1211,7 +1252,7 @@ function render() {
   const app = $('#app'); if (!app) return;
   if (!ME) P.screen = 'login';
   const kid = P.kid, k = kid && KEGS[kid];
-  if (['keg', 'alat', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr', 'nar', 'sfl', 'sfm', 'lap', 'wrd'].includes(P.screen) && !k) P.screen = 'home';
+  if (['keg', 'alat', 'abs', 'pic', 'dok', 'nil', 'ttn', 'dhr', 'nar', 'sfl', 'sfm', 'nlk', 'lap', 'wrd'].includes(P.screen) && !k) P.screen = 'home';
   if (k && P.screen === 'alat' && !papaOf(k)) P.screen = 'keg';
   if (k && papaOf(k) && P.kl == null && ['abs', 'dok', 'nil'].includes(P.screen)) P.screen = 'keg'; // layar per alat butuh alat terpilih (narasumber = satu untuk semua alat, boleh dibuka dari daftar alat)
   let h = '';
@@ -1250,6 +1291,7 @@ function render() {
     const tDok = `<button type="button" class="tile" data-act="go" data-to="dok"><span class="ic">${I.cam}</span><span><b>Dokumentasi Peserta</b><small>${s.foto}/${s.aktif} foto diambil</small></span>${I.chev}</button>`;
     const tNil = ln.nilai || ln.hasil ? (() => { const ps = pesByKl(k, kl).filter(p => !isBatal(hh, p)), isi = ps.filter(p => nilaiLengkap(hh, ln, p)).length;
       return `<button type="button" class="tile" data-act="go" data-to="nil"><span class="ic">${I.list}</span><span><b>Nilai &amp; Kelulusan</b><small>${isi}/${ps.length} peserta terisi</small></span>${I.chev}</button>`; })() : '';
+    const tNlk = ln.nilai && !alat ? `<button type="button" class="tile" data-act="go" data-to="nlk"><span class="ic">${I.pen}</span><span><b>Link Nilai Narasumber</b><small>Narasumber mengisi Nilai Praktek${semPic(k, ln) ? ' &amp; Seminar' : ''} lewat link</small></span>${I.chev}</button>` : '';
     const tTtn = ln.nilai ? `<button type="button" class="tile" data-act="go" data-to="ttn"><span class="ic">${I.pen}</span><span><b>Penandatangan Daftar Nilai</b><small>Pengawas ${nTtd(hh, 1, k) ? '✔ sudah TTD' : '– belum TTD'} · Ahli K3 ${nTtd(hh, 2, k) ? '✔ sudah TTD' : '– belum TTD'}</small></span>${I.chev}</button>` : '';
     const tNar = (ln.nara && (!k.b3 || alat)) ? (() => { const ds = (k.b3 ? absDays(k) : (k.tgl || [])).filter(d => !nrOffOf(k, nrPfx(k) + d)), pf = nrPfx(k), n = ds.filter(d => { const r = nrOf(hh, k, pf + d); return r.nama && nrTtd(hh, pf + d, k); }).length; return `<button type="button" class="tile" data-act="go" data-to="nar"><span class="ic">${I.pen}</span><span><b>Absensi Narasumber</b><small>${n}/${ds.length} hari lengkap (nama &amp; TTD)</small></span>${I.chev}</button>`; })() : '';
     const tSf = ln.selfie && !alat ? `<button type="button" class="tile" data-act="go" data-to="sfl"><span class="ic">${I.cam}</span><span><b>Link Absen Selfie Peserta</b><small>Bagikan ke peserta · pagi &amp; siang</small></span>${I.chev}</button><button type="button" class="tile" data-act="go" data-to="sfm"><span class="ic">${I.cam}</span><span><b>Hasil Selfie Peserta</b><small>Lihat foto · hapus bila salah, peserta selfie ulang</small></span>${I.chev}</button>` : '';
@@ -1275,12 +1317,12 @@ function render() {
       ${klGroups(k).map(g => { const sg = stat(kid, g.kl); return `<button type="button" class="kcard" data-act="alat" data-kl="${esc(g.kl)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(klLabel(g.kl))}</h3></div>
         <div class="meta"><span>${g.n} peserta</span></div>${g.kl ? '' : '<p class="hint" style="margin:4px 0 0">Alat peserta ini belum dipilih di website (tab Kegiatan &amp; Peserta). Pilih alatnya supaya masuk ke alat yang benar.</p>'}<div class="bars">${bar('TTD peserta', sg.ttd, sg.ttdTotal)}${bar('Foto', sg.foto, sg.aktif)}</div></button>`; }).join('')}
       <div class="hello" style="margin-top:6px"><h2 style="font-size:17px">Untuk semua ${k.b3 ? 'program' : 'alat'}</h2></div>
-      ${tSf}${tDhr}${tFt}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}${tWrd}
+      ${tSf}${tNlk}${tDhr}${tFt}${k.b3 ? '' : tNar}${tPic}${tTtn}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">${k.b3 ? 'Dokumentasi Harian, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua program. Absensi Narasumber ada di dalam tiap program.' : 'Dokumentasi Harian, Absensi Narasumber, TTD PIC, dan penandatangan daftar nilai cukup diisi sekali untuk semua alat (masuk ke laporan tiap alat/kelas). Hari ke-5 dan seterusnya (Kelas 1) tercetak hanya di laporan Kelas 1.'} Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}${dlCard}</div>`;
     } else {
       h = appbar(kNama(k), rentang(k.tgl) + (k.tempat ? ' · ' + k.tempat : ''), true) + `<div class="screen">
-      ${tAbs}${tSf}${tPic}${tDok}${tNil}${tTtn}${tNar}${tDhr}${tFt}${tLap}${tWrd}
+      ${tAbs}${tSf}${tPic}${tDok}${tNil}${tNlk}${tTtn}${tNar}${tDhr}${tFt}${tLap}${tWrd}
       <div class="bars" style="padding:4px 2px">${bar('TTD peserta', s.ttd, s.ttdTotal)}${bar('Foto', s.foto, s.aktif)}${bar('TTD PIC', s.ttdPic ? 1 : 0, 1)}</div>
       <p class="hint">Semua isian tersimpan di HP lebih dulu, lalu dikirim otomatis saat ada sinyal.</p>${btnSelesai}${dlCard}</div>`;
     }
@@ -1320,7 +1362,7 @@ function render() {
       <div class="field"><input id="nilQ" type="search" placeholder="Cari nama peserta" aria-label="Cari nama peserta" value="${esc(P.q)}"></div>
       ${ln.hasil ? `<button type="button" class="btn" data-act="allulus">✔ Tandai semua Lulus</button>` : ''}
       <div class="nlist" id="nilList"></div>
-      <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek (angka atau tanda lain, mis. 83.3 atau X). ' : ''}${ln.nilai ? 'Nilai Ujian Teori juga bisa diisi dengan mengetuk Lulus / Tidak lulus di bawah kotaknya (ketuk lagi untuk mengosongkan; angka tetap bisa diketik manual). ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
+      <p class="hint">${ln.nilai ? 'Isi Nilai Ujian Teori dan Nilai Ujian Praktek' + (semPic(k, ln) ? ' (serta Nilai Seminar)' : '') + ' (angka atau tanda lain, mis. 83.3 atau X). Nilai Praktek' + (semPic(k, ln) ? ' &amp; Seminar' : '') + ' juga bisa diisi narasumber lewat <b>Link Nilai Narasumber</b> di halaman kegiatan. ' : ''}${ln.nilai ? 'Nilai Ujian Teori juga bisa diisi dengan mengetuk Lulus / Tidak lulus di bawah kotaknya (ketuk lagi untuk mengosongkan; angka tetap bisa diketik manual). ' : ''}${ln.hasil ? 'Ketuk <b>Lulus</b> atau <b>Tidak lulus</b> (pilih salah satu; ketuk lagi untuk mengosongkan). Peserta Cancel otomatis ditulis CANCEL. ' : ''}Isian tersimpan di HP dan dikirim otomatis.</p></div>`;
   } else if (P.screen === 'ttn') {
     const hh = hOf(kid), ln = LAPK(k), sg = (w, n, jab, nip) => `<div class="card2"><b>${esc(jab || '')}</b>${ttdBadge(nTtdSrc(hh, k, n))}
       <div class="field"><label for="in_${w}nama">Nama</label><input id="in_${w}nama" data-lap="${w}.nama" value="${esc(lapNama(hh, k, w, 'nama'))}" autocomplete="off" placeholder="Contoh: REPY, ST"></div>
@@ -1369,6 +1411,17 @@ function render() {
         <div class="field"><label for="sfLinkD">Link darurat selfie</label><input id="sfLinkD" readonly value="${esc(link + '&darurat=1')}" onfocus="this.select()"></div>
         <div class="row"><button type="button" class="btn pri" data-act="sfdcopy">Salin link darurat</button><button type="button" class="btn" data-act="sfdshare">🚨 Bagikan link darurat</button></div></div>` : ''}
       <p class="hint">Absen <b>pagi</b> sebelum jam 12.00 dan absen <b>siang</b> jam 12.00 ke atas (mengikuti zona waktu kegiatan). Link hanya berlaku pada hari kegiatan. Setiap peserta hanya bisa sekali per sesi; bila salah foto, hapus selfie-nya lewat <b>Hasil Selfie Peserta</b> (atau admin di Daftar Hadir) agar peserta bisa mengulang. Hasilnya otomatis masuk ke laporan setelah Daftar Hadir.</p></div>`;
+  } else if (P.screen === 'nlk') {
+    const link = `${location.origin}/nilai/?k=${encodeURIComponent(kid)}`, sm = semPic(k, LAPK(k)), hh = hOf(kid), ps = (k.peserta || []).filter(p => (p.nama || '').trim() && !isBatal(hh, p)), nUp = ps.filter(p => nilaiOf(hh, p, 'up')).length, nSm = ps.filter(p => nilaiOf(hh, p, 'sm')).length;
+    h = appbar('Link Nilai Narasumber', k.nama, true) + `<div class="screen">
+      <div class="hint">Kirim link ini ke narasumber (mis. lewat WhatsApp). Narasumber mengisi namanya, lalu mengetik <b>Nilai Praktek</b>${sm ? ' dan <b>Nilai Seminar</b>' : ''} tiap peserta. Tidak perlu login. Nilai masuk otomatis ke menu <b>Nilai &amp; Kelulusan</b> dan ke Daftar Hadir di website.</div>
+      <div class="field"><label for="nlLink">Link nilai narasumber</label><input id="nlLink" readonly value="${esc(link)}" onfocus="this.select()"></div>
+      <button type="button" class="btn pri" data-act="nlcopy">Salin link</button>
+      <button type="button" class="btn" data-act="nlshare">Bagikan (WhatsApp, dll.)</button>
+      <button type="button" class="btn" data-act="nlreload">Ambil nilai terbaru sekarang</button>
+      <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;display:block">Buka halaman nilai (uji)</a>
+      <div class="bars" style="padding:4px 2px">${bar('Nilai Praktek', nUp, ps.length)}${sm ? bar('Nilai Seminar', nSm, ps.length) : ''}</div>
+      <p class="hint">Bila PIC atau admin mengetik nilai yang sama, yang dipakai adalah isian <b>paling baru</b>. Boleh diperbaiki kapan saja.</p></div>`;
   } else if (P.screen === 'ftl') {
     const link = fotoLink(kid), hh = hOf(kid), nW = fotoMenunggu(kid);
     h = appbar('Link Foto Dokumentasi', k.nama, true) + `<div class="screen">
@@ -1413,7 +1466,7 @@ function renderNil() {
   $('#nilList').innerHTML = rows.length ? rows.map((p, i) => {
     const cx = isBatal(h, p), kv = kelOf(h, p);
     return `<div class="nrow${cx ? ' cx' : ''}" data-pid="${esc(p.id)}"><div class="who"><b>${esc(p.nama)}</b><small>${instKel(p)}</small></div>${cx ? '<span class="pill bad">CANCEL</span>'
-      : `${ln.nilai ? (() => { const ut = nilaiOf(h, p, 'ut'); return `<div class="nin"><div class="ncol"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(ut)}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><div class="tbtn"><button type="button" class="ckb${ut === 'LULUS' ? ' on' : ''}" data-act="etv" data-v="LULUS" aria-pressed="${ut === 'LULUS'}">${ut === 'LULUS' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${ut === 'TIDAK LULUS' ? ' on' : ''}" data-act="etv" data-v="TIDAK LULUS" aria-pressed="${ut === 'TIDAK LULUS'}">${ut === 'TIDAK LULUS' ? '☑' : '☐'} Tidak lulus</button></div></div><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label></div>`; })() : ''}
+      : `${ln.nilai ? (() => { const ut = nilaiOf(h, p, 'ut'); return `<div class="nin"><div class="ncol"><label><span>Nilai Ujian Teori</span><input inputmode="decimal" data-nf="ut" placeholder="Nilai" value="${esc(ut)}" aria-label="Nilai Ujian Teori ${esc(p.nama)}" autocomplete="off"></label><div class="tbtn"><button type="button" class="ckb${ut === 'LULUS' ? ' on' : ''}" data-act="etv" data-v="LULUS" aria-pressed="${ut === 'LULUS'}">${ut === 'LULUS' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${ut === 'TIDAK LULUS' ? ' on' : ''}" data-act="etv" data-v="TIDAK LULUS" aria-pressed="${ut === 'TIDAK LULUS'}">${ut === 'TIDAK LULUS' ? '☑' : '☐'} Tidak lulus</button></div></div><div class="ncol"><label><span>Nilai Ujian Praktek</span><input inputmode="decimal" data-nf="up" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'up'))}" aria-label="Nilai Ujian Praktek ${esc(p.nama)}" autocomplete="off"></label>${semPic(k, ln) ? `<label><span>Nilai Seminar</span><input inputmode="decimal" data-nf="sm" placeholder="Nilai" value="${esc(nilaiOf(h, p, 'sm'))}" aria-label="Nilai Seminar ${esc(p.nama)}" autocomplete="off"></label>` : ''}</div></div>`; })() : ''}
       ${ln.hasil ? `<div class="kel"><button type="button" class="ckb${kv === 'lulus' ? ' on' : ''}" data-act="kel" data-v="lulus" aria-pressed="${kv === 'lulus'}">${kv === 'lulus' ? '☑' : '☐'} Lulus</button><button type="button" class="ckb bad${kv === 'tidak' ? ' on' : ''}" data-act="kel" data-v="tidak" aria-pressed="${kv === 'tidak'}">${kv === 'tidak' ? '☑' : '☐'} Tidak lulus</button></div>` : ''}`}</div>`;
   }).join('') : `<div class="empty">${ps.length ? 'Tidak ada nama yang cocok.' : 'Belum ada peserta di kegiatan ini.'}</div>`;
 }
@@ -1709,7 +1762,7 @@ document.addEventListener('click', e => {
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { const e0 = syncErr; syncErr = ''; sync(); pull(true); toast(e0 ? 'Mengirim ulang. Kendala sebelumnya: ' + e0 : 'Memeriksa dan mengirim data…'); } }
   else if (a === 'ingopen') { INGHTML = ''; $('#ovl').innerHTML = ''; if (b.dataset.sel) setTimeout(() => { const e = $('[data-act=selesai]'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 250); P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = ((KEGS[P.kid] || {}).tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
-  else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); }
+  else if (a === 'open') { P.kid = b.dataset.id; P.kl = null; P.from = null; P.lapOpen = {}; P.wd = null; P.wk = -1; P.sd = 0; P.screen = 'keg'; const ds = (KEGS[P.kid].tgl || []), t = ds.indexOf(todayIso()); P.day = t >= 0 ? t : 0; P.q = ''; render(); nilaiPull(P.kid).catch(() => { }); }
   else if (a === 'back') { // dari layar per alat (abs/dok/nil/nar) kembali ke menu alat; dari menu alat ke daftar alat
     if (P.from === 'lap' && P.screen !== 'lap') { P.screen = 'lap'; P.kl = null; P.from = null; }
     else if (P.screen === 'lap' || P.screen === 'wrd') { P.screen = 'keg'; P.kl = null; P.from = null; }
@@ -1720,6 +1773,9 @@ document.addEventListener('click', e => {
     P.q = ''; render();
   }
   else if ((a === 'tpshare' || a === 'tpcopy' || a === 'tpdshare' || a === 'tpdcopy') && k) ttdpShare(b, a, k, kid);
+  else if (a === 'nlcopy') { const t = $('#nlLink').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link disalin'), () => { $('#nlLink').select(); toast('Tahan lalu pilih Salin'); }); }
+  else if (a === 'nlshare') { const t = $('#nlLink').value, msg = `Input nilai peserta ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Input Nilai Peserta', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
+  else if (a === 'nlreload') { if (!online()) toast('Belum ada sinyal.'); else nilaiPull(kid, true).then(n => { toast(n ? n + ' nilai baru diambil.' : 'Belum ada nilai baru.'); }); }
   else if (a === 'sfcopy') { const t = $('#sfLink').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link disalin'), () => { $('#sfLink').select(); toast('Tahan lalu pilih Salin'); }); }
   else if (a === 'sfdcopy') { const t = $('#sfLinkD').value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Link darurat disalin'), () => { $('#sfLinkD').select(); toast('Tahan lalu pilih Salin'); }); }
   else if (a === 'sfdshare') { const t = $('#sfLinkD').value, msg = `Link DARURAT absen selfie (untuk yang belum selfie) ${k ? k.nama : 'kegiatan'}: ${t}`; if (navigator.share) navigator.share({ title: 'Absen Selfie Darurat', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
@@ -1809,7 +1865,7 @@ document.addEventListener('change', async e => {
 });
 document.addEventListener('input', e => {
   const t = e.target, kid = P.kid, k = kid && KEGS[kid];
-  if (t.dataset && t.dataset.nf && k) { const pid = t.closest('.nrow').dataset.pid, h = hOf(kid); (h.nilai[pid] = h.nilai[pid] || {})[t.dataset.nf] = t.value.trim(); touch(kid); return; }
+  if (t.dataset && t.dataset.nf && k) { const pid = t.closest('.nrow').dataset.pid, h = hOf(kid); (h.nilai[pid] = h.nilai[pid] || {})[t.dataset.nf] = t.value.trim(); (h.nlT[pid] = h.nlT[pid] || {})[t.dataset.nf] = nowS(); touch(kid); return; }
   if (t.dataset && t.dataset.nr && t.tagName !== 'SELECT' && k) { const d = t.closest('.card2').dataset.day, h = hOf(kid); nrSet(h, k, d)[t.dataset.nr] = t.value; touch(kid); return; }
   if (t.dataset && t.dataset.materi && k) { const h = hOf(kid); h.materi[t.dataset.materi] = t.value; touch(kid); return; }
   if (t.dataset && t.dataset.lap && k) { const h = hOf(kid), [w, f] = t.dataset.lap.split('.'); if (w === 'kota') h.lapN.nKota = t.value; else { h.lapN[w] = h.lapN[w] || {}; h.lapN[w][f] = t.value; } touch(kid); return; }
@@ -1829,7 +1885,7 @@ document.addEventListener('submit', async e => {
 window.addEventListener('online', () => { renderPill(); pull(true); sync(); });
 window.addEventListener('offline', () => renderPill());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderPill(); pull(true); sync(); } });
-setInterval(() => { if (ME && online()) { pull(); sync(); fotoTick(); } }, 20000); // cadangan bila pendengar realtime putus
+setInterval(() => { if (ME && online()) { pull(); sync(); fotoTick(); if (P.kid && (P.screen === 'nlk' || P.screen === 'nil')) nilaiPull(P.kid).catch(() => { }); } }, 20000); // cadangan bila pendengar realtime putus
 window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
 
 /* ---------- pembaruan aplikasi ----------

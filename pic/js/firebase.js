@@ -8,6 +8,7 @@
 //                             -> SEMUA akun PIC membaca semua kegiatan; hanya aplikasi Daftar Hadir (admin) yang menulisnya
 //   dh_hasil/{kid}/{uid}      hasil kerja satu akun PIC {batal, hadir, foto, ttdPic, ttdPicNama, picNama, upd, rev, picUid}
 //   dh_nara/{kid}/{key}       info baris narasumber untuk halaman tanda tangan (nama, instansi, materi, kegiatan, tgl); dh_nara_ttd = TTD (PNG); dh_nara_st = penanda waktu
+//   dh_nilai/{kid}            info halaman nilai narasumber {nama, tgl[], tempat, sem, kelas[], peserta[{id,nama,instansi,kelas}]} (ditulis website); dh_nilai_in/{kid}/{pid~up|pid~sm} = {v, n, t} nilai dari narasumber; dh_nilai_st = penanda waktu
 //   dh_media/{kid}/{key}      gambar (dataURL): s_<pid>_<tanggal> = TTD peserta, f_<pid> = foto, pic = TTD PIC
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
@@ -98,6 +99,8 @@ window.PicFB = {
   async wmSt(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_wmedia_st/${kid}`)), 30000)).val() || {}; }, // sidik gambar yang hanya ada di website
   async wmOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_wmedia/${kid}/${key}`)), 60000)).val() || ''; },
   async mediaOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}/${key}`)), 60000)).val() || ''; }, // satu gambar (pratinjau foto dari akun PIC lain)
+  async nilaiSt(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_nilai_st/${kid}`)), 20000)).val() || 0; }, // penanda: ada nilai baru dari link narasumber
+  async nilaiIn(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_nilai_in/${kid}`)), 30000)).val() || {}; },
   async selfieSt(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_selfie_st/${kid}`)), 30000)).val() || {}; }, // penanda selfie peserta (untuk pratinjau Word)
   // PIC menghapus selfie peserta: penanda dibuang lebih dulu (peserta langsung bisa selfie ulang), lalu fotonya; catatan hapus dibaca website agar salinan di Daftar Hadir ikut terhapus
   async selfieDel(kid, key) { await withTimeout(set(ref(db, `${ROOT}/dh_selfie_del/${kid}/${key}`), Date.now()), 20000); await withTimeout(remove(ref(db, `${ROOT}/dh_selfie_st/${kid}/${key}`)), 30000); await withTimeout(remove(ref(db, `${ROOT}/dh_selfie_foto/${kid}/${key}`)), 30000); },

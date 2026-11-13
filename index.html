@@ -9598,13 +9598,13 @@
         document.getElementById('dh-tabs-sel')?.addEventListener('click', (ev) => { const b = ev.target.closest('button[data-sel]'); if (!b) return; dhSel = b.dataset.sel; window.dhRender(); window.dhMuatHasil(); });
 
         /* ===== Rekap: grafik kelas & peserta per bulan + filter tahun / bulan / jenis (semua dihitung dari daftar kegiatan Drive: dhEvents) ===== */
-        const RK_KEYS = ['angkat', 'b3', 'damkar', 'lain'];
-        const RK_J = { angkat: { n: 'Pesawat Angkat & Angkut', c: '#2a78d6' }, b3: { n: 'K3 Lingkungan Kerja (LKBB)', c: '#eb6834' }, damkar: { n: 'Penanggulangan Kebakaran', c: '#1baf7a' }, lain: { n: 'Lainnya', c: '#8a94a6' } };
+        const RK_KEYS = ['angkat', 'b3', 'damkar', 'ptp', 'lain'];
+        const RK_J = { angkat: { n: 'Pesawat Angkat & Angkut', c: '#2a78d6' }, b3: { n: 'K3 Lingkungan Kerja (LKBB)', c: '#eb6834' }, damkar: { n: 'Penanggulangan Kebakaran', c: '#1baf7a' }, ptp: { n: 'Pesawat Tenaga & Produksi (PTP)', c: '#8b5cf6' }, lain: { n: 'Lainnya', c: '#8a94a6' } };
         const RK_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
         const RK_MONL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         const rkSt = { year: 0, month: -1, off: {} };
         const rkNorm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-        const rkJenis = (e) => { const t = rkNorm(e.kegiatan); if (/bahan berbahaya|ruang terbatas|lingkungan kerja|lkbb/.test(t)) return 'b3'; if (/kebakaran|damkar|pemadam/.test(t)) return 'damkar'; if (/pesawat angkat|pesawat angkut|papa|hoist|crane|forklift|conveyor|rigger/.test(t)) return 'angkat'; return 'lain'; };
+        const rkJenis = (e) => { const t = rkNorm(e.kegiatan); if (/pesawat tenaga|\bptp\b/.test(t)) return 'ptp'; if (/bahan berbahaya|ruang terbatas|lingkungan kerja|lkbb/.test(t)) return 'b3'; if (/kebakaran|damkar|pemadam/.test(t)) return 'damkar'; if (/pesawat angkat|pesawat angkut|papa|hoist|crane|forklift|conveyor|rigger/.test(t)) return 'angkat'; return 'lain'; };
         const rkYM = (e) => { const m = /^(\d{4})-(\d{2})/.exec(String(e.tanggal || '')); return m ? { y: +m[1], m: +m[2] - 1 } : null; };
         const rkFrac = (v) => { const m = /^(\d+)\s*\/\s*(\d+)$/.exec(String(v == null ? '' : v).trim()); return m ? [+m[1], +m[2]] : [0, 0]; };
         // dipakai tabel: kegiatan yang lolos filter tahun / bulan / jenis (kegiatan tanpa tanggal tidak pernah disembunyikan)
