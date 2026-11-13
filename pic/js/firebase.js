@@ -100,6 +100,7 @@ window.PicFB = {
   async wmOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_wmedia/${kid}/${key}`)), 60000)).val() || ''; },
   async mediaOne(kid, key) { return (await withTimeout(get(ref(db, `${ROOT}/dh_media/${kid}/${key}`)), 60000)).val() || ''; }, // satu gambar (pratinjau foto dari akun PIC lain)
   async nilaiSt(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_nilai_st/${kid}`)), 20000)).val() || 0; }, // penanda: ada nilai baru dari link narasumber
+  async nilaiPub(kid, node) { await withTimeout(set(ref(db, `${ROOT}/dh_nilai/${kid}`), { ...node, upd: Date.now() }), 30000); }, // PIC ikut menerbitkan daftar nama untuk link narasumber (bila website belum)
   async nilaiIn(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_nilai_in/${kid}`)), 30000)).val() || {}; },
   async selfieSt(kid) { return (await withTimeout(get(ref(db, `${ROOT}/dh_selfie_st/${kid}`)), 30000)).val() || {}; }, // penanda selfie peserta (untuk pratinjau Word)
   // PIC menghapus selfie peserta: penanda dibuang lebih dulu (peserta langsung bisa selfie ulang), lalu fotonya; catatan hapus dibaca website agar salinan di Daftar Hadir ikut terhapus

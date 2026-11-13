@@ -97,7 +97,7 @@ async function boot() {
   try { FB = await backend(); } catch (e) { return fail(e.message || "Tidak bisa terhubung."); }
   try { [INFO, IN] = await Promise.all([FB.info(KID), FB.masuk(KID)]); }
   catch (e) { return fail(/permission/i.test(e.message || "") ? "Halaman ini belum bisa dibuka (akses ditolak). Hubungi panitia." : (e.message || "Gagal memuat data.")); }
-  if (!INFO || !INFO.nama) return fail("Link nilai ini belum aktif atau sudah tidak berlaku. Hubungi panitia.");
+  if (!INFO || !INFO.nama) return fail("Link nilai ini belum aktif. Minta panitia membuka menu \"Link Nilai Narasumber\" di aplikasi PIC (atau Daftar Hadir > Laporan di website) satu kali, lalu muat ulang halaman ini.");
   $("#barSub").textContent = INFO.nama;
   tampil();
 }

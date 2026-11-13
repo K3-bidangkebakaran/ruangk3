@@ -284,7 +284,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v82';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v83';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -1061,6 +1061,12 @@ const FLAG = {
   sig: svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36"><text x="30" y="27" text-anchor="middle" font-family="Arial" font-size="26" fill="#2e7d5b">✔</text></svg>'),
   foto: svgU('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200"><rect width="300" height="200" fill="#eef5f1"/><text x="150" y="95" text-anchor="middle" font-family="Arial" font-size="30" fill="#2e7d5b">✔ Foto sudah ada</text><text x="150" y="130" text-anchor="middle" font-family="Arial" font-size="20" fill="#5b7f6d">(website / PIC lain)</text></svg>')
 };
+const NLP = {}; // hash terakhir yang diterbitkan PIC untuk halaman narasumber
+async function nilaiPubPic(kid) { // halaman /nilai/ membaca dh_nilai/{kid}: terbitkan dari data kegiatan bila belum (website hanya menerbitkannya saat kegiatan diubah / kotak link dibuka)
+  const k = KEGS[kid]; if (!k || !LAPK(k).nilai || !fbOk() || !window.PicFB.nilaiPub || !online()) return;
+  const h = hOf(kid), node = { nama: k.nama || '', tgl: k.tgl || [], tempat: k.tempat || '', sem: semPic(k, LAPK(k)), kelas: kelasArr(k).filter(Boolean), peserta: (k.peserta || []).filter(p => (p.nama || '').trim() && !isBatal(h, p)).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || '', kelas: p.kelas || '' })) }, sig = fnv(JSON.stringify(node));
+  if (NLP[kid] === sig) return; try { await window.PicFB.nilaiPub(kid, node); NLP[kid] = sig; } catch (e) { toast('Link nilai belum bisa disiapkan. Pastikan aturan Firebase "dh_nilai" sudah dipasang.'); }
+}
 const NLS = {}; let nlBusy = false; // NLS[kid] = penanda dh_nilai_st terakhir yang sudah dibaca
 async function nilaiPull(kid, force) { // nilai dari link narasumber -> h.nilai (yang lebih baru menang; waktu PIC = h.nlT)
   const k = KEGS[kid]; if (nlBusy || !k || !LAPK(k).nilai || !fbOk() || !window.PicFB.nilaiIn || !online()) return 0; nlBusy = true;
@@ -1784,7 +1790,7 @@ document.addEventListener('click', e => {
   else if (a === 'ftshare') { const t = $('#ftLink').value, msg = `Upload foto dokumentasi ${k ? k.nama : 'kegiatan'} (hanya bisa pada tanggal kegiatan): ${t}`; if (navigator.share) navigator.share({ title: 'Upload Foto Dokumentasi', text: msg, url: t }).catch(() => { }); else window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank'); }
   else if (a === 'ftpull' && k) { if (!fbOk() || !online()) { toast('Butuh internet dan login.'); return; } toast('Memeriksa foto masuk…'); (window.PicFB.fotoStAll ? window.PicFB.fotoStAll() : Promise.resolve(FOTOST)).then(st => fotoGot(st)).then(n => { toast(n ? `${n} foto masuk` : 'Belum ada foto baru'); render(); }).catch(e => toast('Gagal memeriksa. ' + friendlyErr(e))); }
   else if (a === 'alat') { P.kl = b.dataset.kl; P.screen = 'alat'; P.q = ''; render(); }
-  else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; P.from = null; render(); if (P.screen === 'ftl' && kid) fotoOpen(kid); }
+  else if (a === 'go') { P.screen = b.dataset.to; P.q = ''; P.from = null; render(); if (P.screen === 'ftl' && kid) fotoOpen(kid); if (P.screen === 'nlk' && kid) nilaiPubPic(kid); }
   else if (a === 'wrdgo' && k) { P.screen = 'wrd'; P.from = 'lap'; P.kl = null; render(); }
   else if (a === 'wtab') { P.wd = b.dataset.d; render(); }
   else if (a === 'wgrp') { P.wk = +b.dataset.i; render(); }

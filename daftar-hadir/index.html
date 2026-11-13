@@ -3012,7 +3012,7 @@ function renderLap() {
   const L = S.lap, days = hariList(S.acara).filter(Boolean), nilai = L.nilai, hasil = L.hasil;
   { const rc = document.querySelector("#lapBox [data-lpc=rundown]"); if (rc) rc.checked = rdOn(S); const sc = document.querySelector("#lapBox [data-lpc=sem]"); if (sc) sc.checked = semOn(S); }
   $("#lpSecSf").hidden = !L.selfie; if (L.selfie) renderSf();
-  { const bx = $("#lpSecNl"); if (bx) { bx.hidden = !nilai; if (nilai) { const lk = $("#lpNlLink"); if (lk && document.activeElement !== lk) lk.value = nlLink(S.id); const sem = semOn(S), ps = S.peserta.filter(p => (p.nama || "").trim() && !p.batal), n = ps.filter(p => p.nl && p.nl.up).length, m = ps.filter(p => p.nl && p.nl.sm).length; $("#lpNlStat").textContent = `Nilai praktek dari narasumber sudah masuk untuk ${n} dari ${ps.length} peserta` + (sem ? `; nilai seminar untuk ${m} peserta.` : ".") + " (Nilai yang diketik di sini tetap bisa diubah.)"; } } }
+  { const bx = $("#lpSecNl"); if (bx) { bx.hidden = !nilai; if (nilai) { if (!Pic.nlAsk) Pic.nlAsk = new Set(); if (!Pic.nlAsk.has(S.id)) { Pic.nlAsk.add(S.id); Pic.mark(S.id); } /* daftar nama untuk link narasumber diterbitkan saat kotak link tampil */ const lk = $("#lpNlLink"); if (lk && document.activeElement !== lk) lk.value = nlLink(S.id); const sem = semOn(S), ps = S.peserta.filter(p => (p.nama || "").trim() && !p.batal), n = ps.filter(p => p.nl && p.nl.up).length, m = ps.filter(p => p.nl && p.nl.sm).length; $("#lpNlStat").textContent = `Nilai praktek dari narasumber sudah masuk untuk ${n} dari ${ps.length} peserta` + (sem ? `; nilai seminar untuk ${m} peserta.` : ".") + " (Nilai yang diketik di sini tetap bisa diubah.)"; } } }
   $("#lpSecSign").hidden = !nilai; $("#lpSecPes").hidden = !(nilai || hasil); $("#lpSecHari").hidden = !L.harian; $("#lpSecNr").hidden = !(L.nara || rdOn(S));
   [["#lpT1", L.s1.ttd], ["#lpT2", L.s2.ttd]].forEach(([s, u]) => { const t = $(s); t.style.backgroundImage = u ? `url('${u}')` : ""; t.textContent = u ? "" : "Belum ada"; });
   $("#lpDl").innerHTML = [["rd", "Rundown", rdOn(S)], ["dh", "Daftar Hadir", true], ["sf", "Absen Selfie", L.selfie], ["nl", "Daftar Nilai", nilai], ["nr", "Absensi Narasumber", L.nara], ["dy", "Dok. Harian", L.harian], ["dk", "Dokumentasi Peserta", true], ["ln", "Daftar Peserta Lulus/Tidak Lulus", hasil]].filter(x => x[2]).map(x => `<button class="btn sm" type="button" data-dl="${x[0]}">⬇ Word: ${x[1]}</button>`).join("");
@@ -3134,7 +3134,7 @@ $("#lapBox").addEventListener("click", e => {
     changed(); return;
   }
   if (b.dataset.dl) { unduhLap(b.dataset.dl); return; }
-  if (b.id === "lpNlCopy") { const t = $("#lpNlLink").value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Link nilai disalin."), () => { $("#lpNlLink").select(); toast("Tekan Salin/Copy pada kotak link yang terpilih."); }); return; }
+  if (b.id === "lpNlCopy") { const t = $("#lpNlLink").value; Pic.mark(S.id); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Link nilai disalin."), () => { $("#lpNlLink").select(); toast("Tekan Salin/Copy pada kotak link yang terpilih."); }); return; }
   if (b.id === "lpSfCopy") { const t = $("#lpSfLink").value; (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("Link selfie disalin."), () => { $("#lpSfLink").select(); toast("Tekan Salin/Copy pada kotak link yang terpilih."); }); return; }
   if (b.dataset.sfdel) { const [pid, d, k] = b.dataset.sfdel.split("|"); Pic.hapusSelfie(S, pid, d, k).then(ok => { if (ok) { changed(); renderLap(); toast("Selfie dihapus. Peserta bisa mengulang."); } }); return; }
   const day = b.closest(".lp-day");
@@ -5029,12 +5029,12 @@ const Pic = {
         await this.hapusSelfieSemua(id);
         this.drops = this.drops.filter(x => x !== id); await idbPut("pic-del", this.drops);
       }
-      let gagal = null; // satu kegiatan gagal tidak menghentikan kegiatan lain; dicoba lagi otomatis
+      let nlRules = false, gagal = null; // satu kegiatan gagal tidak menghentikan kegiatan lain; dicoba lagi otomatis
       for (const id of [...this.dirty]) { try {
         const ev = id === S.id ? S : (await idbGet("event:" + id));
         if (!ev) { this.dirty.delete(id); continue; }
         const n = this.node(ev); if (!n.nama || !n.tgl.length) { this.dirty.delete(id); continue; } // belum layak dikirim: butuh nama + tanggal (peserta boleh kosong, kegiatan tetap tampil di APK; dikirim lagi otomatis saat diubah)
-        await this.pubNilai(id, ev, n); // daftar nama untuk link nilai narasumber
+        try { await this.pubNilai(id, ev, n); } catch (e) { if (/permission/i.test(String((e && e.message) || ""))) nlRules = true; } // daftar nama untuk link nilai narasumber; gagal (mis. aturan Firebase belum dipasang) tidak boleh menghalangi kegiatan ke APK
         await this.pubSelfie(id, ev, n); // daftar nama link absen selfie diterbitkan lebih dulu (ringan), tidak menunggu unggah gambar
         let wmGagal = false;
         try { n.wm = await this.pubWeb(id, ev); } catch (e) { n.wm = this.hash["wms:" + id] || ""; wmGagal = true; } // gambar yang hanya ada di website ikut dikirim (supaya Word & foto di APK sama dengan website); gagal = dicoba lagi otomatis
@@ -5044,7 +5044,7 @@ const Pic = {
         if (!wmGagal) this.dirty.delete(id);
       } catch (e) { gagal = gagal || e; } }
       if (gagal) throw gagal;
-      this.err = "";
+      this.err = nlRules ? "rules" : "";
     } catch (e) { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; clearTimeout(this.t); this.t = setTimeout(() => this.flush(), 60000); }
     await idbPut("pic-pub", [...this.dirty]).catch(() => { });
     this.status();

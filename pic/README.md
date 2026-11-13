@@ -520,3 +520,5 @@ Node Firebase baru (aturan HARUS ditambahkan Adrian di Firebase Console, di dala
 ```
 Catatan: seperti selfie/foto, narasumber (anonim) dan PIC (akun) sama-sama login Firebase sehingga aturan tidak bisa membedakan; yang dijaga adalah bentuk & ukuran isian. Link berisi ID kegiatan acak. `Code.gs` tidak berubah.
 
+
+- **v83**: halaman `/nilai/` tadinya "belum aktif" bila kegiatan lama belum pernah diubah di website (daftar nama `dh_nilai` hanya diterbitkan saat kegiatan berubah). Kini diterbitkan juga saat kotak link di Laporan dibuka / Salin link ditekan, dan oleh APK saat layar "Link Nilai Narasumber" dibuka (`nilaiPubPic`, `PicFB.nilaiPub`). Kegagalan menerbitkan (mis. aturan Firebase belum dipasang) tidak lagi menghalangi kegiatan ke APK.
