@@ -61,8 +61,8 @@ const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
 const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'nlT', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; };
 const FOTO_KEYS = ['foto', 'foto2', 'foto3', 'foto4', 'foto5'], KELAS_FOTO5 = 'ahli k3 muda lingkungan kerja';
 const fotoNo = key => (key === 'foto' ? 1 : +String(key).slice(4) || 1), fMk = key => 'f' + (key === 'foto' ? '' : key.slice(4)) + '_', wfKey = key => 'wf' + (key === 'foto' ? '' : key.slice(4));
-const FOTO_SATU = [{ kelas: 'teknisi ruang terbatas', awal: '2026-10-29', akhir: '2026-11-02' }];
-const fotoSatu = k => { if (!k || !(k.b3 || k.jenis === 'b3')) return false; const h = (k.tgl || []).filter(Boolean).slice().sort(); if (!h.length) return false; const ks = kelasArr(k).map(x => String(x || '').replace(/\s+/g, ' ').trim().toLowerCase()); return FOTO_SATU.some(r => r.awal === h[0] && r.akhir === h[h.length - 1] && ks.includes(r.kelas)); };
+const FOTO_SATU = [{ kelas: 'teknisi ruang terbatas', awal: '2026-10-29', akhir: '2026-11-02' }, { kelas: 'deteksi gas', awal: '2026-10-24', akhir: '2026-10-26' }, { kelas: 'petugas k3 kimia', awal: '2026-10-27', akhir: '2026-11-01' }];
+const fotoSatu = k => { if (!k || !(k.b3 || k.jenis === 'b3')) return false; const h = (k.tgl || []).filter(Boolean).slice().sort(); if (!h.length) return false; const ks = kelasArr(k).map(x => String(x || '').replace(/\s+/g, ' ').trim().toLowerCase()); return FOTO_SATU.some(r => h[0] >= r.awal && h[h.length - 1] <= r.akhir && ks.some(x => x.includes(r.kelas))); };
 const fotoDua = k => !!(k && !fotoSatu(k) && (k.damkar || k.b3));
 const fotoN = (k, p) => { if (fotoSatu(k)) return 1; if (k && k.b3) { const ks = k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas)) : [], kl = String((p && p.kelas) || '').replace(/\s+/g, ' ').trim() || (ks.length === 1 ? ks[0] : ''); if (kl.toLowerCase() === KELAS_FOTO5) return 5; } return fotoDua(k) ? 2 : 1; };
 const fotoKeysP = (k, p) => FOTO_KEYS.slice(0, fotoN(k, p));
@@ -152,7 +152,7 @@ const nrAdmin = (k, key) => { const m = NRK_RE.exec(key); return m[1] ? (((LAPK(
 const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }, own = (d in h.nr) ? h.nr[d] : null, ov = ovOf(h), xr = ov && ov.nr[d], base = nrAdmin(k, d); Object.keys(o).forEach(f => { const x = xr && xr[f]; let v; if (own && (f in own) && ownWins(h, x)) v = own[f]; else if (x) v = x.v; else v = own ? own[f] : base[f]; o[f] = String(v == null ? '' : v); }); const m = raw ? null : MATERI_KAT.find(x => x.id === o.mid); if (m) o.mtxt = m.isi.join('\n'); return o; };
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v83';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v85';
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
 const B3_REN = [['Petugas Penyelamat Ruang Terbatas', 'PETUGAS PENYELAMAT (RESCUE) RUANG TERBATAS']];
 function b3Ren(h) {

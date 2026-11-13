@@ -847,8 +847,8 @@ function picKid_(kid, k, nodes, t0) {
   const batal = {}; peserta.forEach(function (p) { batal[p.id] = !!p.batal; });
   const foto = {}, foto2 = {}, fotoX = { foto3: {}, foto4: {}, foto5: {} }, hadir = {}, nrNama = {};
   const papa = !!k.papa, kls = (k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.keys(k.kelas).map(function (x) { return k.kelas[x]; })) : []).filter(String);
-  // pengecualian: K3 LKBB Teknisi Ruang Terbatas 29 Okt - 2 Nov 2026 hanya 1 foto per peserta (sama dengan website & APK)
-  const tgS = (Array.isArray(k.tgl) ? k.tgl : Object.keys(k.tgl || {}).map(function (x) { return k.tgl[x]; })).filter(String).sort(), fotoSatu = !!k.b3 && tgS.length > 0 && tgS[0] === '2026-10-29' && tgS[tgS.length - 1] === '2026-11-02' && kls.some(function (x) { return String(x).replace(/\s+/g, ' ').trim().toLowerCase() === 'teknisi ruang terbatas'; });
+  // pengecualian: K3 LKBB Teknisi Ruang Terbatas 29 Okt - 2 Nov, Teknisi K3 Deteksi Gas 24-26 Okt, Petugas K3 Kimia 27 Okt - 1 Nov 2026 hanya 1 foto per peserta (sama dengan website & APK)
+  const tgS = (Array.isArray(k.tgl) ? k.tgl : Object.keys(k.tgl || {}).map(function (x) { return k.tgl[x]; })).filter(String).sort(), fotoSatu = !!k.b3 && tgS.length > 0 && [['teknisi ruang terbatas', '2026-10-29', '2026-11-02'], ['deteksi gas', '2026-10-24', '2026-10-26'], ['petugas k3 kimia', '2026-10-27', '2026-11-01']].some(function (r) { return tgS[0] >= r[1] && tgS[tgS.length - 1] <= r[2] && kls.some(function (x) { return String(x).replace(/\s+/g, ' ').trim().toLowerCase().indexOf(r[0]) >= 0; }); });
   const kfOf = function (lbl) { return papa ? [safeName_(kls.indexOf(lbl) >= 0 ? lbl : 'Tanpa kelas')] : []; }; // PAPA: tiap alat punya subfolder sendiri
   const kkMap = {}; kls.forEach(function (l) { kkMap[kelasKey_(l)] = l; });
   let s1n = lp0.s1nama || '', s2n = lp0.s2nama || '', last = null;

@@ -125,13 +125,13 @@ const isB3 = a => !!a && (a.jenis === "b3" || a.jenis === "ptp");
 const J_PTP = "K3 PESAWAT TENAGA DAN PRODUKSI";
 const isPtp = a => !!a && a.jenis === "ptp";
 const judulProgKelas = (a, k) => (isPtp(a) ? `${J_PTP} (${String(k).toUpperCase()})` : judulB3Kelas(k));
-const FOTO_SATU = [{ kelas: "teknisi ruang terbatas", awal: "2026-10-29", akhir: "2026-11-02" }];
+const FOTO_SATU = [{ kelas: "teknisi ruang terbatas", awal: "2026-10-29", akhir: "2026-11-02" }, { kelas: "deteksi gas", awal: "2026-10-24", akhir: "2026-10-26" }, { kelas: "petugas k3 kimia", awal: "2026-10-27", akhir: "2026-11-01" }];
 const fotoSatu = a => {
   if (!a || a.jenis !== "b3") return false;
   let h = []; try { h = hariList(a).filter(Boolean); } catch (e) { }
   if (!h.length) return false;
   const ks = kelasList(a).map(x => String(x || "").replace(/\s+/g, " ").trim().toLowerCase());
-  return FOTO_SATU.some(r => r.awal === h[0] && r.akhir === h[h.length - 1] && ks.includes(r.kelas));
+  return FOTO_SATU.some(r => h[0] >= r.awal && h[h.length - 1] <= r.akhir && ks.some(k => k.includes(r.kelas)));
 };
 const fotoDua = a => !!a && !fotoSatu(a) && (!!a.damkar || isB3(a));
 const FOTO_KEYS = ["foto", "foto2", "foto3", "foto4", "foto5"], KELAS_FOTO5 = "ahli k3 muda lingkungan kerja";

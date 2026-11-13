@@ -168,8 +168,8 @@ const ttdOrgOk = (h, k) => !!h.ttdPic || !!(k && k.ttdWeb) || xPic(h);
 const hOf = kid => { const h = (H[kid] = H[kid] || newH()); if (!h.ren1) b3Ren(h); FOTO_KEYS.slice(1).forEach(f => { if (!h[f]) h[f] = {}; }); ['nilai', 'nlT', 'kel', 'lapN', 'materi', 'hfoto'].forEach(f => { if (!h[f]) h[f] = {}; }); if (!h.gone) h.gone = []; if (!h.nr) h.nr = {}; if (!h.nrs) h.nrs = {}; if (!h.nshared) h.nshared = {}; if (!h.naraSeen) h.naraSeen = {}; if (!h.tshared) h.tshared = {}; if (!h.ttdpSeen) h.ttdpSeen = {}; if (!h.tnShared) h.tnShared = {}; if (h.n1 == null) h.n1 = ''; if (h.n2 == null) h.n2 = ''; return h; }; // foto2 = foto ke-2 (kegiatan Damkar)
 const FOTO_KEYS = ['foto', 'foto2', 'foto3', 'foto4', 'foto5'], KELAS_FOTO5 = 'ahli k3 muda lingkungan kerja'; // program B3 "Ahli K3 Muda Lingkungan Kerja": 5 foto per peserta
 const fotoNo = key => (key === 'foto' ? 1 : +String(key).slice(4) || 1), fMk = key => 'f' + (key === 'foto' ? '' : key.slice(4)) + '_', wfKey = key => 'wf' + (key === 'foto' ? '' : key.slice(4));
-const FOTO_SATU = [{ kelas: 'teknisi ruang terbatas', awal: '2026-10-29', akhir: '2026-11-02' }]; // pengecualian: kegiatan ini hanya 1 foto per peserta (sama dengan website)
-const fotoSatu = k => { if (!k || !(k.b3 || k.jenis === 'b3')) return false; const h = (k.tgl || []).filter(Boolean).slice().sort(); if (!h.length) return false; const ks = kelasArr(k).map(x => String(x || '').replace(/\s+/g, ' ').trim().toLowerCase()); return FOTO_SATU.some(r => r.awal === h[0] && r.akhir === h[h.length - 1] && ks.includes(r.kelas)); };
+const FOTO_SATU = [{ kelas: 'teknisi ruang terbatas', awal: '2026-10-29', akhir: '2026-11-02' }, { kelas: 'deteksi gas', awal: '2026-10-24', akhir: '2026-10-26' }, { kelas: 'petugas k3 kimia', awal: '2026-10-27', akhir: '2026-11-01' }]; // pengecualian: kegiatan ini hanya 1 foto per peserta (sama dengan website)
+const fotoSatu = k => { if (!k || !(k.b3 || k.jenis === 'b3')) return false; const h = (k.tgl || []).filter(Boolean).slice().sort(); if (!h.length) return false; const ks = kelasArr(k).map(x => String(x || '').replace(/\s+/g, ' ').trim().toLowerCase()); return FOTO_SATU.some(r => h[0] >= r.awal && h[h.length - 1] <= r.akhir && ks.some(x => x.includes(r.kelas))); };
 const fotoDua = k => !!(k && !fotoSatu(k) && (k.damkar || k.b3));
 const fotoN = (k, p) => { if (fotoSatu(k)) return 1; if (k && k.b3) { const ks = k.kelas ? (Array.isArray(k.kelas) ? k.kelas : Object.values(k.kelas)) : [], kl = String((p && p.kelas) || '').replace(/\s+/g, ' ').trim() || (ks.length === 1 ? ks[0] : ''); if (kl.toLowerCase() === KELAS_FOTO5) return 5; } return fotoDua(k) ? 2 : 1; };
 const fotoKeysP = (k, p) => FOTO_KEYS.slice(0, fotoN(k, p)); // 2 foto per peserta: Damkar & K3 Lingkungan Kerja B3 (k.b3 sudah ada di kegiatan lama, jadi tidak perlu menunggu website mengirim ulang)
@@ -284,7 +284,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v84';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v85';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
