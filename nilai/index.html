@@ -69,6 +69,7 @@ input[type=text],select{width:100%;min-height:46px;border:1px solid var(--line);
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const KID = (new URLSearchParams(location.search).get("k") || "").trim();
+const JN = (new URLSearchParams(location.search).get("j") || "").trim(); /* "up" = link Nilai Praktek, "sm" = link Nilai Seminar, kosong = link lama (keduanya) */
 const NAMA_KEY = "rk3_nilai_nara";
 const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (_) { } };
@@ -103,12 +104,19 @@ async function boot() {
 }
 const nilaiAda = (pid, f) => { const x = IN[pid + "~" + f]; return x && typeof x === "object" ? String(x.v == null ? "" : x.v) : ""; };
 function daftar() { const ps = INFO.peserta ? (Array.isArray(INFO.peserta) ? INFO.peserta : Object.values(INFO.peserta)) : []; return ps.filter(p => p && p.nama && (!KELAS || p.kelas === KELAS)); }
+const fShow = () => JN === "sm" ? ["sm"] : JN === "up" ? ["up"] : (INFO.sem ? ["up", "sm"] : ["up"]);
+const FLBL = { up: "Nilai Praktek", sm: "Nilai Seminar" };
+const lengkap = pid => fShow().every(f => nilaiAda(pid, f));
+const adaNilai = pid => fShow().some(f => nilaiAda(pid, f));
 function tampil() {
-  const kls = INFO.kelas ? (Array.isArray(INFO.kelas) ? INFO.kelas : Object.values(INFO.kelas)) : [], sem = !!INFO.sem;
+  if (JN === "sm" && !INFO.sem) { main.innerHTML = `<div class="note warn">Kegiatan ini tidak memakai Nilai Seminar. Minta link Nilai Praktek dari panitia.</div>`; return; }
+  const judul = JN === "sm" ? "Input Nilai Seminar" : JN === "up" ? "Input Nilai Praktek" : "Input nilai peserta";
+  $("#barTtl").textContent = JN ? judul : "Nilai Peserta"; document.title = judul;
+  const kls = INFO.kelas ? (Array.isArray(INFO.kelas) ? INFO.kelas : Object.values(INFO.kelas)) : [];
   const tgl = INFO.tgl ? (Array.isArray(INFO.tgl) ? INFO.tgl : Object.values(INFO.tgl)) : [], rentang = tgl.length ? (tgl.length > 1 ? tglPendek(tgl[0]) + " – " + tglPendek(tgl[tgl.length - 1]) : tglPendek(tgl[0])) : "";
-  main.innerHTML = `<h2>Input nilai peserta</h2>
+  main.innerHTML = `<h2>${judul}</h2>
     <div class="hint">${esc(INFO.nama)}${rentang ? " · " + esc(rentang) : ""}${INFO.tempat ? " · " + esc(INFO.tempat) : ""}</div>
-    <div class="note warn">Isi <b>nama Anda</b> dulu, lalu ketik nilai tiap peserta. Nilai tersimpan otomatis begitu kolom selesai diisi (pindah kolom / tekan Enter). Boleh dikosongkan atau diperbaiki lagi nanti; yang dipakai adalah nilai terakhir.</div>
+    <div class="note warn">Isi <b>nama Anda</b> dulu, lalu ketik ${fShow().map(f => "<b>" + FLBL[f].toLowerCase() + "</b>").join(" dan ")} tiap peserta. Nilai tersimpan otomatis begitu kolom selesai diisi (pindah kolom / tekan Enter). Boleh dikosongkan atau diperbaiki lagi nanti; yang dipakai adalah nilai terakhir.</div>
     <label class="f">Nama narasumber<input type="text" id="nara" autocomplete="name" placeholder="Contoh: Repy, S.T" value="${esc(lsGet(NAMA_KEY))}"></label>
     ${kls.length > 1 ? `<label class="f">Program / kelas<select id="kelas"><option value="">Semua (${kls.length} program)</option>${kls.map(k => `<option value="${esc(k)}"${k === KELAS ? " selected" : ""}>${esc(k)}</option>`).join("")}</select></label>` : ""}
     <div class="cnt" id="cnt"></div>
@@ -121,11 +129,11 @@ function tampil() {
   isi();
 }
 function isi() {
-  const ps = daftar(), sem = !!INFO.sem; let terisi = 0;
+  const ps = daftar(), fs = fShow(); let terisi = 0;
   $("#list").innerHTML = ps.length ? ps.map((p, i) => {
-    const up = nilaiAda(p.id, "up"), sm = nilaiAda(p.id, "sm"); if (up || sm) terisi++;
-    return `<div class="p${up && (!sem || sm) ? " done" : ""}" data-id="${esc(p.id)}"><div class="nm"><span class="no">${i + 1}</span><div><b>${esc(p.nama)}</b><small>${esc(p.instansi || "")}</small></div></div>
-      <div class="fields"><label>Nilai Praktek<input type="text" inputmode="text" maxlength="8" data-f="up" value="${esc(up)}" autocomplete="off" aria-label="Nilai Praktek ${esc(p.nama)}"></label>${sem ? `<label>Nilai Seminar<input type="text" inputmode="text" maxlength="8" data-f="sm" value="${esc(sm)}" autocomplete="off" aria-label="Nilai Seminar ${esc(p.nama)}"></label>` : ""}</div>
+    if (adaNilai(p.id)) terisi++;
+    return `<div class="p${lengkap(p.id) ? " done" : ""}" data-id="${esc(p.id)}"><div class="nm"><span class="no">${i + 1}</span><div><b>${esc(p.nama)}</b><small>${esc(p.instansi || "")}</small></div></div>
+      <div class="fields">${fs.map(f => `<label>${FLBL[f]}<input type="text" inputmode="text" maxlength="8" data-f="${f}" value="${esc(nilaiAda(p.id, f))}" autocomplete="off" aria-label="${FLBL[f]} ${esc(p.nama)}"></label>`).join("")}</div>
       <div class="st" data-st></div></div>`;
   }).join("") : `<div class="hint">Belum ada peserta di kegiatan ini.</div>`;
   $("#cnt").textContent = `${ps.length} peserta · ${terisi} sudah punya nilai`;
@@ -137,7 +145,7 @@ async function simpan(e) {
   const f = inp.dataset.f, v = inp.value.trim().replace(/,/g, "."), key = card.dataset.id + "~" + f;
   inp.value = v; if ((nilaiAda(card.dataset.id, f)) === v) { st.textContent = ""; return; }
   st.className = "st"; st.textContent = "Menyimpan…"; inp.disabled = true;
-  try { await FB.put(KID, key, v, nama.slice(0, 60)); IN[key] = { v, n: nama, t: Date.now() }; st.className = "st ok"; st.textContent = "✓ Tersimpan"; card.classList.toggle("done", !!nilaiAda(card.dataset.id, "up") && (!INFO.sem || !!nilaiAda(card.dataset.id, "sm"))); const ps = daftar(); $("#cnt").textContent = `${ps.length} peserta · ${ps.filter(p => nilaiAda(p.id, "up") || nilaiAda(p.id, "sm")).length} sudah punya nilai`; }
+  try { await FB.put(KID, key, v, nama.slice(0, 60)); IN[key] = { v, n: nama, t: Date.now() }; st.className = "st ok"; st.textContent = "✓ Tersimpan"; card.classList.toggle("done", lengkap(card.dataset.id)); const ps = daftar(); $("#cnt").textContent = `${ps.length} peserta · ${ps.filter(p => adaNilai(p.id)).length} sudah punya nilai`; }
   catch (er) { st.className = "st bad"; st.textContent = "Gagal menyimpan: " + ((er && er.message) || "cek internet") + ". Ketuk kolom lalu pindah lagi untuk mencoba ulang."; }
   finally { inp.disabled = false; }
 }
