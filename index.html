@@ -9527,12 +9527,12 @@
         /* Kegiatan SELESAI = salah satu akun PIC sudah menekan "Selesai" di APK PIC (tanda selesai ikut terkirim di dh_hasil/{kegiatan}/{akun}). */
         let dhSel = 'jalan', dhHasilAll = null, dhHasilAt = 0, dhHasilBusy = false, dhAdm = {};
         const dhBase = () => `artifacts/${cleanAppId}/public/data`;
-        // Selesai = PIC menekan Selesai di APK, ATAU admin menekan Selesai (paksa) di Rekap. Tindakan admin dicatat di dh_adm/{id} = {fin, t}; isian PIC yang LEBIH BARU dari t menentukan bila PIC bertindak setelahnya.
-        const dhSelesai = (id) => {
-            const pics = (dhHasilAll && dhHasilAll[id]) ? Object.values(dhHasilAll[id]).filter(x => x && typeof x === 'object') : [], a = dhAdm[id];
-            if (!a || typeof a !== 'object') return pics.some(x => x.selesai);
-            const baru = pics.filter(x => (Number(x.upd) || 0) * 1000 > (Number(a.t) || 0));
-            return a.fin ? !(baru.length && baru.every(x => !x.selesai)) : baru.some(x => x.selesai);
+        // Selesai = PIC menekan Selesai di APK, ATAU admin menekan Selesai (paksa) di Rekap. Tindakan admin dicatat di dh_adm/{id} = {fin, t}; tanda paling baru (selT PIC / t admin) menang, lihat dhSelesai.
+        const dhSelesai = (id) => { // SAMA dengan selesaiEff() di pic/js/app.js: tanda paling baru (selT akun PIC / t admin) menang; tanda lama tanpa waktu = selesai bila ada yang menandai
+            const c = (dhHasilAll && dhHasilAll[id]) ? Object.values(dhHasilAll[id]).filter(x => x && typeof x === 'object').map(x => ({ v: !!x.selesai, t: Number(x.selT) || 0 })) : [], a = dhAdm[id];
+            if (a && typeof a === 'object') c.push({ v: !!a.fin, t: Number(a.t) || 0 });
+            let best = null; c.forEach(x => { if (x.t && (!best || x.t > best.t || (x.t === best.t && x.v))) best = x; });
+            return best ? best.v : c.some(x => x.v);
         };
         window.dhMuatHasil = async function(force) {
             if (dhHasilBusy || !dhIsAdmin()) return; if (!force && dhHasilAll && Date.now() - dhHasilAt < 20000) return;
