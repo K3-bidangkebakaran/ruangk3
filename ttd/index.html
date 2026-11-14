@@ -128,6 +128,8 @@ const fail = (msg) => { $("#barSub").textContent = ""; show(`<div class="note er
 const tglList = () => { const t = INFO && INFO.tgl; return Array.isArray(t) ? t : Object.values(t || {}); };
 const pesList = () => { const p = INFO && INFO.peserta; return (Array.isArray(p) ? p : Object.values(p || {})).filter(x => x && x.id && x.nama); };
 const hrOf = p => (Array.isArray(p.hr) ? p.hr : Object.values(p.hr || {}));
+const sdOf = p => (Array.isArray(p.sd) ? p.sd : Object.values(p.sd || {})); /* hari yang sudah ada TTD-nya di APK PIC / website (diterbitkan aplikasi PIC) */
+const sudah = (p, d) => !!ST[`${p.id}~${d}`] || sdOf(p).includes(d);
 
 async function boot() {
   if (!KID) return fail("Link tidak lengkap. Minta link tanda tangan yang benar dari PIC.");
@@ -138,14 +140,14 @@ async function boot() {
   $("#barSub").textContent = INFO.kegiatan || "";
   await refreshSt(); list();
 }
-async function refreshSt() { try { ST = await FB.status(KID, KL); } catch (_) { /* pakai data terakhir */ } }
+async function refreshSt() { try { const [st, inf] = await Promise.all([FB.status(KID, KL), FB.info(KID, KL).catch(() => null)]); ST = st; if (inf && inf.kegiatan) INFO = inf; } catch (_) { /* pakai data terakhir */ } }
 
 /* ---------- daftar nama ---------- */
 function ctx() { const z = nowZ(INFO.zona), tgl = tglList(); return { z, tgl, idx: tgl.indexOf(z.iso), over: tgl.length > 0 && z.iso > tgl.slice().sort().pop() }; }
 /* ---------- mode darurat: hanya setelah kegiatan selesai; satu tanda tangan dicatat untuk semua hari yang belum diisi ---------- */
 const DRon = () => DR && ctx().over;
 const tglPendek = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ""); return m ? `${+m[3]} ${BLN[+m[2] - 1].slice(0, 3)}` : iso; };
-const miss = p => { const t = tglList(); return [...new Set(hrOf(p).filter(d => t.includes(d) && !ST[`${p.id}~${d}`]))].sort(); };
+const miss = p => { const t = tglList(); return [...new Set(hrOf(p).filter(d => t.includes(d) && !sudah(p, d)))].sort(); };
 function head(c) {
   const lk = lokasi(INFO.tempat, INFO.kota);
   return `<div class="card" style="gap:6px;padding:14px"><div style="font-size:18px;font-weight:800;line-height:1.25">${esc(INFO.kegiatan)}</div>${INFO.kelas ? `<div class="meta"><b>${esc(INFO.kelas)}</b></div>` : ""}<div class="meta"><span>${esc(tglPanjang(c.z.iso))}</span>${lk ? `<span>📍 ${esc(lk)}</span>` : ""}</div>`
@@ -172,7 +174,7 @@ function list(q) {
       + (akhir ? `<div class="note warn">Belum sempat tanda tangan? Tekan tombol darurat di bawah. Tanda tangan Anda akan dicatat untuk hari kegiatan yang belum Anda isi.</div><button class="btn dar" id="dar">🚨 Darurat: saya belum tanda tangan</button>` : ""), "off");
     $("#reload").onclick = () => location.reload(); const db = $("#dar"); if (db) db.onclick = () => { DR = true; list(); }; return;
   }
-  const all = pesList().filter(p => hrOf(p).includes(c.z.iso)), done = id => !!ST[`${id}~${c.z.iso}`];
+  const all = pesList().filter(p => hrOf(p).includes(c.z.iso)), done = id => { const p = all.find(x => x.id === id); return !!ST[`${id}~${c.z.iso}`] || !!(p && sdOf(p).includes(c.z.iso)); };
   const ps = all.filter(p => !q || (p.nama + " " + (p.instansi || "")).toLowerCase().includes(q.toLowerCase()));
   const n = all.filter(p => done(p.id)).length;
   show(head(c) + `<div class="note okk" id="prog">${n} dari ${all.length} peserta sudah tanda tangan hari ini.</div>

@@ -296,7 +296,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v86';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v87';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -438,20 +438,23 @@ const kegOver = (k, kl) => { const d = daysKl(k, kl).slice().sort(); return d.le
 const daysKl = (k, kl) => { const hk = kl != null && k.hk && k.hk[kelasKey(kl)], a = hk ? (Array.isArray(hk) ? hk : Object.values(hk)) : null; return a && a.length ? a : ((k && k.tgl) || []); };
 function ttdpInfo(h, k, kl) { // isi yang dibaca halaman peserta: hanya yang ikut (bukan cancel) dan hari wajib TTD-nya
   const days = daysKl(k, kl);
-  const peserta = pesByKl(k, kl == null ? undefined : kl).filter(p => (p.nama || '').trim() && !isBatal(h, p)).map(p => ({ id: p.id, nama: p.nama.trim(), instansi: p.instansi || '', hr: days.filter(d => perluHari(h, p, d, days, k)) })).filter(p => p.hr.length);
+  const peserta = pesByKl(k, kl == null ? undefined : kl).filter(p => (p.nama || '').trim() && !isBatal(h, p)).map(p => { const hr = days.filter(d => perluHari(h, p, d, days, k)); return { id: p.id, nama: p.nama.trim(), instansi: p.instansi || '', hr, sd: hr.filter(d => sudahTtd(h, p, d)) }; }).filter(p => p.hr.length); // sd = hari yang SUDAH ada TTD-nya di mana pun (APK ini, akun PIC lain, website) -> halaman link tidak memintanya lagi
   return { kegiatan: k.nama || '', kelas: kl != null ? klLabel(kl) : '', tgl: days, tempat: k.tempat || '', kota: k.kota || '', zona: k.zona || 'WIB', peserta };
 }
-async function ttdpPublish(kid, kl, force) { // terbitkan / perbarui daftar nama di server; lempar error bila gagal
+async function ttdpPublish(kid, kl, force, lain) { // terbitkan / perbarui daftar nama di server; lempar error bila gagal. lain=true: link dibuat akun lain, HP ini hanya memperbarui isinya
   const k = KEGS[kid], h = hOf(kid), klk = ttdpKl(kl), info = ttdpInfo(h, k, kl), hs = fnv(JSON.stringify(info));
+  if (lain) { h.tpLain = h.tpLain || {}; if (!force && h.tpLain[klk] === hs) return info; await window.PicFB.ttdpPub(kid, klk, info); h.tpLain[klk] = hs; await saveH(kid); return info; }
   if (!force && h.tshared[klk] && h.tshared[klk].hs === hs) return info;
   await window.PicFB.ttdpPub(kid, klk, info); h.tshared[klk] = { kl: kl == null ? null : kl, hs }; await saveH(kid); return info;
 }
+let TTDP_ST = {}; // snapshot terakhir dh_ttdp_st: link yang sudah dipakai peserta (juga yang dibuat akun PIC lain)
+const ttdpKlOf = (k, klk) => klk === '_' ? undefined : kelasArr(k).find(x => kelasKey(x) === klk);
 let ttdpT = 0; const ttdpPend = new Set();
 function ttdpRepub(kid) { // peserta cancel / remedial / daftar peserta berubah setelah link dibagikan: perbarui daftar nama di server (diam-diam)
   ttdpPend.add(kid); clearTimeout(ttdpT);
-  ttdpT = setTimeout(async () => { const ids = [...ttdpPend]; ttdpPend.clear(); for (const id of ids) { const h = H[id]; if (!h || !KEGS[id] || !fbOk() || !online()) continue; for (const klk of Object.keys(h.tshared || {})) { try { await ttdpPublish(id, (h.tshared[klk] || {}).kl == null ? undefined : h.tshared[klk].kl); } catch (e) { } } } }, 2500);
+  ttdpT = setTimeout(async () => { const ids = [...ttdpPend]; ttdpPend.clear(); for (const id of ids) { const h = H[id]; if (!h || !KEGS[id] || !fbOk() || !online()) continue; for (const klk of Object.keys(h.tshared || {})) { try { await ttdpPublish(id, (h.tshared[klk] || {}).kl == null ? undefined : h.tshared[klk].kl); } catch (e) { } } for (const klk of Object.keys(TTDP_ST[id] || {})) { if (h.tshared[klk]) continue; const kl = ttdpKlOf(KEGS[id], klk); if (klk !== '_' && kl == null) continue; try { await ttdpPublish(id, kl, false, true); } catch (e) { } } } }, 2500);
 }
-const ttdpRepubAll = () => Object.keys(KEGS).forEach(kid => { const h = H[kid]; if (h && Object.keys(h.tshared || {}).length) ttdpRepub(kid); }); // data kegiatan / akun PIC lain berubah (mis. Remedial dari website): daftar hari di link TTD ikut diperbarui
+const ttdpRepubAll = () => Object.keys(KEGS).forEach(kid => { const h = H[kid]; if (h && (Object.keys(h.tshared || {}).length || TTDP_ST[kid])) ttdpRepub(kid); }); // data kegiatan / akun PIC lain berubah (mis. Remedial dari website): daftar hari di link TTD ikut diperbarui
 async function ttdpShare(b, a, k, kid) {
   if (!fbOk() || !online()) { toast('Membuat link perlu internet dan login.'); return; }
   const kl = curKl(k), klk = ttdpKl(kl); b.disabled = true;
@@ -465,6 +468,7 @@ async function ttdpShare(b, a, k, kid) {
 }
 let ttdpOff = null, ttdpUid = null;
 async function ttdpGot(st) { // TTD yang dikirim peserta lewat link -> masuk ke daftar hadir hari itu (tidak menimpa TTD yang sudah ada)
+  const baru = Object.keys(st || {}).some(kid => !TTDP_ST[kid]); TTDP_ST = st || {}; if (baru) ttdpRepubAll();
   for (const kid of Object.keys(st || {})) {
     const h = H[kid], k = KEGS[kid], sk = st[kid]; if (!h || !k || !sk || typeof sk !== 'object') continue;
     for (const klk of Object.keys(sk)) {
@@ -757,7 +761,7 @@ async function sync() {
   } finally { syncing = false; renderPill(); if (pending() && !syncErr && online()) setTimeout(sync, 500); }
 }
 let syncT = 0;
-function touch(kid) { const h = hOf(kid); h.upd = Math.max(nowS(), (h.upd || 0) + 1); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); clearTimeout(syncT); syncT = setTimeout(sync, 400); if (Object.keys(h.nshared || {}).length) naraRepub(kid); if (Object.keys(h.tshared || {}).length) ttdpRepub(kid); if (Object.keys(h.tnShared || {}).length) ttnRepub(kid); }
+function touch(kid) { const h = hOf(kid); h.upd = Math.max(nowS(), (h.upd || 0) + 1); h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); renderPill(); clearTimeout(syncT); syncT = setTimeout(sync, 400); if (Object.keys(h.nshared || {}).length) naraRepub(kid); if (Object.keys(h.tshared || {}).length || TTDP_ST[kid]) ttdpRepub(kid); if (Object.keys(h.tnShared || {}).length) ttnRepub(kid); }
 
 async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali hasil yang sudah ada di server. old: HP lain dengan akun yang sama sudah mengirim yang lebih baru → gantikan salinan ini
   if (restoring.has(kid)) return; restoring.add(kid);
