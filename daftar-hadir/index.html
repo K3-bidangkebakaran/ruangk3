@@ -360,7 +360,7 @@ table.grid.dense th,table.grid.dense td{padding-left:.6mm;padding-right:.6mm}tab
 .sig-cell{position:absolute;top:1mm;bottom:1mm;display:flex;align-items:center;justify-content:center}
 .sig-cell img{max-width:100%;max-height:10.5mm;display:block}
 .sig-cell.l{left:5mm;width:calc(50% - 5mm)}.sig-cell.r{left:calc(50% + 3mm);right:1mm}
-.sig-cell.c{left:4mm;right:1mm}
+.sig-cell.c{left:.6mm;right:.6mm;top:3.4mm;bottom:.5mm}.sig-cell.c img{max-height:100%;width:auto} /* banyak hari: nomor di pojok kiri atas, TTD memenuhi sel di bawahnya */
 .sign-block{width:62mm;margin:5mm 0 0 auto;text-align:center;line-height:1.5}
 .sign-block .space{height:18mm;display:flex;align-items:center;justify-content:center}
 .ttd-img{max-height:18mm;max-width:58mm;display:block}
@@ -1439,12 +1439,13 @@ function hariList(a) {
   for (const d = new Date(s); d <= e && out.length < MAX_DAYS; d.setDate(d.getDate() + 1)) out.push(isoOf(d));
   return out;
 }
-/* Kegiatan lebih dari 14 hari (mis. Ahli K3 PTP 26 hari): kolom tanda tangan daftar hadir dibagi ke beberapa tabel (maks. 13 hari per tabel, jumlah hari dibagi rata) supaya tiap kolom tetap cukup lebar untuk tanda tangan. */
-const HARI_TABEL = 13, HARI_SATU = 14;
+/* Kegiatan lebih dari 7 hari (mis. Ahli K3 PTP 26 hari): kolom tanda tangan daftar hadir dibagi ke beberapa lembar (maks. 7 hari per lembar, jumlah hari dibagi rata,
+   mis. 26 hari = 7+7+6+6) supaya tiap kolom cukup lebar dan tanda tangan terbaca. Permintaan Adrian 2026-11-15 (dulu maks. 13/14 hari: TTD terlalu kecil). */
+const HARI_TABEL = 7, HARI_SATU = 7;
 function hariGrup(days) {
   if (days.length <= HARI_SATU) return [days];
-  const n = Math.ceil(days.length / HARI_TABEL), sz = Math.ceil(days.length / n), out = [];
-  for (let i = 0; i < days.length; i += sz) out.push(days.slice(i, i + sz));
+  const n = Math.ceil(days.length / HARI_TABEL), base = Math.floor(days.length / n), extra = days.length % n, out = [];
+  for (let g = 0, i = 0; g < n; g++) { const sz = base + (g < extra ? 1 : 0); out.push(days.slice(i, i + sz)); i += sz; } // dibagi rata: lembar awal dapat 1 hari lebih bila tidak habis dibagi
   return out;
 }
 const hariPendek = iso => { const d = toD(iso); return d ? d.getDate() + "/" + (d.getMonth() + 1) + "/" + String(d.getFullYear()).slice(2) : ""; };
@@ -1563,15 +1564,15 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   };
   let html = "", nDh = 0; const sec = {}; // urutan cetak: Daftar Hadir, Nilai, Absensi Narasumber, Dok. Harian, Dok. Peserta, Lulus/Tidak Lulus
   const daysAll = days, grupHari = hariGrup(daysAll);
-  grupHari.forEach((days, gi) => { // satu tabel daftar hadir per kelompok hari (kegiatan <= 14 hari = satu kelompok)
+  grupHari.forEach((days, gi) => { // satu tabel daftar hadir per kelompok hari (kegiatan <= 7 hari = satu kelompok)
   const multi = days.length > 1, dense = multi && days.length > 7, gOff = grupHari.slice(0, gi).reduce((n, g) => n + g.length, 0), gLast = gi === grupHari.length - 1;
   const grpLbl = grupHari.length > 1 ? ` <small>(Hari ke-${gOff + 1} s.d. ${gOff + days.length})</small>` : "";
   const cols = multi
-    ? `<colgroup><col style="width:${dense ? 8 : 9}mm"><col style="width:${dense ? 31 : days.length > 4 ? 40 : 46}mm"><col style="width:${dense ? 26 : days.length > 4 ? 30 : 34}mm">${days.map(() => "<col>").join("")}<col style="width:${dense ? 17 : days.length > 4 ? 22 : 24}mm"></colgroup>`
+    ? `<colgroup><col style="width:${dense ? 8 : 9}mm"><col style="width:${dense ? 31 : days.length > 4 ? 36 : 46}mm"><col style="width:${dense ? 26 : days.length > 4 ? 28 : 34}mm">${days.map(() => "<col>").join("")}<col style="width:${dense ? 17 : days.length > 4 ? 20 : 24}mm"></colgroup>`
     : `<colgroup><col style="width:9mm"><col><col style="width:46mm"><col style="width:42mm"><col style="width:26mm"></colgroup>`;
   const thead = multi
-    ? `<thead><tr><th rowspan="2">No</th><th rowspan="2">Nama Peserta</th><th rowspan="2">Instansi / Perusahaan</th><th colspan="${days.length}">${dense ? "Tanda Tangan (Hari ke-)" : "Tanda Tangan"}</th><th rowspan="2">Keterangan</th></tr>
-       <tr class="days">${days.map((d, k) => `<th>${dense ? gOff + k + 1 : "Hari " + (gOff + k + 1)}<br><span>${esc(dense ? hariPendek(d).split("/").slice(0, 2).join("/") : hariPendek(d))}</span></th>`).join("")}</tr></thead>`
+    ? `<thead><tr><th rowspan="2">No</th><th rowspan="2">Nama Peserta</th><th rowspan="2">Instansi / Perusahaan</th><th colspan="${days.length}">${days.length > 4 ? "Tanda Tangan (Hari ke-)" : "Tanda Tangan"}</th><th rowspan="2"${days.length > 4 ? ' style="font-size:8pt;padding-left:.5mm;padding-right:.5mm"' : ""}>Keterangan</th></tr>
+       <tr class="days">${days.map((d, k) => `<th>${days.length > 4 ? gOff + k + 1 : "Hari " + (gOff + k + 1)}<br><span>${esc(days.length > 4 ? hariPendek(d).split("/").slice(0, 2).join("/") : hariPendek(d))}</span></th>`).join("")}</tr></thead>`
     : `<thead><tr><th>No</th><th>Nama Peserta</th><th>Instansi / Perusahaan</th><th>Tanda Tangan</th><th>Keterangan</th></tr></thead>`;
   const nCol = 4 + days.length;
 
@@ -3812,24 +3813,27 @@ const Word = (() => {
     const nd = days.length, multi = nd > 1;
     let widths;
     const dense = multi && nd > 7; // 8 hari ke atas (mis. 12 hari): kolom hari dibuat ramping
-    const kw = tw(dense ? 17 : multi ? (nd > 4 ? 22 : 24) : 26); // lebar kolom Keterangan (kolom terakhir)
+    const kw = tw(dense ? 17 : multi ? (nd > 4 ? 20 : 24) : 26); // lebar kolom Keterangan (kolom terakhir)
     if (multi) {
-      const c1 = tw(dense ? 8 : 9), c2 = tw(dense ? 31 : nd > 4 ? 40 : 46), c3 = tw(dense ? 26 : nd > 4 ? 30 : 34), rest = tw(CONT_W) - c1 - c2 - c3 - kw, dw = Math.floor(rest / nd);
+      const c1 = tw(dense ? 8 : 9), c2 = tw(dense ? 31 : nd > 4 ? 36 : 46), c3 = tw(dense ? 26 : nd > 4 ? 28 : 34), rest = tw(CONT_W) - c1 - c2 - c3 - kw, dw = Math.floor(rest / nd);
       widths = [c1, c2, c3, ...days.map((_, i) => i === nd - 1 ? rest - dw * (nd - 1) : dw), kw];
     } else widths = [tw(9), tw(CONT_W - 9 - 46 - 42 - 26), tw(46), tw(42), kw];
     const TH = { fill: "F58220" }, th = (w, t, o = {}) => D.cell(w, D.par(D.run(t, { b: 1, color: "FFFFFF", sz: o.sz || 20 }), { jc: "center", before: 40, after: 40 }), { ...TH, ...o });
     let head;
     if (multi) {
-      head = D.row(th(widths[0], "No", { vm: "restart" }) + th(widths[1], "Nama Peserta", { vm: "restart" }) + th(widths[2], "Instansi / Perusahaan", { vm: "restart" }) + th(widths.slice(3, 3 + nd).reduce((s, w) => s + w, 0), dense ? "Tanda Tangan (Hari ke-)" : "Tanda Tangan", { span: nd }) + th(kw, "Keterangan", { vm: "restart", sz: dense ? 15 : 18 }), { head: 1 })
-        + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(dense ? String(gOff + k + 1) : `Hari ${gOff + k + 1}`, { b: 1, color: "FFFFFF", sz: dense ? 16 : 17 }), { jc: "center", before: 20 }) + D.par(D.run(dense ? ctx.pendek(d).split("/").slice(0, 2).join("/") : ctx.pendek(d), { color: "FFFFFF", sz: dense ? 12 : 16 }), { jc: "center", after: 20 }), TH)).join("") + th(kw, "", { vm: "cont" }), { head: 1 });
+      head = D.row(th(widths[0], "No", { vm: "restart" }) + th(widths[1], "Nama Peserta", { vm: "restart" }) + th(widths[2], "Instansi / Perusahaan", { vm: "restart" }) + th(widths.slice(3, 3 + nd).reduce((s, w) => s + w, 0), nd > 4 ? "Tanda Tangan (Hari ke-)" : "Tanda Tangan", { span: nd }) + th(kw, "Keterangan", { vm: "restart", sz: nd > 4 ? 15 : 18 }), { head: 1 })
+        + D.row(th(widths[0], "", { vm: "cont" }) + th(widths[1], "", { vm: "cont" }) + th(widths[2], "", { vm: "cont" }) + days.map((d, k) => D.cell(widths[3 + k], D.par(D.run(nd > 4 ? String(gOff + k + 1) : `Hari ${gOff + k + 1}`, { b: 1, color: "FFFFFF", sz: nd > 4 ? 18 : 17 }), { jc: "center", before: 20 }) + D.par(D.run(nd > 4 ? ctx.pendek(d).split("/").slice(0, 2).join("/") : ctx.pendek(d), { color: "FFFFFF", sz: nd > 4 ? 14 : 16 }), { jc: "center", after: 20 }), TH)).join("") + th(kw, "", { vm: "cont" }), { head: 1 });
     } else head = D.row(th(widths[0], "No") + th(widths[1], "Nama Peserta") + th(widths[2], "Instansi / Perusahaan") + th(widths[3], "Tanda Tangan") + th(kw, "Keterangan", { sz: 18 }), { head: 1 });
     // Warna stabilo: Cancel = merah sampai kolom Keterangan; Remedial = kuning sampai kolom TTD sebelum hari terakhir (TTD hari terakhir & Keterangan tanpa warna)
     const RED = "FF6B6B", YEL = "FFF200";
     const body = rows.map((p, i) => {
       const no = i + 1, bt = !!p.batal, rem = !bt && !!p.remedial, F = bt ? { fill: RED } : rem ? { fill: YEL } : {};
       const sig = (k, w, left) => {
-        const url = p.ttd && days[k] && p.ttd[days[k]]; const im = url ? D.inline(url, multi ? w / TW - 7 : (w / TW) / 2 - 7, 10.5) : "";
-        return D.cell(w, D.par(D.run(no + ".", { sz: multi ? 15 : 17, color: "555555" }) + (im ? D.run("  ") + im : ""), { jc: multi ? "left" : (left ? "left" : "right") }), rem ? {} : F); // remedial: kolom TTD hari terakhir tidak diwarnai (diisi tanda tangan)
+        const url = p.ttd && days[k] && p.ttd[days[k]];
+        if (multi) { const im = url ? D.inline(url, w / TW - 2, 9) : ""; // banyak hari: nomor di baris atas, TTD selebar sel di bawahnya (dulu sejajar nomor sehingga sangat kecil)
+          return D.cell(w, D.par(D.run(no + ".", { sz: 14, color: "555555" }), { jc: "left" }) + D.par(im, { jc: "center" }), rem ? {} : F); }
+        const im = url ? D.inline(url, (w / TW) / 2 - 7, 10.5) : "";
+        return D.cell(w, D.par(D.run(no + ".", { sz: 17, color: "555555" }) + (im ? D.run("  ") + im : ""), { jc: left ? "left" : "right" }), rem ? {} : F); // remedial: kolom TTD hari terakhir tidak diwarnai (diisi tanda tangan)
       };
       const tc = bt || rem ? { color: "000000" } : {}; // teks hitam tegas di atas warna stabilo (Word otomatis memutihkan teks di warna gelap)
       const base = D.cell(widths[0], D.par(D.run(no, tc), { jc: "center" }), F) + D.cell(widths[1], D.par(D.run(p.nama || "", tc)), F) + D.cell(widths[2], D.par(D.run(p.instansi || "", tc)), F);
