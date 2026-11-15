@@ -15,7 +15,10 @@
   var cfg = null, shown = false, root = null, timer = 0, pollT = 0, startT = 0, finishing = false;
   var HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'], BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   function p2(n) { return (n < 10 ? '0' : '') + n; }
-  function zona() { var m = -new Date().getTimezoneOffset(); return m === 420 ? ' WIB' : m === 480 ? ' WITA' : m === 540 ? ' WIT' : ''; }
+  function zona() { // zona waktu perangkat yang membuka halaman
+    var m = -new Date().getTimezoneOffset(); if (m === 420) return ' WIB'; if (m === 480) return ' WITA'; if (m === 540) return ' WIT';
+    var a = Math.abs(m); return ' GMT' + (m < 0 ? '−' : '+') + Math.floor(a / 60) + (a % 60 ? ':' + p2(a % 60) : '');
+  }
   function fmt(t) { var d = new Date(t); return HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BLN[d.getMonth()] + ' ' + d.getFullYear() + ' · ' + p2(d.getHours()) + '.' + p2(d.getMinutes()) + zona(); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
