@@ -86,7 +86,20 @@ function selesaiEff(kid) {
   if (best) return best.v;
   return c.some(x => x.v);
 }
-const setSelesai = (kid, v) => { const h = hOf(kid); h.selesai = !!v; h.selT = nowS(); touch(kid); };
+const setSelesai = (kid, v) => { const h = hOf(kid); h.selesai = !!v; h.selT = nowS(); logA(kid, v ? 'selesai' : 'buka'); touch(kid); };
+/* Nilai praktek sudah dikirim ke evaluator: dicentang PIC sebelum menekan Selesai (wajib). Tanda paling baru (h.nkT / x.nkT) menang, sama seperti status Selesai. */
+function nkEff(kid) {
+  const h = H[kid]; let best = h && h.nkT ? { v: !!h.nk, t: +h.nkT } : null;
+  const m = OH[kid]; if (m && ME) Object.entries(m).forEach(([u, x]) => { if (u !== ME.uid && x && typeof x === 'object' && x.nkT && (!best || +x.nkT > best.t)) best = { v: !!x.nk, t: +x.nkT }; });
+  return best ? best.v : false;
+}
+/* Catatan aktivitas APK (dibaca panel "Aktivitas dari aplikasi PIC" di website). Ringkas: isian sejenis berturut-turut dalam 30 menit digabung (n bertambah). Maks. 40 entri per akun per kegiatan. */
+function logA(kid, k, d) {
+  const h = hOf(kid), t = nowS(), L = Array.isArray(h.log) ? h.log : (h.log = []), last = L[L.length - 1];
+  if (last && last.k === k && (last.d || '') === (d || '') && t - last.t < 30 * 60e3 && !['selesai', 'buka', 'nk1', 'nk0'].includes(k)) { last.n = (last.n || 1) + 1; last.t = t; }
+  else L.push(d ? { k, d, n: 1, t } : { k, n: 1, t });
+  if (L.length > 40) L.splice(0, L.length - 40);
+}
 const ownWins = (h, x) => !x || (h.upd || 0) >= x.u; // isian sendiri dipakai bila tidak ada isian akun lain yang lebih baru
 const xT = (h, pid, d) => { const o = ovOf(h); return !!(o && o.hadir[pid] && o.hadir[pid][d]); };      // TTD peserta sudah ada dari akun PIC lain
 const xF = (h, pid, key) => { const o = ovOf(h); return !!(o && o[key] && o[key][pid]); }; // foto sudah ada dari akun PIC lain
@@ -296,7 +309,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v88';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v89';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -480,7 +493,7 @@ async function ttdpGot(st) { // TTD yang dikirim peserta lewat link -> masuk ke 
         try {
           const u = await window.PicFB.ttdpGet(kid, klk, key);
           if (typeof u === 'string' && /^data:image\//.test(u)) {
-            if (!sudahTtd(h, p, day)) { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][day] = u; h.ttdpSeen[sk2] = ts; touch(kid); renderSoft(); toast(`${p.nama} sudah tanda tangan`); }
+            if (!sudahTtd(h, p, day)) { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][day] = u; h.ttdpSeen[sk2] = ts; logA(kid, 'ttdl', day); touch(kid); renderSoft(); toast(`${p.nama} sudah tanda tangan`); }
             else { h.ttdpSeen[sk2] = ts; saveH(kid); }
           } else { h.ttdpSeen[sk2] = ts; }
         } catch (e) { /* dicoba lagi pada pembaruan berikutnya */ }
@@ -680,7 +693,7 @@ const flags = h => {
   const nr = {}, nrk = {}; new Set([...Object.keys(h.nr || {}), ...Object.keys(h.nrs || {})]).forEach(d => { const o = { ...((h.nr || {})[d] || {}) }; if ((h.nrs || {})[d]) o.ttd = 1; const m = NRK_RE.exec(d); if (m[1]) (nrk[m[1]] = nrk[m[1]] || {})[m[2]] = o; else nr[d] = o; });
   const lap = { s1: h.lapN.s1 || {}, s2: h.lapN.s2 || {}, hari, nr, nrk }; if ('nKota' in (h.lapN || {})) lap.nKota = String(h.lapN.nKota || '');
   const mh = {}; mediaList(h).forEach(([k]) => { if (h.sent[k]) mh[k] = h.sent[k]; }); // sidik gambar yang sudah terkirim: website hanya mengunduh gambar yang berubah
-  return { dev: DEV, mh, nilai: h.nilai || {}, nlT: h.nlT || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, ...fx, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, selT: +h.selT || 0, admT: h.admT || 0, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
+  return { dev: DEV, mh, nilai: h.nilai || {}, nlT: h.nlT || {}, kel: h.kel || {}, lap, ttdN1: !!h.n1, ttdN2: !!h.n2, batal: h.batal, remedial: h.remedial || {}, hadir, foto, ...fx, ttdPic: !!h.ttdPic, ttdPicNama: h.ttdPicNama || '', selesai: !!h.selesai, selT: +h.selT || 0, nk: !!h.nk, nkT: +h.nkT || 0, log: Array.isArray(h.log) ? h.log.slice(-40) : [], admT: h.admT || 0, picNama: (ME && ME.nama) || '', upd: h.upd, rev: h.rev };
 };
 
 /* ---------- toast ---------- */
@@ -770,7 +783,7 @@ async function restore(kid, old) { // HP baru / data lokal hilang: ambil kembali
     if (old && (H[kid] !== old || old.dirty || (sv.upd || 0) <= (old.upd || 0))) return;
     const upd0 = old && old.upd;
     const media = await window.PicFB.media(kid);
-    const h = newH(); h.svSig = sv.dev ? sv.dev + ':' + (sv.upd || 0) + ':' + (sv.rev || 0) : ''; h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0; h.selesai = !!sv.selesai; h.selT = +sv.selT || 0; h.admT = sv.admT || 0;
+    const h = newH(); h.svSig = sv.dev ? sv.dev + ':' + (sv.upd || 0) + ':' + (sv.rev || 0) : ''; h.batal = sv.batal || {}; h.remedial = sv.remedial || {}; h.ttdPicNama = sv.ttdPicNama || ''; h.upd = sv.upd || 0; h.rev = sv.rev || 0; h.selesai = !!sv.selesai; h.selT = +sv.selT || 0; h.nk = !!sv.nk; h.nkT = +sv.nkT || 0; h.log = Array.isArray(sv.log) ? sv.log : (sv.log ? Object.values(sv.log) : []); h.admT = sv.admT || 0;
     h.nilai = sv.nilai || {}; h.kel = sv.kel || {}; { const l = sv.lap || {}; h.lapN = { s1: l.s1 || {}, s2: l.s2 || {} }; if (l.nKota != null) h.lapN.nKota = l.nKota; Object.keys(l.hari || {}).forEach(d => { if (l.hari[d].materi != null) h.materi[d] = l.hari[d].materi; }); }
     Object.keys((sv.lap || {}).nr || {}).forEach(d => { const { ttd, ...r } = sv.lap.nr[d] || {}; if (Object.keys(r).length) h.nr[d] = r; });
     Object.keys((sv.lap || {}).nrk || {}).forEach(kk => Object.keys(sv.lap.nrk[kk] || {}).forEach(d => { const { ttd, ...r } = sv.lap.nrk[kk][d] || {}; if (Object.keys(r).length) h.nr[kk + '~' + d] = r; }));
@@ -1320,7 +1333,9 @@ function render() {
     const tFt = !alat ? `<button type="button" class="tile" data-act="go" data-to="ftl"><span class="ic">${I.cam}</span><span><b>Link Foto Dokumentasi</b><small>Bagikan ke pihak lain · foto harian &amp; peserta, hanya pada tanggal kegiatan</small></span>${I.chev}</button>` : '';
     const tLap = (() => { const c = lapCek(kid); return `<button type="button" class="tile lap${c.all ? ' ok' : ''}" data-act="go" data-to="lap"><span class="ic">${I.list}</span><span><b>Pratinjau Laporan</b><small>${c.all ? 'Laporan lengkap ✔' : c.pct + '% lengkap · ' + (c.secs.length - c.nOk) + ' bagian masih kurang'} — cek sebelum selesai</small></span>${I.chev}</button>`; })();
     const tWrd = `<button type="button" class="tile" data-act="go" data-to="wrd"><span class="ic">${I.list}</span><span><b>Pratinjau Word</b><small>Tampilan berkas Word: daftar hadir, nilai, dokumentasi, narasumber</small></span>${I.chev}</button>`;
-    const btnSelesai = alat ? '' : (() => { const c = lapCek(kid), ok = !!c.all; return `<button class="btn${ok ? ' pri' : ''}" type="button" data-act="selesai" ${ok ? '' : 'disabled aria-disabled="true"'} style="margin-top:6px${ok ? '' : ';opacity:.5'}">✔ Selesai — sembunyikan kegiatan ini dari daftar</button><p class="hint">${ok ? 'Pratinjau Laporan sudah 100%. Tekan Selesai bila semua isian sudah final. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar. WhatsApp akan terbuka otomatis untuk mengirim kabar selesai ke admin.' : `Tombol Selesai aktif setelah Pratinjau Laporan mencapai <b>100%</b> (sekarang ${c.pct}%). Lengkapi bagian yang masih kurang di Pratinjau Laporan.`}</p>`; })();
+    const btnSelesai = alat ? '' : (() => { const c = lapCek(kid), ok = !!c.all, nk = nkEff(kid), siap = ok && nk; return `<button class="btn${siap ? ' pri' : ''}" type="button" data-act="selesai" ${siap ? '' : 'disabled aria-disabled="true"'} style="margin-top:6px${siap ? '' : ';opacity:.5'}">✔ Selesai — sembunyikan kegiatan ini dari daftar</button>
+      <label class="nkcek${nk ? ' on' : ''}"><input type="checkbox" data-act="nkcek"${nk ? ' checked' : ''}><span><b>Nilai praktek sudah dikirim ke evaluator</b><small>Wajib dicentang sebelum menekan Selesai.</small></span></label>
+      <p class="hint">${!ok ? `Tombol Selesai aktif setelah Pratinjau Laporan mencapai <b>100%</b> (sekarang ${c.pct}%) dan kotak nilai praktek di atas dicentang. Lengkapi bagian yang masih kurang di Pratinjau Laporan.` : !nk ? 'Pratinjau Laporan sudah 100%. Centang <b>Nilai praktek sudah dikirim ke evaluator</b> di atas untuk mengaktifkan tombol Selesai.' : 'Pratinjau Laporan sudah 100% dan nilai praktek sudah dikirim. Tekan Selesai bila semua isian sudah final. Kegiatan tidak tampil lagi di daftar, tetapi bisa dibuka lagi lewat "Kegiatan selesai" di halaman daftar. WhatsApp akan terbuka otomatis untuk mengirim kabar selesai ke admin.'}</p>`; })();
     const dlCard = alat ? '' : (() => {
       const lengkap = lapSemua(kid), selesai = selesaiEff(kid), ok = lengkap && selesai, cat = ok ? 'Laporan lengkap dan sudah ditandai Selesai. Siap diunduh sebagai PDF (satu berkas berisi seluruh laporan).' : !lengkap ? 'Belum bisa diunduh: Pratinjau Laporan belum lengkap. Lengkapi dulu semua bagian yang masih kurang.' : 'Laporan sudah lengkap. Tekan tombol ✔ Selesai di atas, lalu tombol download ini aktif.';
       return `<div class="card2 dlbox${ok ? ' ok' : ''}"><b>⬇ Download Laporan</b><div class="hint">${cat}${ln.nilai ? ' Daftar Nilai (PDF) bisa diunduh kapan saja, walau laporan belum lengkap.' : ''}</div>
@@ -1716,8 +1731,8 @@ function camRetake() {
 }
 function camSave(url) {
   const { kid, pid, slot, hari } = CAM, h = hOf(kid);
-  if (hari) { (h.hfoto[hari] = h.hfoto[hari] || []).push({ i: Date.now().toString(36), u: url }); camClose(); touch(kid); render(); toast('Foto tersimpan'); return; }
-  h[slot][pid] = url; camClose(); touch(kid); render(); toast('Foto tersimpan');
+  if (hari) { (h.hfoto[hari] = h.hfoto[hari] || []).push({ i: Date.now().toString(36), u: url }); logA(kid, 'fotoh', hari); camClose(); touch(kid); render(); toast('Foto tersimpan'); return; }
+  h[slot][pid] = url; logA(kid, 'foto'); camClose(); touch(kid); render(); toast('Foto tersimpan');
 }
 
 /* ---------- aksi ---------- */
@@ -1735,8 +1750,8 @@ async function uploadFoto(inp) {
   for (const f of (hari ? files : files.slice(0, 1))) {
     try {
       const url = await prosesFoto(f, k, p.nama, null, !!hari, true);
-      if (hari) (h.hfoto[hari] = h.hfoto[hari] || []).push({ i: Date.now().toString(36) + (n++).toString(36), u: url });
-      else { h[slot][pid] = url; n++; }
+      if (hari) { (h.hfoto[hari] = h.hfoto[hari] || []).push({ i: Date.now().toString(36) + (n++).toString(36), u: url }); logA(kid, 'fotoh', hari); }
+      else { h[slot][pid] = url; n++; logA(kid, 'foto'); }
     } catch (err) { bad++; }
   }
   if (n) { touch(kid); render(); }
@@ -1783,7 +1798,8 @@ document.addEventListener('click', e => { if (e.target.closest && e.target.close
 window.addEventListener('focus', () => setTimeout(() => { if (UPL) UPL = Math.min(UPL, Date.now() + 4000); }, 0)); // pemilih tertutup (dipilih / dibatalkan): sisakan beberapa detik untuk menerima berkas
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act, kid = P.kid, k = kid && KEGS[kid];
-  if (a === 'selesai' && k) { const c = lapCek(kid); if (!c.all) { toast('Belum bisa: Pratinjau Laporan baru ' + c.pct + '%. Tombol Selesai aktif setelah 100%.'); return; } if (!confirm('Pratinjau Laporan sudah 100%.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)\n\nSetelah itu WhatsApp akan terbuka untuk mengirim pemberitahuan selesai.')) return; setSelesai(kid, true); render(); toast('Kegiatan ditandai selesai. Laporan lengkap — tombol Download Laporan sudah aktif di bawah.'); waSelesai(kid); setTimeout(() => { const e = $('.dlbox'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 150); return; }
+  if (a === 'nkcek' && k) { const h = hOf(kid), v = !!b.checked; h.nk = v; h.nkT = nowS(); logA(kid, v ? 'nk1' : 'nk0'); touch(kid); render(); return; }
+  if (a === 'selesai' && k) { const c = lapCek(kid); if (!c.all) { toast('Belum bisa: Pratinjau Laporan baru ' + c.pct + '%. Tombol Selesai aktif setelah 100%.'); return; } if (!nkEff(kid)) { toast('Centang dulu "Nilai praktek sudah dikirim ke evaluator" di bawah tombol Selesai.'); return; } if (!confirm('Pratinjau Laporan sudah 100%.\n\nTandai kegiatan ini SELESAI dan sembunyikan dari daftar? (bisa dibuka lagi)\n\nSetelah itu WhatsApp akan terbuka untuk mengirim pemberitahuan selesai.')) return; setSelesai(kid, true); render(); toast('Kegiatan ditandai selesai. Laporan lengkap — tombol Download Laporan sudah aktif di bawah.'); waSelesai(kid); setTimeout(() => { const e = $('.dlbox'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'center' }); }, 150); return; }
   if (a === 'bukalagi') { const id = b.dataset.id; setSelesai(id, false); render(); toast('Kegiatan dibuka lagi.'); return; }
   if (a === 'showdone') { P.showDone = !P.showDone; render(); return; }
   if (a === 'sync') { if (!online()) toast('Belum ada sinyal. Data aman di HP dan dikirim otomatis nanti.'); else { const e0 = syncErr; syncErr = ''; sync(); pull(true); toast(e0 ? 'Mengirim ulang. Kendala sebelumnya: ' + e0 : 'Memeriksa dan mengirim data…'); } }
@@ -1834,9 +1850,9 @@ document.addEventListener('click', e => {
   }
   else if (a === 'sig' && k) {
     const pid = b.closest('.arow').dataset.pid, p = k.peserta.find(x => x.id === pid), d = (k.tgl || [])[P.day] || (k.tgl || [])[0], h = hOf(kid);
-    openPad('Tanda tangan peserta', `${p.nama} · ${d ? tglPanjang(d) : ''}`, u => { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][d] = u; touch(kid); renderAbs(); }, h.hadir[pid] && h.hadir[pid][d]);
+    openPad('Tanda tangan peserta', `${p.nama} · ${d ? tglPanjang(d) : ''}`, u => { h.hadir[pid] = h.hadir[pid] || {}; h.hadir[pid][d] = u; logA(kid, 'ttd', d); touch(kid); renderAbs(); }, h.hadir[pid] && h.hadir[pid][d]);
   }
-  else if (a === 'ttdpic' && k) { const h = hOf(kid); openPad('TTD PIC', `${ME.nama} · ${k.nama}`, u => { h.ttdPic = u; h.ttdPicNama = ME.nama; touch(kid); render(); }, h.ttdPic); }
+  else if (a === 'ttdpic' && k) { const h = hOf(kid); openPad('TTD PIC', `${ME.nama} · ${k.nama}`, u => { h.ttdPic = u; h.ttdPicNama = ME.nama; logA(kid, 'ttdpic'); touch(kid); render(); }, h.ttdPic); }
   else if (a === 'foto' && k) openCam(kid, b.dataset.pid, b.dataset.slot);
   else if (a === 'hfoto' && k) openCam(kid, null, null, b.dataset.d);
   else if (a === 'hdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), id = b.dataset.i; h.hfoto[d] = (h.hfoto[d] || []).filter(f => f.i !== id); if (!h.hfoto[d].length) delete h.hfoto[d]; const key = `d_${d}_${me4()}_${id}`; delete h.sent[key]; if (!h.gone.includes(key)) h.gone.push(key); touch(kid); render(); }
@@ -1847,12 +1863,12 @@ document.addEventListener('click', e => {
   else if ((a === 'dlall' || a === 'dlnil') && k) { unduhLaporan(kid, a === 'dlall' ? 'semua' : 'nilai'); }
   else if (a === 'etv' && k) { // Nilai Ujian Teori (= Evaluasi Teori): pilih Lulus / Tidak lulus (ketuk lagi = kosongkan); nilai angka tetap bisa diketik manual
     const row = b.closest('.nrow'), pid = row.dataset.pid, h = hOf(kid), p = (k.peserta || []).find(x => x.id === pid); if (!p) return;
-    const cur = nilaiOf(h, p, 'ut'); (h.nilai[pid] = h.nilai[pid] || {}).ut = cur === b.dataset.v ? '' : b.dataset.v; touch(kid); renderNil();
+    const cur = nilaiOf(h, p, 'ut'); (h.nilai[pid] = h.nilai[pid] || {}).ut = cur === b.dataset.v ? '' : b.dataset.v; logA(kid, 'nilai'); touch(kid); renderNil();
   }
   else if (a === 'allulus' && k) { const h = hOf(kid); let n = 0; pesKl(k).forEach(p => { if (!isBatal(h, p) && !kelOf(h, p)) { h.kel[p.id] = 'lulus'; n++; } }); if (n) touch(kid); renderNil(); toast(n ? n + ' peserta ditandai Lulus' : 'Semua peserta sudah terisi'); }
   else if (a === 'nsig' && k) { const h = hOf(kid), n = b.dataset.n, ln = LAPK(k), nm = lapNama(h, k, 's' + n, 'nama'); openPad('Tanda tangan penandatangan', `${nm || (ln['s' + n + 'jab'] || '').replace(/\n/g, ' ')} · ${k.nama}`, u => { h['n' + n] = u; delete h.sent['n' + n]; touch(kid); render(); }, h['n' + n]); }
   else if (a === 'nsigdel' && k) { const h = hOf(kid), n = b.dataset.n; h['n' + n] = ''; delete h.sent['n' + n]; h.gone.includes('n' + n) || h.gone.push('n' + n); touch(kid); render(); if (h.tnShared && h.tnShared[n]) naraReset(kid, 'ttn' + n, false); }
-  else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(nrDate(d))}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); touch(kid); render(); }, h.nrs[d]); }
+  else if (a === 'nrsig' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid), r = nrOf(h, k, d); openPad('Tanda tangan narasumber', `${r.nama || 'Narasumber'} · ${tglPanjang(nrDate(d))}`, u => { h.nrs[d] = u; delete h.sent['nr_' + d]; nrSet(h, k, d); logA(kid, 'nara', nrDate(d)); touch(kid); render(); }, h.nrs[d]); }
   else if (a === 'nradd' && k) { const d = b.dataset.d, pf = nrPfx(k), h = hOf(kid), ks = nrKeys(h, k, d, pf); if (ks.length >= NR_MAX) return; let n = 2; while (ks.includes(`${pf}${d}_${n}`) || nrOffOf(k, `${pf}${d}_${n}`)) n++; nrSet(h, k, `${pf}${d}_${n}`); touch(kid); render(); toast('Baris narasumber ditambahkan'); }
   else if (a === 'nrclr' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nr[d] = { kid: '', nama: '', nip: '', inst: '', mid: '', mtxt: '' }; if (h.nrs[d]) { h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); } const wasShared = !!h.nshared[d]; delete h.nshared[d]; touch(kid); render(); if (wasShared) naraReset(kid, d, true); toast('Baris dikosongkan (tidak ikut dicetak)'); }
   else if (a === 'nrsigdel' && k) { const d = b.closest('.card2').dataset.day, h = hOf(kid); h.nrs[d] = ''; delete h.sent['nr_' + d]; if (!h.gone.includes('nr_' + d)) h.gone.push('nr_' + d); touch(kid); render(); naraReset(kid, d, false); }
@@ -1891,7 +1907,7 @@ document.addEventListener('change', async e => {
 });
 document.addEventListener('input', e => {
   const t = e.target, kid = P.kid, k = kid && KEGS[kid];
-  if (t.dataset && t.dataset.nf && k) { const pid = t.closest('.nrow').dataset.pid, h = hOf(kid); (h.nilai[pid] = h.nilai[pid] || {})[t.dataset.nf] = t.value.trim(); (h.nlT[pid] = h.nlT[pid] || {})[t.dataset.nf] = nowS(); touch(kid); return; }
+  if (t.dataset && t.dataset.nf && k) { const pid = t.closest('.nrow').dataset.pid, h = hOf(kid); (h.nilai[pid] = h.nilai[pid] || {})[t.dataset.nf] = t.value.trim(); (h.nlT[pid] = h.nlT[pid] || {})[t.dataset.nf] = nowS(); logA(kid, 'nilai'); touch(kid); return; }
   if (t.dataset && t.dataset.nr && t.tagName !== 'SELECT' && k) { const d = t.closest('.card2').dataset.day, h = hOf(kid); nrSet(h, k, d)[t.dataset.nr] = t.value; touch(kid); return; }
   if (t.dataset && t.dataset.materi && k) { const h = hOf(kid); h.materi[t.dataset.materi] = t.value; touch(kid); return; }
   if (t.dataset && t.dataset.lap && k) { const h = hOf(kid), [w, f] = t.dataset.lap.split('.'); if (w === 'kota') h.lapN.nKota = t.value; else { h.lapN[w] = h.lapN[w] || {}; h.lapN[w][f] = t.value; } touch(kid); return; }

@@ -19,7 +19,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 
 /* ---------- top bar ---------- */
-.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#1f2937;color:#fff}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#24303f;color:#fff}
 .topbar h1{font-size:15px;font-weight:700;white-space:nowrap}
 .topbar .grow{flex:1}
 .quick{flex:0 0 100%;display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:relative;padding-top:8px;border-top:1px solid #374151}
@@ -494,6 +494,51 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
   .page:last-child{break-after:auto;page-break-after:auto}
 }
 
+/* ---------- panel kiri: Daftar kegiatan + Aktivitas dari aplikasi PIC (gaya aplikasi kantor) ---------- */
+:root{--kpw:292px}
+.kp{position:fixed;left:0;top:var(--tb,52px);bottom:0;width:var(--kpw);z-index:14;background:#fff;border-right:1px solid #d9dde3;display:flex;flex-direction:column;font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:13px;color:#1f2328}
+.kp[hidden]{display:none}
+body.kp-on .tabs,body.kp-on .layout,body.kp-on .landing{margin-left:var(--kpw)}
+body.kp-on .quick{display:none}
+.kp-new{white-space:nowrap;border:1px solid #1f4e8c;background:#1f4e8c;color:#fff;border-radius:3px;height:28px;padding:0 10px;font-size:12.5px;font-weight:600}
+.kp-hd{padding:10px 12px;border-bottom:1px solid #d9dde3;background:#fafafb;display:flex;flex-direction:column;gap:8px}
+.kp-hd .t{display:flex;justify-content:space-between;align-items:center;gap:8px}.kp-hd b{font-size:14px;font-weight:600}
+.kp-x{border:1px solid #d9dde3;background:#fff;border-radius:3px;width:28px;height:28px;line-height:1;font-size:16px}
+.kp-tab{display:flex}.kp-tab button{flex:1;height:30px;border:1px solid #d9dde3;background:#fff;font-size:12.5px;margin-left:-1px;color:#3b424c}
+.kp-tab button[aria-selected="true"]{background:#1f4e8c;border-color:#1f4e8c;color:#fff;font-weight:600}
+.kp-hd input{height:30px;border:1px solid #d9dde3;border-radius:3px;padding:0 8px;font-size:12.5px;width:100%}
+.kp-body{flex:1;overflow-y:auto;min-height:0}
+.kp-list{list-style:none;margin:0;padding:0}
+.kp-g{width:100%;border:0;border-bottom:1px solid #eef0f3;background:#fafafb;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;text-align:left;color:#1f2328}
+.kp-g .c{margin-left:auto;font-weight:600;color:#5e6672;font-size:11.5px}
+.kp-g .chev{width:12px;height:12px;flex:none}.kp-g[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+.kp-dot{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
+.kp-it{width:100%;text-align:left;border:0;border-bottom:1px solid #eef0f3;background:#fff;padding:9px 12px 10px;display:flex;flex-direction:column;gap:5px}
+.kp-it:hover{background:#f6f7f9}
+.kp-it[aria-current="true"]{background:#e8eef7;box-shadow:inset 3px 0 0 #1f4e8c}
+.kp-it .top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.kp-it .nm{font-weight:600;font-size:13px;line-height:1.3}
+.kp-it .pl{flex:none;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 7px;white-space:nowrap}
+.kp-it .pl.ok{background:#e3f1e8;color:#1e6b3a}.kp-it .pl.wr{background:#fff4e2;color:#8a5200}.kp-it .pl.nd{background:#eef0f3;color:#5e6672}
+.kp-it .mt{color:#5e6672;font-size:11.5px;display:flex;flex-wrap:wrap;gap:1px 8px}
+.kp-lr{display:grid;grid-template-columns:48px minmax(0,1fr) 32px;align-items:center;gap:6px;font-size:11.5px;color:#5e6672}
+.kp-lr .tr{height:5px;border-radius:3px;background:#eef0f3;overflow:hidden}.kp-lr .tr i{display:block;height:100%;border-radius:3px}
+.kp-lr b{text-align:right;color:#1f2328;font-weight:700;font-variant-numeric:tabular-nums}
+.kp-empty{padding:14px 12px;color:#5e6672}
+.kp-akt{border-top:1px solid #d9dde3;max-height:38%;display:flex;flex-direction:column;min-height:0}
+.kp-akt h3{margin:0;padding:8px 12px;font-size:13px;font-weight:600;background:#fafafb;border-bottom:1px solid #eef0f3;display:flex;justify-content:space-between;gap:6px}
+.kp-akt h3 small{font-weight:400;color:#5e6672;font-size:11px}
+.kp-akt ul{list-style:none;margin:0;padding:2px 12px 8px;overflow-y:auto}
+.kp-akt li{padding:7px 0;border-bottom:1px solid #eef0f3;font-size:12.5px;line-height:1.35}.kp-akt li:last-child{border-bottom:0}
+.kp-akt .m{color:#5e6672;font-size:11.5px;display:flex;gap:6px;align-items:center;margin-top:2px}
+.kp-akt .src{font-size:10px;font-weight:700;border:1px solid #d9dde3;border-radius:3px;padding:0 4px;color:#3b424c}
+.kp-tg{background:#374151;border:1px solid #4b5563;color:#fff;border-radius:4px;padding:5px 9px;font-weight:600;font-size:12.5px}
+@media screen and (max-width:1179px){
+  body.kp-on .tabs,body.kp-on .layout,body.kp-on .landing{margin-left:0}
+  .kp{top:0;z-index:60;box-shadow:4px 0 24px rgba(0,0,0,.25);width:min(var(--kpw),92vw)}
+}
+@media print{.kp{display:none!important}body.kp-on .tabs,body.kp-on .layout,body.kp-on .landing{margin-left:0!important}}
+
 /* ---------- mobile ---------- */
 @media screen and (max-width:900px){
   .layout{grid-template-columns:1fr;padding:12px}
@@ -529,6 +574,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
   <button class="btn dark sm" id="btnImport" title="Buka file data yang pernah diekspor">Impor</button>
   <button class="btn dark sm" id="picBtn" title="Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis">📲 PIC</button>
   <button class="btn dark sm" id="cloudBtn" title="Sinkron Google Drive">☁️ Hubungkan Drive</button>
+  <button class="kp-tg" id="kpToggle" type="button" aria-controls="kp" aria-expanded="false" title="Tampilkan / sembunyikan daftar kegiatan di samping">☰ Daftar kegiatan</button>
   <button class="btn dark sm" id="btnEvents" title="Daftar semua kegiatan tersimpan">📁 Kegiatan</button>
   <button class="btn primary" id="btnPrint">Cetak / PDF</button>
   <input type="file" id="fileImport" accept=".json,application/json" hidden>
@@ -542,6 +588,16 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
     <div class="qwrap" id="qLainWrap" hidden><button class="qbtn" data-q="lain" aria-expanded="false" aria-haspopup="true">📋 Lainnya <span class="cnt">0</span> ▾</button><div class="qmenu" data-m="lain" hidden></div></div>
   </div>
 </header>
+
+<aside class="kp" id="kp" hidden aria-labelledby="kpTtl">
+  <div class="kp-hd">
+    <div class="t"><b id="kpTtl">Daftar kegiatan</b><span style="display:flex;gap:6px"><button class="kp-new" type="button" id="kpNew" title="Mulai kegiatan baru (kegiatan lain tetap tersimpan)">＋ Baru</button><button class="kp-x" type="button" id="kpClose" aria-label="Tutup daftar kegiatan">×</button></span></div>
+    <div class="kp-tab" role="tablist" aria-label="Status kegiatan"><button type="button" role="tab" id="kpJalan" aria-selected="true">Berjalan</button><button type="button" role="tab" id="kpSelesai" aria-selected="false">Selesai</button></div>
+    <label><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Cari kegiatan</span><input id="kpQ" type="search" placeholder="Cari kegiatan, program, tempat"></label>
+  </div>
+  <div class="kp-body"><ul class="kp-list" id="kpList"></ul></div>
+  <section class="kp-akt" aria-labelledby="kpAktT"><h3 id="kpAktT">Aktivitas dari aplikasi PIC <small>hanya dari APK</small></h3><ul id="kpAkt"></ul></section>
+</aside>
 
 <section class="landing" id="landing" hidden aria-label="Pilih kegiatan atau kegiatan baru">
   <div class="ln-box">
@@ -601,7 +657,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
           <div class="hint" id="kelasInfo"></div>
         </div></div>
       <div class="row2">
-        <div class="field" style="grid-column:1/-1;margin-bottom:4px"><label for="dateField">Tanggal Kegiatan <span class="hint">(klik per tanggal, boleh tidak berurutan, maks. 26 hari)</span></label>
+        <div class="field" style="grid-column:1/-1;margin-bottom:4px"><label for="dateField">Tanggal Kegiatan <span class="hint">(klik per tanggal, boleh tidak berurutan, maks. 35 hari)</span></label>
           <div class="dp-wrap" id="dpWrap">
             <button type="button" class="dp-field" id="dateField" aria-haspopup="dialog" aria-expanded="false" aria-controls="datePop">
               <span id="dateFieldTxt"></span>
@@ -1420,7 +1476,7 @@ let PAGE_X = ""; // x1/x2 = judul kegiatan panjang: huruf judul laporan diperkec
 const page = (inner, cls) => `<section class="page ${cls}${/pg-lap/.test(cls) && PAGE_X ? " " + PAGE_X : ""}"><img class="kop-head" src="${KOP_HEAD}" alt=""><div class="content">${inner}</div><img class="kop-foot" src="${KOP_FOOT}" alt=""></section>`;
 const v = x => esc(x) || "&nbsp;";
 
-const DK_PER = 4, MAX_DAYS = 26; // K3 PTP (Ahli) berjalan 26 hari
+const DK_PER = 4, MAX_DAYS = 35; // maks. 35 hari per kegiatan (K3 PTP Ahli 26 hari; permintaan Adrian 2026-11-15)
 let measEl = null;
 function measurer() {
   if (!measEl) { measEl = document.createElement("div"); measEl.id = "measure"; measEl.setAttribute("aria-hidden", "true"); document.body.appendChild(measEl); }
@@ -2647,6 +2703,7 @@ function applyState() {
   Loc.status(S.wm.alamat ? (S.wm.auto ? "Alamat dari GPS terakhir. Tekan 📍 untuk memperbarui." : "Alamat diisi manual.") : "Alamat belum diisi – akan dideteksi otomatis saat kamera dibuka.", "");
   $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan + sfxTxt(sufMap(), S.id) : "· (kegiatan tanpa nama)";
   Cloud.status(); if (Cloud.dirty(S)) Cloud.schedule(2000);
+  kpRender();
 }
 function renderTtd() {
   const t = $("#ttdThumb"), lock = orgLocked();
@@ -2807,7 +2864,82 @@ Ev.quick = function () {
         : `<div class="qe">Belum ada kegiatan ${NAMA[j]} yang pernah diinput.</div>`);
     if (menu._h !== html) { menu._h = html; menu.innerHTML = html; } // isi sama: jangan ditulis ulang (tombol yang sedang ditekan tidak boleh diganti di tengah klik)
   });
+  kpRender();
 };
+/* ---------- panel kiri "Daftar kegiatan" (per jenis: K3 PTP / K3 PAPA / K3 Kebakaran / K3 LKBB) + "Aktivitas dari aplikasi PIC" ----------
+   Hanya MENAMPILKAN & MEMBUKA kegiatan (pakai Ev.load / Cloud.pull yang sama dengan tombol lama); tidak menulis data kegiatan.
+   Persen Laporan (rumus Pratinjau Laporan APK), TTD, Foto, status Selesai dan aktivitas APK dibaca dari halaman admin induk (window.parent.dhPanelInfo / dhPanelLog).
+   Dibuka di luar panel admin: persen foto dari data perangkat, status menurut tanggal, aktivitas tidak tersedia. */
+var KPS; // var: aman dipanggil sebelum baris ini dijalankan (kpRender keluar lebih dulu)
+function kpPar(fn, arg) { try { const w = window.parent; return w && w !== window && typeof w[fn] === "function" ? w[fn](arg) : null; } catch (_) { return null; } }
+function kpFrac(v) { const m = /^(\d+)\s*\/\s*(\d+)$/.exec(String(v == null ? "" : v).trim()); return m ? [+m[1], +m[2]] : null; }
+function kpWaktu(t) { const d = new Date(+t); if (!(+t)) return ""; const B = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]; return `${d.getDate()} ${B[d.getMonth()]} ${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}`; }
+function kpRender() {
+  if (!KPS || !KPS.el) return;
+  const el = KPS.el; if (el.hidden) return;
+  const info = kpPar("dhPanelInfo"), IE = (info && info.ev) || {}, sm = sufMap();
+  const all = [...EV]; { const mati = new Set([...Cloud.gone]); (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id)).forEach(e => all.push({ ...e, remote: true })); }
+  const akhir = e => { const h = (e.hari || []).filter(Boolean); return h.length ? h[h.length - 1] : (e.tanggal2 || e.tanggal || ""); };
+  const sel = e => { const x = IE[e.id]; if (x && x.selesai != null) return !!x.selesai; return !!akhir(e) && akhir(e) < today; };
+  const nJ = all.filter(e => !sel(e)).length, nS = all.length - nJ;
+  $("#kpJalan").textContent = `Berjalan (${nJ})`; $("#kpSelesai").textContent = `Selesai (${nS})`;
+  $("#kpJalan").setAttribute("aria-selected", KPS.tab === "jalan"); $("#kpSelesai").setAttribute("aria-selected", KPS.tab === "selesai");
+  const q = norm(KPS.q || "");
+  const rows = all.filter(e => (KPS.tab === "selesai") === sel(e)).filter(e => !q || norm(`${e.kegiatan || ""} ${e.kelas || ""} ${e.tempat || ""}`).includes(q));
+  const G = [["ptp", "K3 PTP", "#8b5cf6"], ["angkat", "K3 PAPA", "#2f6fd6"], ["damkar", "K3 Kebakaran", "#1db27a"], ["b3", "K3 LKBB", "#e8663a"], ["lain", "Kegiatan lainnya", "#6b7280"]];
+  const bar = (lbl, fr) => { if (!fr || !fr[1]) return `<span class="kp-lr"><span>${lbl}</span><span class="tr"></span><b>–</b></span>`; const p = Math.min(100, Math.round(fr[0] / fr[1] * 100)); return `<span class="kp-lr"><span>${lbl}</span><span class="tr"><i style="width:${p}%;background:${p >= 100 ? "#1e6b3a" : "#1f4e8c"}"></i></span><b>${p}%</b></span>`; };
+  const html = G.map(([j, lbl, c]) => {
+    const g = rows.filter(e => Ev.jenisIdx(e) === j).sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")) || (y.updated || 0) - (x.updated || 0)); if (!g.length) return "";
+    const open = !KPS.tutup[j];
+    return `<li><button type="button" class="kp-g" data-kg="${j}" aria-expanded="${open}"><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><i class="kp-dot" style="background:${c}"></i>${lbl}<span class="c">${g.length} kegiatan</span></button></li>` + (open ? g.map(e => {
+      const x = IE[e.id] || {}, lap = x.lap != null ? [x.lap, 100] : null, ttd = kpFrac(x.ttd), foto = kpFrac(x.foto) || (e.n ? [e.foto || 0, e.n] : null);
+      const nm = (j === "damkar" ? (e.kelas ? "Damkar " + e.kelas : e.kegiatan) : (e.kelas || e.kegiatan)) || "(tanpa nama)";
+      const pl = x.lap == null ? ["nd", e.remote ? "Di Drive" : "Laporan –"] : x.lengkap ? ["ok", "Lengkap"] : ["wr", "Belum lengkap"];
+      return `<li><button type="button" class="kp-it" ${e.remote ? "data-kr" : "data-ko"}="${esc(e.id)}" aria-current="${e.id === S.id && !landingOn}"><span class="top"><span class="nm">${e.remote ? "☁️ " : ""}${esc(nm)}${sm.has(e.id) ? " " + esc(sm.get(e.id)) : ""}</span><span class="pl ${pl[0]}">${pl[1]}</span></span><span class="mt"><span>${esc(Ev.tgl(e))}</span>${e.tempat ? `<span>${esc(e.tempat)}</span>` : ""}<span>${+e.n || 0} peserta</span></span>${bar("Laporan", lap)}${bar("TTD", ttd)}${bar("Foto", foto)}</button></li>`;
+    }).join("") : "");
+  }).join("");
+  const L = $("#kpList"), h2 = html || `<li class="kp-empty">${q ? "Tidak ada kegiatan yang cocok." : KPS.tab === "jalan" ? "Tidak ada kegiatan berjalan." : "Belum ada kegiatan selesai."}</li>`;
+  if (L._h !== h2) { L._h = h2; L.innerHTML = h2; }
+  // aktivitas APK kegiatan yang sedang dibuka
+  const A = $("#kpAkt");
+  if (landingOn || !S.id) { A.innerHTML = '<li style="color:#5e6672">Buka sebuah kegiatan untuk melihat aktivitasnya.</li>'; return; }
+  const lg = kpPar("dhPanelLog", S.id), hari = hariList(S.acara).filter(Boolean), hk = d => { const i = hari.indexOf(d); return i >= 0 ? ` (hari ke-${i + 1})` : d ? ` (${fmtTglPendek(d)})` : ""; };
+  const TX = { ttd: x => `mencatat tanda tangan ${x.n} peserta${hk(x.d)}`, ttdl: x => `menerima ${x.n} tanda tangan lewat link peserta${hk(x.d)}`, foto: x => `mengambil ${x.n} foto dokumentasi peserta`, fotoh: x => `menambah ${x.n} foto dokumentasi harian${hk(x.d)}`, nilai: x => `mengisi nilai peserta (${x.n} isian)`, nara: x => `menyimpan tanda tangan narasumber${hk(x.d)}`, ttdpic: () => "menandatangani sebagai PIC", nk1: () => "mencentang “Nilai praktek sudah dikirim ke evaluator”", nk0: () => "membatalkan centang nilai praktek ke evaluator", selesai: () => "menandai kegiatan Selesai", buka: () => "membuka kembali kegiatan" };
+  const ah = lg == null ? '<li style="color:#5e6672">Aktivitas APK tampil bila aplikasi ini dibuka dari panel admin (menu Daftar Hadir &amp; Dokumentasi).</li>'
+    : lg.length ? lg.map(x => `<li><div><b style="font-weight:600">${esc(x.s)}</b> ${esc((TX[x.k] || (() => "memperbarui isian"))(x))}</div><div class="m"><span class="src">APK PIC</span>${esc(kpWaktu(x.t))}</div></li>`).join("")
+    : '<li style="color:#5e6672">Belum ada aktivitas dari aplikasi PIC untuk kegiatan ini.</li>';
+  if (A._h !== ah) { A._h = ah; A.innerHTML = ah; }
+}
+function kpSet(on, simpan) {
+  KPS.el.hidden = !on; document.body.classList.toggle("kp-on", on); $("#kpToggle").setAttribute("aria-expanded", on); try { setTb(); } catch (_) { }
+  if (simpan) { try { localStorage.setItem("rk3_dh_kp", on ? "1" : "0"); } catch (_) { } }
+  if (on) { kpPar("dhMuatHasil"); kpRender(); }
+}
+{
+  setTimeout(() => { // dinyalakan setelah seluruh skrip siap (Cloud, Ev, dll. sudah terdefinisi)
+    KPS = { el: $("#kp"), tab: "jalan", q: "", tutup: {} };
+    let pref = null; try { pref = localStorage.getItem("rk3_dh_kp"); } catch (_) { }
+    kpSet(pref ? pref === "1" : window.innerWidth >= 1180, false);
+  }, 0);
+  $("#kpToggle").onclick = e => { e.stopPropagation(); if (KPS) kpSet(KPS.el.hidden, true); };
+  $("#kpClose").onclick = () => { if (KPS) kpSet(false, true); };
+  $("#kpNew").onclick = () => { Ev.menuTutup(); Ev.baru(null); };
+  try { new ResizeObserver(() => { try { setTb(); } catch (_) { } }).observe($(".topbar")); } catch (_) { } // tinggi bilah atas berubah (tombol membungkus): panel & tab ikut bergeser
+  $("#kpJalan").onclick = () => { if (KPS) { KPS.tab = "jalan"; kpRender(); } };
+  $("#kpSelesai").onclick = () => { if (KPS) { KPS.tab = "selesai"; kpRender(); } };
+  $("#kpQ").addEventListener("input", e => { if (KPS) { KPS.q = e.target.value; kpRender(); } });
+  $("#kpList").addEventListener("click", e => {
+    if (!KPS) return;
+    const g = e.target.closest("[data-kg]"); if (g) { KPS.tutup[g.dataset.kg] = !KPS.tutup[g.dataset.kg]; kpRender(); return; }
+    const r = e.target.closest("[data-kr]"); if (r) { toast("Mengunduh kegiatan dari Google Drive…"); Cloud.pull(r.dataset.kr).then(() => Ev.quick()); return; }
+    const o = e.target.closest("[data-ko]"); if (!o) return;
+    if (window.innerWidth < 1180) kpSet(false, false); // layar sempit: panel menutup formulir, tutup setelah memilih
+    if (o.dataset.ko !== S.id) Ev.load(o.dataset.ko);
+    else if (landingOn) { applyState(); setTab("data"); }
+  });
+  window.addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.rk3 === "dh-panel") kpRender(); });
+  setInterval(() => { if (KPS && !KPS.el.hidden && !document.hidden) { kpPar("dhMuatHasil"); kpRender(); } }, 60000);
+}
 Ev.menuTutup = () => document.querySelectorAll(".qmenu").forEach(m => { m.hidden = true; const b = m.parentElement.querySelector(".qbtn"); if (b) b.setAttribute("aria-expanded", "false"); });
 Ev.baru = async function (jenis) { // kegiatan baru; jenis "damkar"/"angkat" langsung memilih Nama Kegiatan yang sesuai
   await this.create(null);

@@ -208,7 +208,7 @@ const CAM = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke=
 let PAGE_X = "";
 const page = (inner, cls) => `<section class="page ${cls}${/pg-lap/.test(cls) && PAGE_X ? " " + PAGE_X : ""}"><img class="kop-head" src="${KOP_HEAD}" alt=""><div class="content">${inner}</div><img class="kop-foot" src="${KOP_FOOT}" alt=""></section>`;
 const v = x => esc(x) || "&nbsp;";
-const DK_PER = 4, MAX_DAYS = 26;
+const DK_PER = 4, MAX_DAYS = 35;
 const toD = iso => { const d = new Date((iso || "") + "T00:00:00"); return isNaN(d) ? null : d; };
 const isoOf = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 function hariList(a) {
