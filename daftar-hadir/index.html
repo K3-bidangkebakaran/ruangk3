@@ -622,6 +622,8 @@ body.kp-on .quick{display:none}
   .field.lvf>*:not(:first-child){grid-column:2}
 }
 @media print{.ev-head,.side-col{display:none!important}}
+/* dibuka dari panel admin: judul, tab & status sudah ada di kepala halaman admin -> bilah gelap disembunyikan */
+@media screen{html.emb .tb-a{display:none}html.emb .tb-r .kp-tg{background:#fff;border-color:#c4c9d1;color:#1f2328}}
 
 /* ---------- mobile ---------- */
 @media screen and (max-width:900px){
@@ -3055,6 +3057,17 @@ function kpSet(on, simpan) {
   $("#kpToggle").onclick = e => { e.stopPropagation(); if (KPS) kpSet(KPS.el.hidden, true); };
   $("#kpClose").onclick = () => { if (KPS) kpSet(false, true); };
   $("#kpNew").onclick = () => { Ev.menuTutup(); Ev.baru(null); };
+  if (kpPar("dhPanelInfo") !== null) { // tertanam di panel admin
+    document.documentElement.classList.add("emb");
+    $(".tb-r").prepend($("#kpToggle")); // ☰ Daftar kegiatan pindah ke bilah kontrol
+    const kelas = t => /upload|unggah|mengirim|menyimpan/i.test(t) ? "up" : /bermasalah|terlepas|gagal|ditolak|error/i.test(t) ? "bad" : /tersambung|terhubung|tersinkron/i.test(t) ? "ok" : "";
+    let stH = "";
+    const kirimSt = () => { const it = ["picBtn", "cloudBtn"].map(id => { const b = document.getElementById(id); if (!b) return null; const t = b.textContent.replace(/[^\p{L}\p{N} /.…%:-]/gu, "").replace(/\s+/g, " ").trim(); return { id, t, title: b.title || "", c: kelas(t) }; }).filter(Boolean), h = JSON.stringify(it); if (h === stH) return; stH = h; try { window.parent.postMessage({ rk3: "dh-st", items: it }, location.origin); } catch (_) { } };
+    try { const mo = new MutationObserver(kirimSt); ["picBtn", "cloudBtn"].forEach(id => { const b = document.getElementById(id); if (b) mo.observe(b, { childList: true, characterData: true, subtree: true, attributes: true }); }); } catch (_) { }
+    setTimeout(kirimSt, 300); setInterval(kirimSt, 5000);
+    window.addEventListener("message", e => { if (e.origin === location.origin && e.data && e.data.rk3 === "dh-klik" && /^(picBtn|cloudBtn)$/.test(e.data.id)) { const b = document.getElementById(e.data.id); if (b) b.click(); } });
+    try { setTb(); } catch (_) { }
+  }
   $("#tbKeg").onclick = () => $("#btnEvents").click();
   $("#ehPic").onclick = () => $("#picBtn").click();
   $("#scPrev").onclick = () => setTab("preview");
