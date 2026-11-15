@@ -6,6 +6,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Daftar Hadir & Dokumentasi – LPMI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 <style>
 :root{
   --accent:#f58220; --accent-d:#c9661a; --ink:#1d1d1f; --muted:#6b7280;
@@ -496,7 +497,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 
 /* ---------- panel kiri: Daftar kegiatan + Aktivitas dari aplikasi PIC (gaya aplikasi kantor) ---------- */
 :root{--kpw:292px}
-.kp{position:fixed;left:0;top:var(--tb,52px);bottom:0;width:var(--kpw);z-index:14;background:#fff;border-right:1px solid #d9dde3;display:flex;flex-direction:column;font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:13px;color:#1f2328}
+.kp{position:fixed;left:0;top:var(--kptop,var(--tb,52px));bottom:0;width:var(--kpw);z-index:14;background:#fff;border-right:1px solid #d9dde3;display:flex;flex-direction:column;font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:13px;color:#1f2328}
 .kp[hidden]{display:none}
 body.kp-on .tabs,body.kp-on .layout,body.kp-on .landing{margin-left:var(--kpw)}
 body.kp-on .quick{display:none}
@@ -533,11 +534,39 @@ body.kp-on .quick{display:none}
 .kp-akt .m{color:#5e6672;font-size:11.5px;display:flex;gap:6px;align-items:center;margin-top:2px}
 .kp-akt .src{font-size:10px;font-weight:700;border:1px solid #d9dde3;border-radius:3px;padding:0 4px;color:#3b424c}
 .kp-tg{background:#374151;border:1px solid #4b5563;color:#fff;border-radius:4px;padding:5px 9px;font-weight:600;font-size:12.5px}
-@media screen and (max-width:1179px){
+@media screen and (max-width:1100px){:root{--kpw:256px}}
+@media screen and (max-width:759px){
   body.kp-on .tabs,body.kp-on .layout,body.kp-on .landing{margin-left:0}
-  .kp{top:0;z-index:60;box-shadow:4px 0 24px rgba(0,0,0,.25);width:min(var(--kpw),92vw)}
+  .kp{top:0;z-index:60;box-shadow:4px 0 24px rgba(0,0,0,.25);width:min(292px,92vw)}
 }
 @media print{.kp{display:none!important}body.kp-on .tabs,body.kp-on .layout,body.kp-on .landing{margin-left:0!important}}
+
+/* ---------- gaya aplikasi kantor (desain baru 2026-11-15): hanya tampilan layar aplikasi, TIDAK menyentuh lembar laporan (.page) ---------- */
+@media screen{
+  body{font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:#f2f3f5;color:#1f2328}
+  .topbar{background:#24303f;padding:8px 16px;gap:8px}
+  .topbar h1{font-size:14.5px;font-weight:600}
+  .btn{border-radius:3px;border-color:#c4c9d1}
+  .btn.sm{padding:5px 10px}
+  .topbar .btn.dark,.kp-tg{background:transparent;border:1px solid #4a5a70;color:#e6eaf0;border-radius:3px}
+  .topbar .btn.dark:hover,.kp-tg:hover{background:#34445a}
+  .btn.primary{background:#1f4e8c;border-color:#1f4e8c}
+  .btn.primary:hover{background:#163a69}
+  .qbtn{border-radius:3px}
+  .tabs{background:#fafafb;border-bottom:1px solid #d9dde3;padding:0 16px;gap:0}
+  .tabs button{border:1px solid transparent;border-bottom:0;margin-bottom:-1px;padding:10px 14px;color:#3b424c;font-weight:500}
+  .tabs button.on{color:#1f2328;font-weight:600;background:#fff;border-color:#d9dde3;border-bottom:1px solid #fff}
+  .tabs .badge{border-radius:3px;background:#eef0f3;color:#3b424c}
+  .tabs button.on .badge{background:#e8eef7;color:#163a69}
+  .card{border-radius:4px;border-color:#d9dde3;box-shadow:none}
+  .card h2{font-size:14px;font-weight:600}
+  .card h2 .n{border-radius:3px;background:#24303f}
+  .field label{color:#3b424c}
+  .field input,.field select,.field textarea{border-radius:3px;border-color:#c4c9d1}
+  .field input:focus,.field select:focus,.field textarea:focus,.p-row input:focus{outline:2px solid #9db7dc;border-color:#1f4e8c}
+  .preview-col{border-radius:4px}
+  .preview-head{background:#fafafb}
+}
 
 /* ---------- mobile ---------- */
 @media screen and (max-width:900px){
@@ -2919,12 +2948,14 @@ function kpSet(on, simpan) {
   setTimeout(() => { // dinyalakan setelah seluruh skrip siap (Cloud, Ev, dll. sudah terdefinisi)
     KPS = { el: $("#kp"), tab: "jalan", q: "", tutup: {} };
     let pref = null; try { pref = localStorage.getItem("rk3_dh_kp"); } catch (_) { }
-    kpSet(pref ? pref === "1" : window.innerWidth >= 1180, false);
+    kpSet(pref ? pref === "1" : window.innerWidth >= 760, false);
   }, 0);
   $("#kpToggle").onclick = e => { e.stopPropagation(); if (KPS) kpSet(KPS.el.hidden, true); };
   $("#kpClose").onclick = () => { if (KPS) kpSet(false, true); };
   $("#kpNew").onclick = () => { Ev.menuTutup(); Ev.baru(null); };
-  try { new ResizeObserver(() => { try { setTb(); } catch (_) { } }).observe($(".topbar")); } catch (_) { } // tinggi bilah atas berubah (tombol membungkus): panel & tab ikut bergeser
+  const kpTop = () => { const b = $(".topbar").getBoundingClientRect().bottom; document.documentElement.style.setProperty("--kptop", Math.max(0, Math.round(b)) + "px"); };
+  window.addEventListener("scroll", kpTop, { passive: true }); window.addEventListener("resize", kpTop); setTimeout(kpTop, 50);
+  try { new ResizeObserver(() => { try { setTb(); kpTop(); } catch (_) { } }).observe($(".topbar")); } catch (_) { } // tinggi bilah atas berubah (tombol membungkus): panel & tab ikut bergeser
   $("#kpJalan").onclick = () => { if (KPS) { KPS.tab = "jalan"; kpRender(); } };
   $("#kpSelesai").onclick = () => { if (KPS) { KPS.tab = "selesai"; kpRender(); } };
   $("#kpQ").addEventListener("input", e => { if (KPS) { KPS.q = e.target.value; kpRender(); } });
@@ -2933,7 +2964,7 @@ function kpSet(on, simpan) {
     const g = e.target.closest("[data-kg]"); if (g) { KPS.tutup[g.dataset.kg] = !KPS.tutup[g.dataset.kg]; kpRender(); return; }
     const r = e.target.closest("[data-kr]"); if (r) { toast("Mengunduh kegiatan dari Google Drive…"); Cloud.pull(r.dataset.kr).then(() => Ev.quick()); return; }
     const o = e.target.closest("[data-ko]"); if (!o) return;
-    if (window.innerWidth < 1180) kpSet(false, false); // layar sempit: panel menutup formulir, tutup setelah memilih
+    if (window.innerWidth < 760) kpSet(false, false); // layar sempit: panel menutup formulir, tutup setelah memilih
     if (o.dataset.ko !== S.id) Ev.load(o.dataset.ko);
     else if (landingOn) { applyState(); setTab("data"); }
   });
