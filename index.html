@@ -638,6 +638,26 @@
         .dhp-ch.ok{background:#d1fae5;color:#047857}.dhp-ch.bad{background:#fee2e2;color:#b91c1c}.dhp-ch.warn{background:#fef3c7;color:#b45309}
         .dhp-note{font-size:11.5px;color:#64748b}
         .dhp-load{padding:30px 10px;text-align:center;font-size:13px;color:#64748b}
+        /* Daftar Hadir: judul + tab sebaris di kepala halaman; menu samping jadi laci (☰); Input Kegiatan memenuhi layar */
+        #view-admin.dh-full #btn-open-admin-sidebar{display:inline-flex!important}
+        #view-admin.dh-full #dh-head-tabs{display:flex!important}
+        #view-admin.dh-full #dh-head-st{display:flex!important}
+        #view-admin.dh-full main>header{padding-top:8px;padding-bottom:8px;flex-wrap:wrap;gap:8px}
+        #dh-head-tabs [role=tab]{padding:6px 14px}
+        .dh-chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid #d9dde3;border-radius:4px;background:#fff;font-size:12.5px;font-weight:600;color:#3b424c;cursor:pointer;white-space:nowrap}
+        .dh-chip i{width:8px;height:8px;border-radius:50%;display:inline-block;background:#9aa3af}
+        .dh-chip.ok i{background:#2e9e5b}.dh-chip.up{border-color:#f0c99a;background:#fff6ea;color:#8a3d07}.dh-chip.up i{background:#e8892b}.dh-chip.bad{border-color:#f3b4b4;color:#a1262c}.dh-chip.bad i{background:#dc2626}
+        @media (min-width:768px){
+            #view-admin.dh-full #admin-sidebar{position:fixed!important;left:0;top:0;bottom:0;z-index:40}
+            #view-admin.dh-full #admin-sidebar.-translate-x-full{transform:translateX(-100%)!important}
+            #view-admin.dh-full #admin-sidebar-overlay:not(.hidden){display:block!important;z-index:39}
+        }
+        #view-admin.dh-app #admin-content-scroll{padding:0!important;overflow:hidden!important;display:flex;flex-direction:column}
+        #view-admin.dh-app #admin-panel-daftarhadir{flex:1;min-height:0;display:flex;flex-direction:column}
+        #view-admin.dh-app #dh-view-app{flex:1;min-height:0;display:flex;flex-direction:column;border:0!important;border-radius:0!important;box-shadow:none!important}
+        #view-admin.dh-app #dh-view-app>div:first-child{display:none!important}
+        #view-admin.dh-app #dh-view-app>div.relative{flex:1;min-height:0}
+        #view-admin.dh-app #dh-frame{height:100%!important;min-height:0!important}
         #admin-panel-daftarhadir .dh-offscreen{position:absolute;left:-10000px;top:0;width:1100px;height:700px;overflow:hidden;visibility:hidden;pointer-events:none}
 
         @media (prefers-reduced-motion: reduce){
@@ -1631,7 +1651,18 @@
 
         <main class="flex-grow flex flex-col bg-slate-100/50 overflow-hidden relative">
             <header class="bg-white shadow-sm border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between z-10 shrink-0">
-                <div class="flex items-center"><button id="btn-open-admin-sidebar" class="md:hidden mr-3 text-slate-500 p-1 bg-slate-100 rounded-md">☰</button><h1 id="admin-header-title" class="text-lg md:text-xl font-bold text-slate-800">Kalender Kegiatan</h1></div>
+                <div class="flex items-center"><button id="btn-open-admin-sidebar" class="md:hidden mr-3 text-slate-500 p-1 bg-slate-100 rounded-md">☰</button><h1 id="admin-header-title" class="text-lg md:text-xl font-bold text-slate-800">Kalender Kegiatan</h1>
+                    <div id="dh-head-tabs" class="hidden" style="margin-left:18px">
+                            <div class="inline-flex p-1 bg-slate-100 rounded-lg self-start shrink-0" role="tablist" aria-label="Tampilan Daftar Hadir">
+                                <button type="button" id="dh-tab-rekap" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-bold bg-white text-slate-900 shadow-sm">Rekap Kegiatan</button>
+                                <button type="button" id="dh-tab-app" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Input Kegiatan</button>
+                                <button type="button" id="dh-tab-pic" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Portal PIC</button>
+                            </div>
+                    </div></div>
+                <div id="dh-head-st" class="hidden" style="align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;margin-right:12px"><span id="dh-st-chips" style="display:contents"></span>
+                    <button type="button" id="btn-dh-app-muat" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Muat ulang</button>
+                    <button type="button" id="btn-dh-app-penuh" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Layar penuh</button>
+                    <button type="button" id="btn-lpmi-reset-pw" class="hidden px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 rounded-md text-[11px] font-bold" title="Mengembalikan password login Admin LPMI (Faros) ke LPMI01 bila lupa">Reset password Admin LPMI</button></div>
                 <div class="flex items-center space-x-3 md:border-l md:border-slate-200 md:pl-4">
                     <button type="button" id="btn-lpmi-ubah-pw" onclick="window.bukaUbahPasswordLpmi()" class="hidden px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Ubah Password</button>
                     <div class="text-right hidden sm:block"><p id="admin-name-display" class="text-sm font-bold text-slate-900 leading-none">Admin</p><p id="admin-role-display" class="text-[10px] uppercase font-bold tracking-wider text-safety-600 mt-0.5">Role</p></div>
@@ -2281,20 +2312,6 @@
 
                 <!-- Daftar Hadir & Dokumentasi: kegiatan tersimpan di Google Drive (aplikasi ruangk3.com/daftar-hadir/) -->
                 <div id="admin-panel-daftarhadir" class="admin-panel hidden admin-utama-only">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-4 overflow-hidden">
-                        <div class="px-5 py-3 flex flex-wrap items-center justify-between gap-3">
-                            <h3 class="text-base font-bold text-slate-900" title="Input peserta, foto, dan tanda tangan; arsip otomatis di Google Drive; kegiatan otomatis tampil di aplikasi Portal PIC">Daftar Hadir &amp; Dokumentasi</h3>
-                            <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" id="btn-lpmi-reset-pw" class="hidden px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 rounded-md text-[11px] font-bold" title="Mengembalikan password login Admin LPMI (Faros) ke LPMI01 bila lupa">Reset password Admin LPMI</button>
-                            <div class="inline-flex p-1 bg-slate-100 rounded-lg self-start shrink-0" role="tablist" aria-label="Tampilan Daftar Hadir">
-                                <button type="button" id="dh-tab-rekap" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-bold bg-white text-slate-900 shadow-sm">Rekap Kegiatan</button>
-                                <button type="button" id="dh-tab-app" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Input Kegiatan</button>
-                                <button type="button" id="dh-tab-pic" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Portal PIC</button>
-                            </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Tab 1: rekap kegiatan dari Google Drive -->
                     <div id="dh-view-rekap">
                         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
@@ -2367,8 +2384,8 @@
                         <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200">
                             <p class="text-xs text-slate-600">Tersimpan otomatis di perangkat ini, Google Drive, dan aplikasi Portal PIC.</p>
                             <div class="flex items-center gap-2 shrink-0">
-                                <button type="button" id="btn-dh-app-muat" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Muat ulang</button>
-                                <button type="button" id="btn-dh-app-penuh" class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-md text-xs font-bold">Layar penuh</button>
+                                
+                                
                             </div>
                         </div>
                         <div class="relative bg-slate-100">
@@ -9915,6 +9932,30 @@
                 setTimeout(() => window.dhMuat && window.dhMuat(true), 2500); // beri waktu sinkron ke Drive selesai, lalu segarkan rekap
             }
         };
+        /* Tata letak layar penuh Daftar Hadir: aktif selama panel Daftar Hadir tampil (dh-full); Input Kegiatan tanpa padding & iframe setinggi layar (dh-app). */
+        let dhFullOn = false;
+        const dhLayout = () => {
+            const va = document.getElementById('view-admin'), pn = document.getElementById('admin-panel-daftarhadir'), ap = document.getElementById('dh-view-app'); if (!va || !pn) return;
+            const on = !pn.classList.contains('hidden') && !va.classList.contains('hidden'), app = on && ap && !ap.classList.contains('dh-offscreen');
+            if (on !== dhFullOn) { // masuk / keluar mode: menu samping ditutup (laci)
+                dhFullOn = on;
+                const sb = document.getElementById('admin-sidebar'), ov = document.getElementById('admin-sidebar-overlay');
+                if (on) { sb?.classList.add('-translate-x-full'); ov?.classList.add('hidden'); }
+                else if (ov && !ov.classList.contains('hidden') && window.innerWidth >= 768) { ov.classList.add('hidden'); sb?.classList.add('-translate-x-full'); }
+            }
+            va.classList.toggle('dh-full', on); va.classList.toggle('dh-app', !!app);
+        };
+        try { const mo = new MutationObserver(dhLayout); ['view-admin', 'admin-panel-daftarhadir', 'dh-view-app'].forEach(id => { const el = document.getElementById(id); if (el) mo.observe(el, { attributes: true, attributeFilter: ['class'] }); }); } catch (e) { }
+        document.getElementById('admin-sidebar-nav')?.addEventListener('click', () => { if (dhFullOn) setTimeout(() => { const sb = document.getElementById('admin-sidebar'), ov = document.getElementById('admin-sidebar-overlay'); if (window.innerWidth >= 768 && sb && !sb.classList.contains('-translate-x-full')) { sb.classList.add('-translate-x-full'); ov?.classList.add('hidden'); } }, 0); });
+        dhLayout();
+        // Status PIC / Drive dikirim aplikasi Daftar Hadir (iframe) -> tampil di kepala halaman; klik = tombol yang sama di aplikasi
+        window.addEventListener('message', (ev) => {
+            if (ev.origin !== location.origin) return;
+            const m = ev.data; if (!m || m.rk3 !== 'dh-st' || !Array.isArray(m.items)) return;
+            const box = document.getElementById('dh-st-chips'); if (!box) return;
+            box.innerHTML = m.items.slice(0, 4).map(x => `<button type="button" class="dh-chip ${['ok', 'up', 'bad'].includes(x.c) ? x.c : ''}" data-dhk="${dhEsc(x.id)}" title="${dhEsc(x.title || '')}"><i aria-hidden="true"></i>${dhEsc(x.t || '')}</button>`).join('');
+        });
+        document.getElementById('dh-st-chips')?.addEventListener('click', (e) => { const b = e.target.closest('[data-dhk]'); if (!b) return; window.dhTampilView('app'); const f = document.getElementById('dh-frame'); try { f.contentWindow.postMessage({ rk3: 'dh-klik', id: b.dataset.dhk }, location.origin); } catch (x) { } });
         document.getElementById('dh-tab-rekap')?.addEventListener('click', () => window.dhTampilView('rekap'));
         document.getElementById('dh-tab-app')?.addEventListener('click', () => window.dhTampilView('app'));
         document.getElementById('dh-tab-pic')?.addEventListener('click', () => window.dhTampilView('pic'));
