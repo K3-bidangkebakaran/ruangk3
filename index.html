@@ -2332,7 +2332,6 @@
                             <div class="rk-kpi"><span>Total kegiatan</span><span class="v" id="dh-stat-total">0</span><span class="s" id="rk-s-total"></span></div>
                             <div class="rk-kpi"><span>Total peserta</span><span class="v" id="dh-stat-peserta">0</span><span class="s" id="rk-s-pes"></span></div>
                             <div class="rk-kpi"><span>Sedang berjalan</span><span class="v" id="dh-stat-run">0</span><span class="s" id="rk-s-run"></span></div>
-                            <div class="rk-kpi"><span>TTD penyelenggara</span><span class="v" id="dh-stat-org">0</span><span class="s" id="rk-s-org"></span></div>
                         </section>
                         <section class="rk-row">
                             <div class="rk-card" style="flex:2 1 560px">
@@ -2358,7 +2357,7 @@
                         <div class="overflow-x-auto admin-scroll">
                             <table class="w-full text-left text-sm whitespace-nowrap">
                                 <thead class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider">
-                                    <tr><th class="px-3 py-2">Diperbarui</th><th class="px-3 py-2">Kegiatan</th><th class="px-3 py-2">Tanggal</th><th class="px-3 py-2">Tempat</th><th class="px-3 py-2">Peserta</th><th class="px-3 py-2">Foto</th><th class="px-3 py-2">TTD peserta</th><th class="px-3 py-2">TTD penyelenggara</th><th class="px-3 py-2 text-right">Aksi</th></tr>
+                                    <tr><th class="px-3 py-2">Diperbarui</th><th class="px-3 py-2">Kegiatan</th><th class="px-3 py-2">Tanggal</th><th class="px-3 py-2">Tempat</th><th class="px-3 py-2">Peserta</th><th class="px-3 py-2">Foto</th><th class="px-3 py-2">TTD peserta</th><th class="px-3 py-2">Nilai praktek ke evaluator</th><th class="px-3 py-2 text-right">Aksi</th></tr>
                                 </thead>
                                 <tbody id="dh-tbody" class="divide-y divide-slate-100"><tr><td colspan="9" class="px-3 py-6 text-center text-xs text-slate-500 italic">Buka menu ini untuk memuat kegiatan dari Google Drive.</td></tr></tbody>
                             </table>
@@ -9610,6 +9609,9 @@
         // dipakai tabel: kegiatan yang lolos filter tahun / bulan / jenis (kegiatan tanpa tanggal tidak pernah disembunyikan)
         const rkPass = (e) => { const ym = rkYM(e); if (!ym) return true; if (rkSt.year && ym.y !== rkSt.year) return false; if (rkSt.month >= 0 && ym.m !== rkSt.month) return false; return !rkSt.off[rkJenis(e)]; };
         const rkMiniBar = (v) => { const [a, b] = rkFrac(v); if (!b) return dhEsc(v || '–'); const p = Math.round(a / b * 100); return `<div class="rk-mini"><span>${dhEsc(v)}</span><div class="tr"><i style="width:${p}%;background:${p >= 100 ? '#0ca30c' : '#eda100'}"></i></div></div>`; };
+        // Nilai praktek ke evaluator: dicentang PIC di APK sebelum menekan Selesai (dh_hasil/{kid}/{uid}.nk + nkT; tanda paling baru menang). null = data PIC belum termuat.
+        const dhNk = (id) => { if (!dhHasilAll) return null; let best = null; Object.values(dhHasilAll[id] || {}).forEach(x => { if (x && typeof x === 'object' && x.nkT && (!best || +x.nkT > best.t)) best = { v: !!x.nk, t: +x.nkT }; }); return best ? best.v : false; };
+        const rkNk = (id) => { const v = dhNk(id); return v === null ? '–' : v ? '<span class="rk-org ok">✔ Sudah dikirim</span>' : '<span class="rk-org no">— Belum dikirim</span>'; };
         const rkOrg = (v) => { const s = String(v || ''); return s === 'Sudah' ? '<span class="rk-org ok">✔ Sudah</span>' : (s ? `<span class="rk-org no">— ${dhEsc(s)}</span>` : '–'); };
         const rkDotS = (c) => `background:${c}`;
         function rkRender() {
@@ -9636,12 +9638,11 @@
             const jk = RK_KEYS.filter(k => k !== 'lain' || yd.some(e => rkJenis(e) === 'lain'));
             $('rk-jenis').innerHTML = jk.map(k => `<button type="button" class="rk-chip${on(k) ? '' : ' off'}" data-jenis="${k}" aria-pressed="${on(k)}"><span class="rk-dot" style="${rkDotS(RK_J[k].c)}"></span><span>${RK_J[k].n}</span><b>${yd.filter(e => rkJenis(e) === k).length}</b></button>`).join('');
             // --- kartu ringkasan
-            const sumP = act.reduce((a, e) => a + nOf(e), 0), nOrg = act.filter(e => e.ttdOrg === 'Sudah').length, nSel = act.filter(e => dhSelesai(e.id)).length, nRun = act.length - nSel;
+            const sumP = act.reduce((a, e) => a + nOf(e), 0), nNk = act.filter(e => dhNk(e.id)).length, nSel = act.filter(e => dhSelesai(e.id)).length, nRun = act.length - nSel;
             const set = (id, t) => { const el = $(id); if (el) el.textContent = t; };
             set('dh-stat-total', act.length); set('rk-s-total', selM >= 0 ? 'pada ' + RK_MONL[selM] + ' ' + year : 'sepanjang tahun ' + year);
             set('dh-stat-peserta', sumP); set('rk-s-pes', act.length ? 'rata-rata ' + Math.round(sumP / act.length) + ' peserta per kelas' : 'belum ada peserta');
             set('dh-stat-run', dhHasilAll ? nRun : '–'); set('rk-s-run', dhHasilAll ? nSel + ' kegiatan sudah selesai' : 'status selesai sedang dimuat');
-            set('dh-stat-org', nOrg + '/' + act.length); set('rk-s-org', (act.length - nOrg) + ' kegiatan belum ditandatangani');
             // --- hitungan per bulan
             const cnt = months.map(m => { const per = {}; RK_KEYS.forEach(k => per[k] = 0); let pes = 0; actY.filter(e => rkYM(e).m === m).forEach(e => { per[rkJenis(e)]++; pes += nOf(e); }); return { m, per, total: RK_KEYS.reduce((a, k) => a + per[k], 0), pes }; });
             // --- grafik batang bertumpuk: jumlah kelas
@@ -9666,7 +9667,7 @@
             const parts = RK_KEYS.filter(k => on(k) && per[k] > 0).map(k => `<i style="background:${RK_J[k].c};flex:${per[k]} 1 0"></i>`).join('') || '<i style="background:#e2e8f0;flex:1 1 0"></i>';
             const rowsS = RK_KEYS.filter(k => on(k) && (k !== 'lain' || jk.includes('lain'))).map(k => `<div class="rk-li"><span class="rk-dot" style="${rkDotS(RK_J[k].c)}"></span><span>${RK_J[k].n}</span><b>${per[k]}</b></div>`).join('');
             const fa = act.reduce((a, e) => a + rkFrac(e.foto)[0], 0), fb = act.reduce((a, e) => a + rkFrac(e.foto)[1], 0), pc = (a, b) => b ? Math.round(a / b * 100) : 0;
-            const met = [['Laporan selesai', dhHasilAll ? nSel + '/' + act.length : '–', dhHasilAll ? pc(nSel, act.length) : 0], ['TTD penyelenggara', nOrg + '/' + act.length, pc(nOrg, act.length)], ['Foto terisi', fa + '/' + fb, pc(fa, fb)]]
+            const met = [['Laporan selesai', dhHasilAll ? nSel + '/' + act.length : '–', dhHasilAll ? pc(nSel, act.length) : 0], ['Nilai praktek terkirim ke evaluator', dhHasilAll ? nNk + '/' + act.length : '–', dhHasilAll ? pc(nNk, act.length) : 0], ['Foto terisi', fa + '/' + fb, pc(fa, fb)]]
                 .map(m => `<div class="rk-met"><div><span>${m[0]}</span><b>${m[1]} · ${m[2]}%</b></div><div class="tr"><i style="width:${m[2]}%"></i></div></div>`).join('');
             $('rk-side').innerHTML = `<span class="rk-kick">${selM >= 0 ? 'BULAN TERPILIH' : 'SEMUA BULAN'}</span><div style="font-size:18px;font-weight:800;margin-top:2px">${selM >= 0 ? RK_MONL[selM] + ' ' + year : 'Tahun ' + year}</div><div class="rk-hero"><b>${act.length}</b><span>kelas<br>${sumP} peserta</span></div><div class="rk-seg" role="img" aria-label="Pembagian kelas menurut jenis, ${scope}">${parts}</div><div class="rk-list">${rowsS}</div><div class="rk-hr"></div><span class="rk-kick">KELENGKAPAN ARSIP</span>${met}`;
             // --- garis peserta per bulan (besar, tiap bulan berlabel)
@@ -9696,7 +9697,18 @@
         });
         ['rk-tahun', 'rk-bulan'].forEach(id => document.getElementById(id)?.addEventListener('change', (ev) => { if (id === 'rk-tahun') { rkSt.year = +ev.target.value; rkSt.month = -1; } else rkSt.month = +ev.target.value; window.dhRender(); }));
 
+        /* Data untuk panel "Daftar kegiatan" & "Aktivitas dari aplikasi PIC" di aplikasi Daftar Hadir (iframe dh-frame, satu origin). HANYA BACA: tidak menulis apa pun. */
+        window.dhPanelInfo = function() {
+            const ev = {};
+            dhEvents.forEach(e => { ev[e.id] = { foto: e.foto || '', ttd: e.ttdPeserta || '', lap: dhLapRes[e.id] ? dhLapRes[e.id].pct : null, lengkap: !!(dhLapRes[e.id] && dhLapRes[e.id].all), selesai: dhHasilAll ? dhSelesai(e.id) : null, nk: dhNk(e.id) }; });
+            return { ready: dhEvents.length > 0, hasil: !!dhHasilAll, at: dhHasilAt, ev };
+        };
+        window.dhPanelLog = function(id) { // aktivitas APK satu kegiatan: gabungan semua akun PIC, terbaru dulu
+            const out = []; Object.entries((dhHasilAll && dhHasilAll[id]) || {}).forEach(([uid, x]) => { if (!x || typeof x !== 'object') return; const nm = x.picNama || x.ttdPicNama || 'PIC'; (Array.isArray(x.log) ? x.log : Object.values(x.log || {})).forEach(l => { if (l && l.k && l.t) out.push({ k: String(l.k), d: String(l.d || ''), n: +l.n || 1, t: +l.t, s: nm }); }); });
+            return out.sort((a, b) => b.t - a.t).slice(0, 30);
+        };
         window.dhRender = function() {
+            try { const f = document.getElementById('dh-frame'); if (f && f.getAttribute('src') && f.contentWindow) f.contentWindow.postMessage({ rk3: 'dh-panel' }, location.origin); } catch (_) { }
             const tb = document.getElementById('dh-tbody'); if (!tb) return;
             const q = (document.getElementById('dh-filter-cari')?.value || '').toLowerCase().trim();
             const st = document.getElementById('dh-filter-status')?.value || '';
@@ -9730,7 +9742,7 @@
                     <td class="px-3 py-2 text-xs">${dhEsc(e.n || 0)}</td>
                     <td class="px-3 py-2 text-xs">${rkMiniBar(e.foto)}</td>
                     <td class="px-3 py-2 text-xs">${rkMiniBar(e.ttdPeserta)}</td>
-                    <td class="px-3 py-2 text-xs">${rkOrg(e.ttdOrg)}</td>
+                    <td class="px-3 py-2 text-xs">${rkNk(e.id)}</td>
                     <td class="px-3 py-2 text-right space-x-1">
                         <button type="button" data-act="progres" data-id="${id}" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-md text-xs font-bold">Progres</button>
                         <button type="button" data-act="detail" data-id="${id}" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-bold">${buka ? 'Tutup' : 'Detail'}</button>

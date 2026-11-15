@@ -522,3 +522,8 @@ Catatan: seperti selfie/foto, narasumber (anonim) dan PIC (akun) sama-sama login
 
 
 - **v83**: halaman `/nilai/` tadinya "belum aktif" bila kegiatan lama belum pernah diubah di website (daftar nama `dh_nilai` hanya diterbitkan saat kegiatan berubah). Kini diterbitkan juga saat kotak link di Laporan dibuka / Salin link ditekan, dan oleh APK saat layar "Link Nilai Narasumber" dibuka (`nilaiPubPic`, `PicFB.nilaiPub`). Kegagalan menerbitkan (mis. aturan Firebase belum dipasang) tidak lagi menghalangi kegiatan ke APK.
+
+
+## v89: nilai praktek ke evaluator + aktivitas APK
+- `dh_hasil/{kid}/{uid}` mendapat isian baru `nk` (bool), `nkT` (ms) dan `log` (array ringkas `{k,d,n,t}`). Tidak perlu mengubah aturan Firebase (dh_hasil tidak membatasi nama isian).
+- Tombol Selesai di APK aktif hanya bila Pratinjau Laporan 100% **dan** "Nilai praktek sudah dikirim ke evaluator" dicentang.
