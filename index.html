@@ -2990,7 +2990,7 @@
             return /^\d{9,15}$/.test(n) ? n : '';
         };
         window.pesanTugasWA = function(nama, namaKeg, pjk3, tanggal) {
-            return `*PEMBERITAHUAN TUGAS BARU*\n\nHalo *${nama}*,\nTim Anda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan tim. Trims.`;
+            return `*PEMBERITAHUAN TUGAS BARU*\n\nHalo Pak *${nama}*,\nAnda ditugaskan untuk kegiatan:\n\n📌 *Kegiatan:* ${namaKeg}\n🏢 *PJK3:* ${pjk3}\n📅 *Tanggal:* ${tanggal}\n\nMohon persiapkan. Trims.\n\nRegard,\nNurama Management`;
         };
         /* Tombol "WA" di daftar kegiatan: kirim (ulang) pemberitahuan tugas ke tim kapan saja */
         window.kirimWAKegiatan = function(id) {
