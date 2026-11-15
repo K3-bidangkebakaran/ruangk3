@@ -568,6 +568,61 @@ body.kp-on .quick{display:none}
   .preview-head{background:#fafafb}
 }
 
+/* ---------- susunan desain baru Input Kegiatan (2026-11-15): bilah kontrol, kepala kegiatan + status, tab map, kolom kanan (kelengkapan + aktivitas APK), pratinjau di tab sendiri ---------- */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media screen{
+  .topbar{display:block;padding:0;background:#fff;color:#1f2328;border-bottom:1px solid #d9dde3}
+  .tb-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 16px;background:#24303f;color:#fff}
+  .tb-a h1{font-size:14px;font-weight:600;white-space:nowrap}
+  .tb-a .grow{flex:1}
+  .tb-b{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:8px 16px}
+  .tb-l{min-width:0;display:flex;flex-direction:column;gap:6px}
+  .tb-crumb{font-size:12.5px;color:#5e6672;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:min(70vw,720px)}
+  .topbar .cur-ev{font-size:12.5px;color:#1f2328;max-width:none}
+  .tb-lnk{border:0;background:none;color:#1f4e8c;padding:0;font:inherit;cursor:pointer}.tb-lnk:hover{text-decoration:underline}
+  .tb-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tb-btns .btn{padding:6px 12px;font-size:13px}
+  .tb-act select{height:31px;border:1px solid #c4c9d1;border-radius:3px;background:#fff;padding:0 8px;font-size:13px}
+  .tb-r{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5e6672}
+  .topbar .save-st{color:#5e6672;font-size:12.5px}
+  .tb-sep{color:#c4c9d1}.tb-nav{padding:3px 10px;font-size:15px}
+  .quick{background:#24303f;padding:6px 16px 8px;border-top:0}
+  .ev-head{background:#fff;border-bottom:1px solid #d9dde3}
+  body.landing .ev-head{display:none}
+  .eh-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 16px;background:#fafafb;border-bottom:1px solid #eef0f3}
+  .eh-flow{display:flex;list-style:none;margin:0;padding:0;font-size:12.5px}
+  .eh-flow li{padding:4px 12px;border:1px solid #c4c9d1;margin-left:-1px;background:#fff;color:#5e6672}
+  .eh-flow li.on{background:#1f4e8c;border-color:#1f4e8c;color:#fff;font-weight:600}
+  .eh-t{padding:10px 16px 12px}.eh-t small{color:#5e6672;font-size:12px}
+  .eh-t h2{font-size:20px;font-weight:600;margin:2px 0;line-height:1.25}
+  #ehSub{color:#3b424c;font-size:13.5px}
+  body.kp-on .ev-head{margin-left:var(--kpw)}
+  .tabs [data-t="preview"]{display:inline-flex}
+  .layout{grid-template-columns:minmax(0,1fr)}
+  body:not([data-tab="preview"]) .preview-col{display:none}
+  body[data-tab="preview"] .form-col,body[data-tab="preview"] .side-col{display:none}
+  body[data-tab="preview"] .layout{grid-template-columns:minmax(0,1fr)}
+  .side-col{min-width:0;display:flex;flex-direction:column;gap:12px}
+  .sbox{background:#fff;border:1px solid #d9dde3;border-radius:4px}
+  .sbox h3{margin:0;padding:9px 12px;font-size:13.5px;font-weight:600;background:#fafafb;border-bottom:1px solid #d9dde3;display:flex;justify-content:space-between;gap:8px}
+  .sbox h3 small{font-weight:400;color:#5e6672;font-size:11.5px}
+  .sk{width:100%;border-collapse:collapse;font-size:12.5px}
+  .sk td{padding:6px 12px;border-bottom:1px solid #eef0f3;vertical-align:top}.sk td:last-child{text-align:right;white-space:nowrap}
+  .sk .ok{color:#1e6b3a}.sk .wr{color:#8a5200}.sk .bd{color:#a1262c}.sk .nd{color:#5e6672}
+  .sbox-f{padding:8px 12px;font-size:12.5px}
+  .akt{list-style:none;margin:0;padding:2px 12px 8px;max-height:360px;overflow-y:auto}
+  .akt li{padding:7px 0;border-bottom:1px solid #eef0f3;font-size:12.5px;line-height:1.35}.akt li:last-child{border-bottom:0}
+  .akt .m{color:#5e6672;font-size:11.5px;display:flex;gap:6px;align-items:center;margin-top:2px}
+  .akt .src{font-size:10px;font-weight:700;border:1px solid #d9dde3;border-radius:3px;padding:0 4px;color:#3b424c}
+}
+@media screen and (min-width:1200px){.layout{grid-template-columns:minmax(0,1fr) 300px}}
+@media screen and (min-width:700px){
+  .field.lvf{display:grid;grid-template-columns:150px minmax(0,1fr);column-gap:14px;align-items:start}
+  .field.lvf>label:first-child{padding-top:8px}
+  .field.lvf>*:not(:first-child){grid-column:2}
+}
+@media print{.ev-head,.side-col{display:none!important}}
+
 /* ---------- mobile ---------- */
 @media screen and (max-width:900px){
   .layout{grid-template-columns:1fr;padding:12px}
@@ -595,17 +650,28 @@ body.kp-on .quick{display:none}
 <body data-tab="data">
 
 <header class="topbar">
-  <h1>Daftar Hadir &amp; Dokumentasi</h1>
-  <span class="cur-ev" id="curName"></span>
-  <span class="save-st" id="saveSt">Memuat…</span>
-  <span class="grow"></span>
-  <button class="btn dark sm" id="btnExport" title="Simpan semua data (termasuk foto) ke file">Ekspor</button>
-  <button class="btn dark sm" id="btnImport" title="Buka file data yang pernah diekspor">Impor</button>
-  <button class="btn dark sm" id="picBtn" title="Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis">📲 PIC</button>
-  <button class="btn dark sm" id="cloudBtn" title="Sinkron Google Drive">☁️ Hubungkan Drive</button>
-  <button class="kp-tg" id="kpToggle" type="button" aria-controls="kp" aria-expanded="false" title="Tampilkan / sembunyikan daftar kegiatan di samping">☰ Daftar kegiatan</button>
-  <button class="btn dark sm" id="btnEvents" title="Daftar semua kegiatan tersimpan">📁 Kegiatan</button>
-  <button class="btn primary" id="btnPrint">Cetak / PDF</button>
+  <div class="tb-a">
+    <h1>Daftar Hadir &amp; Dokumentasi</h1>
+    <span class="grow"></span>
+    <button class="btn dark sm" id="picBtn" title="Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis">📲 PIC</button>
+    <button class="btn dark sm" id="cloudBtn" title="Sinkron Google Drive">☁️ Hubungkan Drive</button>
+    <button class="kp-tg" id="kpToggle" type="button" aria-controls="kp" aria-expanded="false" title="Tampilkan / sembunyikan daftar kegiatan di samping">☰ Daftar kegiatan</button>
+  </div>
+  <div class="tb-b">
+    <div class="tb-l">
+      <div class="tb-crumb"><button type="button" class="tb-lnk" id="tbKeg" title="Daftar semua kegiatan tersimpan">Kegiatan</button> / <span class="cur-ev" id="curName"></span></div>
+      <div class="tb-btns">
+        <button class="btn primary" id="btnPrint">Cetak / PDF</button>
+        <button class="btn" type="button" id="tbWord" title="Unduh berkas Word laporan (pilih berkasnya di tab Nilai &amp; laporan)">Unduh Word</button>
+        <button class="btn" type="button" id="tbDrive" title="Buka folder kegiatan ini di Google Drive">Buka di Drive</button>
+        <label class="tb-act"><span class="sr-only">Tindakan lain</span><select id="tbAksi" aria-label="Tindakan lain"><option value="">Tindakan</option><option value="baru">Kegiatan baru</option><option value="daftar">Kegiatan tersimpan…</option><option value="ekspor">Ekspor (simpan ke file)</option><option value="impor">Impor dari file</option><option value="hapus">Hapus kegiatan ini</option></select></label>
+        <button class="btn dark sm" id="btnExport" hidden title="Simpan semua data (termasuk foto) ke file">Ekspor</button>
+        <button class="btn dark sm" id="btnImport" hidden title="Buka file data yang pernah diekspor">Impor</button>
+        <button class="btn dark sm" id="btnEvents" hidden title="Daftar semua kegiatan tersimpan">📁 Kegiatan</button>
+      </div>
+    </div>
+    <div class="tb-r"><span class="save-st" id="saveSt">Memuat…</span><span class="tb-sep" aria-hidden="true">|</span><span id="tbPos"></span><button type="button" class="btn sm tb-nav" id="tbPrev" aria-label="Kegiatan sebelumnya">‹</button><button type="button" class="btn sm tb-nav" id="tbNext" aria-label="Kegiatan berikutnya">›</button></div>
+  </div>
   <input type="file" id="fileImport" accept=".json,application/json" hidden>
   <div class="quick" id="quick">
     <button class="btn primary sm" id="btnNewEv" title="Mulai kegiatan baru (kegiatan sebelumnya tetap tersimpan)">＋ Kegiatan Baru</button>
@@ -625,7 +691,6 @@ body.kp-on .quick{display:none}
     <label><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Cari kegiatan</span><input id="kpQ" type="search" placeholder="Cari kegiatan, program, tempat"></label>
   </div>
   <div class="kp-body"><ul class="kp-list" id="kpList"></ul></div>
-  <section class="kp-akt" aria-labelledby="kpAktT"><h3 id="kpAktT">Aktivitas dari aplikasi PIC <small>hanya dari APK</small></h3><ul id="kpAkt"></ul></section>
 </aside>
 
 <section class="landing" id="landing" hidden aria-label="Pilih kegiatan atau kegiatan baru">
@@ -636,12 +701,20 @@ body.kp-on .quick{display:none}
   </div>
 </section>
 
+<section class="ev-head" id="evHead" aria-labelledby="ehNama">
+  <div class="eh-bar">
+    <button type="button" class="btn sm" id="ehPic" title="Kirim / tarik ulang data kegiatan ke aplikasi Portal PIC">Kirim ke PIC</button>
+    <ol class="eh-flow" id="ehFlow" aria-label="Status kegiatan"><li>Draf</li><li>Berjalan</li><li>Laporan</li><li>Selesai</li></ol>
+  </div>
+  <div class="eh-t"><small>Kegiatan</small><h2 id="ehNama"></h2><div id="ehSub"></div></div>
+</section>
+
 <nav class="tabs">
-  <button data-t="data" class="on">1. <span class="lg">Kegiatan &amp; Peserta</span><span class="sm-only">Data</span> <span class="badge" id="tbPeserta">0</span></button>
-  <button data-t="ttd">2. <span class="lg">Tanda Tangan Peserta</span><span class="sm-only">TTD</span> <span class="badge" id="tbTtd">0/0</span></button>
-  <button data-t="foto">3. Foto<span class="lg"> Dokumentasi</span> <span class="badge" id="tbFoto">0/0</span></button>
-  <button data-t="preview">4. Pratinjau</button>
-  <button data-t="lap">5. <span class="lg">Laporan Nilai</span><span class="sm-only">Laporan</span></button>
+  <button data-t="data" class="on"><span class="lg">Kegiatan &amp; peserta</span><span class="sm-only">Data</span> <span class="badge" id="tbPeserta">0</span></button>
+  <button data-t="ttd"><span class="lg">Tanda tangan</span><span class="sm-only">TTD</span> <span class="badge" id="tbTtd">0/0</span></button>
+  <button data-t="foto">Foto<span class="lg"> dokumentasi</span> <span class="badge" id="tbFoto">0/0</span></button>
+  <button data-t="lap"><span class="lg">Nilai &amp; laporan</span><span class="sm-only">Laporan</span></button>
+  <button data-t="preview">Pratinjau</button>
 </nav>
 
 <main class="layout">
@@ -649,7 +722,7 @@ body.kp-on .quick{display:none}
   <div class="form-col">
     <section class="card" data-pane="data">
       <h2><span class="n">1</span> Informasi Kegiatan</h2>
-      <div class="field"><label for="f-jenis">Nama Kegiatan</label>
+      <div class="field lvf"><label for="f-jenis">Nama Kegiatan</label>
         <select id="f-jenis" aria-label="Nama kegiatan">
           <option value="">— Pilih kegiatan —</option>
           <option value="damkar">K3 PENANGGULANGAN KEBAKARAN</option>
@@ -686,7 +759,7 @@ body.kp-on .quick{display:none}
           <div class="hint" id="kelasInfo"></div>
         </div></div>
       <div class="row2">
-        <div class="field" style="grid-column:1/-1;margin-bottom:4px"><label for="dateField">Tanggal Kegiatan <span class="hint">(klik per tanggal, boleh tidak berurutan, maks. 35 hari)</span></label>
+        <div class="field lvf" style="grid-column:1/-1;margin-bottom:4px"><label for="dateField">Tanggal Kegiatan <span class="hint">(klik per tanggal, boleh tidak berurutan, maks. 35 hari)</span></label>
           <div class="dp-wrap" id="dpWrap">
             <button type="button" class="dp-field" id="dateField" aria-haspopup="dialog" aria-expanded="false" aria-controls="datePop">
               <span id="dateFieldTxt"></span>
@@ -715,7 +788,7 @@ body.kp-on .quick{display:none}
         <div class="field"><label for="f-zona">Zona</label>
           <select id="f-zona" data-k="zona"><option>WIB</option><option>WITA</option><option>WIT</option></select></div>
       </div>
-      <div class="field"><label for="f-tempat">Tempat</label>
+      <div class="field lvf"><label for="f-tempat">Tempat</label>
         <input id="f-tempat" data-k="tempat" placeholder="cth. Aula Training PT LPMI, Morowali"></div>
     </section>
 
@@ -863,6 +936,10 @@ body.kp-on .quick{display:none}
   </div>
 
   <!-- ================= PREVIEW ================= -->
+  <aside class="side-col" id="sideCol" aria-label="Ringkasan kegiatan">
+    <section class="sbox" aria-labelledby="scKelT"><h3 id="scKelT">Kelengkapan laporan <small id="scKelPct"></small></h3><table class="sk"><tbody id="scKel"></tbody></table><div class="sbox-f"><button type="button" class="tb-lnk" id="scPrev">Buka pratinjau laporan</button></div></section>
+    <section class="sbox" aria-labelledby="kpAktT"><h3 id="kpAktT">Aktivitas dari aplikasi PIC <small>hanya dari APK</small></h3><ul class="akt" id="kpAkt"></ul></section>
+  </aside>
   <div class="preview-col">
     <div class="preview-head">
       <b>Pratinjau</b>
@@ -1432,7 +1509,7 @@ async function doSave() {
   try {
     const snap = JSON.parse(JSON.stringify(S));
     if (!snap.peserta.length && !(snap.acara.kegiatan || "").trim() && !snap.acara.ttd && !EV.some(e => e.id === snap.id)) { // kegiatan baru yang masih kosong tidak disimpan
-      $("#saveSt").textContent = "Tersimpan otomatis"; $("#curName").textContent = landingOn ? "" : "· (kegiatan tanpa nama)"; return;
+      $("#saveSt").textContent = "Tersimpan otomatis"; $("#curName").textContent = landingOn ? "" : "(kegiatan tanpa nama)"; return;
     }
     await idbPut("event:" + snap.id, snap);
     const m = meta(snap), i = EV.findIndex(e => e.id === snap.id);
@@ -1444,7 +1521,7 @@ async function doSave() {
   } catch (e) {
     $("#saveSt").textContent = "Tidak bisa simpan otomatis – gunakan Ekspor";
   }
-  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan + sfxTxt(sufMap(), S.id) : "· (kegiatan tanpa nama)";
+  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? S.acara.kegiatan + sfxTxt(sufMap(), S.id) : "(kegiatan tanpa nama)";
 }
 function save() {
   lastEditAt = Date.now(); clearTimeout(saveT);
@@ -2730,7 +2807,7 @@ function applyState() {
   fillForm(); renderList(); fillLap(); renderPages(); renderTtd(); renderTtdTab();
   $("#wmAlamat").value = S.wm.alamat || "";
   Loc.status(S.wm.alamat ? (S.wm.auto ? "Alamat dari GPS terakhir. Tekan 📍 untuk memperbarui." : "Alamat diisi manual.") : "Alamat belum diisi – akan dideteksi otomatis saat kamera dibuka.", "");
-  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? "· " + S.acara.kegiatan + sfxTxt(sufMap(), S.id) : "· (kegiatan tanpa nama)";
+  $("#curName").textContent = landingOn ? "" : S.acara.kegiatan ? S.acara.kegiatan + sfxTxt(sufMap(), S.id) : "(kegiatan tanpa nama)";
   Cloud.status(); if (Cloud.dirty(S)) Cloud.schedule(2000);
   kpRender();
 }
@@ -2905,6 +2982,7 @@ function kpFrac(v) { const m = /^(\d+)\s*\/\s*(\d+)$/.exec(String(v == null ? ""
 function kpWaktu(t) { const d = new Date(+t); if (!(+t)) return ""; const B = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]; return `${d.getDate()} ${B[d.getMonth()]} ${String(d.getHours()).padStart(2, "0")}.${String(d.getMinutes()).padStart(2, "0")}`; }
 function kpRender() {
   if (!KPS || !KPS.el) return;
+  sideRender();
   const el = KPS.el; if (el.hidden) return;
   const info = kpPar("dhPanelInfo"), IE = (info && info.ev) || {}, sm = sufMap();
   const all = [...EV]; { const mati = new Set([...Cloud.gone]); (Cloud.remote || []).filter(e => e && e.id && !EV.some(x => x.id === e.id) && !mati.has(e.id)).forEach(e => all.push({ ...e, remote: true })); }
@@ -2929,10 +3007,34 @@ function kpRender() {
   }).join("");
   const L = $("#kpList"), h2 = html || `<li class="kp-empty">${q ? "Tidak ada kegiatan yang cocok." : KPS.tab === "jalan" ? "Tidak ada kegiatan berjalan." : "Belum ada kegiatan selesai."}</li>`;
   if (L._h !== h2) { L._h = h2; L.innerHTML = h2; }
+}
+/* kolom kanan (Kelengkapan laporan + Aktivitas APK), kepala kegiatan (status Draf/Berjalan/Laporan/Selesai) dan navigasi ‹ › — hanya tampilan */
+function kpUrut() { return [...EV].sort((x, y) => String(y.tanggal || "").localeCompare(String(x.tanggal || "")) || (y.updated || 0) - (x.updated || 0)); }
+function sideRender() {
+  const info = kpPar("dhPanelInfo"), x = (info && info.ev && info.ev[S.id]) || null;
+  // navigasi ‹ ›
+  { const L = kpUrut(), i = L.findIndex(e => e.id === S.id); $("#tbPos").textContent = L.length ? `${i >= 0 ? i + 1 : "–"} / ${L.length}` : ""; $("#tbPrev").disabled = !L.length; $("#tbNext").disabled = !L.length; }
+  $("#tbDrive").disabled = !(S.sync && S.sync.folderUrl);
+  // kepala kegiatan
+  const a = S.acara || {}, hari = hariList(a).filter(Boolean);
+  let nm = "", sub = "";
+  try { nm = judulDasar(a) || a.kegiatan || ""; } catch (_) { nm = a.kegiatan || ""; }
+  try { sub = a.jenis === "damkar" ? (a.kelasDamkar ? "Kelas " + a.kelasDamkar : "") : kelasList(a).join(", "); } catch (_) { sub = ""; }
+  $("#ehNama").textContent = (nm || "(kegiatan tanpa nama)") + sfxTxt(sufMap(), S.id);
+  $("#ehSub").textContent = [sub, hari.length ? `${fmtTglPendek(hari[0])}${hari.length > 1 ? " – " + fmtTglPendek(hari[hari.length - 1]) : ""} · ${hari.length} hari` : "", a.tempat || ""].filter(Boolean).join(" · ");
+  const st = x && x.selesai ? 3 : x && x.lengkap ? 2 : hari.length && hari[0] <= today ? 1 : 0;
+  [...$("#ehFlow").children].forEach((li, k) => { li.classList.toggle("on", k === st); if (k === st) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current"); });
+  // kelengkapan laporan (rumus Pratinjau Laporan APK, dihitung panel admin)
+  const K = $("#scKel"); let kh;
+  if (!x || !x.sec) kh = `<tr><td colspan="2" class="nd">${info ? "Kelengkapan dihitung setelah kegiatan terkirim ke Portal PIC." : "Kelengkapan tampil bila aplikasi dibuka dari panel admin."}</td></tr>`;
+  else kh = x.sec.map(c => { const cls = c.st === "ok" ? "ok" : c.st === "warn" ? "wr" : "bd", t = c.st === "ok" ? "Siap" : (c.kur || (c.tot ? `${c.ok}/${c.tot}` : "Belum diisi")); return `<tr><td>${esc(c.j)}${c.g ? ` <span class="nd">· ${esc(c.g)}</span>` : ""}</td><td class="${cls}">${esc(t)}</td></tr>`; }).join("");
+  if (x) kh += `<tr><td>Nilai praktek ke evaluator</td><td class="${x.nk ? "ok" : x.nk === false ? "wr" : "nd"}">${x.nk ? "Sudah dikirim" : x.nk === false ? "Belum dikirim" : "–"}</td></tr>`;
+  if (K._h !== kh) { K._h = kh; K.innerHTML = kh; }
+  $("#scKelPct").textContent = x && x.lap != null ? x.lap + "%" : "";
   // aktivitas APK kegiatan yang sedang dibuka
   const A = $("#kpAkt");
   if (landingOn || !S.id) { A.innerHTML = '<li style="color:#5e6672">Buka sebuah kegiatan untuk melihat aktivitasnya.</li>'; return; }
-  const lg = kpPar("dhPanelLog", S.id), hari = hariList(S.acara).filter(Boolean), hk = d => { const i = hari.indexOf(d); return i >= 0 ? ` (hari ke-${i + 1})` : d ? ` (${fmtTglPendek(d)})` : ""; };
+  const lg = kpPar("dhPanelLog", S.id), hk = d => { const i = hari.indexOf(d); return i >= 0 ? ` (hari ke-${i + 1})` : d ? ` (${fmtTglPendek(d)})` : ""; };
   const TX = { ttd: x => `mencatat tanda tangan ${x.n} peserta${hk(x.d)}`, ttdl: x => `menerima ${x.n} tanda tangan lewat link peserta${hk(x.d)}`, foto: x => `mengambil ${x.n} foto dokumentasi peserta`, fotoh: x => `menambah ${x.n} foto dokumentasi harian${hk(x.d)}`, nilai: x => `mengisi nilai peserta (${x.n} isian)`, nara: x => `menyimpan tanda tangan narasumber${hk(x.d)}`, ttdpic: () => "menandatangani sebagai PIC", nk1: () => "mencentang “Nilai praktek sudah dikirim ke evaluator”", nk0: () => "membatalkan centang nilai praktek ke evaluator", selesai: () => "menandai kegiatan Selesai", buka: () => "membuka kembali kegiatan" };
   const ah = lg == null ? '<li style="color:#5e6672">Aktivitas APK tampil bila aplikasi ini dibuka dari panel admin (menu Daftar Hadir &amp; Dokumentasi).</li>'
     : lg.length ? lg.map(x => `<li><div><b style="font-weight:600">${esc(x.s)}</b> ${esc((TX[x.k] || (() => "memperbarui isian"))(x))}</div><div class="m"><span class="src">APK PIC</span>${esc(kpWaktu(x.t))}</div></li>`).join("")
@@ -2953,6 +3055,16 @@ function kpSet(on, simpan) {
   $("#kpToggle").onclick = e => { e.stopPropagation(); if (KPS) kpSet(KPS.el.hidden, true); };
   $("#kpClose").onclick = () => { if (KPS) kpSet(false, true); };
   $("#kpNew").onclick = () => { Ev.menuTutup(); Ev.baru(null); };
+  $("#tbKeg").onclick = () => $("#btnEvents").click();
+  $("#ehPic").onclick = () => $("#picBtn").click();
+  $("#scPrev").onclick = () => setTab("preview");
+  $("#tbWord").onclick = () => { setTab("lap"); setTimeout(() => { const d = $("#lpDl"); if (d && d.scrollIntoView) d.scrollIntoView({ block: "center", behavior: "smooth" }); }, 120); toast("Pilih berkas Word yang ingin diunduh di bagian ⬇ Word."); };
+  $("#tbDrive").onclick = () => { const u = S.sync && S.sync.folderUrl; if (u) window.open(u, "_blank", "noopener"); else toast("Folder Drive belum ada: kegiatan ini belum tersimpan ke Google Drive."); };
+  $("#tbAksi").onchange = e => { const v = e.target.value; e.target.value = "";
+    if (v === "baru") { Ev.menuTutup(); Ev.baru(null); } else if (v === "daftar") $("#btnEvents").click(); else if (v === "ekspor") $("#btnExport").click(); else if (v === "impor") $("#btnImport").click();
+    else if (v === "hapus") { if (landingOn || !S.id || !EV.some(x => x.id === S.id)) toast("Belum ada kegiatan yang dibuka."); else Ev.remove(S.id); } };
+  const lompat = d => { const L = kpUrut(); if (!L.length) return; let i = L.findIndex(e => e.id === S.id); i = i < 0 ? 0 : (i + d + L.length) % L.length; if (L[i].id !== S.id) Ev.load(L[i].id); };
+  $("#tbPrev").onclick = () => lompat(-1); $("#tbNext").onclick = () => lompat(1);
   const kpTop = () => { const b = $(".topbar").getBoundingClientRect().bottom; document.documentElement.style.setProperty("--kptop", Math.max(0, Math.round(b)) + "px"); };
   window.addEventListener("scroll", kpTop, { passive: true }); window.addEventListener("resize", kpTop); setTimeout(kpTop, 50);
   try { new ResizeObserver(() => { try { setTb(); kpTop(); } catch (_) { } }).observe($(".topbar")); } catch (_) { } // tinggi bilah atas berubah (tombol membungkus): panel & tab ikut bergeser
