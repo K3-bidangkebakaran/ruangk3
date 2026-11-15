@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RuangK3 - Pusat Edukasi & Informasi K3</title>
+    <script src="/maint.js?v=1" data-page="web" defer></script>
 
     <!-- Preconnect ke semua host eksternal yang dipakai halaman ini (Tailwind CDN, Google
          Fonts, Firebase Auth/Database via gstatic.com, Realtime Database itu sendiri,
@@ -1642,6 +1643,8 @@
                 <button id="nav-btn-riksa-petugas" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-riksa-petugas"><span>Petugas Riksa Uji</span></button>
                 <div class="admin-utama-only text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Daftar Hadir</div>
                 <button id="nav-btn-daftarhadir" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-daftarhadir"><span>Daftar Hadir &amp; Dokumentasi</span></button>
+                <div class="admin-utama-only text-[10px] font-bold text-slate-500 uppercase tracking-wider pt-6 pb-2 px-4">Pengaturan</div>
+                <button id="nav-btn-pemeliharaan" class="admin-nav-btn admin-utama-only w-full flex items-center space-x-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-lg transition-colors text-sm font-medium" data-target="admin-panel-pemeliharaan"><span>Mode Pemeliharaan</span></button>
             </nav>
             <div class="p-4 border-t border-slate-800 space-y-2 bg-navy-950">
                 <button id="btn-admin-to-web" class="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors text-sm font-medium"><span>Lihat Website</span></button>
@@ -2408,6 +2411,36 @@
                 </div>
 
                 <!-- Riksa Uji: laporan masuk dari aplikasi petugas (ruangk3.com/riksa/) -->
+                <!-- Mode Pemeliharaan (khusus Admin Utama): pengaturan dibaca /maint.js di website, APK PIC, Riksa Uji, dan link peserta -->
+                <div id="admin-panel-pemeliharaan" class="admin-panel hidden admin-utama-only">
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" style="max-width:780px">
+                        <div class="px-5 py-3 flex flex-wrap items-center justify-between gap-3" style="border-bottom:1px solid #e2e8f0;background:#fafafb">
+                            <h3 class="text-base font-bold text-slate-900">Mode Pemeliharaan</h3>
+                            <span id="pm-status" style="font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:#eef0f3;color:#3b424c">Memuat…</span>
+                        </div>
+                        <form id="form-pemeliharaan" style="padding:18px 20px;display:flex;flex-direction:column;gap:16px;font-size:14px">
+                            <label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type="checkbox" id="pm-aktif" style="width:20px;height:20px;accent-color:#b4500a"> Aktifkan mode pemeliharaan</label>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+                                <label style="display:flex;flex-direction:column;gap:4px;font-weight:600;color:#3b424c">Mulai<input type="datetime-local" id="pm-mulai" style="border:1px solid #c4c9d1;border-radius:4px;padding:7px 10px;font-weight:400"><span style="font-size:12.5px;font-weight:400;color:#5e6672">Kosongkan untuk mulai sekarang.</span></label>
+                                <label style="display:flex;flex-direction:column;gap:4px;font-weight:600;color:#3b424c">Perkiraan selesai<input type="datetime-local" id="pm-selesai" required style="border:1px solid #c4c9d1;border-radius:4px;padding:7px 10px;font-weight:400"><span style="font-size:12.5px;font-weight:400;color:#5e6672">Dasar hitung mundur. Setelah lewat, halaman terbuka kembali otomatis dengan versi terbaru.</span></label>
+                            </div>
+                            <fieldset style="border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px;display:flex;flex-direction:column;gap:6px">
+                                <legend style="font-weight:600;color:#3b424c;padding:0 6px">Berlaku untuk</legend>
+                                <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pm-t-web" checked> Website ruangk3.com (pengunjung &amp; peserta)</label>
+                                <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pm-t-pic" checked> Aplikasi Portal PIC (APK)</label>
+                                <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pm-t-riksa" checked> Aplikasi Riksa Uji</label>
+                                <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="pm-t-link" checked> Link peserta &amp; narasumber (TTD, selfie, foto, nilai, narasumber)</label>
+                            </fieldset>
+                            <label style="display:flex;flex-direction:column;gap:4px;font-weight:600;color:#3b424c">Pesan tambahan <span style="font-weight:400;color:#5e6672;font-size:12.5px">(opsional, tampil di bawah keterangan utama)</span><textarea id="pm-pesan" rows="2" maxlength="400" placeholder="Contoh: Peningkatan server dan pembaruan fitur Daftar Hadir." style="border:1px solid #c4c9d1;border-radius:4px;padding:8px 10px;font-weight:400;resize:vertical"></textarea></label>
+                            <p style="margin:0;font-size:12.5px;color:#5e6672">Selama pemeliharaan, Admin Utama tetap bisa masuk: di halaman pemeliharaan ketuk <b>ikon roda gigi 5 kali</b>, lalu masukkan PIN Admin Utama. Perubahan yang Anda buat selama pemeliharaan tersimpan seperti biasa dan langsung tampil bagi semua orang begitu pemeliharaan selesai.</p>
+                            <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid #eef0f3;padding-top:14px">
+                                <button type="button" id="pm-pratinjau" style="height:38px;padding:0 16px;border-radius:4px;border:1px solid #c4c9d1;background:#fff;font-size:14px">Lihat tampilan</button>
+                                <button type="submit" id="pm-simpan" style="height:38px;padding:0 18px;border-radius:4px;border:1px solid #1f4e8c;background:#1f4e8c;color:#fff;font-weight:600;font-size:14px">Simpan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
                 <div id="admin-panel-riksa" class="admin-panel hidden admin-utama-only">
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -2549,6 +2582,41 @@
             });
             return Promise.race([Promise.resolve(promise), timeoutPromise]).finally(() => clearTimeout(timerId));
         };
+
+        /* ---------- Mode Pemeliharaan (pengaturan_pemeliharaan, dibaca /maint.js lewat REST) ---------- */
+        const pmPath = () => `artifacts/${cleanAppId}/public/data/pengaturan_pemeliharaan`;
+        window.rk3MaintSet = async (patch) => { // dipakai bilah kuning "Matikan sekarang" & form pengaturan
+            if (!currentUser || currentUser.role !== 'admin_utama') throw new Error('Hanya Admin Utama');
+            await window.withTimeout(update(ref(db, pmPath()), { ...patch, t: Date.now() }), TIMEOUT_JARINGAN_MS);
+            try { window.RK3Maint && window.RK3Maint.periksa(); } catch (e) {}
+        };
+        const pmLoc = (t) => { if (!t) return ''; const d = new Date(+t), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+        const pmStatus = (c) => { const el = document.getElementById('pm-status'); if (!el) return; const now = Date.now(), on = c && c.aktif === true && +c.selesai > now, mulaiNanti = on && +c.mulai > now;
+            el.textContent = !on ? 'Tidak aktif' : mulaiNanti ? 'Terjadwal' : 'Aktif'; el.style.background = on ? '#fff4e2' : '#eef0f3'; el.style.color = on ? '#8a5200' : '#3b424c'; };
+        window.pmMuat = async () => {
+            try { const sn = await window.withTimeout(get(ref(db, pmPath())), TIMEOUT_JARINGAN_MS), c = sn.val() || {};
+                document.getElementById('pm-aktif').checked = c.aktif === true && +c.selesai > Date.now();
+                document.getElementById('pm-mulai').value = pmLoc(c.mulai && +c.mulai > Date.now() ? c.mulai : '');
+                document.getElementById('pm-selesai').value = pmLoc(c.selesai && +c.selesai > Date.now() ? c.selesai : Date.now() + 2 * 3600e3);
+                document.getElementById('pm-pesan').value = c.pesan || '';
+                const tg = c.target || {}; ['web', 'pic', 'riksa', 'link'].forEach(k => { document.getElementById('pm-t-' + k).checked = tg[k] !== false; });
+                pmStatus(c);
+            } catch (e) { window.showToast('Gagal memuat pengaturan pemeliharaan: ' + (e.message || 'cek internet'), 'error'); }
+        };
+        document.getElementById('nav-btn-pemeliharaan')?.addEventListener('click', () => setTimeout(window.pmMuat, 50));
+        document.getElementById('pm-pratinjau')?.addEventListener('click', () => window.open('/maint-pratinjau.html', '_blank', 'noopener'));
+        document.getElementById('form-pemeliharaan')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const aktif = document.getElementById('pm-aktif').checked, mulai = Date.parse(document.getElementById('pm-mulai').value) || 0, selesai = Date.parse(document.getElementById('pm-selesai').value) || 0;
+            if (aktif && (!selesai || selesai <= Date.now())) { window.showToast('Isi "Perkiraan selesai" dengan waktu yang akan datang.', 'error'); return; }
+            if (aktif && mulai && mulai >= selesai) { window.showToast('Waktu mulai harus sebelum perkiraan selesai.', 'error'); return; }
+            const target = {}; ['web', 'pic', 'riksa', 'link'].forEach(k => { target[k] = document.getElementById('pm-t-' + k).checked; });
+            const data = { aktif, mulai: mulai || Date.now(), selesai, pesan: document.getElementById('pm-pesan').value.trim().slice(0, 400), target };
+            const btn = document.getElementById('pm-simpan'); btn.disabled = true; btn.textContent = 'Menyimpan…';
+            try { await window.rk3MaintSet(data); pmStatus(data); window.showToast(aktif ? 'Mode pemeliharaan disimpan. Pengunjung melihat halaman pemeliharaan sesuai jadwal.' : 'Mode pemeliharaan dimatikan. Website dibuka kembali.', 'success'); }
+            catch (x) { window.showToast('Gagal menyimpan: ' + (x.message || 'cek internet') + '. Pastikan aturan Firebase pengaturan_pemeliharaan sudah dipasang.', 'error'); }
+            finally { btn.disabled = false; btn.textContent = 'Simpan'; }
+        });
 
         window.showToast = function(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -4440,6 +4508,7 @@
 
         window.setupAdminUI = function(role) {
             const isUtama = role === 'admin_utama';
+            window.__rk3AdminUtama = isUtama; try { window.RK3Maint && window.RK3Maint.periksa(); } catch (e) {} // Admin Utama tidak tertutup layar pemeliharaan
             const isLpmi = role === 'admin_lpmi';
             // Sisa tampilan khusus Admin LPMI dari login sebelumnya dikembalikan dulu
             document.querySelectorAll('[data-lpmi-hid]').forEach(el => { el.classList.remove('hidden'); el.removeAttribute('data-lpmi-hid'); });
