@@ -309,7 +309,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v90';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v91';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -745,7 +745,8 @@ async function sync() {
   if (!pending()) { renderPill(); return; }
   syncing = true; syncErr = ''; renderPill();
   try {
-    for (const kid of Object.keys(H)) {
+    const urut = Object.keys(H).sort((a, b) => (a === P.kid ? -1 : b === P.kid ? 1 : (H[b].upd || 0) - (H[a].upd || 0))); // kegiatan yang sedang dibuka / baru diubah dikirim lebih dulu
+    for (const kid of urut) {
       if (!KEGS[kid]) continue;
       const h = H[kid];
       { // gambar dikirim 3 sekaligus (kualitas/ukuran gambar tidak diubah); bila satu gagal, yang lain dituntaskan lalu error dilempar → dicoba lagi otomatis
@@ -1927,8 +1928,31 @@ document.addEventListener('submit', async e => {
 window.addEventListener('online', () => { renderPill(); pull(true); sync(); });
 window.addEventListener('offline', () => renderPill());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderPill(); pull(true); sync(); } });
-setInterval(() => { if (ME && online()) { pull(); sync(); fotoTick(); if (P.kid && (P.screen === 'nlk' || P.screen === 'nil')) nilaiPull(P.kid).catch(() => { }); } }, 20000); // cadangan bila pendengar realtime putus
-window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); } });
+/* Sinkron penuh terjadwal (sama dengan website, Pic.JADWAL_SINKRON di daftar-hadir/index.html): pada waktunya semua kegiatan diunduh ulang dan hasil akun ini dikirim ulang.
+   HP yang mati / aplikasi tertutup saat jadwal tiba menjalankannya LANGSUNG begitu dibuka (sekali per jadwal per akun per HP). rev dinaikkan (bukan upd) agar website menggabung ulang tanpa mengubah urutan "terbaru menang". */
+const JADWAL_SINKRON = [Date.UTC(2026, 10, 15, 21, 0)]; // 16 Nov 2026 06.00 WIT (= 05.00 WITA = 04.00 WIB)
+let jdwT = 0, jdwJalan = false; const jdwDone = new Set();
+async function jadwalSinkron() {
+  clearTimeout(jdwT); if (!ME || !fbOk() || jdwJalan) return; const now = Date.now();
+  for (const t of JADWAL_SINKRON) {
+    if (t > now) { if (t - now < 864e5) jdwT = setTimeout(jadwalSinkron, t - now + 500); continue; }
+    const k = 'sinkron-jadwal-' + t + '-' + ME.uid; if (now - t > 30 * 864e5 || jdwDone.has(k)) continue;
+    if (await iGet(k)) { jdwDone.add(k); continue; }
+    if (!online()) return; jdwJalan = true;
+    try {
+      toast('Sinkron penuh terjadwal: menyamakan absensi dengan website…');
+      await pull(true);
+      Object.keys(H).forEach(kid => { if (KEGS[kid]) { const h = H[kid]; h.rev = (h.rev || 0) + 1; h.dirty = true; saveH(kid); } });
+      ttdpRepubAll(); clearTimeout(syncT); await sync();
+      for (let i = 0; i < 120 && (syncing || pending()) && !syncErr; i++) { if (!syncing) await sync(); await new Promise(r => setTimeout(r, 1000)); }
+      if (!pending() && !syncErr) { await iPut(k, Date.now()); jdwDone.add(k); toast('Sinkron penuh selesai. Data absensi sudah sama dengan website.'); }
+      else jdwT = setTimeout(jadwalSinkron, 60e3); // belum tuntas (sinyal): coba lagi 1 menit
+    } catch (e) { jdwT = setTimeout(jadwalSinkron, 60e3); } finally { jdwJalan = false; }
+    return;
+  }
+}
+setInterval(() => { if (ME && online()) { pull(); sync(); fotoTick(); jadwalSinkron(); if (P.kid && (P.screen === 'nlk' || P.screen === 'nil')) nilaiPull(P.kid).catch(() => { }); } }, 20000); // cadangan bila pendengar realtime putus
+window.addEventListener('pic-fb-ready', () => { if (ME) { pull(); sync(); setTimeout(jadwalSinkron, 3000); } });
 
 /* ---------- pembaruan aplikasi ----------
    Aplikasi (APK/PWA) membuka halaman dari ruangk3.com. Kode di bawah membandingkan berkas aplikasi dengan yang ada di server

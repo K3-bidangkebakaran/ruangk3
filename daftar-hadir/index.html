@@ -5214,7 +5214,7 @@ const Pic = {
         d.onValue(this.r("dh_selfie_st"), snap => this.pullSelfieSoon(250, snap.val() || {}), () => { }); // selfie baru: jalur sendiri & cepat (tanpa menunggu tarik hasil PIC)
         d.onValue(this.r("dh_ttdp_st"), snap => this.pullTtdpSoon(250, snap.val() || {}), () => { }); // peserta tanda tangan lewat link: masuk langsung ke daftar hadir
         d.onValue(this.r("dh_nara_st"), snap => this.pullNaraSoon(250, snap.val() || {}), () => { }); // narasumber tanda tangan lewat link: masuk langsung ke baris narasumber (tanpa menunggu PIC)
-        d.onValue(this.r("dh_hasil"), () => this.pullSoon(), e => { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; this.status(); });
+        d.onValue(this.r("dh_hasil"), snap => { this.snapAll = snap.val() || {}; this.snapT = Date.now(); this.pullSoon(); }, e => { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; this.status(); });
         d.onValue(this.r("dh_upd"), snap => this.updSoon(snap.val() || {}), () => { }); // kegiatan diubah / dihapus di akun atau perangkat lain (admin utama <-> Faros): samakan langsung
       } catch (e) { this.ready = false; this.initP = null; this.err = "net"; }
       this.status(); return this.ready;
@@ -5258,6 +5258,7 @@ const Pic = {
     idbGet("pic-wrd1").then(v => { if (!v) { EV.forEach(e => this.mark(e.id)); idbPut("pic-wrd1", 1).catch(() => { }); } }).catch(() => { }); // sekali: semua kegiatan dikirim ulang ke APK (data tambahan untuk Pratinjau Word: tanggal & penandatangan)
     idbGet("pic-lpmi1").then(v => { if (!v) { EV.forEach(e => this.mark(e.id)); idbPut("pic-lpmi1", 1).catch(() => { }); } }).catch(() => { }); // sekali: semua kegiatan (termasuk yang diunduh dari Drive / dibuat di admin LPMI01) dikirim ulang ke APK
     idbGet("pic-wm1").then(v => { if (!v) { const batas = Date.now() - 60 * 864e5; EV.forEach(e => { const l = (e.hari && e.hari[e.hari.length - 1]) || e.tanggal2 || e.tanggal; if (e.kegiatan && (!l || new Date(l + "T00:00:00").getTime() >= batas)) this.mark(e.id); }); idbPut("pic-wm1", 1).catch(() => { }); } }).catch(() => { }); // sekali: gambar yang hanya ada di website (kegiatan 60 hari terakhir) dikirim ke APK
+    this.jadwal();
     idbGet("pic-force1").then(v => { if (!v) setTimeout(async () => { if (!navigator.onLine) return; await this.pullAll(false, true); idbPut("pic-force1", 1).catch(() => { }); }, 15000); }).catch(() => { }); // sekali setelah pembaruan: tarik ulang hasil semua PIC untuk semua kegiatan
   },
   /** huruf A/B/C kegiatan kembar ikut dikirim ke APK PIC (node.sfx). Bila huruf suatu kegiatan berubah (mis. ada kegiatan kembar baru / yang lama dihapus), kegiatan itu dikirim ulang. */
@@ -5356,7 +5357,7 @@ const Pic = {
     try { return await fn(); } finally { rel(); if (L[kid] && this.kl[kid] === L[kid]) { /* rantai tetap dipakai */ } }
   },
   coba(k, maks) { const c = (this.rc = this.rc || {}); c[k] = (c[k] || 0) + 1; return c[k] <= (maks || 3); }, // batas coba-ulang per sesi untuk gambar yang tercatat tetapi tidak terbaca
-  pullSoon(ms) { clearTimeout(this.pt); this.pt = setTimeout(() => this.pullAll(), ms || 800); },
+  pullSoon(ms) { clearTimeout(this.pt); this.pt = setTimeout(() => this.pullAll(false, false, true), ms || 300); }, // cepat: hasil PIC masuk ±0,3 dtk setelah server berubah
   /* gambar dari PIC: hanya yang berubah yang diunduh (sidik `mh` dari tiap akun PIC); tanpa `mh` (APK lama) / pertama kali: unduh semua */
   async mediaFor(kid, byPic, full) {
     const nodes = Object.values(byPic || {}).filter(x => x && typeof x === "object");
@@ -5372,23 +5373,24 @@ const Pic = {
     for (let i = 0; i < perlu.length; i += 4) await Promise.all(perlu.slice(i, i + 4).map(async k => { const v = (await this.d.get(this.r(`dh_media/${kid}/${k}`))).val() || ""; C.v[k] = v; if (v) C.h[k] = mh[k]; else delete C.h[k]; })); // gambar yang belum terbaca (kosong) dicoba lagi pada penarikan berikutnya
     return C.v;
   },
-  async pullAll(manual, force) { // force: gabungkan ULANG hasil semua PIC ke semua kegiatan (abaikan tanda "sudah digabung"); laporan ringkas di this.rep
+  async pullAll(manual, force, live) { // live: dipanggil pendengar dh_hasil (data snapshot sudah ada, jalur samping punya pendengar sendiri) // force: gabungkan ULANG hasil semua PIC ke semua kegiatan (abaikan tanda "sudah digabung"); laporan ringkas di this.rep
     if (force) for (let i = 0; i < 120 && this.pulling; i++) await new Promise(r => setTimeout(r, 500)); // tunggu penarikan yang sedang berjalan
     if (this.pulling || !navigator.onLine) { if (this.pulling && !force) this.again = true; return 0; } // perubahan yang masuk saat penarikan berjalan: diulang setelah selesai (jangan terlewat)
     if (!(await this.load())) return 0;
     this.pulling = true; let total = 0;
     const rep = this.rep = { periksa: 0, ubah: 0, jenis: {}, tanpaPerangkat: 0 };
     try {
-      const all = (await this.d.get(this.r("dh_hasil"))).val() || {};
-      for (const kid of Object.keys(all)) {
+      const all = live && this.snapAll && Date.now() - this.snapT < 120e3 ? this.snapAll : (await this.d.get(this.r("dh_hasil"))).val() || {}; // pakai snapshot pendengar (tanpa unduh ulang seluruh dh_hasil)
+      const kids = Object.keys(all).sort((a, b) => (a === S.id ? -1 : b === S.id ? 1 : 0)); let nxK = 0; // kegiatan yang sedang dibuka didahulukan
+      const satu = async (kid) => {
         const nodes = Object.values(all[kid] || {}).filter(x => x && typeof x === "object");
-        const upd = Math.max(0, ...nodes.map(x => x.upd || 0)); if (!upd) continue;
-        if (!EV.some(e => e.id === kid)) { rep.tanpaPerangkat++; continue; }  // kegiatan ini tidak ada di perangkat ini
+        const upd = Math.max(0, ...nodes.map(x => x.upd || 0)); if (!upd) return;
+        if (!EV.some(e => e.id === kid)) { rep.tanpaPerangkat++; return; }  // kegiatan ini tidak ada di perangkat ini
         const cur = kid === S.id ? S : await idbGet("event:" + kid);
         const sig = Object.entries(all[kid] || {}).filter(([, x]) => x && typeof x === "object").map(([u, x]) => `${u}:${x.upd || 0}:${x.rev || 0}:${x.dev || ""}`).sort().join("|"); // sidik semua akun PIC (bukan hanya jam): HP dengan jam lebih lambat tidak terlewat
         const sudah = !!(cur && cur.pic && (cur.pic.msig ? cur.pic.msig === sig : (cur.pic.merged || 0) >= upd));
         const cek = sudah && !this.healed.has(kid); this.healed.add(kid);
-        if (!force && sudah && !(cek && this.picGaps(kid === S.id ? S : normalize(cur), all[kid]) > 0)) continue;  // sudah digabung (sekali per sesi diperiksa: foto/TTD yang dicatat PIC tetapi tidak ada di kegiatan ini ikut digabung ulang)
+        if (!force && sudah && !(cek && this.picGaps(kid === S.id ? S : normalize(cur), all[kid]) > 0)) return;  // sudah digabung (sekali per sesi diperiksa: foto/TTD yang dicatat PIC tetapi tidak ada di kegiatan ini ikut digabung ulang)
         const media = await this.mediaFor(kid, all[kid], force);
         await this.lock(kid, async () => {
         const ev = kid === S.id ? S : normalize(await idbGet("event:" + kid));
@@ -5404,13 +5406,11 @@ const Pic = {
         }
         if (n) toast(`Hasil dari PIC masuk: ${ev.acara.kegiatan || "kegiatan"}.`);
         });
-      }
+      };
+      await Promise.all(Array.from({ length: Math.min(3, kids.length) }, async () => { while (nxK < kids.length) await satu(kids[nxK++]); })); // 3 kegiatan sekaligus (dulu satu per satu)
       this.err = "";
     } catch (e) { this.err = /permission/i.test(String(e && e.message)) ? "rules" : "net"; }
-    total += await this.pullSelfie();
-    total += await this.pullNilai();
-    total += await this.pullNara();
-    total += await this.pullTtdp();
+    if (!live || manual || force) { const r4 = await Promise.all([this.pullSelfie(), this.pullNilai(), this.pullNara(), this.pullTtdp()].map(p => Promise.resolve(p).catch(() => 0))); total += r4.reduce((a, b) => a + (+b || 0), 0); } // jalur samping bersamaan (dulu berurutan); tiap jalur juga punya pendengar sendiri
     this.pulling = false; this.status(); if (this.again) { this.again = false; this.pullSoon(300); }
     if (manual && !force) toast(total ? "Hasil PIC diperbarui." : (this.err ? "Gagal memeriksa hasil PIC." : "Belum ada hasil baru dari PIC."));
     else if (manual && this.err) toast("Gagal memeriksa hasil PIC (cek koneksi / aturan Firebase).");
@@ -5785,6 +5785,35 @@ const Pic = {
     } catch (_) { }
     finally { this.cleaning = false; }
     return n;
+  },
+  /* Sinkron penuh terjadwal (permintaan Adrian): pada waktu di JADWAL_SINKRON, perangkat admin yang sedang membuka aplikasi menjalankan sinkron penuh.
+     Perangkat yang mati / tertutup saat jadwal tiba menjalankannya LANGSUNG begitu dibuka (sekali per jadwal per perangkat, penanda IDB "sinkron-jadwal-<t>"). */
+  JADWAL_SINKRON: [Date.UTC(2026, 10, 15, 21, 0)], // 16 Nov 2026 06.00 WIT (= 05.00 WITA = 04.00 WIB)
+  async jadwal() {
+    clearTimeout(this.jt); const now = Date.now();
+    for (const t of this.JADWAL_SINKRON) {
+      if (t > now) { if (t - now < 864e5) this.jt = setTimeout(() => this.jadwal(), t - now + 500); continue; }
+      if (now - t > 30 * 864e5 || await idbGet("sinkron-jadwal-" + t).catch(() => 1)) continue; // jadwal lama sekali / sudah dijalankan di perangkat ini
+      if (!navigator.onLine) { window.addEventListener("online", () => this.jadwal(), { once: true }); return; }
+      if (await this.penuh()) await idbPut("sinkron-jadwal-" + t, Date.now()).catch(() => { });
+      else this.jt = setTimeout(() => this.jadwal(), 5 * 60e3); // gagal (sinyal / Drive): coba lagi 5 menit
+      return;
+    }
+  },
+  async penuh() { // semua kegiatan: kirim ke APK, unduh semua dari Drive, tarik ulang hasil semua akun PIC, lalu kirim lagi yang berubah
+    if (this.penuhJalan) return false; this.penuhJalan = true;
+    try {
+      for (let i = 0; loadBusy && i < 120; i++) await sleepMs(1000);
+      if (!(await this.load())) return false;
+      toast("Sinkron penuh terjadwal: menyamakan semua absensi website dan aplikasi PIC…");
+      EV.forEach(e => { if (e && e.id) this.dirty.add(e.id); }); await idbPut("pic-pub", [...this.dirty]).catch(() => { });
+      await this.flush();
+      if (Cloud.ready()) { try { await Cloud.reconcile(true); await sleepMs(300); for (let i = 0; i < 240 && Cloud.alBusy; i++) await sleepMs(500); } catch (_) { } }
+      await this.pullAll(false, true); if (this.err) return false;
+      await this.flush();
+      const r = this.rep || {}; toast(`Sinkron penuh selesai: ${r.periksa || 0} kegiatan diperiksa, ${r.ubah || 0} mendapat data baru dari PIC.`);
+      return true;
+    } catch (e) { return false; } finally { this.penuhJalan = false; }
   },
   async manual() {
     if (!navigator.onLine) { toast("Tidak ada internet."); return; }
