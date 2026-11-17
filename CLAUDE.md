@@ -8,7 +8,7 @@ Tujuan: beberapa sesi mengerjakan fitur berbeda, tapi hasilnya harus menyatu dan
 - `daftar-hadir/` = aplikasi Daftar Hadir & Dokumentasi (satu berkas, IndexedDB + Google Drive via Apps Script `daftar-hadir/apps-script/Code.gs`, TANPA Firebase). Menu panel admin "Daftar Hadir & Dokumentasi" (khusus Admin Pusat, seperti Laporan Riksa Uji) membaca daftar kegiatan langsung dari Drive lewat Apps Script (`listEvents`/`getEvent`); URL Web App + Kode Akses hanya di localStorage `rk3_dh_cfg` perangkat admin (diambil otomatis dari konfigurasi aplikasi bila ada, dihapus saat logout), tidak ada data di Firebase; halaman mengalihkan ke `/` bila penanda `rk3_admin_at` (localStorage, 12 jam) tidak ada. Pengaman data sebenarnya = Kode Akses Apps Script.
 - `riksa/` = aplikasi PWA petugas riksa uji (offline-first), memakai Firebase yang sama, nama app `riksa-uji`.
 - `../ruangk3-wa-webhook/` (Vercel): `api/cek-lisensi.js` (perantara TemanK3 + cek hak LPMI), webhook WA.
-- `../backup-drive/backup-ruangk3-ke-drive.gs` = skrip cadangan harian ke Google Drive (dipasang manual di Apps Script).
+- `backup-drive/backup-ruangk3-ke-drive.gs` (di repo sejak 2026-11-17, tanpa ID folder: `FOLDER_ID` = TEMPEL_ID_FOLDER_DI_SINI) = skrip cadangan harian ke Google Drive (dipasang manual di Apps Script; salinan di Google tidak ikut berubah otomatis). Salinan lama Adrian di `../backup-drive/` (luar repo).
 - Data: Firebase RTDB `artifacts/k3-kebakaran-app-v5/public/data/<node>`.
 
 ## Aturan wajib setiap menambah/ubah fitur (jaringan lemah)
@@ -18,7 +18,7 @@ Tujuan: beberapa sesi mengerjakan fitur berbeda, tapi hasilnya harus menyatu dan
 4. Skrip/CSS pihak ketiga: jangan blocking di `<head>`. Pustaka besar (html2pdf, Chart.js, PDF.js) dimuat sesuai kebutuhan lewat `await window.muatPustaka('html2pdf'|'chart'|'pdfjs')` (lihat `<head>` index.html); pustaka baru yang >50 KB ditambahkan ke daftar itu, bukan ke tag `<script>` awal.
 5. Ubah kelas Tailwind -> bangun ulang `tailwind.css` lalu naikkan `?v=` di `index.html`.
 6. Ubah berkas di `riksa/` -> naikkan `VERSION` di `riksa/sw.js`.
-7. Node baru yang besar -> tambahkan ke `PER_ANAK` di skrip cadangan, lalu minta Adrian menempel ulang skrip itu di Apps Script (salinan di Google tidak ikut berubah otomatis).
+7. Node baru yang besar -> tambahkan ke `PER_ANAK` di skrip cadangan (`backup-drive/backup-ruangk3-ke-drive.gs`), lalu minta Adrian menempel ulang skrip itu di Apps Script (salinan di Google tidak ikut berubah otomatis).
 8. Aturan Firebase (rules) untuk node baru harus ditambahkan Adrian di Firebase Console; catat node barunya di bawah.
 9. Cek sintaks sebelum commit: ekstrak `<script type="module">` dari `index.html` lalu `node --check`.
 10. Commit kecil dengan pesan jelas. Jangan menimpa perubahan sesi lain: jalankan `git status` dan `git diff` dulu, jangan `reset --hard`/`checkout .`.
