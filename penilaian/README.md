@@ -10,7 +10,8 @@ predikat, status LULUS/REMEDIAL, PDF rekap & lembar per peserta (jsPDF di `vendo
 - Firebase: login anonim, data di `artifacts/k3-kebakaran-app-v5/public/data/praktik_nilai/<kunci>/`:
   - `pengaturan/utama` — rubrik (aspek per kelas, bobot, skala, pedoman), `bobotPraktik`, `bobotKuis`
   - `batch/<id>` — `{nama, kegiatan, tanggal, lokasi, pjk3, penilai, dibuat, _t}`
-  - `peserta/<id>` — `{nama, kelas: "D"|"C", batch, no, nilai: {<kodeAspek>: "BS"|"B"|"C"|"K"|""}, kuis, catatan, _t}`
+  - `peserta/<id>` — `{nama, kelas: "D"|"C"|"B"|"A", batch, kelompok, no, nilai: {<kodeAspek>: "BS"|"B"|"C"|"K"|""}, kuis, catatan, _t}`
+  - `kelompok/<id>` — Kelas B/A: `{nama, batch, kelas, nilai: {<kodeAspek kelas>: ...}, catatan, dibuat, _t}`; aspek kelas dinilai per kelompok, Kehadiran/Keaktifan tetap per peserta
 - Offline-first: salinan di localStorage (`rk3-pn-cache-<kunci>`), perubahan yang belum terkirim di
   `rk3-pn-antre-<kunci>` dan dikirim ulang saat online. Perangkat tetap masuk (`rk3-pn-kunci`) sampai tombol Keluar.
 - Rubrik baru untuk ruang penilaian baru diambil dari salinan bawaan di `index.html` (`DEF_CFG`). Ruang lama yang
