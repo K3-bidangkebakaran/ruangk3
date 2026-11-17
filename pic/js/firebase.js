@@ -118,6 +118,13 @@ window.PicFB = {
     }
     await withTimeout(rec.p, Math.min(300000, Math.max(90000, Math.round(String(dataUrl).length / 2) )));
   },
+  // Informasi Umum beranda: foto dokumentasi hari terakhir tanpa watermark -> dh_info_foto/{kid}/{kunci}; ringkasan -> dh_info/{kid}/{uid} (null = hapus)
+  async infoPut(kid, info, put, del) {
+    const u = auth.currentUser; if (!u) throw fail('session', 'Sesi berakhir.');
+    for (const [key, v] of Object.entries(put || {})) await withTimeout(set(ref(db, `${ROOT}/dh_info_foto/${kid}/${key}`), v), Math.min(300000, Math.max(90000, Math.round(String(v).length / 2))));
+    for (const key of (del || [])) await withTimeout(remove(ref(db, `${ROOT}/dh_info_foto/${kid}/${key}`)), 30000);
+    await withTimeout(info ? set(ref(db, `${ROOT}/dh_info/${kid}/${u.uid}`), clean(info)) : remove(ref(db, `${ROOT}/dh_info/${kid}/${u.uid}`)), 30000);
+  },
   async putHasil(kid, hasil) { await withTimeout(set(ref(db, `${ROOT}/dh_hasil/${kid}/${auth.currentUser.uid}`), clean({ ...hasil, picUid: auth.currentUser.uid })), 30000); },
   // Link tanda tangan narasumber (halaman ruangk3.com/narasumber/): info baris -> dh_nara/{kid}/{key}; TTD -> dh_nara_ttd; penanda waktu -> dh_nara_st
   async naraPub(kid, key, info) { await withTimeout(set(ref(db, `${ROOT}/dh_nara/${kid}/${key}`), clean({ ...info, upd: Date.now() })), 30000); },

@@ -2802,6 +2802,7 @@
         // foto berita (base64) -> berita_foto/{idBerita}. Diunduh hanya saat dibutuhkan.
         const pathModulDokumen = `artifacts/${cleanAppId}/public/data/modul_dokumen`;
         const pathBeritaFoto = `artifacts/${cleanAppId}/public/data/berita_foto`;
+        const pathDhInfo = `artifacts/${cleanAppId}/public/data/dh_info`, pathDhInfoFoto = `artifacts/${cleanAppId}/public/data/dh_info_foto`; // Informasi Umum otomatis dari APK PIC
         const pathSoal = `artifacts/${cleanAppId}/public/data/soal`;
         const pathVisitor = `artifacts/${cleanAppId}/public/data/visitor`;
         const pathVerifikasi = `artifacts/${cleanAppId}/public/data/verifikasi_ujian`;
@@ -2915,6 +2916,11 @@
             if (!b.adaFoto) return Promise.resolve([]);
             if (cacheFotoBerita[b.id]) return Promise.resolve(cacheFotoBerita[b.id]);
             if (pendingFotoBerita[b.id]) return pendingFotoBerita[b.id];
+            if (b.dhKid) { // Informasi Umum otomatis: foto per kunci di dh_info_foto/{kid}
+                pendingFotoBerita[b.id] = Promise.all(b.dhIds.map(k => window.withTimeout(get(ref(db, `${pathDhInfoFoto}/${b.dhKid}/${k}`)), 60000).then(s => s.val() || '').catch(() => '')))
+                    .then(arr => { arr = arr.filter(Boolean); cacheFotoBerita[b.id] = arr; delete pendingFotoBerita[b.id]; return arr; });
+                return pendingFotoBerita[b.id];
+            }
             pendingFotoBerita[b.id] = get(ref(db, `${pathBeritaFoto}/${b.id}`)).then(snap => {
                 const v = snap.val();
                 const arr = v ? (Array.isArray(v) ? v : Object.values(v)) : [];
@@ -2944,6 +2950,15 @@
                 <button type="button" class="rb-butama" onclick="window.bacaBerita('${u.id}')">${foto(u, 'rb-bfoto')}<span class="rb-butama-t">${meta(u)}<span class="rb-bjudul-u">${escHtml(u.judul || '')}</span><span class="rb-bisi">${escHtml(rbRingkas(u.isi, 240))}</span><span class="rb-link" style="margin-top:4px">Baca selengkapnya &rarr;</span></span></button>
                 ${rest.length ? `<div class="rb-blist">${rest.map(item).join('')}${rest.length > 4 ? `<button type="button" class="rb-link rb-bsemua" onclick="this.parentElement.classList.add('buka');this.remove()">Tampilkan semua berita (${rest.length + 1}) &rarr;</button>` : ''}</div>` : ''}
             </div>`;
+        };
+        window.rbRenderPublik = function() {
+            const el = document.getElementById('public-berita-container'); if (!el) return;
+            const all = (window._beritaManual || []).concat(window._beritaDh || []).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            window.dataBeritaAll = all;
+            if (!all.length) { el.innerHTML = '<div class="w-full text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed text-slate-500">Belum ada berita atau pengumuman saat ini.</div>'; return; }
+            el.innerHTML = window.rbBeritaHtml(all);
+            window.hidrasiFotoBerita(all);
+            window.rbHeroFoto(all);
         };
         window.rbHeroFoto = async function(beritas) {
             const box = document.getElementById('rb-hero-foto'); if (!box) return;
@@ -8885,12 +8900,10 @@
                 }
                 beritas.sort((a,b) => b.timestamp - a.timestamp);
                 
-                window.dataBeritaAll = beritas;
+                window._beritaManual = beritas;
+                window.dataBeritaAll = beritas.concat(window._beritaDh || []);
                 if (typeof window.perbaruiInfoOptimasi === 'function') window.perbaruiInfoOptimasi();
 
-                if(beritas.length === 0 && listPublic) {
-                    listPublic.innerHTML = '<div class="w-full text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed text-slate-500">Belum ada berita atau pengumuman saat ini.</div>';
-                }
                 
                 if(listPublic && beritas.length > 0) {
                     let gridCardsHtml = ''; 
@@ -8933,11 +8946,25 @@
                         }
                     });
 
-                    listPublic.innerHTML = window.rbBeritaHtml(beritas); // tampilan beranda baru (2026-11-17): 1 berita utama + daftar
-                    window.hidrasiFotoBerita(beritas);
-                    window.rbHeroFoto(beritas);
                 }
+                window.rbRenderPublik(); // tampilan beranda (berita admin + Informasi Umum otomatis dari dokumentasi APK)
             });
+
+            // Informasi Umum otomatis: dokumentasi harian hari terakhir (tanpa watermark) yang diunggah PIC lewat APK (pic/js/app.js infoSync)
+            onValue(ref(db, pathDhInfo), (snapshot) => {
+                const v = snapshot.val() || {}, out = [];
+                Object.entries(v).forEach(([kid, per]) => {
+                    const recs = Object.values(per || {}).filter(r => r && typeof r === 'object' && Array.isArray(r.ids) && r.ids.length);
+                    if (!recs.length) return;
+                    recs.sort((a, b) => (b.t || 0) - (a.t || 0));
+                    const ids = [...new Set(recs.flatMap(r => r.ids))];
+                    out.push({ id: 'dhi_' + kid, dhKid: kid, dhIds: ids, kategori: 'Informasi Umum', judul: recs[0].judul || 'Dokumentasi kegiatan', isi: escHtml(recs[0].isi || ''), penulis: 'Tim RuangK3', timestamp: recs[0].t || Date.now(), adaFoto: true });
+                });
+                out.sort((a, b) => b.timestamp - a.timestamp);
+                window._beritaDh = out.slice(0, 12); // 12 kegiatan terbaru saja (hemat kuota pengunjung)
+                window.dataBeritaAll = (window._beritaManual || []).concat(window._beritaDh);
+                window.rbRenderPublik();
+            }, () => { });
 
             onValue(ref(db, pathLiveCbt), (snapshot) => {
                 dataLiveCbtAll = [];
