@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="id">
+<head>
+<script>/* buka lewat https: penyimpanan browser http & https terpisah */if(location.protocol==='http:'&&/(^|\.)ruangk3\.com$/.test(location.hostname))location.replace('https://'+location.host+location.pathname+location.search);</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#17324f">
+<link rel="icon" href="../pic/icons/icon-192.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>Penilaian Praktik Kebakaran</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
+<style>
+html{-webkit-text-size-adjust:100%}body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+header.top{padding-top:env(safe-area-inset-top,0px)}
+
+/* Layout: lembar penilaian kantor — kepala biru tua dengan tab kelas, pita ringkasan, profil aspek kelas terpilih, tabel rekap seperti Excel, rubrik di bawah */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --ink:#15212e; --muted:#5b6876; --line:#d9e0e8; --soft:#eef2f6;
+  --navy:#17324f; --navy2:#235984; --accent:#1f5f99; --accent-soft:#e3eef8; --fire:#c2410c; --fire-bg:#fde6d8;
+  --bs:#1d7a4f; --bs-bg:#d8f0e3; --b:#2b6cb0; --b-bg:#dbe9f7; --c:#9a6a00; --c-bg:#fbefc9; --k:#b3261e; --k-bg:#f8dcd9;
+  --wait:#6b7684; --wait-bg:#e8ecf1; --h2:#235984; --on-accent:#ffffff;
+  --f-body:"IBM Plex Sans",Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-head:"IBM Plex Sans Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1720; --panel:#16212d; --ink:#e3e9f0; --muted:#97a5b4; --line:#2a3847; --soft:#1c2937;
+  --navy:#0b1824; --navy2:#1c3a57; --accent:#79b4ea; --accent-soft:#1b3149; --fire:#fb923c; --fire-bg:#3d2414;
+  --bs:#6fd3a0; --bs-bg:#163a2a; --b:#8cbcf0; --b-bg:#1a3150; --c:#ecc35a; --c-bg:#3a3014; --k:#f2948c; --k-bg:#45201d;
+  --wait:#a3afbc; --wait-bg:#253342; --h2:#79b4ea; --on-accent:#0f1720; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1720; --panel:#16212d; --ink:#e3e9f0; --muted:#97a5b4; --line:#2a3847; --soft:#1c2937;
+  --navy:#0b1824; --navy2:#1c3a57; --accent:#79b4ea; --accent-soft:#1b3149; --fire:#fb923c; --fire-bg:#3d2414;
+  --bs:#6fd3a0; --bs-bg:#163a2a; --b:#8cbcf0; --b-bg:#1a3150; --c:#ecc35a; --c-bg:#3a3014; --k:#f2948c; --k-bg:#45201d;
+  --wait:#a3afbc; --wait-bg:#253342; --h2:#79b4ea; --on-accent:#0f1720; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--f-body)}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--navy);color:#fff}
+header.top .wrap{padding-block:22px 0;display:grid;gap:14px}
+.hrow{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.eyebrow{font:600 11px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:#f6b28b}
+h1{font:700 clamp(22px,3.2vw,30px)/1.15 var(--f-head);margin:6px 0 4px;text-wrap:balance}
+.basis{color:#c6d6e6;max-width:75ch;font-size:13px}
+.wchip{display:flex;gap:6px;flex-wrap:wrap}
+.wchip span{font:600 12px var(--f-num);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);padding:5px 9px;border-radius:3px}
+.state{font-size:12px;color:#c6d6e6;min-height:18px}
+.ktabs{display:flex;gap:2px;flex-wrap:wrap}
+.ktabs button{border:0;background:rgba(255,255,255,.08);color:#d7e3ef;padding:10px 18px 9px;font:600 14px var(--f-head);letter-spacing:.03em;cursor:pointer;border-radius:4px 4px 0 0;display:flex;gap:8px;align-items:baseline}
+.ktabs button small{font:500 11px var(--f-num);opacity:.75}
+.ktabs button[aria-selected="true"]{background:var(--bg);color:var(--ink)}
+main .wrap{padding-block:18px 40px;display:grid;gap:18px}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:4px;min-width:0}
+.card .h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line)}
+h2{font:700 15px/1.2 var(--f-head);letter-spacing:.02em;margin:0;text-transform:uppercase;color:var(--h2)}
+.sub{font-size:12px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;font-family:var(--f-body)}
+.body{padding:14px 16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.kpi{background:var(--panel);padding:12px 14px;display:grid;gap:2px}
+.kpi b{font:600 26px/1.1 var(--f-num);font-variant-numeric:tabular-nums}
+.kpi span{font-size:12px;color:var(--muted)}
+.kpi small{font-size:11.5px;color:var(--muted)}
+.kpi.warn b{color:var(--c)} .kpi.ok b{color:var(--bs)} .kpi.bad b{color:var(--k)}
+.alerts{display:grid;gap:8px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:4px;border:1px solid var(--line);background:var(--soft);font-size:13px}
+.alert i{font-style:normal;font:600 11px var(--f-num);padding:2px 6px;border-radius:3px;flex:none;margin-top:1px}
+.alert.c i{background:var(--c-bg);color:var(--c)} .alert.k i{background:var(--k-bg);color:var(--k)} .alert.b i{background:var(--b-bg);color:var(--b)}
+.two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.bs{background:var(--bs-bg);color:var(--bs)} .b{background:var(--b-bg);color:var(--b)} .c{background:var(--c-bg);color:var(--c)} .k{background:var(--k-bg);color:var(--k)} .w{background:var(--wait-bg);color:var(--wait)}
+/* profil aspek */
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:4px 12px;align-items:center}
+.bar .nm{font-size:12.5px;font-weight:600;min-width:0}
+.bar .nm span{font:500 11px var(--f-num);color:var(--muted);margin-left:6px}
+.bar .nm em{font-style:normal;font:600 10px var(--f-body);letter-spacing:.04em;color:var(--fire);background:var(--fire-bg);padding:1px 5px;border-radius:2px;margin-left:6px}
+.bar .tr{grid-column:1;display:flex;height:12px;border-radius:2px;overflow:hidden;background:var(--soft)}
+.bar .tr i{display:block;height:100%}
+.bar .tr i.bs{background:var(--bs)} .bar .tr i.b{background:var(--b)} .bar .tr i.c{background:var(--c)} .bar .tr i.k{background:var(--k)}
+.bar .av{grid-column:2;grid-row:1/3;text-align:center;font:600 13px var(--f-num);padding:6px 0;border-radius:3px}
+.bar .av.na{background:var(--soft);color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:2px;display:inline-block}
+.legend i.bs{background:var(--bs)} .legend i.b{background:var(--b)} .legend i.c{background:var(--c)} .legend i.k{background:var(--k)} .legend i.w{background:var(--soft);border:1px solid var(--line)}
+.strip svg{width:100%;height:auto;display:block}
+.strip text{fill:var(--muted);font:11px var(--f-num)}
+.strip .lab{fill:var(--ink);font:600 12px var(--f-body)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--panel);color:var(--ink);padding:6px 10px;font:500 12.5px var(--f-body);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+input[type=search],input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:6px 8px}
+input[type=search]{min-width:0;width:200px}
+.btn{font:600 12.5px var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 11px;border-radius:3px;cursor:pointer}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{color:var(--k);border-color:var(--k)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tbl{overflow-x:auto}
+table.rk{border-collapse:collapse;width:100%;min-width:1100px;font-size:13px}
+.rk th{background:var(--navy2);color:#fff;font:600 11.5px/1.25 var(--f-body);padding:8px 6px;text-align:center;border:1px solid var(--line);position:sticky;top:0}
+.rk th small{display:block;font:500 10.5px var(--f-num);opacity:.8}
+.rk th.gen{background:var(--navy)}
+.rk td{border:1px solid var(--line);padding:4px 5px;vertical-align:middle}
+.rk td.no{text-align:center;color:var(--muted);font-family:var(--f-num);width:36px}
+.rk td.nm{position:sticky;left:0;background:var(--panel);min-width:190px;z-index:1}
+.rk th.nm{left:0;z-index:2;text-align:left}
+.nmb{background:none;border:0;padding:0;color:var(--ink);font:600 13px var(--f-body);cursor:pointer;text-align:left}
+.nmb:hover{color:var(--accent);text-decoration:underline}
+.rk select.as{width:100%;min-width:78px;border:0;border-radius:2px;padding:5px 4px;font:600 12px var(--f-body);text-align:center;cursor:pointer;appearance:none;-webkit-appearance:none}
+.rk select.as:disabled{cursor:default;opacity:1}
+.rk select.as.e{background:var(--soft);color:var(--muted);font-weight:500}
+.num{text-align:center;font:600 13.5px var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.rk td.px{background:var(--accent-soft)}
+.rk input.kz{width:64px;text-align:center;font:600 13px var(--f-num);background:var(--c-bg);border-color:transparent}
+.rk input.kz:placeholder-shown{background:var(--soft)}
+.pill{display:inline-block;font:700 11px var(--f-body);letter-spacing:.04em;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.rk td.nt{color:var(--muted);font-size:12px;min-width:200px;max-width:320px}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.foot{font-size:12px;color:var(--muted);padding:10px 16px;border-top:1px solid var(--line);display:grid;gap:4px}
+.rub{overflow-x:auto}
+.rub table{border-collapse:collapse;width:100%;min-width:960px;font-size:12.5px}
+.rub th,.rub td{border:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.rub thead th{font:600 11.5px var(--f-body)}
+.rub td.bb{font:600 13px var(--f-num);text-align:center;white-space:nowrap}
+.rub td.as b{display:block;font-size:13px}
+.rub td.as span{font:500 11px var(--f-num);color:var(--muted)}
+.rub td.as em{display:inline-block;font-style:normal;font:600 10px var(--f-body);letter-spacing:.04em;color:var(--fire);background:var(--fire-bg);padding:1px 5px;border-radius:2px;margin-top:3px}
+.rub ul{margin:0;padding-left:16px}
+.wset{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.wset input{width:64px;text-align:center;font-family:var(--f-num)}
+.ped{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.ped div{border:1px solid var(--line);border-radius:3px;padding:10px 12px;background:var(--soft)}
+.ped b{display:block;font:700 12px var(--f-head);letter-spacing:.03em;text-transform:uppercase;margin-bottom:3px;color:var(--accent)}
+.ped p{margin:0;font-size:12.5px}
+dialog{border:1px solid var(--line);border-radius:4px;padding:0;background:var(--panel);color:var(--ink);width:min(560px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(10,20,30,.45)}
+dialog form{display:grid;gap:12px;padding:16px}
+dialog h3{margin:0;font:700 17px var(--f-head)}
+dialog label{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
+dialog textarea{min-height:84px;resize:vertical}
+#pList{min-height:180px;font-family:var(--f-num);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+.confirm{font-size:12.5px;color:var(--k)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:3px;font-size:13px;z-index:20}
+.bbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bbar label{font:600 11px var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:#f6b28b}
+.bbar select{min-width:0;max-width:100%;flex:0 1 320px;background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.25);font-weight:600}
+.bbar select option{background:var(--panel);color:var(--ink)}
+.btn.hb{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+/* data kegiatan */
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.kg label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+/* kartu peserta (HP) */
+.cards{display:none}
+.pc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;width:100%;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.pc .pn{min-width:0;display:grid;gap:2px}
+.pc .pn b{font-size:14.5px;overflow-wrap:anywhere}
+.pc .pn small{font-size:12px;color:var(--muted)}
+.pc .pr{display:grid;justify-items:end;gap:4px}
+.pc .pr b{font:600 17px var(--f-num)}
+.pc .pb{grid-column:1/-1;height:4px;background:var(--soft);border-radius:2px;overflow:hidden}
+.pc .pb i{display:block;height:100%;background:var(--accent)}
+@media (max-width:720px){.tbl{display:none}.cards{display:block}}
+/* lembar nilai */
+dialog#sh{width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;overflow:hidden}
+dialog#sh[open]{display:flex;flex-direction:column}
+@media (max-width:720px){dialog#sh{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0}}
+.shh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line);background:var(--panel)}
+.shh h3{margin:2px 0 0;font:700 18px/1.2 var(--f-head);overflow-wrap:anywhere}
+.shh .ey{font:600 11px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--fire)}
+#shBody{overflow-y:auto;flex:1 1 auto;min-height:0;padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px}
+#shBody>*{flex:none}
+.shsum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+@media (max-width:460px){.shsum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.shsum>div{background:var(--panel);padding:8px 10px;display:grid;gap:2px;align-content:start}
+.shsum span{font-size:11.5px;color:var(--muted)}
+.shsum b{font:600 19px var(--f-num)}
+.shsum small{font-size:11px;color:var(--muted)}
+.shsum input{width:100%;font:600 16px var(--f-num);padding:4px 6px}
+.sha{border:1px solid var(--line);border-radius:4px;padding:10px 12px;display:grid;gap:8px}
+.sha .t{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.sha .t b{font-size:14px}
+.sha .t span{font:500 11.5px var(--f-num);color:var(--muted);white-space:nowrap}
+.sha details{font-size:12.5px;color:var(--muted)}
+.sha summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:12px}
+.sha ul{margin:6px 0 0;padding-left:18px}
+.lv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+@media (max-width:460px){.lv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lv button{min-height:46px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);font:600 13px var(--f-body);cursor:pointer;display:grid;gap:1px;align-content:center;padding:4px}
+.lv button small{font:500 10.5px var(--f-num);color:var(--muted)}
+.lv button[aria-pressed="true"]{border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
+.lv button.bs{background:var(--bs-bg);color:var(--bs)} .lv button.b{background:var(--b-bg);color:var(--b)} .lv button.c{background:var(--c-bg);color:var(--c)} .lv button.k{background:var(--k-bg);color:var(--k)}
+.lv button[aria-pressed="true"] small{color:inherit}
+.lv button:disabled{cursor:default}
+.desc{margin:0;font-size:12.5px;padding:7px 10px;border-radius:3px;background:var(--soft)}
+.shf{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--panel)}
+#shCat{width:100%;min-height:70px;resize:vertical}
+@media (max-width:560px){input[type=search]{width:100%}.tools{width:100%}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<header class="top"><div class="wrap">
+  <div class="hrow">
+    <div>
+      <div class="eyebrow" id="prog">K3 Penanggulangan Kebakaran</div>
+      <h1 id="judul">Penilaian Praktik &amp; Kuis</h1>
+      <div class="basis" id="basis">Memuat data penilaian…</div>
+    </div>
+    <div style="display:grid;gap:6px;justify-items:end">
+      <div class="wchip" id="wchip"></div>
+      <div class="state" id="state" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="bbar">
+    <label for="bSel">Batch</label>
+    <select id="bSel"></select>
+    <button class="btn hb" type="button" id="bNew">+ Batch baru</button>
+  </div>
+  <div class="ktabs" id="ktabs" role="tablist" aria-label="Pilih kelas"></div>
+</div></header>
+
+<main><div class="wrap">
+  <div class="kpis" id="kpis"></div>
+  <div class="alerts" id="alerts"></div>
+
+  <section class="card">
+    <div class="h"><h2 id="bT">Data batch</h2><span class="sub">Dipakai di kepala, tanda tangan, dan nama file PDF</span></div>
+    <div class="body kg">
+      <label>Nama batch<input type="text" id="bfNama" data-bf="nama" placeholder="Batch 1"></label>
+      <label>Nama kegiatan<input type="text" id="bfKegiatan" data-bf="kegiatan" placeholder="Training K3 Penanggulangan Kebakaran"></label>
+      <label>Tanggal<input type="text" id="bfTanggal" data-bf="tanggal" placeholder="17–19 November 2026"></label>
+      <label>Lokasi praktek<input type="text" id="bfLokasi" data-bf="lokasi" placeholder="Lapangan praktek, Morowali"></label>
+      <label>PJK3<input type="text" id="bfPjk3" data-bf="pjk3" placeholder="PJK3 LPMI"></label>
+      <label>Penilai / Instruktur<input type="text" id="bfPenilai" data-bf="penilai" placeholder="Nama penilai"></label>
+    </div>
+    <div class="foot" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between">
+      <span id="bInfo"></span>
+      <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="confirm" id="bConf" hidden></span><button class="btn danger" type="button" id="bDel">Hapus batch</button></span>
+    </div>
+  </section>
+
+  <div class="two">
+    <section class="card">
+      <div class="h"><h2 id="profT">Profil aspek</h2><span class="sub">Sebaran predikat tiap aspek dan rata-rata nilai hitung</span></div>
+      <div class="body"><div class="bars" id="bars"></div><div class="legend" id="legend"></div></div>
+    </section>
+    <section class="card">
+      <div class="h"><h2>Sebaran nilai praktik</h2><span class="sub">Tiap titik = satu peserta</span></div>
+      <div class="body strip" id="strip"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="h">
+      <h2 id="rekT">Rekap peserta</h2>
+      <div class="tools">
+        <div class="seg" id="fSt" role="group" aria-label="Filter status"></div>
+        <input type="search" id="q" placeholder="Cari nama…" aria-label="Cari nama peserta">
+        <button class="btn pri" id="add" type="button">+ Peserta</button>
+        <button class="btn" id="paste" type="button">Tempel daftar nama</button>
+        <button class="btn" id="pdfR" type="button" hidden>PDF Rekap</button>
+        <button class="btn" id="pdfI" type="button" hidden>PDF Lembar per Peserta</button>
+        <button class="btn" id="csv" type="button" hidden>CSV</button>
+      </div>
+    </div>
+    <div class="tbl" id="tbl"></div>
+    <div class="cards" id="cards"></div>
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <section class="card">
+    <div class="h"><h2 id="rubT">Rubrik &amp; bobot</h2><div class="wset" id="wset"></div></div>
+    <div class="body" style="display:grid;gap:14px">
+      <div class="rub" id="rub"></div>
+      <div class="ped" id="ped"></div>
+    </div>
+  </section>
+</div></main>
+
+<dialog id="dlg"><form method="dialog" id="frm">
+  <h3 id="dT">Peserta</h3>
+  <label>Nama peserta<input type="text" id="dNama" required></label>
+  <label>Kelas<select id="dKel"></select></label>
+  <label>Batch<select id="dBatch"></select></label>
+  <label>Catatan instruktur<textarea id="dCat"></textarea></label>
+  <div class="confirm" id="dConf" hidden></div>
+  <div class="row">
+    <button class="btn danger" type="button" id="dDel">Hapus peserta</button>
+    <span style="display:flex;gap:8px"><button class="btn" type="button" id="dX">Batal</button><button class="btn pri" type="submit" id="dOk">Simpan</button></span>
+  </div>
+</form></dialog>
+
+<dialog id="pdlg"><form method="dialog" id="pfrm">
+  <h3 id="pT">Tempel daftar nama</h3>
+  <label>Satu nama per baris (bisa ditempel dari Excel; kolom setelah tab diabaikan)<textarea id="pList" placeholder="Budi Santoso&#10;Siti Rahma&#10;…"></textarea></label>
+  <div class="sub" id="pInfo"></div>
+  <div class="row"><span></span><span style="display:flex;gap:8px"><button class="btn" type="button" id="pX">Batal</button><button class="btn pri" type="submit" id="pOk">Tambahkan</button></span></div>
+</form></dialog>
+
+<dialog id="sh" aria-labelledby="shName">
+  <div class="shh"><div><div class="ey" id="shKelas"></div><h3 id="shName"></h3></div><button class="btn" type="button" id="shX">Tutup</button></div>
+  <div id="shBody"></div>
+  <div class="shf"><button class="btn" type="button" id="shEdit">Ubah nama / kelas</button><button class="btn pri" type="button" id="shPdf" hidden>PDF peserta ini</button></div>
+</dialog>
+
+<script>
+/* Penyimpanan bersama: Firebase RTDB `praktik_nilai/<kunci>` (kunci = SHA-256 dari kode akses),
+   dengan salinan di HP (localStorage) supaya tetap bisa dibuka & diisi saat offline.
+   Perubahan yang belum terkirim disimpan di antrean dan dikirim ulang begitu online. */
+(function(){
+const V="https://www.gstatic.com/firebasejs/11.6.1/", ROOT="artifacts/k3-kebakaran-app-v5/public/data/praktik_nilai";
+const CFG={apiKey:"AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg",authDomain:"portal-k3-bidang-kebakaran.firebaseapp.com",databaseURL:"https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"portal-k3-bidang-kebakaran",appId:"1:497833559757:web:01c2de15cd5f56dbb18b84"};
+const DEF_CFG={"judul": "Penilaian Praktik & Kuis", "program": "Training K3 Penanggulangan Kebakaran", "basis": "Penilaian praktik individu per kelas. Aspek Kelas D: APAR dan fire blanket; Kelas C: SCBA, pencarian korban, APD, dan fire ground. Kehadiran dan keaktifan dinilai di semua kelas.", "bobotPraktik": 70, "bobotKuis": 30, "kelas": [{"k": "D", "judul": "Kelas D"}, {"k": "C", "judul": "Kelas C"}], "skala": [{"k": "BS", "label": "Baik Sekali", "min": 90, "max": 100, "nilai": 95, "makna": "Semua langkah benar, urut, cepat, dan aman tanpa arahan."}, {"k": "B", "label": "Baik", "min": 80, "max": 89, "nilai": 85, "makna": "Langkah utama benar dan aman; kekurangan kecil."}, {"k": "C", "label": "Cukup", "min": 65, "max": 79, "nilai": 72, "makna": "Unsur dasar terpenuhi tetapi perlu arahan; perlu latihan ulang."}, {"k": "K", "label": "Kurang", "min": 0, "max": 64, "nilai": 55, "makna": "Langkah penting terlewat atau tindakan tidak aman; wajib remedial."}], "aspek": [{"kode": "D-APAR1", "kelas": "D", "nama": "Prosedur Awal Penggunaan APAR", "label": "Prosedur Awal APAR", "bobot": 15, "fokus": "Memberi tanda bahaya (teriak \"kebakaran\" / bunyikan alarm) dan melapor\nMengenali jenis kebakaran (kelas A/B/C/D) lalu memilih APAR yang sesuai\nMemeriksa APAR: segel & pin, jarum tekanan di zona hijau, selang/nozzle, label & masa berlaku\nMenentukan arah angin dan jalur mundur yang aman", "r": {"BS": "Semua langkah dilakukan urut, cepat, dan benar tanpa arahan; jenis APAR tepat dan pemeriksaan lengkap.", "B": "Langkah utama benar; satu butir pemeriksaan kurang teliti tanpa memengaruhi keselamatan.", "C": "Beberapa langkah terlewat atau tidak urut; perlu diingatkan instruktur.", "K": "Tidak memberi tanda bahaya, tidak memeriksa APAR, atau memilih APAR yang tidak sesuai jenis kebakaran."}}, {"kode": "D-APAR2", "kelas": "D", "nama": "Prosedur Mobilisasi Penggunaan APAR", "label": "Mobilisasi APAR", "bobot": 15, "fokus": "Mengangkat APAR dengan benar: pegang handle dan dasar tabung, tabung tetap tegak\nBerjalan cepat tanpa berlari, tidak membanting atau menyeret tabung\nMendekat dari arah datangnya angin (membelakangi angin)\nBerhenti pada jarak aman ±2–3 m dari api dengan posisi kuda-kuda rendah", "r": {"BS": "Membawa APAR aman dan efisien, pendekatan dari arah angin, jarak dan posisi tubuh tepat.", "B": "Mobilisasi benar; jarak atau posisi tubuh sedikit kurang tepat.", "C": "Pendekatan kurang memperhatikan arah angin atau jarak aman; cara membawa APAR kurang benar.", "K": "Berlari/membanting APAR, mendekat melawan angin, atau terlalu dekat sehingga membahayakan diri."}}, {"kode": "D-APAR3", "kelas": "D", "nama": "Prosedur Pemadaman Menggunakan APAR", "label": "Pemadaman APAR", "bobot": 20, "fokus": "Teknik PASS: Pull (cabut pin), Aim (arahkan ke dasar api), Squeeze (tekan tuas), Sweep (sapu kiri-kanan)\nMaju bertahap sambil menyapu sampai api padam seluruhnya\nMemastikan api tidak menyala kembali, mundur tanpa membelakangi api\nMeletakkan APAR bekas terpisah/rebah dan melapor", "r": {"BS": "PASS sempurna, api padam dalam waktu singkat, tidak menyala kembali, mundur dan lapor dengan benar.", "B": "Api padam; teknik menyapu atau jarak sedikit kurang efektif.", "C": "Api padam setelah beberapa kali percobaan atau dengan bantuan arahan; media banyak terbuang.", "K": "Menyemprot ke lidah api/bukan ke dasar api, api tidak padam, atau melakukan tindakan tidak aman."}}, {"kode": "D-FB1", "kelas": "D", "nama": "Prosedur Penggunaan Fire Blanket", "label": "Penggunaan Fire Blanket", "bobot": 15, "fokus": "Menarik tali/tab dari wadah dengan cepat dan membuka selimut penuh\nMelindungi tangan dengan menggulung ujung selimut ke arah punggung tangan\nMemegang selimut di depan tubuh sebagai perisai panas\nMendekat dari arah angin dengan posisi aman", "r": {"BS": "Selimut dibuka cepat dan benar, tangan & tubuh terlindungi, pendekatan aman.", "B": "Langkah benar; perlindungan tangan atau posisi perisai sedikit kurang rapat.", "C": "Ragu-ragu atau lambat membuka selimut; tangan/tubuh kurang terlindungi.", "K": "Tidak melindungi tangan/tubuh atau salah cara memegang sehingga berisiko terbakar."}}, {"kode": "D-FB2", "kelas": "D", "nama": "Prosedur Pemadaman dengan Fire Blanket", "label": "Pemadaman Fire Blanket", "bobot": 15, "fokus": "Menutup sumber api dengan meletakkan selimut dari depan menjauh dari tubuh (bukan melempar)\nMenutup rapat seluruh permukaan api dan mematikan sumber panas/gas bila ada\nMembiarkan selimut tertutup sampai dingin, tidak dibuka terlalu cepat\nUntuk korban pakaian terbakar: stop-drop-roll lalu bungkus", "r": {"BS": "Api tertutup rapat dan padam pada percobaan pertama; sumber panas dimatikan; selimut tidak dibuka terlalu cepat.", "B": "Api padam; cara menutup atau penanganan setelahnya sedikit kurang tepat.", "C": "Perlu lebih dari satu kali menutup, ada celah, atau selimut dibuka terlalu cepat.", "K": "Melempar selimut, api menjalar/tidak padam, atau membahayakan diri dan orang lain."}}, {"kode": "HADIR", "kelas": "", "nama": "Tingkat Kehadiran Peserta", "label": "Kehadiran", "bobot": 10, "fokus": "Persentase kehadiran sesi teori dan praktik\nKetepatan waktu datang dan kembali setelah istirahat\nKelengkapan absensi / tanda tangan daftar hadir", "r": {"BS": "Hadir 100% sesi dan selalu tepat waktu.", "B": "Hadir 100% sesi, terlambat sesekali; atau hadir ≥ 90% sesi.", "C": "Hadir 75–89% sesi atau sering terlambat.", "K": "Hadir < 75% sesi atau meninggalkan praktik tanpa izin."}}, {"kode": "AKTIF", "kelas": "", "nama": "Tingkat Keaktifan Peserta", "label": "Keaktifan", "bobot": 10, "fokus": "Bertanya dan menjawab saat teori maupun praktik\nMengikuti arahan instruktur dan aturan keselamatan\nInisiatif mencoba dan membantu peserta lain\nKerja sama tim dan sikap disiplin selama praktik", "r": {"BS": "Sangat aktif, berinisiatif, membantu tim, dan selalu patuh aturan keselamatan.", "B": "Aktif mengikuti dan menjawab; inisiatif sesekali.", "C": "Mengikuti bila diminta; jarang bertanya atau berinisiatif.", "K": "Pasif, tidak mengikuti arahan, atau mengabaikan aturan keselamatan."}}, {"kode": "C-SCBA1", "kelas": "C", "nama": "Prosedur Penggunaan SCBA – Pemeriksaan & Pemakaian", "label": "SCBA: Periksa & Pakai", "bobot": 10, "fokus": "Pemeriksaan sebelum pakai: tekanan silinder (penuh ±300 bar / ≥ 80%), uji kebocoran tekanan tinggi, peluit alarm, kondisi masker dan tali\nMemakai backplate, mengencangkan tali bahu dan pinggang\nMemasang masker dan uji kerapatan (negative pressure test), menyambung regulator\nWaktu pemakaian (donning) ≤ 60 detik", "r": {"BS": "Pemeriksaan lengkap dan urut, pemakaian benar, masker rapat, donning ≤ 60 detik.", "B": "Pemeriksaan dan pemakaian benar; waktu sedikit melebihi target atau satu butir kurang teliti.", "C": "Ada butir pemeriksaan terlewat atau pemakaian perlu dibantu; waktu jauh di atas target.", "K": "Tidak memeriksa tekanan/kebocoran atau masker tidak rapat sehingga tidak aman dipakai."}}, {"kode": "C-SCBA2", "kelas": "C", "nama": "Prosedur Penggunaan SCBA – Operasi & Pelepasan", "label": "SCBA: Operasi & Lepas", "bobot": 15, "fokus": "Pernapasan terkendali dan memantau pressure gauge selama bekerja\nTanggap peluit alarm tekanan rendah: segera keluar bersama pasangan (buddy)\nKomunikasi dengan tim, tetap dalam sistem buddy\nMelepas (doffing) urut: regulator, masker, tali; menutup valve, membuang tekanan, melapor", "r": {"BS": "Penggunaan terkendali, tanggap alarm, komunikasi baik, pelepasan dan perawatan sesuai urutan.", "B": "Penggunaan benar; pemantauan tekanan atau urutan pelepasan sedikit kurang rapi.", "C": "Kurang memantau tekanan, terlambat menanggapi alarm, atau urutan pelepasan salah.", "K": "Melepas masker di area berasap, mengabaikan alarm, atau meninggalkan pasangan."}}, {"kode": "C-CARI", "kelas": "C", "nama": "Pencarian Korban", "label": "Pencarian Korban", "bobot": 20, "fokus": "Pencarian sistematis (right/left hand search, menyusuri dinding) dalam posisi rendah\nTetap kontak dengan pasangan / tali pemandu\nMemeriksa seluruh ruang (bawah meja, balik pintu, kamar mandi) dan menandai ruang yang sudah diperiksa\nMelaporkan temuan dan mengevakuasi korban dengan teknik angkat/seret yang aman", "r": {"BS": "Pencarian sistematis dan cepat, seluruh area diperiksa, korban ditemukan dan dievakuasi aman.", "B": "Korban ditemukan dan dievakuasi; pola pencarian atau komunikasi sedikit kurang rapi.", "C": "Pencarian tidak sistematis, ada area terlewat, atau evakuasi korban kurang aman.", "K": "Korban tidak ditemukan, terpisah dari pasangan, atau teknik evakuasi membahayakan."}}, {"kode": "C-APD", "kelas": "C", "nama": "Prosedur Pemakaian APD", "label": "Pemakaian APD", "bobot": 10, "fokus": "Memeriksa kondisi APD pemadam sebelum dipakai\nMemakai lengkap dan urut: celana & sepatu boot, jaket, hood, helm dengan tali dagu, sarung tangan\nTidak ada kulit terbuka; resleting/velcro/pengait terkunci\nWaktu pemakaian sesuai target instruktur", "r": {"BS": "APD lengkap, urut, rapat tanpa kulit terbuka, dalam waktu target.", "B": "APD lengkap dan benar; waktu sedikit melebihi target.", "C": "Ada bagian kurang rapat atau urutan salah; perlu dibetulkan instruktur.", "K": "APD tidak lengkap atau ada kulit terbuka saat masuk area praktik."}}, {"kode": "C-FG", "kelas": "C", "nama": "Praktek Pemadaman / Fire Ground", "label": "Pemadaman / Fire Ground", "bobot": 25, "fokus": "Menggelar selang, menyambung kopling, dan menyiapkan nozzle dengan benar\nTeknik nozzle (straight stream, fog, pulsing) sesuai kondisi api\nPendekatan dalam tim (nozzleman, backup) dengan posisi rendah dan dari arah angin\nMengikuti perintah komandan, menjaga jarak aman, overhaul dan memastikan api padam", "r": {"BS": "Kerja tim terkoordinasi, teknik nozzle tepat, api padam cepat dan aman, overhaul tuntas.", "B": "Api padam dengan teknik benar; koordinasi tim atau efisiensi air sedikit kurang.", "C": "Api padam dengan banyak arahan; teknik atau posisi kurang tepat.", "K": "Tindakan tidak aman (posisi berdiri di depan api, kehilangan kendali selang) atau api tidak padam."}}], "pedoman": [{"judul": "Penilaian individu", "teks": "Setiap peserta diamati sendiri saat melakukan praktik; nilai tidak disalin dari peserta lain atau dari kelompok."}, {"judul": "Keselamatan dulu", "teks": "Instruktur menghentikan praktik bila ada tindakan tidak aman. Tindakan tidak aman pada suatu aspek otomatis dinilai Kurang untuk aspek tersebut."}, {"judul": "Nilai hitung", "teks": "Pilihan Baik Sekali/Baik/Cukup/Kurang dikonversi ke nilai 95; 85; 72; 55. Nilai praktik = rata-rata berbobot aspek kelasnya."}, {"judul": "Nilai akhir & status", "teks": "Nilai akhir = 70% praktik + 30% kuis. ≥ 90 Baik Sekali, ≥ 80 Baik, ≥ 65 Cukup (LULUS), < 65 Kurang (REMEDIAL)."}], "catatan": ["Nilai praktik baru dihitung setelah semua aspek kelas peserta terisi. Status LULUS/REMEDIAL keluar setelah nilai kuis diisi."]};
+const K_KUNCI="rk3-pn-kunci", COLS=["pengaturan","peserta","batch"];
+const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
+const to=(pr,ms,m)=>{let t;return Promise.race([pr,new Promise((_,rj)=>{t=setTimeout(()=>rj(new Error(m||"Koneksi terlalu lambat.")),ms)})]).finally(()=>clearTimeout(t))};
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+let kunci=ls.get(K_KUNCI), server={}, pending={}, store={}, fb=null, online=false, loadedOnline=false, gagal=false, coba=null;
+const L={};
+function cacheKey(){return "rk3-pn-cache-"+kunci} function pendKey(){return "rk3-pn-antre-"+kunci}
+function compose(){
+  const s=clone(server)||{};
+  for(const [p,v] of Object.entries(pending)){const [c,id]=p.split("/");s[c]=s[c]||{};if(v===null)delete s[c][id];else s[c][id]=clone(v)}
+  for(const c of COLS)s[c]=s[c]||{};
+  if(!s.pengaturan.utama)s.pengaturan.utama=clone(DEF_CFG);
+  store=s;
+}
+function simpanLokal(){ls.set(cacheKey(),JSON.stringify(server));ls.set(pendKey(),JSON.stringify(pending))}
+function notifyAll(){Object.values(L).flat().forEach(f=>f())}
+function status(){
+  const n=Object.keys(pending).length;
+  window.__rk3St=!fb?(gagal?(n?`Offline · ${n} perubahan menunggu sinyal`:"Offline · memakai data terakhir di HP ini"):"Menghubungkan…"):online?(n?`Mengirim ${n} perubahan…`:"Tersinkron · bisa dibuka di HP lain"):(n?`Offline · ${n} perubahan menunggu sinyal`:"Offline · memakai data terakhir di HP ini");
+  const el=document.getElementById("state");if(el&&window.__rk3Siap)el.textContent=window.__rk3St;
+  const d=document.getElementById("syncInfo");if(d)d.textContent=window.__rk3St;
+}
+function on(k,f){(L[k]=L[k]||[]).push(f);if(siap)setTimeout(f,0);return()=>{L[k]=L[k].filter(x=>x!==f)}}
+let siap=false,siapRes;const siapP=new Promise(r=>siapRes=r);
+function mulaiLokal(){
+  try{server=JSON.parse(ls.get(cacheKey())||"{}")||{}}catch(e){server={}}
+  try{pending=JSON.parse(ls.get(pendKey())||"{}")||{}}catch(e){pending={}}
+  compose();siap=true;siapRes();notifyAll();status();
+}
+let mods=null,tersambung=false;
+async function sdk(){
+  if(fb)return fb;
+  if(!mods){const [a,au,d]=await Promise.all([import(V+"firebase-app.js"),import(V+"firebase-auth.js"),import(V+"firebase-database.js")]);
+    const app=a.initializeApp(CFG,"penilaian-praktik");mods={au,d,auth:au.getAuth(app),db:d.getDatabase(app)}}
+  await to(mods.au.signInAnonymously(mods.auth),20000,"Tidak bisa terhubung. Cek internet lalu coba lagi.");
+  const {d,db}=mods;fb={d,db,R:p=>d.ref(db,`${ROOT}/${p}`)};return fb;
+}
+function kirim(p){
+  const v=pending[p];if(v===undefined)return;
+  fb.d.set(fb.R(`${kunci}/${p}`),v===null?null:v).then(()=>{if(JSON.stringify(pending[p])===JSON.stringify(v)){delete pending[p];simpanLokal();status()}}).catch(e=>{status();console.warn("kirim gagal",p,e)});
+}
+let ulang=null;
+async function sambung(){
+  if(tersambung||coba)return;clearTimeout(ulang);
+  coba=sdk();try{await coba}catch(e){coba=null;gagal=true;status();ulang=setTimeout(sambung,10000);return}coba=null;gagal=false;tersambung=true;
+  fb.d.onValue(fb.d.ref(fb.db,".info/connected"),s=>{online=!!s.val();status();if(online)Object.keys(pending).forEach(kirim)});
+  fb.d.onValue(fb.R(kunci),s=>{server=s.val()||{};loadedOnline=true;compose();simpanLokal();notifyAll();status()},e=>{status();console.warn(e)});
+}
+function tulis(c,id,v){const p=c+"/"+id;pending[p]=v===null?null:{...clone(v),_t:Date.now()};compose();simpanLokal();notifyAll();status();if(fb)kirim(p)}
+function docRef(c,id){return{
+  onSnapshot(next){return on(c+"/"+id,()=>{const d=store[c]?.[id];next({id,exists:!!d,data:()=>d?clone(d):undefined,metadata:{fromCache:false,hasPendingWrites:false}})})},
+  async get(){await siapP;const d=store[c]?.[id];return{id,exists:!!d,data:()=>d?clone(d):undefined}},
+  async set(d){await siapP;tulis(c,id,d)},
+  async update(d){await siapP;const cur=store[c]?.[id];if(!cur){const e=new Error("tidak ada");e.code="invalid_argument";throw e}tulis(c,id,{...cur,...clone(d)})},
+  async delete(){await siapP;tulis(c,id,null)}}}
+const db={doc(p){const [c,id]=p.split("/");return docRef(c,id)},
+  collection(c){return{doc(id){return docRef(c,id||("x"+Date.now().toString(36)))},
+    onSnapshot(next){return on(c,()=>{const docs=Object.entries(store[c]||{}).map(([id,d])=>({id,exists:true,data:()=>clone(d)}));next({docs,size:docs.length,empty:!docs.length,metadata:{fromCache:false,hasPendingWrites:false}})})}}}};
+const downloads={async save({filename,data}){
+  const blob=data instanceof Blob?data:new Blob([data],{type:/\.csv$/i.test(filename)?"text/csv":/\.json$/i.test(filename)?"application/json":"application/octet-stream"});
+  try{const f=new File([blob],filename,{type:blob.type||"application/pdf"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})&&/Android|iPhone|iPad/i.test(navigator.userAgent)){await navigator.share({files:[f],title:filename});return{status:"saved"}}}
+  catch(e){if(e&&e.name==="AbortError"){const x=new Error("batal");x.code="declined";throw x}}
+  const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);return{status:"saved"}}};
+const user={async can(){return true},async canEdit(){return true},async isOwner(){return true}};
+window.claude={use:async n=>{if(n==="db"){await siapP;return db}return n==="user"?user:n==="downloads"?downloads:null}};
+
+/* ---------- masuk dengan kode akses ---------- */
+async function hashKode(k){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("rk3-praktik|"+k.trim().toLowerCase()));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+window.__rk3Sync={
+  aktif:()=>!!kunci,
+  async masuk(kode,buatBaru){
+    const h=await hashKode(kode);
+    await sdk();
+    const snap=await to(fb.d.get(fb.R(h)),20000,"Koneksi terlalu lambat. Coba lagi.");
+    if(!snap.exists()&&!buatBaru)return"kosong";
+    kunci=h;ls.set(K_KUNCI,h);
+    if(!snap.exists())await to(fb.d.set(fb.R(`${h}/pengaturan/utama`),{...DEF_CFG,_t:Date.now()}),20000,"Gagal membuat ruang penilaian.");
+    server=snap.val()||{};simpanLokal();mulaiLokal();sambung();return"ok";
+  },
+  keluar(){if(kunci){ls.del(cacheKey());ls.del(pendKey())}ls.del(K_KUNCI);location.reload()},
+  menunggu:()=>Object.keys(pending).length,
+  data:()=>clone(store),
+  gabung(src){let baru=0,ganti=0,lewat=0;
+    for(const c of ["peserta","batch"])for(const [id,d] of Object.entries(src[c]||{})){const ada=store[c]?.[id];
+      if(!ada){tulis(c,id,d);baru++}else if((d._t||0)>(ada._t||0)){tulis(c,id,d);ganti++}else lewat++}
+    return{baru,ganti,lewat}},
+};
+if(kunci){mulaiLokal();sambung()}
+addEventListener("online",()=>{if(kunci&&!tersambung)sambung()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&kunci&&!tersambung)sambung()});
+})();
+
+</script>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>n==null||n===""||isNaN(n)?"–":Number(n).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1});
+const S={cfg:null,peserta:[],batches:[],batch:null,kelas:null,st:"all",q:"",canWrite:true,isAdmin:false,db:null,loaded:false,dl:null};
+try{const b=localStorage.getItem("rk3-praktik-batch");if(b)S.batch=b}catch(e){}
+const NONE="_none";
+const pBatch=p=>p.batch||NONE;
+function batchList(){return [...S.batches].sort((a,b)=>(b.dibuat||0)-(a.dibuat||0))}
+function curBatch(){return S.batches.find(b=>b.id===S.batch)||null}
+function batchNama(id){return id===NONE?"Tanpa batch":(S.batches.find(b=>b.id===id)?.nama||"Batch")}
+function diBatch(){return S.peserta.filter(p=>pBatch(p)===S.batch)}
+function pilihBatch(id){S.batch=id;try{localStorage.setItem("rk3-praktik-batch",id)}catch(_){}}
+const CLS={BS:"bs",B:"b",C:"c",K:"k"};
+const SHORT={BS:"Baik Sekali",B:"Baik",C:"Cukup",K:"Kurang"};
+const ST_CLS={"LULUS":"bs","REMEDIAL":"k","MENUNGGU KUIS":"c","BELUM DINILAI":"w"};
+try{const k=localStorage.getItem("rk3-praktik-kelas");if(k)S.kelas=k}catch(e){}
+
+function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
+function setState(t){$("#state").textContent=t}
+
+/* ---------- hitung ---------- */
+function kelasList(){return S.cfg?.kelas||[]}
+function kelasJudul(k){return kelasList().find(x=>x.k===k)?.judul||("Kelas "+k)}
+function aspekKelas(k){const as=S.cfg?.aspek||[];return [...as.filter(a=>a.kelas===k),...as.filter(a=>!a.kelas)]}
+function nilaiOf(k){const s=(S.cfg?.skala||[]).find(x=>x.k===k);return s?s.nilai:null}
+function kat(v){if(v==null)return null;return v>=90?"BS":v>=80?"B":v>=65?"C":"K"}
+function hitung(p){
+  const as=aspekKelas(p.kelas);const tot=as.reduce((a,x)=>a+(+x.bobot||0),0);
+  let sum=0,isi=0;
+  for(const a of as){const v=nilaiOf(p.nilai?.[a.kode]);if(v!=null){sum+=v*(+a.bobot||0);isi++}}
+  const praktik=as.length&&isi===as.length&&tot?Math.round(sum/tot*10)/10:null;
+  const kuis=(p.kuis===0||p.kuis)&&!isNaN(p.kuis)&&p.kuis>=0&&p.kuis<=100?+p.kuis:null;
+  const wp=(+S.cfg?.bobotPraktik||0),wk=(+S.cfg?.bobotKuis||0);
+  const akhir=praktik!=null&&kuis!=null&&(wp+wk)?Math.round((praktik*wp+kuis*wk)/(wp+wk)*10)/10:null;
+  const status=akhir!=null?(akhir>=65?"LULUS":"REMEDIAL"):praktik!=null?"MENUNGGU KUIS":"BELUM DINILAI";
+  return {praktik,kuis,akhir,pred:akhir==null?null:kat(akhir),status,isi,total:as.length};
+}
+function rows(k){return diBatch().filter(p=>k==null||p.kelas===k).map(p=>({p,h:hitung(p)})).sort((a,b)=>(a.p.no??999)-(b.p.no??999)||String(a.p.nama).localeCompare(b.p.nama))}
+
+/* ---------- render ---------- */
+function render(){
+  if(!S.cfg)return;
+  const c=S.cfg;
+  if(!kelasList().some(x=>x.k===S.kelas))S.kelas=kelasList()[0]?.k||null;
+  const adaNone=S.peserta.some(p=>!p.batch);
+  const valid=id=>S.batches.some(b=>b.id===id)||(id===NONE&&adaNone);
+  if(!valid(S.batch))S.batch=batchList()[0]?.id||(adaNone?NONE:null);
+  $("#bSel").innerHTML=batchList().map(b=>`<option value="${esc(b.id)}">${esc(b.nama||"Batch")}${b.tanggal?" · "+esc(b.tanggal):""}</option>`).join("")+(adaNone?`<option value="${NONE}">Tanpa batch</option>`:"")+(S.batch?"":'<option value="" selected>Belum ada batch</option>');
+  $("#bSel").value=S.batch||"";$("#bNew").hidden=!S.canWrite;
+  $("#judul").textContent=c.judul||"Penilaian Praktik & Kuis";
+  $("#prog").textContent=c.program||"";
+  $("#basis").textContent=c.basis||"";
+  $("#wchip").innerHTML=`<span>Praktik ${esc(c.bobotPraktik)}%</span><span>Kuis ${esc(c.bobotKuis)}%</span><span>Lulus ≥ 65</span>`;
+  $("#ktabs").innerHTML=kelasList().map(x=>`<button type="button" role="tab" data-kelas="${esc(x.k)}" aria-selected="${x.k===S.kelas}">${esc(x.judul)} <small>${diBatch().filter(p=>p.kelas===x.k).length} peserta</small></button>`).join("");
+  const J=kelasJudul(S.kelas);
+  $("#profT").textContent="Profil aspek "+J;$("#rekT").textContent="Rekap peserta "+J;$("#rubT").textContent="Rubrik "+J+" & bobot";
+  const R=rows(S.kelas);
+  renderKpi(R);renderAlerts(R);renderBars(R);renderStrip();renderFilters();renderTable(R);renderRubrik();renderKeg();
+  if($("#sh").open){const ae=document.activeElement;if(!(ae&&$("#sh").contains(ae)&&/INPUT|TEXTAREA/.test(ae.tagName)))renderSheet(false)}
+}
+function renderKeg(){
+  const B=curBatch();
+  document.querySelectorAll("[data-bf]").forEach(el=>{if(document.activeElement!==el)el.value=B?.[el.dataset.bf]||"";el.disabled=!S.canWrite||!B});
+  $("#bT").textContent=B?"Data "+(B.nama||"batch"):"Data batch";
+  const n=diBatch().length;
+  $("#bInfo").textContent=!B?(S.batch===NONE?"Peserta ini belum masuk batch. Buat batch lalu pindahkan lewat Ubah nama / kelas.":"Belum ada batch. Tekan + Batch baru di atas."):`${n} peserta di batch ini`+(B.pjk3?` · ${B.pjk3}`:"")+(B.lokasi?` · ${B.lokasi}`:"");
+  $("#bDel").hidden=!B||!S.canWrite;$("#bDel").textContent="Hapus batch";$("#bConf").hidden=true;bDelArm=false;
+}
+
+function renderKpi(R){
+  const n=R.length,pr=R.filter(r=>r.h.praktik!=null),kz=R.filter(r=>r.h.kuis!=null),ak=R.filter(r=>r.h.akhir!=null);
+  const lul=ak.filter(r=>r.h.status==="LULUS").length,rem=ak.length-lul;
+  const avg=pr.length?pr.reduce((a,r)=>a+r.h.praktik,0)/pr.length:null;
+  const bawah=pr.filter(r=>r.h.praktik<65).length;
+  const asN=aspekKelas(S.kelas).length;
+  $("#kpis").innerHTML=[
+    ["",n,"Peserta "+kelasJudul(S.kelas),`${batchNama(S.batch)}: ${diBatch().length} peserta`],
+    ["",pr.length+"/"+n,"Praktik lengkap",`${asN} aspek per peserta`],
+    [avg!=null&&avg<65?"warn":"",fmt(avg),"Rata-rata praktik","dari "+pr.length+" peserta"],
+    [bawah?"bad":"",bawah,"Praktik di bawah 65","berisiko remedial"],
+    [n&&kz.length<n?"warn":"",kz.length+"/"+n,"Nilai kuis masuk",n&&kz.length<n?"belum lengkap":"lengkap"],
+    [ak.length?"ok":"",ak.length?lul+" / "+rem:"–","Lulus / Remedial",ak.length?ak.length+" nilai akhir":"keputusan setelah kuis"],
+  ].map(([cl,b,s,sm])=>`<div class="kpi ${cl}"><span>${esc(s)}</span><b>${esc(b)}</b><small>${esc(sm)}</small></div>`).join("");
+}
+
+function renderAlerts(R){
+  const out=[];
+  const sebagian=R.filter(r=>r.h.isi>0&&r.h.isi<r.h.total);
+  if(sebagian.length)out.push(["c","BELUM LENGKAP",`${sebagian.length} peserta baru dinilai sebagian aspeknya. Nilai praktik dihitung setelah semua ${aspekKelas(S.kelas).length} aspek terisi.`]);
+  const nk=R.filter(r=>r.h.praktik!=null&&r.h.kuis==null).length;
+  if(nk)out.push(["b","KUIS",`${nk} peserta sudah punya nilai praktik tetapi belum punya nilai kuis. Predikat dan status keluar setelah kuis diisi.`]);
+  const kr=R.filter(r=>r.h.praktik!=null&&r.h.praktik<65&&r.h.kuis==null);
+  if(kr.length&&+S.cfg.bobotKuis){const wp=+S.cfg.bobotPraktik,wk=+S.cfg.bobotKuis;
+    const best=Math.max(...kr.map(r=>r.h.praktik));const need=Math.ceil((65*(wp+wk)-best*wp)/wk);
+    out.push(["k","RISIKO",`${kr.length} peserta dengan praktik < 65 butuh nilai kuis minimal ${need>100?"di atas 100 (tidak mungkin lulus tanpa praktik ulang)":need} agar nilai akhir mencapai 65.`])}
+  $("#alerts").innerHTML=out.map(([c,t,s])=>`<div class="alert ${c}"><i>${t}</i><span>${esc(s)}</span></div>`).join("");
+}
+
+function renderBars(R){
+  const as=aspekKelas(S.kelas);
+  if(!as.length){$("#bars").innerHTML='<div class="empty">Belum ada aspek untuk kelas ini.</div>';$("#legend").innerHTML="";return}
+  $("#bars").innerHTML=as.map(a=>{
+    const cnt={BS:0,B:0,C:0,K:0};let sum=0,n=0;
+    R.forEach(r=>{const v=r.p.nilai?.[a.kode];if(cnt[v]!=null){cnt[v]++;sum+=nilaiOf(v);n++}});
+    const tot=R.length||1;const avg=n?sum/n:null;
+    const seg=["BS","B","C","K"].map(k=>cnt[k]?`<i class="${CLS[k]}" style="width:${cnt[k]/tot*100}%" title="${SHORT[k]}: ${cnt[k]} peserta"></i>`:"").join("");
+    return `<div class="bar"><div class="nm">${esc(a.nama)}<span>${esc(a.bobot)}%</span>${a.kelas?"":"<em>SEMUA KELAS</em>"}</div>
+      <div class="tr" role="img" aria-label="${esc(a.nama)}: ${["BS","B","C","K"].map(k=>SHORT[k]+" "+cnt[k]).join(", ")}, belum dinilai ${R.length-n}">${seg}</div>
+      <div class="av ${avg==null?"na":CLS[kat(avg)]}">${fmt(avg)}</div></div>`}).join("");
+  $("#legend").innerHTML=(S.cfg.skala||[]).map(s=>`<span><i class="${CLS[s.k]}"></i>${esc(s.label)} ${s.k==="K"?"&lt; 65":s.min+"–"+s.max} · nilai hitung ${fmt(s.nilai)}</span>`).join("")+'<span><i class="w"></i>Belum dinilai</span>';
+}
+
+function renderStrip(){
+  const ks=kelasList().map(x=>x.k);const W=520,L=70,Rt=16,top=22,rowH=40,H=top+ks.length*rowH+30;
+  const x=v=>L+(v/100)*(W-L-Rt);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sebaran nilai praktik per kelas">`;
+  for(const [a,b,f] of [[0,65,"var(--k-bg)"],[65,80,"var(--c-bg)"],[80,90,"var(--b-bg)"],[90,100,"var(--bs-bg)"]])s+=`<rect x="${x(a)}" y="${top-6}" width="${x(b)-x(a)}" height="${ks.length*rowH}" fill="${f}" opacity=".55"/>`;
+  for(const t of [0,25,50,65,80,90,100]){s+=`<line x1="${x(t)}" x2="${x(t)}" y1="${top-6}" y2="${top-6+ks.length*rowH}" stroke="var(--line)" stroke-width="${t===65?2:1}" ${t===65?'stroke-dasharray="4 3"':""}/>`;
+    s+=`<text x="${x(t)}" y="${top-6+ks.length*rowH+16}" text-anchor="middle">${t}</text>`}
+  s+=`<text x="${x(65)+4}" y="${top-10}" style="fill:var(--k);font-weight:600">batas lulus 65</text>`;
+  ks.forEach((k,i)=>{const cy=top+i*rowH+rowH/2-6;const on=k===S.kelas;
+    s+=`<text class="lab" x="0" y="${cy+4}" style="${on?"":"opacity:.6"}">${esc(kelasJudul(k))}</text>`;
+    const m=rows(k).filter(r=>r.h.praktik!=null);const grp={};
+    m.forEach(r=>{const key=r.h.praktik.toFixed(1);(grp[key]=grp[key]||[]).push(r)});
+    for(const key in grp){const g=grp[key],v=+key,cls=CLS[kat(v)];
+      g.forEach((r,j)=>{const off=(j-(g.length-1)/2)*7;s+=`<circle cx="${x(v)+off}" cy="${cy}" r="5.5" fill="var(--${cls})" stroke="var(--panel)" stroke-width="1.5" opacity="${on?1:.55}"><title>${esc(r.p.nama)}: ${fmt(v)}</title></circle>`});
+      if(Object.keys(grp).length<=6)s+=`<text x="${x(v)}" y="${cy-11}" text-anchor="middle" style="fill:var(--ink);font-weight:600">${fmt(v)}${g.length>1?" ×"+g.length:""}</text>`}
+    if(!m.length)s+=`<text x="${x(50)}" y="${cy+4}" text-anchor="middle">belum ada nilai praktik lengkap</text>`;
+  });
+  $("#strip").innerHTML=s+"</svg>";
+}
+
+function renderFilters(){
+  const sts=[["all","Semua"],["LULUS","Lulus"],["REMEDIAL","Remedial"],["MENUNGGU KUIS","Menunggu kuis"],["BELUM DINILAI","Belum dinilai"]];
+  $("#fSt").innerHTML=sts.map(([k,l])=>`<button type="button" data-s="${k}" aria-pressed="${S.st===k}">${l}</button>`).join("");
+  $("#add").hidden=$("#paste").hidden=!S.canWrite||!curBatch();
+}
+
+function renderTable(R){
+  const as=aspekKelas(S.kelas);
+  const q=S.q.trim().toLowerCase();
+  const list=R.filter(r=>(S.st==="all"||r.h.status===S.st)&&(!q||String(r.p.nama).toLowerCase().includes(q)));
+  if(!R.length){$("#tbl").innerHTML=$("#cards").innerHTML=`<div class="empty">${!S.batch?"Belum ada batch. Tekan <b>+ Batch baru</b> di bagian atas, isi datanya, lalu tambahkan peserta.":`Belum ada peserta ${esc(kelasJudul(S.kelas))} di ${esc(batchNama(S.batch))}. ${S.canWrite&&curBatch()?"Tekan <b>+ Peserta</b> atau <b>Tempel daftar nama</b> untuk menambahkan.":""}`}</div>`;renderFoot();return}
+  $("#cards").innerHTML=list.length?list.map(({p,h:x})=>`<button class="pc" type="button" data-sheet="${esc(p.id)}">
+    <span class="pn"><b>${esc(p.nama)}</b><small>${x.isi}/${x.total} aspek dinilai · Kuis ${x.kuis!=null?fmt(x.kuis):"–"}</small></span>
+    <span class="pr"><b>${fmt(x.akhir??x.praktik)}</b><span class="pill ${ST_CLS[x.status]}">${x.status}</span></span>
+    <span class="pb"><i style="width:${x.total?x.isi/x.total*100:0}%"></i></span></button>`).join(""):'<div class="empty">Tidak ada peserta yang cocok dengan filter.</div>';
+  const dis=S.canWrite?"":"disabled";
+  let h='<table class="rk"><thead><tr><th>No</th><th class="nm">Nama peserta</th>'+as.map(a=>`<th class="${a.kelas?"":"gen"}" title="${esc(a.nama)}">${esc(a.label||a.nama)}<small>${esc(a.bobot)}%</small></th>`).join("")+
+    `<th>Nilai Praktik<small>${esc(S.cfg.bobotPraktik)}%</small></th><th>Nilai Kuis<small>${esc(S.cfg.bobotKuis)}%</small></th><th>Nilai Akhir</th><th>Predikat</th><th>Status</th><th>Catatan</th></tr></thead><tbody>`;
+  list.forEach((r,i)=>{const p=r.p,x=r.h;
+    h+=`<tr data-id="${esc(p.id)}"><td class="no">${i+1}</td><td class="nm"><button class="nmb" type="button" data-sheet="${esc(p.id)}">${esc(p.nama)}</button></td>`;
+    for(const a of as){const v=p.nilai?.[a.kode]||"";
+      h+=`<td style="padding:2px"><select class="as ${v?CLS[v]:"e"}" data-as="${esc(a.kode)}" aria-label="${esc(a.nama)} untuk ${esc(p.nama)}" ${dis}><option value="">–</option>${(S.cfg.skala||[]).map(s=>`<option value="${s.k}" ${s.k===v?"selected":""}>${esc(s.label)}</option>`).join("")}</select></td>`}
+    h+=`<td class="num px">${x.praktik!=null?fmt(x.praktik):x.isi?`<span class="sub">${x.isi}/${x.total}</span>`:"–"}</td>`;
+    h+=`<td class="num"><input class="kz" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="–" value="${x.kuis??""}" data-kz aria-label="Nilai kuis ${esc(p.nama)}" ${dis}></td>`;
+    h+=`<td class="num">${fmt(x.akhir)}</td><td class="num">${x.pred?`<span class="pill ${CLS[x.pred]}">${SHORT[x.pred]}</span>`:"–"}</td>`;
+    h+=`<td class="num"><span class="pill ${ST_CLS[x.status]}">${x.status}</span></td><td class="nt">${esc(p.catatan||"")}</td></tr>`});
+  if(!list.length)h+=`<tr><td colspan="${as.length+8}" class="empty">Tidak ada peserta yang cocok dengan filter.</td></tr>`;
+  $("#tbl").innerHTML=h+"</tbody></table>";renderFoot();
+}
+function renderFoot(){
+  const sk=(S.cfg.skala||[]).map(s=>`${s.k==="K"?"&lt;65":s.min+"–"+s.max} ${esc(s.label)}`).join(" | ");
+  $("#foot").innerHTML=`<div><b>Skala hasil akhir:</b> ${sk}. Nilai akhir ≥ 65 = LULUS, &lt; 65 = REMEDIAL. Kolom biru tua = aspek yang berlaku di semua kelas.</div>`+(S.cfg.catatan||[]).map(t=>`<div>${esc(t)}</div>`).join("");
+}
+
+function renderRubrik(){
+  const c=S.cfg,as=aspekKelas(S.kelas),sk=c.skala||[];const tot=as.reduce((a,x)=>a+(+x.bobot||0),0);
+  const ul=t=>{const l=String(t||"").split(/\n/).filter(Boolean);return l.length>1?"<ul>"+l.map(x=>`<li>${esc(x)}</li>`).join("")+"</ul>":esc(t)};
+  let h=`<table><thead><tr><th>Aspek praktik</th><th>Bobot</th><th>Fokus / indikator</th>${sk.map(s=>`<th class="${CLS[s.k]}">${esc(s.label)}<br><span style="font-family:var(--f-num);font-weight:500">${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</span></th>`).join("")}</tr></thead><tbody>`;
+  for(const a of as)h+=`<tr><td class="as"><b>${esc(a.nama)}</b><span>${esc(a.kode)}</span>${a.kelas?"":"<br><em>SEMUA KELAS</em>"}</td><td class="bb">${esc(a.bobot)}%</td><td>${ul(a.fokus)}</td>${sk.map(s=>`<td>${esc(a.r?.[s.k]||"")}</td>`).join("")}</tr>`;
+  h+=`<tr><td class="as"><b>Total bobot ${esc(kelasJudul(S.kelas))}</b></td><td class="bb" style="color:${tot===100?"var(--bs)":"var(--k)"}">${tot}%</td><td colspan="${sk.length+1}"></td></tr></tbody></table>`;
+  $("#rub").innerHTML=h;
+  $("#ped").innerHTML=(c.pedoman||[]).map(p=>`<div><b>${esc(p.judul)}</b><p>${esc(p.teks)}</p></div>`).join("");
+  const ed=S.isAdmin;
+  $("#wset").innerHTML=`<label>Praktik <input type="number" id="wp" min="0" max="100" value="${esc(c.bobotPraktik)}" ${ed?"":"disabled"}>%</label>
+    <label>Kuis <input type="number" id="wk" min="0" max="100" value="${esc(c.bobotKuis)}" ${ed?"":"disabled"}>%</label>
+    ${ed?'<button class="btn" type="button" id="wSave">Simpan bobot</button>':'<span class="sub">Bobot hanya bisa diubah Editor.</span>'}`;
+}
+
+/* ---------- interaksi ---------- */
+async function tulis(id,patch){
+  if(!S.db)return;
+  try{await S.db.doc("peserta/"+id).update(patch)}
+  catch(e){if(e&&e.code==="invalid_argument"){S.canWrite=false;render();toast("Anda hanya bisa melihat; perubahan tidak disimpan.")}else toast("Gagal menyimpan. Periksa koneksi lalu coba lagi.")}
+}
+document.addEventListener("click",e=>{
+  const kt=e.target.closest("[data-kelas]");if(kt){S.kelas=kt.dataset.kelas;try{localStorage.setItem("rk3-praktik-kelas",S.kelas)}catch(_){}render();return}
+  const s=e.target.closest("[data-s]");if(s){S.st=s.dataset.s;render();return}
+  const sh=e.target.closest("[data-sheet]");if(sh){openSheet(sh.dataset.sheet);return}
+  const lv=e.target.closest("[data-lv]");if(lv&&!lv.disabled){const p=S.peserta.find(x=>x.id===shId);if(!p)return;
+    const cur=p.nilai?.[lv.dataset.asp]||"";const nilai={...(p.nilai||{}),[lv.dataset.asp]:cur===lv.dataset.lv?"":lv.dataset.lv};
+    p.nilai=nilai;render();tulis(p.id,{nilai});return}
+  if(e.target.id==="wSave")simpanBobot();
+});
+
+/* ---------- lembar nilai per peserta ---------- */
+let shId=null;
+function openSheet(id){shId=id;renderSheet(true);if(!$("#sh").open)$("#sh").showModal()}
+function renderSheet(reset){
+  const p=S.peserta.find(x=>x.id===shId);if(!p){if($("#sh").open)$("#sh").close();return}
+  const x=hitung(p),as=aspekKelas(p.kelas),sk=S.cfg.skala||[],dis=S.canWrite?"":"disabled";
+  const body=$("#shBody"),st=body.scrollTop;
+  const terbuka=new Set([...body.querySelectorAll("details[open]")].map(d=>d.dataset.k));
+  $("#shKelas").textContent=kelasJudul(p.kelas);$("#shName").textContent=p.nama;
+  body.innerHTML=`<div class="shsum">
+      <div><span>Nilai praktik</span><b>${fmt(x.praktik)}</b><small>${x.isi}/${x.total} aspek</small></div>
+      <div><span>Nilai kuis</span><input type="number" id="shKuis" min="0" max="100" step="0.1" inputmode="decimal" placeholder="–" value="${x.kuis??""}" ${dis}></div>
+      <div><span>Nilai akhir</span><b>${fmt(x.akhir)}</b><small>${x.pred?SHORT[x.pred]:"&nbsp;"}</small></div>
+      <div><span>Status</span><span class="pill ${ST_CLS[x.status]}" style="justify-self:start">${x.status}</span></div></div>`+
+    as.map((a,i)=>{const v=p.nilai?.[a.kode]||"";const fk=String(a.fokus||"").split(/\n/).filter(Boolean);
+      return `<div class="sha"><div class="t"><b>${i+1}. ${esc(a.nama)}</b><span>${esc(a.bobot)}%${a.kelas?"":" · semua kelas"}</span></div>
+        <details data-k="${esc(a.kode)}" ${terbuka.has(a.kode)?"open":""}><summary>Fokus / indikator</summary><ul>${fk.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></details>
+        <div class="lv" role="group" aria-label="Nilai ${esc(a.nama)}">${sk.map(s=>`<button type="button" class="${v===s.k?CLS[s.k]:""}" aria-pressed="${v===s.k}" data-lv="${s.k}" data-asp="${esc(a.kode)}" ${dis}>${esc(s.label)}<small>${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</small></button>`).join("")}</div>
+        ${v?`<p class="desc">${esc(a.r?.[v]||"")}</p>`:""}</div>`}).join("")+
+    `<label class="sub" style="display:grid;gap:4px">Catatan instruktur<textarea id="shCat" ${dis}>${esc(p.catatan||"")}</textarea></label>`;
+  body.scrollTop=reset?0:st;
+  $("#shEdit").hidden=!S.canWrite;
+}
+$("#shX").addEventListener("click",()=>$("#sh").close());
+$("#shEdit").addEventListener("click",()=>openDlg(shId));
+$("#shBody").addEventListener("change",e=>{
+  const p=S.peserta.find(x=>x.id===shId);if(!p)return;
+  if(e.target.id==="shKuis"){let v=e.target.value.trim()===""?null:Math.round(parseFloat(e.target.value.replace(",","."))*10)/10;
+    if(v!=null&&(isNaN(v)||v<0||v>100)){toast("Nilai kuis harus 0–100.");e.target.value=p.kuis??"";return}
+    if(v===p.kuis)return;p.kuis=v;e.target.blur();render();tulis(p.id,{kuis:v})}
+  if(e.target.id==="shCat"){const t=e.target.value.trim();if(t===(p.catatan||""))return;p.catatan=t;tulis(p.id,{catatan:t});render()}
+});
+
+/* ---------- batch ---------- */
+let bDelArm=false;
+$("#bSel").addEventListener("change",e=>{if(!e.target.value)return;pilihBatch(e.target.value);S.st="all";render()});
+$("#bNew").addEventListener("click",async()=>{
+  const B=curBatch()||{};const id="b"+Date.now().toString(36);
+  const data={nama:"Batch "+(S.batches.length+1),kegiatan:B.kegiatan||"",tanggal:"",lokasi:B.lokasi||"",pjk3:B.pjk3||"",penilai:B.penilai||"",dibuat:Date.now()};
+  try{await S.db.doc("batch/"+id).set(data);S.batches=[...S.batches.filter(b=>b.id!==id),{id,...data}];pilihBatch(id);render();
+    toast("Batch baru dibuat. Lengkapi datanya.");const el=$("#bfNama");el.scrollIntoView({block:"center"});el.focus();el.select()}
+  catch(e){toast("Batch tidak bisa dibuat.")}
+});
+document.querySelectorAll("[data-bf]").forEach(el=>el.addEventListener("change",async()=>{
+  const B=curBatch();if(!B)return;const f=el.dataset.bf;const v=el.value.trim();
+  if(f==="nama"&&!v){el.value=B.nama||"";toast("Nama batch tidak boleh kosong.");return}
+  if(v===(B[f]||""))return;B[f]=v;render();
+  try{await S.db.doc("batch/"+B.id).update({[f]:v})}catch(e){toast("Data batch tidak tersimpan.")}
+}));
+$("#bDel").addEventListener("click",async()=>{
+  const B=curBatch();if(!B)return;const n=diBatch().length;
+  if(n){$("#bConf").hidden=false;$("#bConf").textContent=`Batch masih berisi ${n} peserta. Hapus atau pindahkan pesertanya dulu.`;return}
+  if(!bDelArm){bDelArm=true;$("#bConf").hidden=false;$("#bConf").textContent=`Tekan sekali lagi untuk menghapus ${B.nama}.`;$("#bDel").textContent="Ya, hapus batch";return}
+  try{await S.db.doc("batch/"+B.id).delete();S.batches=S.batches.filter(b=>b.id!==B.id);S.batch=null;render();toast("Batch dihapus.")}catch(e){toast("Batch gagal dihapus.")}
+});
+
+/* ---------- PDF ---------- */
+const LIB=["./vendor/jspdf.umd.min.js","./vendor/jspdf.plugin.autotable.min.js"];
+let pdfLib=null;
+function muat(src){return new Promise((ok,no)=>{const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("lib"));document.head.appendChild(s)})}
+function siapPdf(){return pdfLib||(pdfLib=(async()=>{if(!window.jspdf)await muat(LIB[0]);if(!window.jspdf.jsPDF.API.autoTable)await muat(LIB[1]);return window.jspdf.jsPDF})().catch(e=>{pdfLib=null;throw e}))}
+const PC={BS:{f:[216,240,227],t:[29,122,79]},B:{f:[219,233,247],t:[43,108,176]},C:{f:[251,239,201],t:[154,106,0]},K:{f:[248,220,217],t:[179,38,30]},W:{f:[232,236,241],t:[90,100,112]}};
+const ST_PC={"LULUS":"BS","REMEDIAL":"K","MENUNGGU KUIS":"C","BELUM DINILAI":"W"};
+const LABEL2K=Object.fromEntries(Object.entries(SHORT).map(([k,v])=>[v,k]));
+const pt=s=>String(s??"").replace(/≥/g,">=").replace(/≤/g,"<=").replace(/[‘’]/g,"'").replace(/[“”]/g,'"');
+function warnai(d,k){if(k&&PC[k]){d.cell.styles.fillColor=PC[k].f;d.cell.styles.textColor=PC[k].t;d.cell.styles.fontStyle="bold"}}
+function kop(doc,judul,W){
+  doc.setTextColor(21,33,46);doc.setFont("helvetica","bold");doc.setFontSize(14);doc.text(pt(judul),W/2,15,{align:"center"});
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text(pt(S.cfg.program||""),W/2,21,{align:"center"});
+  doc.setDrawColor(35,89,132);doc.setLineWidth(.6);doc.line(12,24.5,W-12,24.5);doc.setLineWidth(.2);
+}
+function infoBlok(doc,pairs,y,W,kol){
+  doc.setFontSize(9.5);const colW=(W-24)/kol;
+  pairs.forEach(([l,v],i)=>{const x=12+(i%kol)*colW,yy=y+Math.floor(i/kol)*5.5;
+    doc.setFont("helvetica","normal");doc.text(pt(l),x,yy);doc.text(":",x+28,yy);doc.setFont("helvetica","bold");doc.text(pt(v||"-"),x+31,yy,{maxWidth:colW-34})});
+  return y+Math.ceil(pairs.length/kol)*5.5+2;
+}
+function ttd(doc,y,W,H){
+  if(y>H-50){doc.addPage();y=20}
+  const x=W-82,k=curBatch()||{};doc.setFontSize(9.5);doc.setFont("helvetica","normal");doc.setTextColor(21,33,46);
+  const tl=doc.splitTextToSize(pt([k.lokasi,k.tanggal].filter(Boolean).join(", ")||"............, ...................."),72);
+  doc.text(tl,x,y);y+=(tl.length-1)*4.5;
+  doc.text("Penilai / Instruktur",x,y+5.5);
+  doc.setFont("helvetica","bold");doc.text(pt(k.penilai||"(.................................)"),x,y+28);
+  if(k.penilai){doc.setLineWidth(.2);doc.line(x,y+29,x+Math.min(70,doc.getTextWidth(pt(k.penilai))),y+29)}
+}
+function kakiHalaman(doc,W,H){
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(120,130,140);
+    doc.text(pt([S.cfg.program,curBatch()?.nama,curBatch()?.pjk3,kelasJudul(S.kelas)].filter(Boolean).join(" · ")),12,H-7);doc.text(`Halaman ${i} dari ${n}`,W-12,H-7,{align:"right"})}
+}
+function skalaTeks(){return "Skala: "+(S.cfg.skala||[]).map(s=>`${s.label} ${s.k==="K"?"< 65":s.min+"-"+s.max} (nilai hitung ${fmt(s.nilai)})`).join("; ")+
+  `. Nilai akhir = ${S.cfg.bobotPraktik}% praktik + ${S.cfg.bobotKuis}% kuis; >= 65 LULUS, < 65 REMEDIAL.`}
+async function simpanPdf(doc,nama){
+  const blob=doc.output("blob");
+  try{await S.dl.save({filename:nama,data:blob});toast("PDF disimpan.")}
+  catch(e){if(e?.code==="declined")return;toast(e?.code==="rate_limited"?"Masih ada jendela unduhan terbuka. Tunggu sebentar lalu coba lagi.":"PDF tidak bisa disimpan di tampilan ini.")}
+}
+async function jalankanPdf(btn,fn){
+  if(btn)btn.disabled=true;toast("Menyiapkan PDF…");
+  try{const J=await siapPdf();await fn(J)}catch(e){toast(e?.message==="lib"?"Pustaka PDF gagal dimuat. Periksa sinyal lalu coba lagi.":"PDF gagal dibuat.")}
+  finally{if(btn)btn.disabled=false}
+}
+async function pdfRekap(J){
+  const R=rows(S.kelas);if(!R.length){toast("Belum ada peserta di kelas ini.");return}
+  const doc=new J({orientation:"landscape",unit:"mm",format:"a4"});const W=297,H=210;const as=aspekKelas(S.kelas);
+  kop(doc,"REKAP PENILAIAN PRAKTIK & KUIS",W);
+  const B=curBatch()||{};const y=infoBlok(doc,[["Kegiatan",B.kegiatan],["Batch",B.nama],["PJK3",B.pjk3],["Kelas",kelasJudul(S.kelas)],["Lokasi Praktek",B.lokasi],["Tanggal",B.tanggal]],31,W,2);
+  const nA=as.length;
+  doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
+    head:[["No","Nama Peserta",...as.map(a=>pt(`${a.label||a.nama}\n(${a.bobot}%)`)),"Nilai\nPraktik","Nilai\nKuis","Nilai\nAkhir","Predikat","Status"]],
+    body:R.map(({p,h},i)=>[i+1,pt(p.nama),...as.map(a=>SHORT[p.nilai?.[a.kode]]||"-"),fmt(h.praktik),fmt(h.kuis),fmt(h.akhir),h.pred?SHORT[h.pred]:"-",h.status]),
+    styles:{font:"helvetica",fontSize:7.6,cellPadding:1.6,valign:"middle",halign:"center",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
+    headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",fontSize:7.2},
+    columnStyles:{0:{cellWidth:8},1:{halign:"left",cellWidth:44,fontStyle:"bold"}},
+    didParseCell(d){if(d.section!=="body")return;const c=d.column.index;
+      if(c>=2&&c<2+nA)warnai(d,LABEL2K[d.cell.raw]);
+      if(c===2+nA)d.cell.styles.fillColor=[227,238,248];
+      if(c===4+nA)d.cell.styles.fontStyle="bold";
+      if(c===5+nA)warnai(d,LABEL2K[d.cell.raw]);
+      if(c===6+nA)warnai(d,ST_PC[d.cell.raw]);}});
+  let y2=doc.lastAutoTable.finalY+6;if(y2>H-60){doc.addPage();y2=20}
+  doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(21,33,46);doc.text("Keterangan aspek",12,y2);doc.setFont("helvetica","normal");
+  const ket=as.map((a,i)=>`${i+1}. ${a.label||a.nama}: ${a.nama} (${a.bobot}%)`);
+  const half=Math.ceil(ket.length/2);ket.forEach((t,i)=>doc.text(pt(t),12+(i<half?0:(W-24)/2),y2+4.5+(i%half)*4,{maxWidth:(W-24)/2-4}));
+  y2+=6+half*4;doc.text(doc.splitTextToSize(pt(skalaTeks()),W-24),12,y2);
+  ttd(doc,y2+10,W,H);kakiHalaman(doc,W,H);
+  await simpanPdf(doc,`Rekap Penilaian ${batchNama(S.batch)} ${kelasJudul(S.kelas)}.pdf`);
+}
+function lembar(doc,p,W,H){
+  const x=hitung(p),as=aspekKelas(p.kelas);
+  kop(doc,"LEMBAR PENILAIAN PRAKTIK",W);
+  const B=curBatch()||{};let y=infoBlok(doc,[["Nama Peserta",p.nama],["Kelas",kelasJudul(p.kelas)],["Batch",B.nama],["Kegiatan",B.kegiatan],["PJK3",B.pjk3],["Lokasi Praktek",B.lokasi],["Tanggal",B.tanggal]],31,W,1);
+  doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
+    head:[["No","Aspek Praktik","Bobot","Predikat","Nilai","Nilai x\nBobot","Keterangan"]],
+    body:as.map((a,i)=>{const v=p.nilai?.[a.kode];const n=nilaiOf(v);
+      return [i+1,pt(a.nama),a.bobot+"%",SHORT[v]||"-",n!=null?fmt(n):"-",n!=null?fmt(n*a.bobot/100):"-",pt(v?a.r?.[v]||"":"Belum dinilai")]}),
+    foot:[["","Nilai Praktik",as.reduce((s,a)=>s+(+a.bobot||0),0)+"%","","",fmt(x.praktik),x.praktik==null?`${x.isi}/${x.total} aspek terisi`:""]],
+    styles:{font:"helvetica",fontSize:8.2,cellPadding:1.8,valign:"middle",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
+    headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",halign:"center",fontSize:8},
+    footStyles:{fillColor:[227,238,248],textColor:[21,33,46],fontStyle:"bold",halign:"center"},
+    columnStyles:{0:{cellWidth:8,halign:"center"},1:{cellWidth:50,fontStyle:"bold"},2:{cellWidth:13,halign:"center"},3:{cellWidth:21,halign:"center"},4:{cellWidth:13,halign:"center"},5:{cellWidth:15,halign:"center"},6:{fontSize:7.4}},
+    didParseCell(d){if(d.section==="body"&&d.column.index===3)warnai(d,LABEL2K[d.cell.raw])}});
+  y=doc.lastAutoTable.finalY+5;
+  doc.autoTable({startY:y,margin:{left:12,bottom:14},tableWidth:100,theme:"grid",
+    body:[[`Nilai Praktik (${S.cfg.bobotPraktik}%)`,fmt(x.praktik)],[`Nilai Kuis (${S.cfg.bobotKuis}%)`,fmt(x.kuis)],["Nilai Akhir",fmt(x.akhir)],["Predikat",x.pred?SHORT[x.pred]:"-"],["Status",x.status]],
+    styles:{font:"helvetica",fontSize:9,cellPadding:2,lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
+    columnStyles:{0:{cellWidth:55,fillColor:[238,242,246]},1:{halign:"center",fontStyle:"bold"}},
+    didParseCell(d){if(d.column.index!==1)return;if(d.row.index===3)warnai(d,LABEL2K[d.cell.raw]);if(d.row.index===4)warnai(d,ST_PC[d.cell.raw]);if(d.row.index===2)d.cell.styles.fontSize=11}});
+  y=doc.lastAutoTable.finalY+6;
+  if(p.catatan){doc.setFontSize(9);doc.setFont("helvetica","bold");doc.text("Catatan instruktur",12,y);doc.setFont("helvetica","normal");
+    const l=doc.splitTextToSize(pt(p.catatan),W-24);doc.text(l,12,y+5);y+=8+l.length*4.2}
+  doc.setFontSize(7.5);doc.setTextColor(90,100,112);const sl=doc.splitTextToSize(pt(skalaTeks()),W-24);doc.text(sl,12,y);
+  ttd(doc,y+sl.length*3.5+8,W,H);
+}
+async function pdfLembar(J,ps,nama){
+  if(!ps.length){toast("Belum ada peserta di kelas ini.");return}
+  const doc=new J({orientation:"portrait",unit:"mm",format:"a4"});const W=210,H=297;
+  ps.forEach((p,i)=>{if(i)doc.addPage();lembar(doc,p,W,H)});
+  kakiHalaman(doc,W,H);await simpanPdf(doc,nama);
+}
+$("#pdfR").addEventListener("click",e=>jalankanPdf(e.currentTarget,pdfRekap));
+$("#pdfI").addEventListener("click",e=>jalankanPdf(e.currentTarget,J=>pdfLembar(J,rows(S.kelas).map(r=>r.p),`Lembar Penilaian ${batchNama(S.batch)} ${kelasJudul(S.kelas)}.pdf`)));
+$("#shPdf").addEventListener("click",e=>{const p=S.peserta.find(x=>x.id===shId);if(p)jalankanPdf(e.currentTarget,J=>pdfLembar(J,[p],`Lembar Penilaian ${batchNama(S.batch)} - ${p.nama}.pdf`))});
+document.addEventListener("change",e=>{
+  const sel=e.target.closest("select.as");
+  if(sel){const id=sel.closest("tr").dataset.id;const p=S.peserta.find(x=>x.id===id);if(!p)return;
+    const nilai={...(p.nilai||{}),[sel.dataset.as]:sel.value};p.nilai=nilai;render();tulis(id,{nilai});return}
+  const kz=e.target.closest("input[data-kz]");
+  if(kz){const id=kz.closest("tr").dataset.id;const p=S.peserta.find(x=>x.id===id);if(!p)return;
+    let v=kz.value.trim()===""?null:Math.round(parseFloat(kz.value.replace(",","."))*10)/10;
+    if(v!=null&&(isNaN(v)||v<0||v>100)){toast("Nilai kuis harus 0–100.");kz.value=p.kuis??"";return}
+    if(v===p.kuis)return;p.kuis=v;render();tulis(id,{kuis:v})}
+});
+$("#q").addEventListener("input",e=>{S.q=e.target.value;renderTable(rows(S.kelas))});
+
+async function simpanBobot(){
+  const wp=+$("#wp").value,wk=+$("#wk").value;
+  if(isNaN(wp)||isNaN(wk)||wp<0||wk<0||wp+wk!==100){toast("Bobot praktik + kuis harus 100%.");return}
+  try{await S.db.doc("pengaturan/utama").update({bobotPraktik:wp,bobotKuis:wk});toast("Bobot disimpan.")}catch(e){toast("Bobot tidak tersimpan. Hanya Editor yang dapat mengubahnya.")}
+}
+function nextNo(){return Math.max(0,...S.peserta.map(p=>+p.no||0))+1}
+
+let dlgId=null,delArm=false;
+function openDlg(id){
+  dlgId=id;delArm=false;$("#dConf").hidden=true;
+  const p=id?S.peserta.find(x=>x.id===id):null;
+  $("#dT").textContent=p?"Ubah peserta":"Tambah peserta";
+  $("#dNama").value=p?.nama||"";$("#dCat").value=p?.catatan||"";
+  $("#dKel").innerHTML=kelasList().map(k=>`<option value="${esc(k.k)}">${esc(k.judul)}</option>`).join("");
+  $("#dKel").value=p?.kelas||S.kelas;
+  $("#dBatch").innerHTML=batchList().map(b=>`<option value="${esc(b.id)}">${esc(b.nama||"Batch")}</option>`).join("")+(p&&!p.batch?`<option value="${NONE}">Tanpa batch</option>`:"");
+  $("#dBatch").value=p?pBatch(p):S.batch;
+  $("#dDel").hidden=!p;$("#dDel").textContent="Hapus peserta";
+  for(const el of ["#dNama","#dKel","#dBatch","#dCat","#dOk","#dDel"])$(el).disabled=!S.canWrite;
+  $("#dlg").showModal();
+}
+$("#add").addEventListener("click",()=>openDlg(null));
+$("#dX").addEventListener("click",()=>$("#dlg").close());
+$("#frm").addEventListener("submit",async e=>{
+  e.preventDefault();const nama=$("#dNama").value.trim();if(!nama){$("#dNama").focus();return}
+  const data={nama,kelas:$("#dKel").value,catatan:$("#dCat").value.trim()};const bv=$("#dBatch").value;if(bv&&bv!==NONE)data.batch=bv;
+  $("#dlg").close();
+  try{
+    if(dlgId)await S.db.doc("peserta/"+dlgId).update(data);
+    else{await S.db.collection("peserta").doc("p"+Date.now().toString(36)).set({...data,no:nextNo(),nilai:{},kuis:null});toast("Peserta ditambahkan.")}
+  }catch(err){toast(err?.code==="quota_exceeded"?"Penyimpanan penuh; hapus data lama dulu.":"Gagal menyimpan peserta.")}
+});
+$("#dDel").addEventListener("click",async()=>{
+  const p=S.peserta.find(x=>x.id===dlgId);if(!p)return;
+  if(!delArm){delArm=true;$("#dConf").hidden=false;$("#dConf").textContent=`Tekan sekali lagi untuk menghapus ${p.nama} beserta nilainya.`;$("#dDel").textContent="Ya, hapus";return}
+  $("#dlg").close();if($("#sh").open)$("#sh").close();try{await S.db.doc("peserta/"+dlgId).delete();toast("Peserta dihapus.")}catch(e){toast("Gagal menghapus.")}
+});
+
+/* tempel daftar nama */
+function parseList(){const ada=new Set(diBatch().filter(p=>p.kelas===S.kelas).map(p=>p.nama.trim().toLowerCase()));
+  const seen=new Set();return $("#pList").value.split(/\r?\n/).map(l=>l.split("\t").find(c=>c.trim()&&!/^\d+[.)]?$/.test(c.trim()))||"").map(l=>l.replace(/^\s*\d+[.)]\s+/,"").trim())
+    .filter(n=>n&&!/^nama/i.test(n)&&!ada.has(n.toLowerCase())&&!seen.has(n.toLowerCase())&&seen.add(n.toLowerCase()))}
+$("#paste").addEventListener("click",()=>{$("#pT").textContent="Tempel nama ke "+batchNama(S.batch)+" · "+kelasJudul(S.kelas);$("#pList").value="";$("#pInfo").textContent="";$("#pdlg").showModal()});
+$("#pList").addEventListener("input",()=>{const n=parseList().length;$("#pInfo").textContent=n?`${n} nama baru akan ditambahkan ke ${kelasJudul(S.kelas)} (nama yang sudah ada dilewati).`:""});
+$("#pX").addEventListener("click",()=>$("#pdlg").close());
+$("#pfrm").addEventListener("submit",async e=>{
+  e.preventDefault();const names=parseList();if(!names.length){toast("Tidak ada nama baru untuk ditambahkan.");return}
+  $("#pdlg").close();let no=nextNo(),ok=0;const base=Date.now().toString(36);
+  for(let i=0;i<names.length;i++){try{await S.db.collection("peserta").doc(`p${base}${i.toString(36)}`).set({nama:names[i],kelas:S.kelas,batch:S.batch,no:no++,nilai:{},kuis:null,catatan:""});ok++}catch(err){toast(err?.code==="quota_exceeded"?"Penyimpanan penuh.":"Sebagian nama gagal disimpan.");break}}
+  toast(`${ok} peserta ditambahkan ke ${kelasJudul(S.kelas)}.`);
+});
+
+/* CSV */
+async function unduhCsv(){
+  const as=aspekKelas(S.kelas);const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const head=["No","Nama","Kelas",...as.map(a=>a.nama),"Nilai Praktik","Nilai Kuis","Nilai Akhir","Predikat","Status","Catatan"];
+  const lines=[head.map(q).join(";")];
+  rows(S.kelas).forEach(({p,h},i)=>lines.push([i+1,p.nama,kelasJudul(p.kelas),...as.map(a=>SHORT[p.nilai?.[a.kode]]||""),h.praktik??"",h.kuis??"",h.akhir??"",h.pred?SHORT[h.pred]:"",h.status,p.catatan].map(q).join(";")));
+  try{await S.dl.save({filename:`Rekap Penilaian ${batchNama(S.batch)} ${kelasJudul(S.kelas)}.csv`,data:"﻿"+lines.join("\r\n")})}catch(e){if(e?.code!=="dismissed"&&e?.code!=="declined")toast("File tidak jadi diunduh.")}
+}
+$("#csv").addEventListener("click",unduhCsv);
+
+/* ---------- data ---------- */
+async function start(){
+  setState("Menghubungkan…");
+  const C=window.claude;
+  if(!C||!C.use){setState("Data hanya tersedia saat dibuka di claude.ai.");$("#basis").textContent="Buka halaman ini di claude.ai untuk melihat data penilaian.";return}
+  const [db,user,dl]=await Promise.all([C.use("db"),C.use("user"),C.use("downloads")]);
+  if(!db){setState("Data tidak dapat dimuat di tampilan ini. Masuk ke claude.ai lalu buka lagi.");$("#basis").textContent="Data penilaian belum dapat dimuat.";return}
+  S.db=db;S.dl=dl;if(dl){$("#csv").hidden=$("#pdfR").hidden=$("#pdfI").hidden=$("#shPdf").hidden=false}
+  db.collection("batch").onSnapshot(s=>{S.batches=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
+  if(user){const cw=await user.can("data.write");S.canWrite=cw!==false;S.isAdmin=await user.canEdit()}
+  let gotCfg=false,gotP=false;
+  const tm=setTimeout(()=>{if(!S.loaded)setState("Data belum terjangkau. Periksa koneksi; halaman akan terisi otomatis.")},10000);
+  const done=()=>{if(gotCfg&&gotP&&!S.loaded){S.loaded=true;clearTimeout(tm);window.__rk3Siap=true;setState(window.__rk3St||"")}};
+  db.doc("pengaturan/utama").onSnapshot(s=>{
+    if(!s.exists){if(!s.metadata.fromCache){$("#basis").textContent="Belum ada rubrik. Minta Claude mengisi rubrik penilaian.";gotCfg=true;done()}return}
+    S.cfg=s.data();if(!s.metadata.fromCache){gotCfg=true;done()}render()},()=>{clearTimeout(tm);setState("Rubrik gagal dimuat.")});
+  db.collection("peserta").onSnapshot(s=>{S.peserta=s.docs.map(d=>({id:d.id,...structuredClone(d.data())}));if(!s.metadata.fromCache){gotP=true;done()}render()},()=>{clearTimeout(tm);setState("Daftar peserta gagal dimuat.")});
+}
+start();
+})();
+</script>
+
+<div class="wrap" style="padding-bottom:32px"><section class="card" id="dataCard">
+  <div class="h"><h2>Penyimpanan &amp; akses</h2><span class="sub" id="syncInfo"></span></div>
+  <div class="body" style="display:grid;gap:12px">
+    <p class="sub" style="margin:0;font-size:13px">Nilai tersimpan online dan muncul di semua HP/laptop yang masuk dengan <b>kode akses yang sama</b>. Saat tidak ada sinyal, isian disimpan dulu di perangkat ini lalu terkirim otomatis begitu online. Bagikan kode akses hanya kepada penilai.</p>
+    <div class="tools">
+      <button class="btn" type="button" id="bkSave">Cadangkan data (.json)</button>
+      <label class="btn" for="bkFile" style="display:inline-flex;align-items:center">Gabungkan cadangan…</label>
+      <input type="file" id="bkFile" accept=".json,application/json" hidden>
+      <button class="btn danger" type="button" id="outBtn">Keluar dari perangkat ini</button>
+    </div>
+    <div class="confirm" id="bkMsg" style="color:var(--ink)"></div>
+  </div>
+</section></div>
+
+<div id="lock" hidden style="position:fixed;inset:0;z-index:50;background:var(--navy);color:#fff;display:grid;place-items:center;overflow:auto;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))">
+  <form id="lockF" style="display:grid;gap:12px;width:min(340px,100%)">
+    <div class="eyebrow">Training K3 Penanggulangan Kebakaran</div>
+    <h1 style="margin:0">Penilaian Praktik</h1>
+    <label style="display:grid;gap:6px;font-size:13px;color:#c6d6e6">Kode akses penilai
+      <input type="password" id="kode1" autocomplete="current-password" minlength="8" required style="font:600 18px var(--f-num);padding:10px"></label>
+    <label id="kode2W" hidden style="display:grid;gap:6px;font-size:13px;color:#c6d6e6">Ulangi kode akses
+      <input type="password" id="kode2" autocomplete="new-password" style="font:600 18px var(--f-num);padding:10px"></label>
+    <button class="btn pri" type="submit" id="lockBtn" style="padding:10px;font-size:14px">Masuk</button>
+    <div id="lockMsg" style="min-height:20px;color:#f6b28b;font-size:13px"></div>
+    <p style="font-size:12px;color:#c6d6e6;margin:0">Semua penilai memakai kode yang sama agar melihat data yang sama. Minimal 8 karakter; huruf besar/kecil dianggap sama. Masuk pertama kali butuh internet; setelah itu perangkat ini tetap masuk sampai Anda menekan Keluar.</p>
+  </form>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);const SY=window.__rk3Sync;let buat=false;
+if(!SY.aktif()){$("#lock").hidden=false;setTimeout(()=>$("#kode1").focus(),50)}
+$("#lockF").addEventListener("submit",async e=>{
+  e.preventDefault();const k=$("#kode1").value.trim();
+  if(k.length<8){$("#lockMsg").textContent="Kode akses minimal 8 karakter.";return}
+  if(buat&&$("#kode2").value.trim().toLowerCase()!==k.toLowerCase()){$("#lockMsg").textContent="Kode yang diulang tidak sama.";return}
+  $("#lockBtn").disabled=true;$("#lockMsg").textContent="Menghubungkan…";
+  try{const r=await SY.masuk(k,buat);
+    if(r==="kosong"){buat=true;$("#kode2W").hidden=false;$("#kode2").value="";$("#kode2").focus();$("#lockBtn").textContent="Buat ruang penilaian baru";
+      $("#lockMsg").textContent="Belum ada data dengan kode ini. Kalau ini pertama kali, ulangi kode untuk membuat ruang penilaian baru. Kalau seharusnya sudah ada, periksa lagi kodenya.";return}
+    $("#lock").hidden=true;$("#kode1").value=$("#kode2").value="";$("#lockMsg").textContent="";
+  }catch(err){$("#lockMsg").textContent=(err&&err.message&&/Koneksi|terhubung|Gagal/.test(err.message))?err.message:"Tidak bisa masuk. Pastikan ada internet lalu coba lagi."}
+  finally{$("#lockBtn").disabled=false}
+});
+$("#kode1").addEventListener("input",()=>{if(buat){buat=false;$("#kode2W").hidden=true;$("#lockBtn").textContent="Masuk";$("#lockMsg").textContent=""}});
+let outArm=false;
+$("#outBtn").addEventListener("click",()=>{const n=SY.menunggu();
+  if(!outArm){outArm=true;$("#outBtn").textContent="Tekan lagi untuk keluar";$("#bkMsg").textContent=n?`Perhatian: ${n} perubahan belum terkirim dan akan hilang bila keluar sekarang. Tunggu sampai online.`:"Data tetap aman di server; masuk lagi dengan kode akses yang sama.";return}
+  SY.keluar()});
+function tgl(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}.${p(d.getMinutes())}`}
+$("#bkSave").addEventListener("click",async()=>{
+  const data=JSON.stringify({app:"rk3-penilaian-praktik",versi:1,dibuat:Date.now(),data:SY.data()});
+  try{const dl=await window.claude.use("downloads");await dl.save({filename:`Cadangan Penilaian Praktik ${tgl()}.json`,data});$("#bkMsg").textContent="Cadangan dibuat."}
+  catch(e){if(e?.code!=="declined")$("#bkMsg").textContent="Cadangan gagal dibuat."}
+});
+$("#bkFile").addEventListener("change",async e=>{
+  const f=e.target.files[0];e.target.value="";if(!f)return;
+  let j;try{j=JSON.parse(await f.text())}catch(_){$("#bkMsg").textContent="File bukan cadangan penilaian yang valid.";return}
+  const src=j&&j.app==="rk3-penilaian-praktik"?j.data:null;if(!src||!src.peserta){$("#bkMsg").textContent="File bukan cadangan penilaian yang valid.";return}
+  const r=SY.gabung(src);$("#bkMsg").textContent=`Digabung: ${r.baru} data baru, ${r.ganti} diperbarui, ${r.lewat} dilewati (data di sini lebih baru). Terkirim ke server saat online.`;
+});
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).catch(()=>{});
+})();
+</script>
+
+</body>
+</html>
