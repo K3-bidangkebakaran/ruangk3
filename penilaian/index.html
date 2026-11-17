@@ -211,6 +211,11 @@ dialog#sh[open]{display:flex;flex-direction:column}
 .btn.del{padding:3px 8px;font-size:11.5px;color:var(--k);border-color:transparent;background:transparent}
 .btn.del.arm{background:var(--k);color:#fff;border-color:var(--k)}
 .sha.gro{background:var(--soft)}
+.desc.ai{background:var(--accent-soft)}
+.sha.aip{border-color:var(--accent)}
+.aiprev{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:8px}
+.aiitem{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.aiitem input{margin-top:3px}
 .anggota{display:grid;gap:6px}
 .anggota label{display:flex;gap:8px;align-items:center;font-size:13px}
 @media (max-width:560px){input[type=search]{width:100%}.tools{width:100%}}
@@ -467,6 +472,9 @@ function nilaiP(p,a){return (a.kelas&&isGrup(p.kelas))?(grupOf(p)?.nilai?.[a.kod
 function nilaiGrup(g){const as=grupAspek(g.kelas),tot=as.reduce((t,a)=>t+(+a.bobot||0),0);let sum=0,isi=0;
   for(const a of as){const v=nilaiOf(g.nilai?.[a.kode]);if(v!=null){sum+=v*(+a.bobot||0);isi++}}
   return {nilai:as.length&&isi===as.length&&tot?Math.round(sum/tot*10)/10:null,isi,total:as.length}}
+/* alasan dari hasil Claude (disimpan di kelompok.ai) dipakai bila tingkatnya sama dengan nilai yang berlaku */
+function aiAspek(p,a,v){if(!a.kelas||!isGrup(p.kelas))return null;const x=grupOf(p)?.ai?.aspek?.[a.kode];return x&&x.nilai===v&&x.alasan?x:null}
+function ketAspek(p,a,v){const x=aiAspek(p,a,v);return x?(x.alasan+(x.bukti&&/[0-9a-z]/i.test(x.bukti)?" (bukti: "+x.bukti+")":"")):(a.r?.[v]||"")}
 function nilaiOf(k){const s=(S.cfg?.skala||[]).find(x=>x.k===k);return s?s.nilai:null}
 function kat(v){if(v==null)return null;return v>=90?"BS":v>=80?"B":v>=65?"C":"K"}
 function hitung(p){
@@ -501,7 +509,7 @@ function keterangan(p,mode){const singkat=mode===true||mode==="singkat",lembar=m
   }else if(kurang.length){
     out.push("Kekurangan per aspek:");
     kurang.forEach(([a,v])=>{
-      let t=`- ${a.nama} (${SHORT[v]}): ${kecil(a.r?.[v])}.`;
+      let t=`- ${a.nama} (${SHORT[v]}): ${kecil(ketAspek(p,a,v))}.`;
       if(!singkat&&v!=="B"){const fk=fokus(a);if(fk.length)t+=` ${pkl?"Yang perlu dilengkapi pada laporan":"Yang perlu dilatih"}: ${fk.join("; ")}.`}
       if(singkat&&v==="K")t+=pkl?" Wajib direvisi.":" Wajib diulang.";
       if(singkat&&v==="C")t+=pkl?" Perlu dilengkapi.":" Perlu latihan ulang.";
@@ -708,7 +716,7 @@ function renderSheet(reset){if(shMode==="g")return renderGroupSheet(reset);
     as.map((a,i)=>{const v=nilaiP(p,a);const fk=String(a.fokus||"").split(/\n/).filter(Boolean);
       if(a.kelas&&isGrup(p.kelas)){const g=grupOf(p);return `<div class="sha gro"><div class="t"><b>${i+1}. ${esc(a.nama)}</b><span>${esc(a.bobot)}% · kelompok</span></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${v?`<span class="pill ${CLS[v]}">${esc(SHORT[v])}</span>`:'<span class="pill w">Belum dinilai</span>'}${g?`<button class="btn" type="button" data-grp="${esc(g.id)}">Nilai di ${esc(g.nama)}</button>`:'<span class="sub">Pilih kelompok di atas.</span>'}</div>
-        ${v?`<p class="desc">${esc(a.r?.[v]||"")}</p>`:""}</div>`}
+        ${v?`<p class="desc">${esc(ketAspek(p,a,v))}</p>`:""}</div>`}
       return `<div class="sha"><div class="t"><b>${i+1}. ${esc(a.nama)}</b><span>${esc(a.bobot)}%${a.kelas?"":" · semua kelas"}</span></div>
         <details data-k="${esc(a.kode)}" ${terbuka.has(a.kode)?"open":""}><summary>Fokus / indikator</summary><ul>${fk.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></details>
         <div class="lv" role="group" aria-label="Nilai ${esc(a.nama)}">${sk.map(s=>`<button type="button" class="${v===s.k?CLS[s.k]:""}" aria-pressed="${v===s.k}" data-lv="${s.k}" data-asp="${esc(a.kode)}" ${dis}>${esc(s.label)}<small>${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</small></button>`).join("")}</div>
@@ -733,7 +741,7 @@ function renderGroupSheet(reset){
       return `<div class="sha"><div class="t"><b>${i+1}. ${esc(a.nama)}</b><span>${esc(a.bobot)}%</span></div>
         <details data-k="${esc(a.kode)}" ${terbuka.has(a.kode)?"open":""}><summary>Fokus / indikator</summary><ul>${fk.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></details>
         <div class="lv" role="group" aria-label="Nilai ${esc(a.nama)}">${sk.map(s=>`<button type="button" class="${v===s.k?CLS[s.k]:""}" aria-pressed="${v===s.k}" data-glv="${s.k}" data-asp="${esc(a.kode)}" ${dis}>${esc(s.label)}<small>${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</small></button>`).join("")}</div>
-        ${v?`<p class="desc">${esc(a.r?.[v]||"")}</p>`:""}</div>`}).join("")+
+        ${v?`<p class="desc">${esc(a.r?.[v]||"")}</p>`:""}${(()=>{const x=g.ai?.aspek?.[a.kode];return x?`<p class="desc ai">${x.nilai===v?"":"<b>Usulan Claude berbeda ("+esc(SHORT[x.nilai]||x.nilai)+").</b> "}<b>Hasil baca laporan:</b> ${esc(x.alasan||"")}${x.bukti?` <i>(bukti: ${esc(x.bukti)})</i>`:""}</p>`:""})()}</div>`}).join("")+aiPanel(g)+
     `<label class="sub" style="display:grid;gap:4px">Catatan kelompok (opsional)<textarea id="shGCat" ${dis}>${esc(g.catatan||"")}</textarea></label>
     <div class="sha"><div class="t"><b>Anggota kelompok</b><span>centang untuk memasukkan</span></div><div class="anggota">${calon.length?calon.map(p=>{const lain=p.kelompok&&p.kelompok!==g.id?grupOf(p):null;
       return `<label><input type="checkbox" data-anggota="${esc(p.id)}" ${p.kelompok===g.id?"checked":""} ${dis}> ${esc(p.nama)}${lain?` <span class="sub">(sekarang di ${esc(lain.nama)})</span>`:""}</label>`}).join(""):'<span class="sub">Belum ada peserta di kelas ini.</span>'}</div></div>`;
@@ -741,6 +749,77 @@ function renderGroupSheet(reset){
   $("#shEdit").hidden=true;$("#shPdf").hidden=true;
   $("#shDel").hidden=!S.canWrite;$("#shDel").textContent=S.delArm===g.id?"Yakin hapus "+g.nama+"?":"Hapus kelompok";
 }
+/* ---------- bantuan Claude (langganan Pro): salin perintah -> tempel hasil ---------- */
+const AI={draft:{},txt:{}};
+function promptKelompok(g){
+  const ko=kelasObj(g.kelas),B=S.batches.find(b=>b.id===g.batch)||{},as=grupAspek(g.kelas),sk=S.cfg.skala||[];
+  const L=[];
+  L.push("Anda adalah penguji pada "+(S.cfg.program||"training K3 Penanggulangan Kebakaran")+". Nilailah laporan PKL Rencana Tanggap Darurat kelompok di PDF terlampir memakai RUBRIK di bawah.");
+  L.push("");
+  L.push("Kelas: "+kelasJudul(g.kelas)+(ko.ket?" – "+ko.ket:""));
+  L.push("Kelompok: "+g.nama+(B.nama?" · "+B.nama:"")+(B.lokasi?" · Lokasi/perusahaan PKL: "+B.lokasi:"")+(B.pjk3?" · "+B.pjk3:""));
+  L.push("");
+  L.push("ATURAN:");
+  L.push("1. Nilai hanya berdasarkan isi laporan. Jangan mengarang isi yang tidak ada.");
+  L.push("2. Untuk setiap aspek pilih satu tingkat: "+sk.map(s=>s.k+" = "+s.label+" ("+(s.k==="K"?"< 65":s.min+"–"+s.max)+")").join(", ")+", dengan mencocokkan isi laporan ke indikator dan deskripsi tingkat di rubrik.");
+  L.push("3. Tulis alasan singkat (maks. 3 kalimat) yang menyebut kekurangan dan kelebihan yang spesifik untuk laporan ini, serta bukti (nomor halaman atau judul bagian).");
+  L.push("4. Bila bagian yang dinilai tidak ditemukan di laporan, beri K dan tulis bahwa bagian itu tidak ditemukan.");
+  L.push("5. Bila PDF tidak dapat dibaca (mis. hasil scan buram), katakan dan jangan menebak nilai.");
+  L.push("");
+  L.push("RUBRIK:");
+  as.forEach((a,i)=>{L.push("");L.push((i+1)+". ["+a.kode+"] "+a.nama+" (bobot "+a.bobot+"%)");
+    L.push("   Indikator:");String(a.fokus||"").split(/\n/).filter(Boolean).forEach(f=>L.push("   - "+f));
+    sk.forEach(s=>L.push("   "+s.k+": "+(a.r?.[s.k]||"")))});
+  L.push("");
+  L.push("Balas HANYA dengan satu blok kode JSON dengan format berikut (pakai kode aspek persis seperti di rubrik, semua "+as.length+" aspek wajib ada):");
+  L.push("```json");
+  L.push(JSON.stringify({kelompok:g.nama,aspek:as.map(a=>({kode:a.kode,nilai:"BS|B|C|K",alasan:"...",bukti:"hal. ..."})),ringkasan:"kesimpulan 1-2 kalimat"},null,1));
+  L.push("```");
+  return L.join("\n");
+}
+function bacaHasilAI(txt,g){
+  const m=String(txt).match(/```(?:json)?\s*([\s\S]*?)```/i),src=m?m[1]:String(txt),i=src.indexOf("{"),j=src.lastIndexOf("}");
+  if(i<0||j<=i)throw new Error("Tidak menemukan hasil berformat JSON. Salin seluruh balasan Claude, termasuk blok kodenya.");
+  let o;try{o=JSON.parse(src.slice(i,j+1))}catch(e){throw new Error("Format hasil rusak/terpotong. Minta Claude mengirim ulang blok JSON-nya.")}
+  const as=grupAspek(g.kelas),MAP={"BS":"BS","BAIK SEKALI":"BS","B":"B","BAIK":"B","C":"C","CUKUP":"C","K":"K","KURANG":"K"};
+  const list=Array.isArray(o.aspek)?o.aspek:[];const out=[];
+  for(const a of as){const x=list.find(r=>String(r.kode||"").trim().toUpperCase()===a.kode.toUpperCase())||list.find(r=>String(r.nama||r.aspek||"").trim().toLowerCase()===a.nama.toLowerCase());
+    const nv=x?MAP[String(x.nilai||"").trim().toUpperCase()]||"":"";
+    out.push({kode:a.kode,nama:a.nama,nilai:nv,alasan:x?String(x.alasan||"").slice(0,800):"",bukti:x?String(x.bukti||"").slice(0,200):"",pakai:!!nv})}
+  if(!out.some(r=>r.nilai))throw new Error("Tidak ada aspek yang cocok dengan rubrik "+kelasJudul(g.kelas)+". Pastikan perintah yang disalin dari kelompok ini.");
+  return {aspek:out,ringkasan:String(o.ringkasan||"").slice(0,800)};
+}
+function aiPanel(g){
+  if(!S.canWrite)return g.ai?.ringkasan?`<div class="sha"><div class="t"><b>Ringkasan Claude</b></div><p class="desc">${esc(g.ai.ringkasan)}</p></div>`:"";
+  const d=AI.draft[g.id];
+  let h=`<div class="sha aip"><div class="t"><b>Nilai dengan bantuan Claude</b><span>pakai langganan Claude Pro</span></div>
+    <ol class="sub" style="margin:0;padding-left:18px;display:grid;gap:3px">
+      <li>Tekan <b>Salin perintah penilaian</b>.</li>
+      <li>Buka aplikasi Claude, unggah PDF laporan ${esc(g.nama)}, tempel perintahnya, lalu kirim.</li>
+      <li>Salin seluruh balasan Claude, tempel di kotak bawah, tekan <b>Baca hasil</b>, tinjau, lalu <b>Terapkan</b>.</li></ol>
+    <div class="tools"><button class="btn pri" type="button" id="aiCopy">Salin perintah penilaian</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Buka Claude ↗</a></div>
+    <details><summary>Lihat perintah (salin manual bila tombol tidak berfungsi)</summary><textarea id="aiPrompt" readonly style="width:100%;min-height:140px;font:12px var(--f-num)">${esc(promptKelompok(g))}</textarea></details>
+    <label class="sub" style="display:grid;gap:4px">Tempel balasan Claude di sini<textarea id="aiIn" style="min-height:90px" placeholder="Tempel balasan berisi blok kode JSON…">${esc(AI.txt[g.id]||"")}</textarea></label>
+    <div class="tools"><button class="btn" type="button" id="aiRead">Baca hasil</button>${g.ai?.t?`<span class="sub">Terakhir diterapkan: ${new Date(g.ai.t).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})}</span>`:""}</div>`;
+  if(d){h+=`<div class="aiprev"><b style="font-size:13px">Usulan Claude – centang yang ingin diterapkan</b>${d.aspek.map(r=>{const cur=g.nilai?.[r.kode]||"";
+      return `<label class="aiitem"><input type="checkbox" data-aipick="${esc(r.kode)}" ${r.pakai?"checked":""} ${r.nilai?"":"disabled"}><span><b>${esc(r.nama)}</b> ${r.nilai?`<span class="pill ${CLS[r.nilai]}">${esc(SHORT[r.nilai])}</span>`:'<span class="pill w">tidak terbaca</span>'}${cur&&cur!==r.nilai?` <span class="sub">(sekarang ${esc(SHORT[cur])})</span>`:""}<br><span class="sub">${esc(r.alasan)}${r.bukti?" · bukti: "+esc(r.bukti):""}</span></span></label>`}).join("")}
+      ${d.ringkasan?`<p class="desc"><b>Ringkasan:</b> ${esc(d.ringkasan)}</p>`:""}
+      <div class="tools"><button class="btn pri" type="button" id="aiApply">Terapkan usulan terpilih</button><button class="btn" type="button" id="aiCancel">Batal</button></div></div>`}
+  else if(g.ai?.ringkasan)h+=`<p class="desc"><b>Ringkasan Claude:</b> ${esc(g.ai.ringkasan)}</p>`;
+  return h+"</div>";
+}
+async function salinTeks(t,el){try{await navigator.clipboard.writeText(t);return true}catch(e){if(el){const d=el.closest("details");if(d)d.open=true;el.focus();el.select()}return false}}
+document.addEventListener("click",async e=>{
+  if(shMode!=="g")return;const g=S.kelompok.find(x=>x.id===shId);if(!g)return;
+  if(e.target.id==="aiCopy"){const ok=await salinTeks(promptKelompok(g),$("#aiPrompt"));toast(ok?"Perintah disalin. Tempel di aplikasi Claude bersama PDF laporan.":"Salin otomatis tidak diizinkan; teks perintah sudah ditandai, salin manual.");return}
+  if(e.target.id==="aiRead"){AI.txt[g.id]=$("#aiIn").value;try{AI.draft[g.id]=bacaHasilAI(AI.txt[g.id],g);renderSheet(false);toast("Hasil terbaca. Tinjau usulan lalu tekan Terapkan.")}catch(err){toast(err.message)}return}
+  if(e.target.id==="aiCancel"){delete AI.draft[g.id];renderSheet(false);return}
+  if(e.target.id==="aiApply"){const d=AI.draft[g.id];if(!d)return;const pilih=new Set([...document.querySelectorAll("[data-aipick]:checked")].map(x=>x.dataset.aipick));
+    const nilai={...(g.nilai||{})},asp={...(g.ai?.aspek||{})};let n=0;
+    for(const r of d.aspek){if(!r.nilai)continue;asp[r.kode]={nilai:r.nilai,alasan:r.alasan,bukti:r.bukti};if(pilih.has(r.kode)){nilai[r.kode]=r.nilai;n++}}
+    const ai={t:Date.now(),ringkasan:d.ringkasan,aspek:asp};g.nilai=nilai;g.ai=ai;delete AI.draft[g.id];delete AI.txt[g.id];render();
+    await tulisGrup(g.id,{nilai,ai});toast(n+" aspek diterapkan ke "+g.nama+".");return}
+});
 async function tulisGrup(id,patch){try{await S.db.doc("kelompok/"+id).update(patch)}catch(e){toast("Gagal menyimpan kelompok. Periksa koneksi lalu coba lagi.")}}
 async function buatKelompok(){
   if(!S.batch||!curBatch())return;const gl=grupList();let n=gl.length+1;const ada=new Set(gl.map(g=>g.nama));while(ada.has("Kelompok "+n))n++;
@@ -767,6 +846,7 @@ $("#shEdit").addEventListener("click",()=>openDlg(shId));
 $("#shBody").addEventListener("change",e=>{
   if(shMode==="g"){const g=S.kelompok.find(x=>x.id===shId);if(!g)return;
     if(e.target.id==="shGNama"){const t=e.target.value.trim();if(!t){e.target.value=g.nama;return}if(t===g.nama)return;g.nama=t;render();tulisGrup(g.id,{nama:t})}
+    if(e.target.id==="aiIn"){AI.txt[g.id]=e.target.value;return}
     if(e.target.id==="shGCat"){const t=e.target.value.trim();if(t===(g.catatan||""))return;g.catatan=t;tulisGrup(g.id,{catatan:t})}
     const cb=e.target.closest("[data-anggota]");if(cb){const p=S.peserta.find(x=>x.id===cb.dataset.anggota);if(!p)return;const v=cb.checked?g.id:"";p.kelompok=v;render();tulis(p.id,{kelompok:v})}
     return}
@@ -883,7 +963,7 @@ function lembar(doc,p,W,H){
   doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
     head:[["No","Aspek Praktik","Bobot","Predikat","Nilai","Nilai x\nBobot","Keterangan"]],
     body:as.map((a,i)=>{const v=nilaiP(p,a);const n=nilaiOf(v);
-      return [i+1,pt(a.nama),a.bobot+"%",SHORT[v]||"-",n!=null?fmt(n):"-",n!=null?fmt(n*a.bobot/100):"-",pt(v?a.r?.[v]||"":"Belum dinilai")]}),
+      return [i+1,pt(a.nama),a.bobot+"%",SHORT[v]||"-",n!=null?fmt(n):"-",n!=null?fmt(n*a.bobot/100):"-",pt(v?ketAspek(p,a,v):"Belum dinilai")]}),
     foot:[["",kelasObj(p.kelas).pkl?"Nilai PKL":"Nilai Praktik",as.reduce((s,a)=>s+(+a.bobot||0),0)+"%","","",fmt(x.praktik),x.praktik==null?`${x.isi}/${x.total} aspek terisi`:""]],
     styles:{font:"helvetica",fontSize:8.2,cellPadding:1.8,valign:"middle",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
     headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",halign:"center",fontSize:8},
