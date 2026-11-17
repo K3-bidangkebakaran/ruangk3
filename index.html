@@ -380,6 +380,35 @@
         .rb-rc-ol { margin: 0 0 20px; padding: 0; list-style: none; border-top: 1px solid rgba(255,255,255,.15); font-size: 14.5px; color: #dfe6ec; }
         .rb-rc-ol li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.1); }
         .rb-rc-ol span { color: #8fd1a5; font-weight: 700; width: 24px; }
+        .rb-hero-foto { flex: 1 1 400px; min-width: 0; margin: 0; position: relative; cursor: pointer; background: #1d3447; aspect-ratio: 4 / 3; overflow: hidden; }
+        .rb-hero-foto[hidden] { display: none; }
+        .rb-hero-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .rb-hero-foto figcaption { position: absolute; left: 0; bottom: 0; max-width: 85%; background: #166534; padding: 14px 18px; display: flex; flex-direction: column; gap: 2px; }
+        .rb-hero-foto figcaption span { font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; color: #bfe5cb; }
+        .rb-hero-foto figcaption b { font-size: 15px; font-weight: 600; line-height: 1.35; color: #ffffff; }
+        #rb-progres[hidden] { display: none; }
+        .rb-progres { background-color: #0f2233; color: #ffffff; padding: 28px; max-width: 720px; }
+        .rb-berita { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+        .rb-butama { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; text-align: left; background: #ffffff; border: 1px solid #e3e7eb; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+        .rb-butama:hover .rb-bjudul-u { color: #166534; }
+        .rb-bfoto, .rb-bthumb { background: #eef1f3; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #6b7783; font-size: 12px; }
+        .rb-bfoto { width: 100%; aspect-ratio: 16 / 9; }
+        .rb-bfoto img, .rb-bthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .rb-butama-t { display: flex; flex-direction: column; gap: 10px; padding: 22px 24px 24px; }
+        .rb-bmeta { font-size: 13px; color: #5f6b76; }
+        .rb-bmeta b { font-weight: 600; text-transform: uppercase; letter-spacing: .6px; font-size: 12px; }
+        .rb-bjudul-u { font-family: 'Source Serif 4', Georgia, serif; font-size: 26px; font-weight: 700; line-height: 1.3; color: #0c1a26; }
+        .rb-bisi { font-size: 16px; line-height: 1.65; color: #4a5560; }
+        .rb-blist { flex: 1 1 340px; min-width: 0; background: #ffffff; border: 1px solid #e3e7eb; padding: 6px 20px 14px; display: flex; flex-direction: column; }
+        .rb-bitem { display: flex; gap: 16px; padding: 16px 0; border: 0; border-bottom: 1px solid #e3e7eb; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+        .rb-bitem:hover .rb-bjudul { color: #166534; }
+        .rb-bthumb { width: 112px; height: 76px; flex: none; }
+        .rb-btxt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .rb-bjudul { font-size: 16.5px; font-weight: 600; line-height: 1.4; color: #0c1a26; }
+        .rb-blist .rb-more { display: none; }
+        .rb-blist.buka .rb-more { display: flex; }
+        .rb-bsemua { align-self: flex-start; margin-top: 14px; }
+        @media (max-width: 767px) { .rb-bjudul-u { font-size: 21px; } .rb-bthumb { width: 88px; height: 64px; } .rb-butama-t { padding: 18px; } .rb-hero-foto { flex-basis: 100%; } }
         .rb-riwayat { background: #ffffff; border: 1px solid #e3e7eb; padding: 24px; }
         @media (max-width: 767px) {
             .rb-wrap { padding-left: 18px; padding-right: 18px; }
@@ -906,18 +935,10 @@
                             <button type="button" class="rb-btn o" onclick="document.getElementById('tutorial-video')?.scrollIntoView({behavior:'smooth'})">Lihat alur sertifikasi</button>
                         </div>
                     </div>
-                    <div class="rb-hero-card">
-                        <div id="lms-readiness-card">
-                            <p class="rb-rc-k">Perjalanan Sertifikasi Anda</p>
-                            <p class="rb-rc-p">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda.</p>
-                            <ol class="rb-rc-ol">
-                                <li><span>01</span>Modul &amp; regulasi K3</li>
-                                <li><span>02</span>Simulasi CBT</li>
-                                <li><span>03</span>Sertifikasi RI</li>
-                            </ol>
-                            <button onclick="window.openModal('modal-login')" class="rb-btn w" style="width:100%">Masuk / Daftar Akun Peserta &rarr;</button>
-                        </div>
-                    </div>
+                    <figure class="rb-hero-foto" id="rb-hero-foto" hidden>
+                        <img id="rb-hero-img" alt="Dokumentasi kegiatan RuangK3">
+                        <figcaption><span>Informasi umum</span><b id="rb-hero-cap"></b></figcaption>
+                    </figure>
                 </div>
             </section>
 
@@ -927,6 +948,23 @@
                     <button type="button" onclick="window.switchLmsTab('cbt')"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21h8M12 17v4M7 9l2 2 4-4"/></svg><span><b>Simulasi CBT</b><small>Latihan soal format ujian komputer</small></span></button>
                     <button type="button" onclick="window.switchLmsTab('hasil')"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span><b>Hasil Ujian</b><small>Riwayat nilai &amp; pembahasan</small></span></button>
                     <button type="button" onclick="window.openCekLisensi()"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span><b>Cek Lisensi K3</b><small>Verifikasi lisensi resmi Kemnaker</small></span></button>
+                </div>
+            </section>
+
+            <!-- Progres sertifikasi: hanya tampil untuk peserta yang sudah masuk (renderReadinessCard) -->
+            <section class="rb-wrap rb-sec" id="rb-progres" hidden>
+                <div class="rb-progres rb-grid-d">
+                    <div id="lms-readiness-card">
+                            <p class="rb-rc-k">Perjalanan Sertifikasi Anda</p>
+                            <p class="rb-rc-p">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda.</p>
+                            <ol class="rb-rc-ol">
+                                <li><span>01</span>Modul &amp; regulasi K3</li>
+                                <li><span>02</span>Simulasi CBT</li>
+                                <li><span>03</span>Sertifikasi RI</li>
+                            </ol>
+                            <button onclick="window.openModal('modal-login')" class="rb-btn w" style="width:100%">Masuk / Daftar Akun Peserta &rarr;</button>
+                        </div>
+                    
                 </div>
             </section>
 
@@ -2893,7 +2931,36 @@
             return `<div class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar h-full w-full news-img-slider">${imgElements}</div>${images.length > 1 ? `<div class="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-[8px] font-bold px-1.5 py-0.5 rounded backdrop-blur-sm z-10">${images.length} Foto</div>` : ''}`;
         };
 
+        /* ---------- Beranda baru: berita (1 utama + daftar) & foto bagian pembuka dari berita "Informasi Umum" ---------- */
+        const rbKat = (k) => k === 'Penting' ? ['Pengumuman penting', '#b42318'] : k === 'Regulasi' ? ['Regulasi', '#166534'] : [k || 'Informasi umum', '#1d4ed8'];
+        const rbFotoAwal = (b) => b.fotoBase64 ? (Array.isArray(b.fotoBase64) ? b.fotoBase64[0] : b.fotoBase64) : ((cacheFotoBerita[b.id] || [])[0] || '');
+        const rbRingkas = (t, n) => { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n).replace(/\s\S*$/, '') + '…' : t; };
+        window.rbBeritaHtml = function(beritas) {
+            const foto = (b, cls) => { const u = rbFotoAwal(b); const ada = !!(b.fotoBase64 || b.adaFoto);
+                return `<div class="${cls}" data-fb-rb="${b.id}">${u ? `<img src="${u}" alt="" loading="lazy">` : (ada ? '<span>Memuat foto…</span>' : '<span>Tanpa foto</span>')}</div>`; };
+            const meta = (b) => { const [l, c] = rbKat(b.kategori); return `<span class="rb-bmeta"><b style="color:${c}">${escHtml(l)}</b> · ${window.formatDate(b.timestamp)}</span>`; };
+            const u = beritas[0], rest = beritas.slice(1);
+            const item = (b, i) => `<button type="button" class="rb-bitem${i >= 4 ? ' rb-more' : ''}" onclick="window.bacaBerita('${b.id}')">${foto(b, 'rb-bthumb')}<span class="rb-btxt">${meta(b)}<span class="rb-bjudul">${escHtml(b.judul || '')}</span></span></button>`;
+            return `<div class="rb-berita">
+                <button type="button" class="rb-butama" onclick="window.bacaBerita('${u.id}')">${foto(u, 'rb-bfoto')}<span class="rb-butama-t">${meta(u)}<span class="rb-bjudul-u">${escHtml(u.judul || '')}</span><span class="rb-bisi">${escHtml(rbRingkas(u.isi, 240))}</span><span class="rb-link" style="margin-top:4px">Baca selengkapnya &rarr;</span></span></button>
+                ${rest.length ? `<div class="rb-blist">${rest.map(item).join('')}${rest.length > 4 ? `<button type="button" class="rb-link rb-bsemua" onclick="this.parentElement.classList.add('buka');this.remove()">Tampilkan semua berita (${rest.length + 1}) &rarr;</button>` : ''}</div>` : ''}
+            </div>`;
+        };
+        window.rbHeroFoto = async function(beritas) {
+            const box = document.getElementById('rb-hero-foto'); if (!box) return;
+            const adaFoto = (b) => !!(b.fotoBase64 || b.adaFoto);
+            const b = beritas.find(x => x.kategori === 'Informasi Umum' && adaFoto(x)) || beritas.find(adaFoto);
+            if (!b) { box.hidden = true; return; }
+            try {
+                const imgs = await window.ambilFotoBerita(b); if (!imgs.length) { box.hidden = true; return; }
+                const img = document.getElementById('rb-hero-img'); img.src = imgs[0];
+                document.getElementById('rb-hero-cap').textContent = b.judul || '';
+                box.onclick = () => window.bacaBerita(b.id); box.hidden = false;
+                window.terapkanFotoBerita(b.id, imgs);
+            } catch (e) { box.hidden = true; }
+        };
         window.terapkanFotoBerita = function(id, images) {
+            document.querySelectorAll(`[data-fb-rb="${id}"]`).forEach(el => { el.innerHTML = images.length ? `<img src="${images[0]}" alt="" loading="lazy">` : '<span>Tanpa foto</span>'; });
             document.querySelectorAll(`[data-fb-card="${id}"]`).forEach(el => {
                 el.className = 'relative w-full berita-card-img overflow-hidden rounded-xl bg-slate-100 mb-3';
                 el.innerHTML = images.length ? window.htmlSliderFotoBerita(images) : '<div class="w-full h-full flex items-center justify-center text-slate-400 font-bold text-[10px]">No Image</div>';
@@ -2907,6 +2974,7 @@
         };
 
         window.tampilkanTombolMuatFoto = function(id, gagal) {
+            document.querySelectorAll(`[data-fb-rb="${id}"]`).forEach(el => { el.innerHTML = `<span role="button" tabindex="0" onclick="event.stopPropagation(); window.muatFotoBeritaManual('${id}')">${gagal ? 'Gagal memuat, ketuk untuk coba lagi' : 'Ketuk untuk memuat foto'}</span>`; });
             document.querySelectorAll(`[data-fb-card="${id}"]`).forEach(el => {
                 el.classList.remove('animate-pulse');
                 el.innerHTML = `<button type="button" onclick="event.stopPropagation(); window.muatFotoBeritaManual('${id}')" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-[10px] font-bold text-slate-600 shadow-sm">${gagal ? 'Gagal memuat, ketuk untuk coba lagi' : 'Ketuk untuk muat foto'}</button>`;
@@ -3603,6 +3671,8 @@
             const card = document.getElementById('lms-readiness-card');
             if (!card) return;
 
+            const rbProg = document.getElementById('rb-progres');
+            if (rbProg) rbProg.hidden = !(currentUser && currentUser.role === 'peserta');
             if (!currentUser || currentUser.role !== 'peserta') {
                 card.innerHTML = `
                 <p class="rb-rc-k">Perjalanan Sertifikasi Anda</p>
@@ -8864,8 +8934,9 @@
                         }
                     });
 
-                    listPublic.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">${gridCardsHtml}</div><div class="relative w-full mt-6"><div id="headline-carousel" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar space-x-4 w-full">${headlineSlidesHtml}</div></div>`;
+                    listPublic.innerHTML = window.rbBeritaHtml(beritas); // tampilan beranda baru (2026-11-17): 1 berita utama + daftar
                     window.hidrasiFotoBerita(beritas);
+                    window.rbHeroFoto(beritas);
                 }
             });
 
