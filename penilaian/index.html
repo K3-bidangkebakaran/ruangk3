@@ -356,16 +356,18 @@ async function sdk(){
   await to(mods.au.signInAnonymously(mods.auth),20000,"Tidak bisa terhubung. Cek internet lalu coba lagi.");
   const {d,db}=mods;fb={d,db,R:p=>d.ref(db,`${ROOT}/${p}`)};return fb;
 }
+function cocok(p,v){const [c,id]=p.split("/");const sv=server?.[c]?.[id];return v===null?sv==null:JSON.stringify(sv)===JSON.stringify(v)}
+function rapikan(){let ub=false;for(const [p,v] of Object.entries(pending))if(cocok(p,v)){delete pending[p];ub=true}return ub}
 function kirim(p){
   const v=pending[p];if(v===undefined)return;
-  fb.d.set(fb.R(`${kunci}/${p}`),v===null?null:v).then(()=>{if(JSON.stringify(pending[p])===JSON.stringify(v)){delete pending[p];simpanLokal();status()}}).catch(e=>{status();console.warn("kirim gagal",p,e)});
+  fb.d.set(fb.R(`${kunci}/${p}`),v===null?null:v).then(()=>{if(JSON.stringify(pending[p])===JSON.stringify(v)&&cocok(p,v)){delete pending[p];simpanLokal();status()}}).catch(e=>{status();console.warn("kirim gagal",p,e)});
 }
 let ulang=null;
 async function sambung(){
   if(tersambung||coba)return;clearTimeout(ulang);
   coba=sdk();try{await coba}catch(e){coba=null;gagal=true;status();ulang=setTimeout(sambung,10000);return}coba=null;gagal=false;tersambung=true;
   fb.d.onValue(fb.d.ref(fb.db,".info/connected"),s=>{online=!!s.val();status();if(online)Object.keys(pending).forEach(kirim)});
-  fb.d.onValue(fb.R(kunci),s=>{server=s.val()||{};loadedOnline=true;compose();simpanLokal();notifyAll();status()},e=>{status();console.warn(e)});
+  fb.d.onValue(fb.R(kunci),s=>{server=s.val()||{};loadedOnline=true;rapikan();compose();simpanLokal();notifyAll();status()},e=>{status();console.warn(e)});
 }
 function tulis(c,id,v){const p=c+"/"+id;pending[p]=v===null?null:{...clone(v),_t:Date.now()};compose();simpanLokal();notifyAll();status();if(fb)kirim(p)}
 function docRef(c,id){return{
@@ -451,6 +453,32 @@ function hitung(p){
   const akhir=praktik!=null&&kuis!=null&&(wp+wk)?Math.round((praktik*wp+kuis*wk)/(wp+wk)*10)/10:null;
   const status=akhir!=null?(akhir>=65?"LULUS":"REMEDIAL"):praktik!=null?"MENUNGGU KUIS":"BELUM DINILAI";
   return {praktik,kuis,akhir,pred:akhir==null?null:kat(akhir),status,isi,total:as.length};
+}
+/* keterangan otomatis dari hasil tiap aspek */
+function daftarKata(a){return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" dan "+a[a.length-1]}
+function keterangan(p,singkat){
+  const as=aspekKelas(p.kelas),g={BS:[],B:[],C:[],K:[],"":[]},nm=a=>a.label||a.nama;
+  as.forEach(a=>{const v=p.nilai?.[a.kode]||"";(g[v]||g[""]).push(a)});
+  if(!as.length||g[""].length===as.length)return "Belum dinilai.";
+  const x=hitung(p),out=[];
+  if(singkat){
+    if(g.K.length)out.push("Wajib perbaikan: "+g.K.map(nm).join(", "));
+    if(g.C.length)out.push("Latihan ulang: "+g.C.map(nm).join(", "));
+    if(!g.K.length&&!g.C.length&&!g[""].length)out.push(g.BS.length===as.length?"Seluruh aspek Baik Sekali":"Seluruh aspek minimal Baik");
+    if(g[""].length)out.push(g[""].length+" aspek belum dinilai");
+    return out.join(". ")+".";
+  }
+  const KT={BS:"sangat baik",B:"baik",C:"cukup",K:"kurang"};
+  if(x.praktik!=null)out.push(`Kemampuan praktik secara umum ${KT[kat(x.praktik)]} (nilai praktik ${fmt(x.praktik)}).`);
+  if(g.BS.length)out.push(`Sangat baik pada ${daftarKata(g.BS.map(nm))}.`);
+  if(g.B.length)out.push(`Baik pada ${daftarKata(g.B.map(nm))}.`);
+  if(g.C.length)out.push(`Perlu latihan ulang pada ${daftarKata(g.C.map(nm))}.`);
+  if(g.K.length)out.push(`Belum memenuhi dan wajib perbaikan pada ${daftarKata(g.K.map(nm))}.`);
+  if(!g.C.length&&!g.K.length&&!g[""].length)out.push("Seluruh aspek praktik sudah memenuhi standar.");
+  if(g[""].length)out.push(`Belum dinilai: ${daftarKata(g[""].map(nm))}.`);
+  if(x.akhir!=null)out.push(x.status==="LULUS"?`Dinyatakan LULUS dengan predikat ${SHORT[x.pred]} (nilai akhir ${fmt(x.akhir)}).`:`Dinyatakan REMEDIAL (nilai akhir ${fmt(x.akhir)}); ulangi praktik${g.K.length||g.C.length?" pada aspek yang belum memenuhi":""} dan kuis sesuai arahan instruktur.`);
+  else if(x.praktik!=null)out.push("Status akhir menunggu nilai kuis.");
+  return out.join(" ");
 }
 function rows(k){return diBatch().filter(p=>k==null||p.kelas===k).map(p=>({p,h:hitung(p)})).sort((a,b)=>(a.p.no??999)-(b.p.no??999)||String(a.p.nama).localeCompare(b.p.nama))}
 
@@ -564,7 +592,7 @@ function renderTable(R){
     <span class="pb"><i style="width:${x.total?x.isi/x.total*100:0}%"></i></span></button>`).join(""):'<div class="empty">Tidak ada peserta yang cocok dengan filter.</div>';
   const dis=S.canWrite?"":"disabled";
   let h='<table class="rk"><thead><tr><th>No</th><th class="nm">Nama peserta</th>'+as.map(a=>`<th class="${a.kelas?"":"gen"}" title="${esc(a.nama)}">${esc(a.label||a.nama)}<small>${esc(a.bobot)}%</small></th>`).join("")+
-    `<th>Nilai Praktik<small>${esc(S.cfg.bobotPraktik)}%</small></th><th>Nilai Kuis<small>${esc(S.cfg.bobotKuis)}%</small></th><th>Nilai Akhir</th><th>Predikat</th><th>Status</th><th>Catatan</th></tr></thead><tbody>`;
+    `<th>Nilai Praktik<small>${esc(S.cfg.bobotPraktik)}%</small></th><th>Nilai Kuis<small>${esc(S.cfg.bobotKuis)}%</small></th><th>Nilai Akhir</th><th>Predikat</th><th>Status</th><th>Keterangan</th></tr></thead><tbody>`;
   list.forEach((r,i)=>{const p=r.p,x=r.h;
     h+=`<tr data-id="${esc(p.id)}"><td class="no">${i+1}</td><td class="nm"><button class="nmb" type="button" data-sheet="${esc(p.id)}">${esc(p.nama)}</button></td>`;
     for(const a of as){const v=p.nilai?.[a.kode]||"";
@@ -572,7 +600,7 @@ function renderTable(R){
     h+=`<td class="num px">${x.praktik!=null?fmt(x.praktik):x.isi?`<span class="sub">${x.isi}/${x.total}</span>`:"–"}</td>`;
     h+=`<td class="num"><input class="kz" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="–" value="${x.kuis??""}" data-kz aria-label="Nilai kuis ${esc(p.nama)}" ${dis}></td>`;
     h+=`<td class="num">${fmt(x.akhir)}</td><td class="num">${x.pred?`<span class="pill ${CLS[x.pred]}">${SHORT[x.pred]}</span>`:"–"}</td>`;
-    h+=`<td class="num"><span class="pill ${ST_CLS[x.status]}">${x.status}</span></td><td class="nt">${esc(p.catatan||"")}</td></tr>`});
+    h+=`<td class="num"><span class="pill ${ST_CLS[x.status]}">${x.status}</span></td><td class="nt">${esc(keterangan(p,true))}${p.catatan?`<br><i>Catatan: ${esc(p.catatan)}</i>`:""}</td></tr>`});
   if(!list.length)h+=`<tr><td colspan="${as.length+8}" class="empty">Tidak ada peserta yang cocok dengan filter.</td></tr>`;
   $("#tbl").innerHTML=h+"</tbody></table>";renderFoot();
 }
@@ -630,7 +658,8 @@ function renderSheet(reset){
         <details data-k="${esc(a.kode)}" ${terbuka.has(a.kode)?"open":""}><summary>Fokus / indikator</summary><ul>${fk.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></details>
         <div class="lv" role="group" aria-label="Nilai ${esc(a.nama)}">${sk.map(s=>`<button type="button" class="${v===s.k?CLS[s.k]:""}" aria-pressed="${v===s.k}" data-lv="${s.k}" data-asp="${esc(a.kode)}" ${dis}>${esc(s.label)}<small>${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</small></button>`).join("")}</div>
         ${v?`<p class="desc">${esc(a.r?.[v]||"")}</p>`:""}</div>`}).join("")+
-    `<label class="sub" style="display:grid;gap:4px">Catatan instruktur<textarea id="shCat" ${dis}>${esc(p.catatan||"")}</textarea></label>`;
+    `<div class="desc"><b>Keterangan (otomatis):</b> ${esc(keterangan(p))}</div>`+
+    `<label class="sub" style="display:grid;gap:4px">Catatan instruktur (tambahan, opsional)<textarea id="shCat" ${dis}>${esc(p.catatan||"")}</textarea></label>`;
   body.scrollTop=reset?0:st;
   $("#shEdit").hidden=!S.canWrite;
 }
@@ -689,9 +718,9 @@ function infoBlok(doc,pairs,y,W,kol){
   return y+Math.ceil(pairs.length/kol)*5.5+2;
 }
 function ttd(doc,y,W,H){
-  if(y>H-50){doc.addPage();y=20}
   const x=W-82,k=curBatch()||{};doc.setFontSize(9.5);doc.setFont("helvetica","normal");doc.setTextColor(21,33,46);
   const tl=doc.splitTextToSize(pt([k.lokasi,k.tanggal].filter(Boolean).join(", ")||"............, ...................."),72);
+  if(y+31+(tl.length-1)*4.5>H-12){doc.addPage();y=20;doc.setFontSize(9.5);doc.setFont("helvetica","normal");doc.setTextColor(21,33,46)}
   doc.text(tl,x,y);y+=(tl.length-1)*4.5;
   doc.text("Penilai / Instruktur",x,y+5.5);
   doc.setFont("helvetica","bold");doc.text(pt(k.penilai||"(.................................)"),x,y+28);
@@ -721,11 +750,11 @@ async function pdfRekap(J){
   const B=curBatch()||{};const y=infoBlok(doc,[["Kegiatan",B.kegiatan],["Batch",B.nama],["PJK3",B.pjk3],["Kelas",kelasJudul(S.kelas)],["Lokasi Praktek",B.lokasi],["Tanggal",B.tanggal]],31,W,2);
   const nA=as.length;
   doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
-    head:[["No","Nama Peserta",...as.map(a=>pt(`${a.label||a.nama}\n(${a.bobot}%)`)),"Nilai\nPraktik","Nilai\nKuis","Nilai\nAkhir","Predikat","Status"]],
-    body:R.map(({p,h},i)=>[i+1,pt(p.nama),...as.map(a=>SHORT[p.nilai?.[a.kode]]||"-"),fmt(h.praktik),fmt(h.kuis),fmt(h.akhir),h.pred?SHORT[h.pred]:"-",h.status]),
+    head:[["No","Nama Peserta",...as.map(a=>pt(`${a.label||a.nama}\n(${a.bobot}%)`)),"Nilai\nPraktik","Nilai\nKuis","Nilai\nAkhir","Predikat","Status","Keterangan"]],
+    body:R.map(({p,h},i)=>[i+1,pt(p.nama),...as.map(a=>SHORT[p.nilai?.[a.kode]]||"-"),fmt(h.praktik),fmt(h.kuis),fmt(h.akhir),h.pred?SHORT[h.pred]:"-",h.status,pt(keterangan(p,true)+(p.catatan?" Catatan: "+p.catatan:""))]),
     styles:{font:"helvetica",fontSize:7.6,cellPadding:1.6,valign:"middle",halign:"center",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
     headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",fontSize:7.2},
-    columnStyles:{0:{cellWidth:8},1:{halign:"left",cellWidth:44,fontStyle:"bold"}},
+    columnStyles:{0:{cellWidth:8},1:{halign:"left",cellWidth:38,fontStyle:"bold"},[7+nA]:{halign:"left",cellWidth:54,fontSize:6.6}},
     didParseCell(d){if(d.section!=="body")return;const c=d.column.index;
       if(c>=2&&c<2+nA)warnai(d,LABEL2K[d.cell.raw]);
       if(c===2+nA)d.cell.styles.fillColor=[227,238,248];
@@ -761,6 +790,8 @@ function lembar(doc,p,W,H){
     columnStyles:{0:{cellWidth:55,fillColor:[238,242,246]},1:{halign:"center",fontStyle:"bold"}},
     didParseCell(d){if(d.column.index!==1)return;if(d.row.index===3)warnai(d,LABEL2K[d.cell.raw]);if(d.row.index===4)warnai(d,ST_PC[d.cell.raw]);if(d.row.index===2)d.cell.styles.fontSize=11}});
   y=doc.lastAutoTable.finalY+6;
+  {if(y>H-60){doc.addPage();y=20}doc.setTextColor(21,33,46);doc.setFontSize(9);doc.setFont("helvetica","bold");doc.text("Keterangan",12,y);doc.setFont("helvetica","normal");
+    const kl=doc.splitTextToSize(pt(keterangan(p)),W-24);doc.text(kl,12,y+5);y+=8+kl.length*4.2}
   if(p.catatan){doc.setFontSize(9);doc.setFont("helvetica","bold");doc.text("Catatan instruktur",12,y);doc.setFont("helvetica","normal");
     const l=doc.splitTextToSize(pt(p.catatan),W-24);doc.text(l,12,y+5);y+=8+l.length*4.2}
   doc.setFontSize(7.5);doc.setTextColor(90,100,112);const sl=doc.splitTextToSize(pt(skalaTeks()),W-24);doc.text(sl,12,y);
@@ -834,17 +865,17 @@ $("#pList").addEventListener("input",()=>{const n=parseList().length;$("#pInfo")
 $("#pX").addEventListener("click",()=>$("#pdlg").close());
 $("#pfrm").addEventListener("submit",async e=>{
   e.preventDefault();const names=parseList();if(!names.length){toast("Tidak ada nama baru untuk ditambahkan.");return}
-  $("#pdlg").close();let no=nextNo(),ok=0;const base=Date.now().toString(36);
-  for(let i=0;i<names.length;i++){try{await S.db.collection("peserta").doc(`p${base}${i.toString(36)}`).set({nama:names[i],kelas:S.kelas,batch:S.batch,no:no++,nilai:{},kuis:null,catatan:""});ok++}catch(err){toast(err?.code==="quota_exceeded"?"Penyimpanan penuh.":"Sebagian nama gagal disimpan.");break}}
+  $("#pdlg").close();let no=nextNo(),ok=0;const base=Date.now().toString(36),bId=S.batch,kl=S.kelas;
+  for(let i=0;i<names.length;i++){try{await S.db.collection("peserta").doc(`p${base}${i.toString(36)}`).set({nama:names[i],kelas:kl,batch:bId,no:no++,nilai:{},kuis:null,catatan:""});ok++}catch(err){toast(err?.code==="quota_exceeded"?"Penyimpanan penuh.":"Sebagian nama gagal disimpan.");break}}
   toast(`${ok} peserta ditambahkan ke ${kelasJudul(S.kelas)}.`);
 });
 
 /* CSV */
 async function unduhCsv(){
   const as=aspekKelas(S.kelas);const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const head=["No","Nama","Kelas",...as.map(a=>a.nama),"Nilai Praktik","Nilai Kuis","Nilai Akhir","Predikat","Status","Catatan"];
+  const head=["No","Nama","Kelas",...as.map(a=>a.nama),"Nilai Praktik","Nilai Kuis","Nilai Akhir","Predikat","Status","Keterangan","Catatan instruktur"];
   const lines=[head.map(q).join(";")];
-  rows(S.kelas).forEach(({p,h},i)=>lines.push([i+1,p.nama,kelasJudul(p.kelas),...as.map(a=>SHORT[p.nilai?.[a.kode]]||""),h.praktik??"",h.kuis??"",h.akhir??"",h.pred?SHORT[h.pred]:"",h.status,p.catatan].map(q).join(";")));
+  rows(S.kelas).forEach(({p,h},i)=>lines.push([i+1,p.nama,kelasJudul(p.kelas),...as.map(a=>SHORT[p.nilai?.[a.kode]]||""),h.praktik??"",h.kuis??"",h.akhir??"",h.pred?SHORT[h.pred]:"",h.status,keterangan(p),p.catatan].map(q).join(";")));
   try{await S.dl.save({filename:`Rekap Penilaian ${batchNama(S.batch)} ${kelasJudul(S.kelas)}.csv`,data:"﻿"+lines.join("\r\n")})}catch(e){if(e?.code!=="dismissed"&&e?.code!=="declined")toast("File tidak jadi diunduh.")}
 }
 $("#csv").addEventListener("click",unduhCsv);
