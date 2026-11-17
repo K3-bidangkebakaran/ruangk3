@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RuangK3 - Pusat Edukasi & Informasi K3</title>
-    <script src="/maint.js?v=1" data-page="web" defer></script>
+    <script src="/maint.js?v=2" data-page="web" defer></script>
 
     <!-- Preconnect ke semua host eksternal yang dipakai halaman ini (Tailwind CDN, Google
          Fonts, Firebase Auth/Database via gstatic.com, Realtime Database itu sendiri,
@@ -27,6 +27,7 @@
          tiba) -- supaya sinyal lemah tidak membuat layar putih menunggu fonts.googleapis.com. -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap"></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 
     <!-- Flatpickr (Kalender Multi-Tanggal) -->
     <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" onload="this.onload=null;this.rel='stylesheet'">
@@ -313,6 +314,107 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         .tab-lms-active { color: #2ecc71; border-bottom: 3px solid #2ecc71; font-weight: 800; }
+        /* ===== Beranda baru (desain usulan 2026-11-17): kelas rb-*, tanpa Tailwind baru ===== */
+        html, body { overflow-x: clip; }
+        .rb { font-family: 'IBM Plex Sans', 'Plus Jakarta Sans', system-ui, sans-serif; color: #1f2933; }
+        .rb-bleed { width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); }
+        .rb-wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+        .rb-serif { font-family: 'Source Serif 4', Georgia, serif; }
+        .rb-grid-d { background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 40px 40px; }
+        .rb-grid-l { background-image: linear-gradient(rgba(12,26,38,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(12,26,38,.04) 1px, transparent 1px); background-size: 40px 40px; }
+        .rb-eyebrow { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; letter-spacing: 1.4px; color: #166534; text-transform: uppercase; }
+        .rb-eyebrow.d { color: #8fd1a5; }
+        .rb-eyebrow.d::before { content: ""; width: 28px; height: 2px; background: #8fd1a5; }
+        .rb-h2 { margin: 6px 0 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 34px; font-weight: 700; line-height: 1.2; color: #0c1a26; }
+        .rb-lead { margin: 10px 0 0; font-size: 16px; line-height: 1.65; color: #4a5560; max-width: 680px; }
+        .rb-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 26px; border-radius: 3px; font-weight: 600; font-size: 15.5px; cursor: pointer; text-decoration: none; }
+        .rb-btn.w { background: #ffffff; color: #0f2233; border: 0; }
+        .rb-btn.o { background: transparent; color: #ffffff; border: 1px solid #5b7184; }
+        .rb-btn.g { background: #22a05a; color: #ffffff; border: 0; }
+        .rb-btn.w:hover { background: #e8eef2; } .rb-btn.o:hover { border-color: #9fb0bf; } .rb-btn.g:hover { background: #1b8a4c; }
+        .rb-hero { background-color: #0f2233; color: #ffffff; position: relative; overflow: hidden; margin-top: -2rem; }
+        .rb-hero-in { display: flex; flex-wrap: wrap; align-items: center; gap: 40px 56px; padding-top: 76px; padding-bottom: 124px; position: relative; }
+        .rb-hero-txt { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+        .rb-h1 { margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; font-size: 50px; line-height: 1.12; letter-spacing: -.5px; max-width: 640px; }
+        .rb-hero-p { margin: 0; font-size: 18px; line-height: 1.65; color: #c6d1db; max-width: 580px; }
+        .rb-hero-card { flex: 1 1 360px; min-width: 0; background: rgba(12,26,38,.55); border: 1px solid #2c4357; padding: 24px; }
+        .rb-helm { position: absolute; pointer-events: none; opacity: .12; left: max(0px, calc(50% - 640px)); bottom: -40px; width: 520px; }
+        .rb-quick { position: relative; margin-top: -64px; }
+        .rb-quick-in { background: #ffffff; border: 1px solid #e3e7eb; box-shadow: 0 1px 2px rgba(12,26,38,.06), 0 12px 32px rgba(12,26,38,.08); display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+        .rb-quick-in button { display: flex; gap: 16px; padding: 26px; text-align: left; background: #fff; border: 0; border-right: 1px solid #e3e7eb; color: #0c1a26; cursor: pointer; font: inherit; }
+        .rb-quick-in button:last-child { border-right: 0; }
+        .rb-quick-in button:hover { background: #f5f8f6; }
+        .rb-quick-in b { display: block; font-size: 16.5px; font-weight: 600; }
+        .rb-quick-in small { display: block; margin-top: 4px; font-size: 14px; line-height: 1.5; color: #5f6b76; }
+        .rb-quick-in svg { flex: none; width: 28px; height: 28px; stroke: #166534; }
+        .rb-body { background-color: #fafbfa; border-top: 1px solid #e3e7eb; border-bottom: 1px solid #e3e7eb; margin-top: 72px; padding-bottom: 88px; position: relative; overflow: hidden; }
+        .rb-apar { position: absolute; pointer-events: none; opacity: .08; right: max(-40px, calc(50% - 760px)); top: 900px; width: 260px; }
+        .rb-sec { padding-top: 72px; position: relative; }
+        .rb-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px 32px; margin-bottom: 28px; }
+        .rb-link { font-size: 15px; font-weight: 600; color: #166534; background: none; border: 0; cursor: pointer; padding: 0; font-family: inherit; }
+        .rb-link:hover { text-decoration: underline; }
+        .rb-lis { background-color: #0f2233; color: #ffffff; display: flex; flex-wrap: wrap; gap: 24px 56px; align-items: center; justify-content: space-between; padding: 44px 52px; }
+        .rb-lis h2 { margin: 6px 0 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 30px; font-weight: 700; }
+        .rb-lis p { margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: #c6d1db; max-width: 560px; }
+        .rb-bidang { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+        .rb-bcard { display: flex; flex-direction: column; gap: 8px; padding: 22px; background: #ffffff; border: 1px solid #e3e7eb; text-align: left; cursor: pointer; font: inherit; color: #0c1a26; min-height: 120px; }
+        .rb-bcard:hover { border-color: #166534; }
+        .rb-bcard .k { font-size: 12px; font-weight: 600; letter-spacing: 1px; color: #5f6b76; text-transform: uppercase; }
+        .rb-bcard .n { font-size: 18px; font-weight: 600; line-height: 1.35; }
+        .rb-bcard .c { font-size: 14px; color: #5f6b76; margin-top: auto; }
+        .rb-alur { margin: 0 0 40px; padding: 0 24px; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); background: #ffffff; border: 1px solid #e3e7eb; border-top: 2px solid #0c1a26; }
+        .rb-alur li { padding: 24px 20px 26px; display: flex; flex-direction: column; gap: 8px; border-left: 1px solid #e3e7eb; }
+        .rb-alur li:first-child { border-left: 0; padding-left: 0; }
+        .rb-alur .no { font-family: 'Source Serif 4', Georgia, serif; font-size: 30px; font-weight: 700; color: #166534; }
+        .rb-alur .t { font-size: 18px; font-weight: 600; color: #0c1a26; }
+        .rb-alur .d { font-size: 14.5px; line-height: 1.6; color: #4a5560; }
+        .rb-h3 { margin: 0 0 18px; font-size: 20px; font-weight: 600; color: #0c1a26; }
+        .rb-stats { background-color: #f5f7f6; padding: 56px 0 64px; }
+        .rb-stats-in { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); border-top: 1px solid #d5dbe0; border-bottom: 1px solid #d5dbe0; }
+        .rb-stats-in > div { padding: 24px; display: flex; flex-direction: column; gap: 4px; border-left: 1px solid #d5dbe0; }
+        .rb-stats-in > div:first-child { border-left: 0; padding-left: 0; }
+        .rb-stats-in .v { font-family: 'Source Serif 4', Georgia, serif; font-size: 34px; font-weight: 700; color: #0c1a26; }
+        .rb-stats-in .l { font-size: 14px; color: #4a5560; }
+        .rb-rc-k { margin: 0 0 8px; font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #8fd1a5; }
+        .rb-rc-p { margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: #dfe6ec; }
+        .rb-rc-ol { margin: 0 0 20px; padding: 0; list-style: none; border-top: 1px solid rgba(255,255,255,.15); font-size: 14.5px; color: #dfe6ec; }
+        .rb-rc-ol li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .rb-rc-ol span { color: #8fd1a5; font-weight: 700; width: 24px; }
+        .rb-riwayat { background: #ffffff; border: 1px solid #e3e7eb; padding: 24px; }
+        @media (max-width: 767px) {
+            .rb-wrap { padding-left: 18px; padding-right: 18px; }
+            .rb-sec { padding-top: 48px; }
+            .rb-hero-in { padding-top: 40px; padding-bottom: 96px; }
+            .rb-h1 { font-size: 32px; } .rb-hero-p { font-size: 16px; } .rb-h2 { font-size: 26px; }
+            .rb-helm { width: 340px; left: auto; right: -90px; bottom: auto; top: 150px; }
+            .rb-quick-in { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .rb-quick-in button { flex-direction: column; gap: 10px; padding: 18px 14px; border-bottom: 1px solid #e3e7eb; }
+            .rb-quick-in small { display: none; }
+            .rb-lis { padding: 26px 20px; } .rb-lis h2 { font-size: 23px; }
+            .rb-alur li { border-left: 0; border-top: 1px solid #e3e7eb; padding-left: 0; }
+            .rb-alur li:first-child { border-top: 0; }
+            .rb-stats-in { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .rb-stats-in > div { padding: 16px; } .rb-stats-in > div:nth-child(odd) { border-left: 0; padding-left: 0; }
+            .rb-apar { width: 180px; right: -50px; }
+            .rb-btn { width: 100%; }
+        }
+        /* Header gaya baru (semua halaman situs utama) */
+        .rb-top { background: #0c1a26; color: #b9c4cf; font-size: 13px; }
+        .rb-top-in { max-width: 80rem; margin: 0 auto; padding: 0 2rem; min-height: 36px; display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: center; justify-content: space-between; }
+        .rb-top button { background: none; border: 0; color: #dfe6ec; cursor: pointer; font: inherit; padding: 4px 0; }
+        .rb-top button:hover { color: #ffffff; text-decoration: underline; }
+        #navbar.glass-nav { background: #ffffff; backdrop-filter: none; border-bottom: 1px solid #e3e7eb; color: #0c1a26; box-shadow: 0 1px 0 rgba(12,26,38,.04); }
+        #navbar .font-brand { color: #0c1a26; }
+        #navbar .text-slate-300 { color: #3d4852; }
+        #navbar .md\:flex > button:hover { color: #166534; }
+        #navbar .tab-lms-active { color: #0c1a26; border-bottom-color: #166534; }
+        #navbar #mobile-menu-button { background: #ffffff; border-color: #c8cfd6; color: #0c1a26; }
+        #navbar #mobile-menu .text-slate-300, #navbar #mobile-menu .text-slate-200 { color: #dfe6ec; }
+        #auth-container-desktop .text-white { color: #0c1a26; }
+        #auth-container-desktop .text-safety-400 { color: #166534; }
+        #auth-container-desktop .text-red-300 { color: #b42318; }
+        #btn-login-admin-desktop { color: #5f6b76; }
+        @media (max-width: 767px) { .rb-top-in { padding: 0 1rem; } .rb-top-in > span { display: none; } }
 
         .no-select { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
         .materi-capture-guard { filter: blur(28px) brightness(0.7); transition: filter 0.12s ease-out; }
@@ -708,6 +810,7 @@
     </script>
 
 
+    <div class="rb-top"><div class="rb-top-in"><span>Pusat Edukasi &amp; Informasi Keselamatan dan Kesehatan Kerja</span><div style="display:flex;gap:22px;align-items:center"><button type="button" onclick="window.openCekLisensi()">Cek Lisensi K3</button><button type="button" onclick="window.switchLmsTab('dashboard');setTimeout(()=>document.getElementById('tutorial-video')?.scrollIntoView({behavior:'smooth'}),350)">Tutorial</button></div></div></div>
     <nav id="navbar" class="w-full z-40 glass-nav transition-all duration-300 shadow-md sticky top-0 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
@@ -743,7 +846,7 @@
                 </div>
 
                 <div class="hidden md:flex space-x-8 text-sm font-semibold">
-                    <button onclick="window.switchLmsTab('dashboard')" id="nav-lms-dashboard" class="py-7 tab-lms-active transition-all">Dashboard Siswa</button>
+                    <button onclick="window.switchLmsTab('dashboard')" id="nav-lms-dashboard" class="py-7 tab-lms-active transition-all">Beranda</button>
                     <button onclick="window.switchLmsTab('kelas')" id="nav-lms-kelas" class="py-7 text-slate-300 hover:text-safety-400 transition-all">Ruang Belajar (Materi)</button>
                     <button onclick="window.switchLmsTab('cbt')" id="nav-lms-cbt" class="py-7 text-slate-300 hover:text-safety-400 transition-all flex items-center">
                         Simulasi CBT
@@ -787,154 +890,122 @@
         </div>
     </nav>
 
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="rb-main flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <!-- DASHBOARD SISWA LMS -->
-        <div id="view-lms-dashboard" class="space-y-8">
-            <section class="relative overflow-hidden bg-animate-ruangk3 rounded-3xl p-8 sm:p-10 text-white shadow-2xl reveal">
-                <div class="absolute inset-0 bg-grid-pattern-white opacity-10"></div>
-                <div class="relative z-10 max-w-2xl">
-                    <span class="inline-block px-3.5 py-1 bg-white/10 backdrop-blur rounded-full text-xs font-bold text-safety-400 border border-white/20 mb-4">
-                        🔥 RuangK3 • Learning & Certification Platform
-                    </span>
-                    <h1 class="text-2xl sm:text-4xl font-extrabold mb-3 leading-tight" id="lms-welcome-title">Selamat Datang di Portal RuangK3</h1>
-                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                        Akses modul digital K3, selesaikan Simulasi CBT interaktif, dan ikuti sertifikasi resmi Kemnaker RI.
-                    </p>
-
-                    <div id="lms-readiness-card" class="bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center space-x-2">
-                                <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
-                                <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
-                            </div>
-                            <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
-                        </div>
-                        <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
-                        <div class="grid grid-cols-3 gap-2 mb-4">
-                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                                <div class="text-lg mb-1">📚</div>
-                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
-                            </div>
-                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                                <div class="text-lg mb-1">📝</div>
-                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
-                            </div>
-                            <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                                <div class="text-lg mb-1">🎓</div>
-                                <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
-                            </div>
-                        </div>
-                        <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>
-                    </div>
-
-                    <!-- Tombol CEK LISENSI: cek lisensi K3 di database TemanK3 Kemnaker RI -->
-                    <button type="button" id="btn-cek-lisensi" onclick="window.openCekLisensi()" class="mt-4 w-full sm:w-auto flex items-center gap-3 text-left bg-gradient-to-br from-safety-600 to-safety-500 hover:from-safety-500 hover:to-safety-400 text-white rounded-2xl pl-3.5 pr-5 py-3 shadow-lg hover:-translate-y-0.5 transition-all">
-                        <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
-                        <span><span class="block text-sm font-extrabold tracking-wide">CEK LISENSI</span><span class="block text-xs font-medium text-white/80">Verifikasi lisensi K3 resmi Kemnaker</span></span>
-                    </button>
-                </div>
-            </section>
-
-            <section id="berita" class="pt-8 border-t border-slate-200 reveal">
-                <div class="mb-5 flex flex-col md:flex-row justify-between items-start md:items-end">
-                    <div>
-                        <div class="flex items-center space-x-2 mb-1">
-                            <span class="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></span>
-                            <span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Portal Berita K3</span>
-                        </div>
-                        <h2 class="text-2xl font-black text-slate-900">Berita & Pengumuman Terbaru</h2>
-                        <p class="text-slate-500 text-xs mt-0.5">Informasi padat & regulasi terkini seputar Keselamatan & Kesehatan Kerja.</p>
-                    </div>
-                </div>
-                <div id="public-berita-container" class="space-y-6">
-                    <div class="w-full text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-500">Memuat berita...</div>
-                </div>
-            </section>
-
-            <!-- ============ TUTORIAL PENGGUNAAN WEBSITE (video panduan singkat) ============ -->
-            <section id="tutorial-video" class="reveal">
-                <div class="mb-5">
-                    <span class="text-[10px] font-extrabold text-safety-500 uppercase tracking-widest">Panduan Singkat</span>
-                    <h2 class="text-xl font-extrabold text-slate-900">Tutorial Penggunaan RuangK3</h2>
-                    <p class="text-xs text-slate-500 mt-1">Tonton video panduan singkat berikut sebelum mulai menggunakan portal ini.</p>
-                </div>
-                <div id="tutorial-video-list" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
-            </section>
-
-            <section class="grid grid-cols-1 lg:grid-cols-3 gap-8 reveal">
-                <div class="lg:col-span-2 space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-extrabold text-slate-900">Modul Materi Training K3</h2>
-                        <button onclick="window.switchLmsTab('kelas')" class="text-xs font-bold text-safety-500 hover:text-safety-600">Lihat Semua Modul &rarr;</button>
-                    </div>
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
-                        <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center mb-5">
-                            <div class="w-full sm:w-48 h-36 bg-gradient-to-br from-navy-900 via-navy-800 to-safety-600 rounded-xl relative overflow-hidden shrink-0 cursor-pointer group flex items-center justify-center shadow-inner" onclick="window.switchLmsTab('kelas')">
-                                <span class="text-5xl drop-shadow-lg">📖</span>
-                                <div class="absolute inset-0 bg-navy-950/0 group-hover:bg-navy-950/40 flex items-center justify-center transition-colors">
-                                    <div class="w-11 h-11 rounded-full bg-safety-400 text-navy-900 flex items-center justify-center font-bold pl-0.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">▶</div>
-                                </div>
-                            </div>
-                            <div class="flex-grow space-y-2.5 w-full">
-                                <div class="flex justify-between items-center">
-                                    <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-extrabold uppercase">Modul Materi Training K3 Multibidang</span>
-                                    <span class="text-xs text-slate-400 font-medium">Digital Course</span>
-                                </div>
-                                <h3 class="font-bold text-lg text-slate-900 hover:text-safety-500 cursor-pointer" onclick="window.switchLmsTab('kelas')">Sertifikasi & Pemahaman K3 Lintas Bidang</h3>
-                                <p id="silabus-home-subjudul" class="text-xs text-slate-500 line-clamp-2">Memuat data bidang & materi terbaru...</p>
-                                <button onclick="window.switchLmsTab('kelas')" class="px-5 py-2.5 bg-safety-500 hover:bg-safety-600 text-white text-xs font-bold rounded-xl shadow-md">Buka Modul Pembelajaran</button>
-                            </div>
-                        </div>
-                        <div class="pt-5 border-t border-slate-100">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">Bidang Tersedia &mdash; Klik untuk Langsung Membuka</p>
-                            <div id="silabus-home-bidang-list" class="flex flex-wrap gap-2">
-                                <span class="text-xs text-slate-400 italic">Memuat data bidang...</span>
-                            </div>
+        <!-- DASHBOARD SISWA LMS (beranda, desain 2026-11-17: kelas rb-* di <style> kepala) -->
+        <div id="view-lms-dashboard" class="rb">
+            <section class="rb-hero rb-bleed rb-grid-d">
+                <svg class="rb-helm" viewBox="0 0 400 240" aria-hidden="true" fill="none" stroke="#8fd1a5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M60 180 C60 96 122 36 200 36 C278 36 340 96 340 180"/><path d="M18 180 H382 C382 200 364 212 344 212 H56 C36 212 18 200 18 180 Z"/><path d="M168 40 V128 M232 40 V128"/><path d="M168 128 H232"/><path d="M100 180 C100 120 140 80 168 70 M300 180 C300 120 260 80 232 70"/></svg>
+                <div class="rb-wrap rb-hero-in">
+                    <div class="rb-hero-txt">
+                        <span class="rb-eyebrow d" id="lms-welcome-title">Portal Edukasi &amp; Sertifikasi K3</span>
+                        <h1 class="rb-h1">Belajar K3, latihan ujian, dan cek lisensi dalam satu portal.</h1>
+                        <p class="rb-hero-p">RuangK3 adalah portal belajar bagi peserta training K3: modul materi dan regulasi per bidang, simulasi ujian CBT, riwayat hasil ujian, dan pengecekan lisensi K3 resmi Kemnaker.</p>
+                        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px">
+                            <button type="button" class="rb-btn w" onclick="window.switchLmsTab('kelas')">Buka Ruang Belajar <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+                            <button type="button" class="rb-btn o" onclick="document.getElementById('tutorial-video')?.scrollIntoView({behavior:'smooth'})">Lihat alur sertifikasi</button>
                         </div>
                     </div>
-                </div>
-                <div class="space-y-6">
-                    <div class="bg-navy-900 text-white rounded-2xl p-6 shadow-xl space-y-4 border border-slate-800">
-                        <div class="w-10 h-10 bg-safety-400/20 rounded-xl flex items-center justify-center text-safety-400 font-bold">📋</div>
-                        <h3 class="font-extrabold text-lg">Simulasi CBT Sertifikasi</h3>
-                        <p class="text-xs text-slate-300 leading-relaxed">Uji pengetahuan Anda dalam ujian CBT berwaktu 45 menit. Dapatkan evaluasi instan dan unduh sertifikat/soal PDF.</p>
-                        <button onclick="window.switchLmsTab('cbt')" class="w-full py-3.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Mulai Simulasi Ujian CBT &rarr;</button>
+                    <div class="rb-hero-card">
+                        <div id="lms-readiness-card">
+                            <p class="rb-rc-k">Perjalanan Sertifikasi Anda</p>
+                            <p class="rb-rc-p">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda.</p>
+                            <ol class="rb-rc-ol">
+                                <li><span>01</span>Modul &amp; regulasi K3</li>
+                                <li><span>02</span>Simulasi CBT</li>
+                                <li><span>03</span>Sertifikasi RI</li>
+                            </ol>
+                            <button onclick="window.openModal('modal-login')" class="rb-btn w" style="width:100%">Masuk / Daftar Akun Peserta &rarr;</button>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ============ RIWAYAT HASIL UJIAN PESERTA ============ -->
-            <section id="riwayat-ujian" class="pt-8 border-t border-slate-200 reveal">
-                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
-                    <div>
-                        <span class="text-[10px] font-extrabold text-safety-500 uppercase tracking-widest">Rekam Jejak Ujian</span>
-                        <h2 class="text-xl font-extrabold text-slate-900">Riwayat Hasil Ujian Saya</h2>
-                        <p class="text-xs text-slate-500 mt-1">Menampilkan seluruh hasil ujian CBT sesuai bidang &amp; kelas yang pernah Anda pilih. Klik pada kartu untuk melihat detail pembahasan.</p>
-                    </div>
-                    <div class="w-full sm:w-64">
-                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Kelas / Kategori</label>
-                        <select id="filter-riwayat-kelas" class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl outline-none bg-white">
-                            <option value="all">Semua Kelas</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="riwayat-ujian-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 hidden">
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Ujian</p><p id="riwayat-stat-total" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Tertinggi</p><p id="riwayat-stat-max" class="text-2xl font-extrabold text-emerald-600 mt-1">0</p></div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rata-Rata</p><p id="riwayat-stat-avg" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
-                    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lulus</p><p id="riwayat-stat-lulus" class="text-2xl font-extrabold text-safety-600 mt-1">0</p></div>
-                </div>
-
-                <div id="riwayat-ujian-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center">
-                        <p class="text-sm text-slate-500">Silakan masuk ke akun peserta untuk melihat riwayat hasil ujian Anda.</p>
-                    </div>
+            <section class="rb-wrap rb-quick" aria-label="Akses cepat">
+                <div class="rb-quick-in">
+                    <button type="button" onclick="window.switchLmsTab('kelas')"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M9 7h6"/></svg><span><b>Ruang Belajar</b><small>Modul &amp; regulasi K3 per bidang</small></span></button>
+                    <button type="button" onclick="window.switchLmsTab('cbt')"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M8 21h8M12 17v4M7 9l2 2 4-4"/></svg><span><b>Simulasi CBT</b><small>Latihan soal format ujian komputer</small></span></button>
+                    <button type="button" onclick="window.switchLmsTab('hasil')"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span><b>Hasil Ujian</b><small>Riwayat nilai &amp; pembahasan</small></span></button>
+                    <button type="button" onclick="window.openCekLisensi()"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg><span><b>Cek Lisensi K3</b><small>Verifikasi lisensi resmi Kemnaker</small></span></button>
                 </div>
             </section>
 
-            <section id="pjk3-collab" class="pt-8 border-t border-slate-200 reveal">
+            <div class="rb-body rb-bleed rb-grid-l">
+                <svg class="rb-apar" viewBox="0 0 200 400" aria-hidden="true" fill="none" stroke="#166534" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="50" y="110" width="100" height="270" rx="44"/><path d="M80 110 V80 H120 V110"/><path d="M84 80 C84 52 100 40 124 40 H160 L176 30"/><path d="M120 60 L60 40 C40 34 30 50 34 70 C40 110 20 150 24 190"/><path d="M50 200 H150 M50 260 H150"/><rect x="72" y="214" width="56" height="32" rx="4"/></svg>
+
+                <section id="berita" class="rb-wrap rb-sec">
+                    <div class="rb-head">
+                        <div><span class="rb-eyebrow">Portal Berita K3</span><h2 class="rb-h2">Berita &amp; pengumuman</h2></div>
+                    </div>
+                    <div id="public-berita-container" class="space-y-6">
+                        <div class="w-full text-center py-12 bg-white rounded-2xl border border-slate-200 text-slate-500">Memuat berita...</div>
+                    </div>
+                </section>
+
+                <section class="rb-wrap rb-sec" aria-label="Cek lisensi K3">
+                    <div class="rb-lis rb-grid-d">
+                        <div><span class="rb-eyebrow d">Verifikasi Lisensi</span><h2>Cek lisensi K3 Anda</h2><p>Verifikasi lisensi K3 resmi Kemnaker berdasarkan nama lengkap sesuai sertifikat.</p></div>
+                        <button type="button" id="btn-cek-lisensi" class="rb-btn g" onclick="window.openCekLisensi()">Periksa lisensi</button>
+                    </div>
+                </section>
+
+                <section class="rb-wrap rb-sec">
+                    <div class="rb-head">
+                        <div><span class="rb-eyebrow">Ruang Belajar</span><h2 class="rb-h2">Pilih bidang training Anda</h2><p id="silabus-home-subjudul" class="rb-lead">Memuat data bidang &amp; materi terbaru...</p></div>
+                        <button type="button" class="rb-link" onclick="window.switchLmsTab('kelas')">Semua modul &rarr;</button>
+                    </div>
+                    <div id="silabus-home-bidang-list" class="rb-bidang">
+                        <span class="text-sm text-slate-400 italic">Memuat data bidang...</span>
+                    </div>
+                </section>
+
+                <!-- ============ TUTORIAL PENGGUNAAN + ALUR SERTIFIKASI ============ -->
+                <section id="tutorial-video" class="rb-wrap rb-sec">
+                    <div class="rb-head">
+                        <div><span class="rb-eyebrow">Panduan</span><h2 class="rb-h2">Tutorial penggunaan &amp; alur sertifikasi</h2><p class="rb-lead">Ikuti empat langkah berikut dari pendaftaran sampai lisensi Anda terverifikasi. Video tutorial di bawahnya menjelaskan cara memakai setiap fitur.</p></div>
+                    </div>
+                    <ol class="rb-alur">
+                        <li><span class="no">01</span><span class="t">Daftar sebagai peserta</span><span class="d">Buat akun dan pilih PJK3 penyelenggara training Anda.</span><button type="button" class="rb-link" style="align-self:flex-start;font-size:14px" onclick="window.openModal('modal-login')">Masuk / Daftar &rarr;</button></li>
+                        <li><span class="no">02</span><span class="t">Pelajari modul</span><span class="d">Materi training dan regulasi K3 sesuai bidang Anda.</span><button type="button" class="rb-link" style="align-self:flex-start;font-size:14px" onclick="window.switchLmsTab('kelas')">Buka modul &rarr;</button></li>
+                        <li><span class="no">03</span><span class="t">Latihan Simulasi CBT</span><span class="d">Soal format ujian komputer, lengkap dengan rincian jawaban.</span><button type="button" class="rb-link" style="align-self:flex-start;font-size:14px" onclick="window.switchLmsTab('cbt')">Mulai latihan &rarr;</button></li>
+                        <li><span class="no">04</span><span class="t">Sertifikasi &amp; lisensi</span><span class="d">Ikuti ujian resmi, lalu cek hasil dan lisensi K3 Anda.</span><button type="button" class="rb-link" style="align-self:flex-start;font-size:14px" onclick="window.openCekLisensi()">Cek lisensi &rarr;</button></li>
+                    </ol>
+                    <h3 class="rb-h3">Video tutorial</h3>
+                    <div id="tutorial-video-list" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+                </section>
+
+                <section id="riwayat-ujian" class="rb-wrap rb-sec">
+                    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+                        <div>
+                            <span class="text-[10px] font-extrabold text-safety-500 uppercase tracking-widest">Rekam Jejak Ujian</span>
+                            <h2 class="text-xl font-extrabold text-slate-900">Riwayat Hasil Ujian Saya</h2>
+                            <p class="text-xs text-slate-500 mt-1">Menampilkan seluruh hasil ujian CBT sesuai bidang &amp; kelas yang pernah Anda pilih. Klik pada kartu untuk melihat detail pembahasan.</p>
+                        </div>
+                        <div class="w-full sm:w-64">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Filter Kelas / Kategori</label>
+                            <select id="filter-riwayat-kelas" class="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl outline-none bg-white">
+                                <option value="all">Semua Kelas</option>
+                            </select>
+                        </div>
+                    </div>
+    
+                    <div id="riwayat-ujian-stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 hidden">
+                        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Ujian</p><p id="riwayat-stat-total" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
+                        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai Tertinggi</p><p id="riwayat-stat-max" class="text-2xl font-extrabold text-emerald-600 mt-1">0</p></div>
+                        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rata-Rata</p><p id="riwayat-stat-avg" class="text-2xl font-extrabold text-slate-900 mt-1">0</p></div>
+                        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm"><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lulus</p><p id="riwayat-stat-lulus" class="text-2xl font-extrabold text-safety-600 mt-1">0</p></div>
+                    </div>
+    
+                    <div id="riwayat-ujian-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="col-span-full bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center">
+                            <p class="text-sm text-slate-500">Silakan masuk ke akun peserta untuk melihat riwayat hasil ujian Anda.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Mitra kolaborasi PJK3 tidak ditampilkan di beranda (permintaan Adrian 2026-11-17); wadah tetap ada karena diisi skrip -->
+            <section id="pjk3-collab" class="hidden" aria-hidden="true">
                 <div class="mb-6 text-center">
                     <span class="text-[10px] font-extrabold text-safety-500 uppercase tracking-widest block mb-1">Didukung Oleh</span>
                     <h2 class="text-2xl font-extrabold text-slate-900">PJK3 Collaboration Mitra</h2>
@@ -944,33 +1015,13 @@
                 </div>
             </section>
 
-            <section class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal pt-8 mt-8 border-t border-slate-200">
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 text-xl font-bold">📚</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modul Tersedia</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-modul-count">0</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-sky-50 rounded-xl flex items-center justify-center text-sky-600 text-xl font-bold">👥</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peserta Terdaftar</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-pendaftar">0</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 text-xl font-bold">🎓</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peserta Sudah Ujian</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-lulus">0</p>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 text-xl font-bold">🌐</div>
-                    <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Kunjungan</p>
-                        <p class="text-xl font-extrabold text-slate-900" id="stat-total-visitors">0</p>
+            <section class="rb-stats rb-bleed rb-grid-l" aria-label="Statistik">
+                <div class="rb-wrap">
+                    <div class="rb-stats-in">
+                        <div><span class="v" id="stat-total-modul-count">0</span><span class="l">Modul tersedia</span></div>
+                        <div><span class="v" id="stat-total-pendaftar">0</span><span class="l">Peserta terdaftar</span></div>
+                        <div><span class="v" id="stat-total-lulus">0</span><span class="l">Peserta sudah ujian</span></div>
+                        <div><span class="v" id="stat-total-visitors">0</span><span class="l">Total kunjungan</span></div>
                     </div>
                 </div>
             </section>
@@ -1263,7 +1314,7 @@
             <form id="form-register-peserta" class="space-y-4 hidden">
                 <div><input type="email" id="reg-email" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Email Aktif"></div>
                 <div><input type="password" id="reg-password" required minlength="6" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Kata Sandi (Min. 6)"></div>
-                <div><input type="text" id="reg-nama" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Nama Lengkap"></div>
+                <div><input type="text" id="reg-nama" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Nama Lengkap (sesuai KTP)"><p class="text-[11px] text-slate-500 pl-1 mt-1">Nama lengkap sesuai KTP.</p></div>
                 <div><input type="text" id="reg-instansi" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Instansi / Perusahaan"></div>
                 <div>
                     <select id="reg-penyelenggara" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
@@ -2747,6 +2798,7 @@
         // "PJK3 LPMI" selalu ada (bawaan) dan otomatis jadi penyelenggara semua peserta lama.
         const PENYELENGGARA_DEFAULT = 'PJK3 LPMI';
         let dataPenyelenggara = []; // [{id, nama}]
+        let dataPjk3Mitra = []; // nama mitra kolaborasi PJK3 (node pjk3_mitra) -> ikut pilihan PJK3 saat daftar
         let dataAkunBidangAll = [];
         // Dipakai form-login-admin supaya tidak salah bilang "PIN Salah" kalau sebenarnya
         // data akun bidang/tim ini belum sempat termuat dari Firebase (lihat catatan di
@@ -3452,7 +3504,7 @@
             const bidangList = Object.keys(grouped).sort();
 
             if (bidangList.length === 0) {
-                wrap.innerHTML = `<span class="text-xs text-slate-400 italic">Belum ada materi diupload admin.</span>`;
+                wrap.innerHTML = `<span class="text-sm text-slate-500 italic">Belum ada materi diupload admin.</span>`;
                 if (subEl) subEl.innerText = 'Akses modul pembelajaran K3 lintas bidang begitu tersedia.';
                 return;
             }
@@ -3460,8 +3512,7 @@
             if (subEl) subEl.innerText = `Mencakup ${bidangList.length} bidang K3 dengan total ${dataModulAll.length} materi: ${bidangList.join(', ')}.`;
 
             wrap.innerHTML = bidangList.map(bidang => {
-                const warna = getWarnaBidang(bidang);
-                return `<span data-silabusbidang="${escHtml(bidang)}" class="silabus-bidang-chip cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold ${warna.badge} hover:opacity-80 transition-opacity">${getIkonBidang(bidang)} ${escHtml(bidang)} <span class="opacity-60">(${grouped[bidang]})</span></span>`;
+                return `<button type="button" data-silabusbidang="${escHtml(bidang)}" class="silabus-bidang-chip rb-bcard"><span class="k">Bidang</span><span class="n">${escHtml(bidang)}</span><span class="c">${grouped[bidang]} materi</span></button>`;
             }).join('');
             wrap.querySelectorAll('.silabus-bidang-chip').forEach(chip => {
                 chip.addEventListener('click', () => {
@@ -3539,7 +3590,7 @@
                 <button onclick="window.processLogout()" class="w-full text-center bg-red-500/20 hover:bg-red-500/40 text-red-300 border border-red-500/30 font-bold px-4 py-3 rounded-xl transition-colors">Keluar Akun</button>`;
                 
                 const wt = document.getElementById('lms-welcome-title');
-                if(wt) { wt.innerText = `Selamat Datang, ${nama.split(' ')[0]} di Portal RuangK3`; }
+                if(wt) { wt.innerText = `Selamat datang, ${nama.split(' ')[0]}`; }
 
                 window.renderReadinessCard();
             }
@@ -3554,29 +3605,14 @@
 
             if (!currentUser || currentUser.role !== 'peserta') {
                 card.innerHTML = `
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-safety-400 animate-pulse"></span>
-                        <span class="text-xs font-bold text-white">Perjalanan Sertifikasi Anda</span>
-                    </div>
-                    <span class="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider">Akun Tamu</span>
-                </div>
-                <p class="text-xs text-slate-300 leading-relaxed mb-4">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda secara real-time di sini.</p>
-                <div class="grid grid-cols-3 gap-2 mb-4">
-                    <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                        <div class="text-lg mb-1">📚</div>
-                        <p class="text-[9px] font-bold text-slate-300 leading-tight">Modul &amp; Regulasi K3</p>
-                    </div>
-                    <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                        <div class="text-lg mb-1">📝</div>
-                        <p class="text-[9px] font-bold text-slate-300 leading-tight">Simulasi CBT</p>
-                    </div>
-                    <div class="bg-navy-950/50 rounded-xl p-2.5 text-center border border-white/10">
-                        <div class="text-lg mb-1">🎓</div>
-                        <p class="text-[9px] font-bold text-slate-300 leading-tight">Sertifikasi RI</p>
-                    </div>
-                </div>
-                <button onclick="window.openModal('modal-login')" class="w-full py-2.5 bg-safety-400 hover:bg-safety-500 text-navy-900 font-extrabold text-xs rounded-xl transition-all shadow-lg">Masuk / Daftar Akun Peserta &rarr;</button>`;
+                <p class="rb-rc-k">Perjalanan Sertifikasi Anda</p>
+                <p class="rb-rc-p">Masuk atau daftar sebagai peserta untuk melacak progres belajar, hasil Simulasi CBT, dan status sertifikasi Anda.</p>
+                <ol class="rb-rc-ol">
+                    <li><span>01</span>Modul &amp; regulasi K3</li>
+                    <li><span>02</span>Simulasi CBT</li>
+                    <li><span>03</span>Sertifikasi RI</li>
+                </ol>
+                <button onclick="window.openModal('modal-login')" class="rb-btn w" style="width:100%">Masuk / Daftar Akun Peserta &rarr;`;
                 if (typeof window.perbaruiTombolCekLisensi === 'function') window.perbaruiTombolCekLisensi();
                 return;
             }
@@ -7170,9 +7206,9 @@
         window.getDaftarPenyelenggara = function() {
             const seen = new Set([PENYELENGGARA_DEFAULT.toLowerCase()]);
             const out = [PENYELENGGARA_DEFAULT];
-            dataPenyelenggara.slice().sort((a, b) => a.nama.localeCompare(b.nama, 'id')).forEach(x => {
-                const k = x.nama.toLowerCase();
-                if (!seen.has(k)) { seen.add(k); out.push(x.nama); }
+            dataPenyelenggara.map(x => x.nama).concat(dataPjk3Mitra).filter(n => typeof n === 'string' && n.trim()).map(n => n.trim()).sort((a, b) => a.localeCompare(b, 'id')).forEach(nama => {
+                const k = nama.toLowerCase();
+                if (!seen.has(k)) { seen.add(k); out.push(nama); }
             });
             return out;
         };
@@ -8999,6 +9035,8 @@
                     snapshot.forEach(child => { const data = child.val(); data.id = child.key; pjk3Data.push(data); }); 
                 }
                 pjk3Data.sort((a,b) => b.timestamp - a.timestamp);
+                dataPjk3Mitra = pjk3Data.map(p => p.nama).filter(Boolean);
+                if (typeof window.renderPenyelenggaraUI === 'function') window.renderPenyelenggaraUI();
 
                 if(pjk3Data.length === 0) {
                     if(listPublic) listPublic.innerHTML = '<div class="col-span-full text-center py-8 text-slate-400 text-sm">Belum ada data mitra PJK3 yang diunggah.</div>';
