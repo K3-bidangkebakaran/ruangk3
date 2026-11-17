@@ -1,7 +1,7 @@
 // Service worker Penilaian Praktik (ruangk3.com/penilaian/).
 // Naikkan VERSION setiap kali file di folder ini diubah.
-const VERSION = 'penilaian-v6';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './vendor/jspdf.umd.min.js', './vendor/jspdf.plugin.autotable.min.js'];
+const VERSION = 'penilaian-v8';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './vendor/jspdf.umd.min.js', './vendor/jspdf.plugin.autotable.min.js'];
 const FIREBASE = [
   'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js',
   'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js',
