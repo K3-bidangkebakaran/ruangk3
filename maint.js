@@ -98,7 +98,7 @@
       '<div class="sc">' + (cfg && cfg.mulai ? '<span>Mulai: <b>' + fmt(+cfg.mulai) + '</b></span>' : '') + '<span>Perkiraan selesai: <b>' + fmt(+cfg.selesai) + '</b></span></div>' +
       '<div class="dn" data-dn hidden role="status"></div>' + info +
       (app ? '<button type="button" class="bt" data-cek>Periksa lagi</button>' : '') +
-      '</div></div><div class="ft">Terima kasih atas pengertian dan kesabaran Anda. — Tim RuangK3 · LPMI</div><div class="tp" aria-hidden="true"></div>';
+      '</div></div><div class="ft">Terima kasih atas pengertian dan kesabaran Anda. — Tim RuangK3</div><div class="tp" aria-hidden="true"></div>';
     shown = true;
     var cek = root.querySelector('[data-cek]'); if (cek) cek.onclick = function () { cek.textContent = 'Memeriksa…'; periksa().then(function () { if (cek.isConnected) cek.textContent = 'Masih dalam pemeliharaan · Periksa lagi'; }); };
     if (PAGE === 'web') pintu(root.querySelector('.gr'));
