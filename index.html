@@ -29,15 +29,9 @@
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap"></noscript>
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 
-    <!-- Flatpickr (Kalender Multi-Tanggal) -->
-    <link rel="preload" as="style" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"></noscript>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js" defer></script>
+    <!-- Flatpickr (kalender multi-tanggal, hanya di panel admin): dimuat saat admin masuk lewat window.muatPustaka('flatpickr') -->
 
-    <!-- Script EmailJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
-    <script type="text/javascript"> window.addEventListener('DOMContentLoaded', function() { emailjs.init({ publicKey: 'vo0I3qZvyNFWClUEO' }); }); </script>
+    <!-- EmailJS dihapus 2026-11-17: hanya di-init, tidak pernah dipakai mengirim (hemat 1 unduhan tiap pengunjung) -->
 
     <!-- html2pdf -->
 
@@ -54,6 +48,9 @@
             var DEF = {
                 html2pdf: { url: 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js', ok: function () { return typeof window.html2pdf === 'function'; } },
                 chart:    { url: 'https://cdn.jsdelivr.net/npm/chart.js', ok: function () { return !!window.Chart; } },
+                flatpickr: { url: 'https://cdn.jsdelivr.net/npm/flatpickr', ok: function () { return typeof window.flatpickr === 'function'; },
+                            sesudah: function () { if (!document.getElementById('css-flatpickr')) { var l = document.createElement('link'); l.id = 'css-flatpickr'; l.rel = 'stylesheet'; l.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css'; document.head.appendChild(l); } } },
+                flatpickrId: { url: 'https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/id.js', ok: function () { return !!(window.flatpickr && window.flatpickr.l10ns && window.flatpickr.l10ns.id); } },
                 pdfjs:    { url: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', ok: function () { return !!window.pdfjsLib; },
                             sesudah: function () { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } }
             };
@@ -3324,6 +3321,7 @@
                 document.getElementById(`nav-lms-${t}`)?.classList.remove('tab-lms-active');
             });
             document.getElementById(`view-lms-${tabName}`)?.classList.remove('hidden');
+            if (tabName === 'live' && typeof window.mulaiListenerLiveCbt === 'function') window.mulaiListenerLiveCbt();
             document.getElementById(`nav-lms-${tabName}`)?.classList.add('tab-lms-active');
             // Setiap kembali ke halaman Beranda (Dashboard Siswa), tampilkan lagi pop up info
             // penting/pengumuman aktif (jika ada) -- sesuai permintaan Admin.
@@ -4037,7 +4035,7 @@
                     html += `
                     <tr class="hover:bg-slate-50 border-b border-slate-100">
                         <td class="px-6 py-4 text-xs text-slate-600">${window.formatDate(data.timestamp)}</td>
-                        <td class="px-6 py-4 text-sm font-bold text-slate-900">${data.namaPeserta} <br><span class="text-xs font-normal text-slate-500">${data.instansi}</span></td>
+                        <td class="px-6 py-4 text-sm font-bold text-slate-900">${escHtml(data.namaPeserta || '')} <br><span class="text-xs font-normal text-slate-500">${escHtml(data.instansi || '')}</span></td>
                         <td class="px-6 py-4"><span class="px-2 py-1 bg-amber-100 text-amber-800 text-[10px] rounded font-bold uppercase">${data.kategori}</span></td>
                         <td class="px-6 py-4">
                             <input type="number" min="5" step="5" value="45" id="input-durasi-${key}" class="w-24 px-2 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-safety-400" title="Waktu ujian (menit)">
@@ -4097,15 +4095,15 @@
                 html += `
                 <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-xs font-bold text-slate-800">${r.namaPeserta || 'Anonim'}</span>
+                        <span class="text-xs font-bold text-slate-800">${escHtml(r.namaPeserta || 'Anonim')}</span>
                         <span class="text-[10px] text-slate-500">${window.formatDate(r.timestamp)}</span>
                     </div>
                     <div class="text-sm mb-1 text-amber-500">${stars}</div>
                     <div class="flex flex-wrap gap-1.5 mb-1.5">
-                        ${r.kategori ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-200 text-slate-700">${r.kategori}</span>` : ''}
-                        ${r.namaInstruktur ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-700">${r.namaInstruktur}</span>` : ''}
+                        ${r.kategori ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-slate-200 text-slate-700">${escHtml(r.kategori)}</span>` : ''}
+                        ${r.namaInstruktur ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-700">${escHtml(r.namaInstruktur)}</span>` : ''}
                     </div>
-                    <p class="text-xs text-slate-600 italic">"${r.ulasan || 'Tidak ada komentar'}"</p>
+                    <p class="text-xs text-slate-600 italic">"${escHtml(r.ulasan || 'Tidak ada komentar')}"</p>
                 </div>`;
             });
 
@@ -4644,6 +4642,7 @@
         window.setupAdminUI = function(role) {
             const isUtama = role === 'admin_utama';
             window.__rk3AdminUtama = isUtama; try { window.RK3Maint && window.RK3Maint.periksa(); } catch (e) {} // Admin Utama tidak tertutup layar pemeliharaan
+            setTimeout(() => { if (typeof window.siapkanKalenderKegiatan === 'function') window.siapkanKalenderKegiatan(); }, 1500); // kalender Input Kegiatan (pustaka dimuat sesuai kebutuhan)
             const isLpmi = role === 'admin_lpmi';
             // Sisa tampilan khusus Admin LPMI dari login sebelumnya dikembalikan dulu
             document.querySelectorAll('[data-lpmi-hid]').forEach(el => { el.classList.remove('hidden'); el.removeAttribute('data-lpmi-hid'); });
@@ -5235,6 +5234,7 @@
         const overlay = document.getElementById('modal-overlay');
         window.openModal = function(modalId) {
             if(!overlay) return; 
+            if (modalId === 'modal-login') { try { window.mulaiListenerPjk3 && window.mulaiListenerPjk3(); } catch (e) {} } // pilihan PJK3 di formulir daftar
             overlay.classList.remove('hidden');
             document.querySelectorAll('#modal-overlay > div').forEach(el => {
                 el.classList.add('hidden');
@@ -7267,10 +7267,10 @@
                     ? `<button onclick="window.toggleStatusPeserta('${p.id}', false)" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">Aktifkan Kembali</button>`
                     : `<button onclick="window.toggleStatusPeserta('${p.id}', true)" class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">Bekukan Akun</button>`;
                 return `<tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="px-6 py-3 font-bold text-slate-900 text-sm">${p.nama || '-'}</td>
-                    <td class="px-6 py-3 text-xs text-slate-600">${p.instansi || '-'}</td>
+                    <td class="px-6 py-3 font-bold text-slate-900 text-sm">${escHtml(p.nama || '-')}</td>
+                    <td class="px-6 py-3 text-xs text-slate-600">${escHtml(p.instansi || '-')}</td>
                     <td class="px-6 py-3"><span class="px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-sky-50 text-sky-700 border border-sky-200 whitespace-nowrap">${escHtml(window.getPenyelenggaraPeserta(p))}</span></td>
-                    <td class="px-6 py-3 text-xs text-slate-600">${p.email || '-'}</td>
+                    <td class="px-6 py-3 text-xs text-slate-600">${escHtml(p.email || '-')}</td>
                     <td class="px-6 py-3">${statusBadge}</td>
                     <td class="px-6 py-3 text-right">${actionBtn}</td>
                 </tr>`;
@@ -8858,7 +8858,7 @@
                                 colorSkor = 'bg-green-100 text-green-800 font-bold border border-green-200';
                             }
                         }
-                        rowsHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3"><span class="italic text-slate-400 text-xs">Semua Bidang</span></td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
+                        rowsHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${escHtml(data.nama || '')}</td><td class="px-6 py-3 text-xs text-slate-600">${escHtml(data.instansi || '')}</td><td class="px-6 py-3"><span class="italic text-slate-400 text-xs">Semua Bidang</span></td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
                     });
                 } else {
                     dataPesertaAll.forEach(data => {
@@ -8871,7 +8871,7 @@
                             const skorText = r.lulus ? `Lulus (${r.bestSkor})` : `Belum Lulus (${r.bestSkor})`;
                             const colorSkor = r.lulus ? 'bg-green-100 text-green-800 font-bold border border-green-200' : 'bg-amber-100 text-amber-800 font-bold border border-amber-200';
                             const bidangKelasText = `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">${escHtml(r.bidang || filterBidang)} - ${escHtml(r.kelas || key)}</span>`;
-                            rowsHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${data.nama}</td><td class="px-6 py-3 text-xs text-slate-600">${data.instansi}</td><td class="px-6 py-3">${bidangKelasText}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
+                            rowsHtml += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="px-6 py-3 font-bold text-slate-900 text-sm">${escHtml(data.nama || '')}</td><td class="px-6 py-3 text-xs text-slate-600">${escHtml(data.instansi || '')}</td><td class="px-6 py-3">${bidangKelasText}</td><td class="px-6 py-3"><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-wider ${colorSkor}">${skorText}</span></td></tr>`;
                         });
                     });
 
@@ -8966,6 +8966,9 @@
                 window.rbRenderPublik();
             }, () => { });
 
+            // live_cbt terus bertambah: dipasang hanya saat menu Live CBT dibuka atau admin masuk (bukan untuk setiap pengunjung beranda)
+            let liveCbtMulai = false;
+            window.mulaiListenerLiveCbt = function() { if (liveCbtMulai) return; liveCbtMulai = true;
             onValue(ref(db, pathLiveCbt), (snapshot) => {
                 dataLiveCbtAll = [];
                 if(snapshot.exists()) {
@@ -8977,6 +8980,7 @@
                 }
                 window.renderLiveCbtTable();
             });
+            };
 
             // Menu "Live CBT" di halaman utama: dipisah jadi fungsi tersendiri supaya bisa dipanggil ulang
             // saat admin/peserta mengganti filter Bidang & Kelas, tanpa menunggu update data baru dari
@@ -9038,10 +9042,10 @@
                         <tr class="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
                             <td class="px-5 py-4 text-center">${rankBadge}</td>
                             <td class="px-5 py-4">
-                                <p class="font-extrabold text-slate-900 text-sm leading-tight">${rec.namaPeserta || 'Peserta'}</p>
-                                <p class="text-xs text-slate-500 font-medium">${rec.instansi || '-'}</p>
+                                <p class="font-extrabold text-slate-900 text-sm leading-tight">${escHtml(rec.namaPeserta || 'Peserta')}</p>
+                                <p class="text-xs text-slate-500 font-medium">${escHtml(rec.instansi || '-')}</p>
                             </td>
-                            <td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-100 text-slate-800 border border-slate-200">${rec.kategori || 'K3 Umum'}</span></td>
+                            <td class="px-5 py-4"><span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-slate-100 text-slate-800 border border-slate-200">${escHtml(rec.kategori || 'K3 Umum')}</span></td>
                             <td class="px-5 py-4 text-center font-bold text-xs text-slate-600">${progSoal} Soal</td>
                             <td class="px-5 py-4 text-center"><span class="text-2xl font-black font-mono tracking-wider ${rec.status === 'LULUS' ? 'text-emerald-600' : (rec.status === 'TIDAK LULUS' ? 'text-red-500' : 'text-blue-600')}">${rec.skorLive || 0}</span></td>
                             <td class="px-5 py-4 text-right">${statusBadge}</td>
@@ -9120,6 +9124,9 @@
                 window.renderReviewUI(); 
             });
             
+            // pjk3_mitra berisi logo (base64, berat) dan tidak tampil di beranda: dimuat saat jendela Masuk/Daftar dibuka (pilihan PJK3) atau admin masuk
+            let pjk3Mulai = false;
+            window.mulaiListenerPjk3 = function() { if (pjk3Mulai) return; pjk3Mulai = true;
             onValue(ref(db, pathPjk3), (snapshot) => {
                 const listPublic = document.getElementById('public-pjk3-container'); 
                 const listAdmin = document.getElementById('admin-list-pjk3');
@@ -9159,6 +9166,7 @@
                     }
                 });
             });
+            };
 
             onValue(ref(db, pathRunningText), (snapshot) => {
                 const adminList = document.getElementById('admin-list-running-text');
@@ -9278,6 +9286,7 @@
         window.fetchDataRealtimeAdmin = function() {
             if (isAdminDataInitialized) return;
             isAdminDataInitialized = true;
+            try { window.mulaiListenerPjk3 && window.mulaiListenerPjk3(); window.mulaiListenerLiveCbt && window.mulaiListenerLiveCbt(); } catch (e) {}
 
             // URUTAN PEMUATAN (supaya panel admin terasa cepat): Firebase membalas permintaan lewat
             // satu koneksi secara berurutan, jadi data BESAR (seluruh peserta, seluruh riwayat ujian,
@@ -10719,13 +10728,16 @@
             btn.disabled = false;
         });
 
-        if (typeof flatpickr !== 'undefined' && document.getElementById('input-kegiatan-tanggal')) {
-            flatpickr("#input-kegiatan-tanggal", {
-                mode: "multiple",
-                dateFormat: "Y-m-d",
-                locale: "id"
-            });
-        }
+        // Kalender multi-tanggal (Input Kegiatan Training) dimuat saat admin masuk, bukan untuk setiap pengunjung
+        window.siapkanKalenderKegiatan = async function() {
+            const el = document.getElementById('input-kegiatan-tanggal');
+            if (!el || el._flatpickr) return;
+            try {
+                await window.muatPustaka('flatpickr');
+                await window.muatPustaka('flatpickrId').catch(() => {});
+                if (!el._flatpickr) window.flatpickr(el, { mode: "multiple", dateFormat: "Y-m-d", locale: (window.flatpickr.l10ns && window.flatpickr.l10ns.id) ? "id" : "default" });
+            } catch (e) { /* tanpa kalender: tanggal tetap bisa diketik YYYY-MM-DD dipisah koma */ }
+        };
 
         const observer = new IntersectionObserver((entries) => { 
             entries.forEach(entry => { 
