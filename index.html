@@ -380,7 +380,7 @@
         .rb-rc-ol { margin: 0 0 20px; padding: 0; list-style: none; border-top: 1px solid rgba(255,255,255,.15); font-size: 14.5px; color: #dfe6ec; }
         .rb-rc-ol li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.1); }
         .rb-rc-ol span { color: #8fd1a5; font-weight: 700; width: 24px; }
-        .rb-hero-foto { flex: 1 1 400px; min-width: 0; margin: 0; position: relative; cursor: pointer; background: #1d3447; aspect-ratio: 4 / 3; overflow: hidden; }
+        .rb-hero-foto { flex: 1 1 400px; min-width: 0; margin: 0; position: relative; background: #1d3447; aspect-ratio: 4 / 3; overflow: hidden; }
         .rb-hero-foto[hidden] { display: none; }
         .rb-hero-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .rb-hero-foto figcaption { position: absolute; left: 0; bottom: 0; max-width: 85%; background: #166534; padding: 14px 18px; display: flex; flex-direction: column; gap: 2px; }
@@ -936,8 +936,7 @@
                         </div>
                     </div>
                     <figure class="rb-hero-foto" id="rb-hero-foto" hidden>
-                        <img id="rb-hero-img" alt="Dokumentasi kegiatan RuangK3">
-                        <figcaption><span>Informasi umum</span><b id="rb-hero-cap"></b></figcaption>
+                        <img id="rb-hero-img" alt="Praktek regu penanggulangan kebakaran">
                     </figure>
                 </div>
             </section>
@@ -2949,13 +2948,13 @@
         window.rbHeroFoto = async function(beritas) {
             const box = document.getElementById('rb-hero-foto'); if (!box) return;
             const adaFoto = (b) => !!(b.fotoBase64 || b.adaFoto);
-            const b = beritas.find(x => x.kategori === 'Informasi Umum' && adaFoto(x)) || beritas.find(adaFoto);
+            // Foto pilihan Adrian (2026-11-17): berita "Praktek Regu Penanggulangan Kebakaran (Kelas C) Kawasan IMIP"; bila tidak ada, Informasi Umum terbaru berfoto
+            const b = beritas.find(x => /praktek\s+regu\s+penanggulangan/i.test(x.judul || '') && adaFoto(x)) || beritas.find(x => x.kategori === 'Informasi Umum' && adaFoto(x)) || beritas.find(adaFoto);
             if (!b) { box.hidden = true; return; }
             try {
                 const imgs = await window.ambilFotoBerita(b); if (!imgs.length) { box.hidden = true; return; }
                 const img = document.getElementById('rb-hero-img'); img.src = imgs[0];
-                document.getElementById('rb-hero-cap').textContent = b.judul || '';
-                box.onclick = () => window.bacaBerita(b.id); box.hidden = false;
+                box.hidden = false;
                 window.terapkanFotoBerita(b.id, imgs);
             } catch (e) { box.hidden = true; }
         };
