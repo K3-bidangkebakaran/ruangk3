@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#17324f">
 <link rel="icon" href="../pic/icons/icon-192.png">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>Penilaian Praktik Kebakaran</title>
+<title>Dashboard Penilaian Praktik</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
 <style>
 html{-webkit-text-size-adjust:100%}body{margin:0}[hidden]{display:none!important}img{max-width:100%}
@@ -199,6 +199,25 @@ dialog#sh[open]{display:flex;flex-direction:column}
 .desc{margin:0;font-size:12.5px;padding:7px 10px;border-radius:3px;background:var(--soft);white-space:pre-line}
 .shf{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--panel)}
 #shCat{width:100%;min-height:70px;resize:vertical}
+.grpw{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;gap:10px}
+.grpw .gh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.gcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.gc{display:grid;gap:4px;text-align:left;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink);padding:10px 12px;font:inherit;cursor:pointer}
+.gc:hover{border-color:var(--accent)}
+.gc b{font-size:14px}.gc small{font-size:12px;color:var(--muted)}
+.gc .gv{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rk td.gv{text-align:center}
+.rk th.grp{background:var(--fire)}
+.btn.del{padding:3px 8px;font-size:11.5px;color:var(--k);border-color:transparent;background:transparent}
+.btn.del.arm{background:var(--k);color:#fff;border-color:var(--k)}
+.sha.gro{background:var(--soft)}
+.desc.ai{background:var(--accent-soft)}
+.sha.aip{border-color:var(--accent)}
+.aiprev{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:8px}
+.aiitem{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.aiitem input{margin-top:3px}
+.anggota{display:grid;gap:6px}
+.anggota label{display:flex;gap:8px;align-items:center;font-size:13px}
 @media (max-width:560px){input[type=search]{width:100%}.tools{width:100%}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -210,7 +229,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
   <div class="hrow">
     <div>
       <div class="eyebrow" id="prog">K3 Penanggulangan Kebakaran</div>
-      <h1 id="judul">Penilaian Praktik &amp; Kuis</h1>
+      <h1 id="judul">Dashboard Penilaian Praktik</h1>
       <div class="basis" id="basis">Memuat data penilaian…</div>
     </div>
     <div style="display:grid;gap:6px;justify-items:end">
@@ -270,6 +289,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
         <button class="btn" id="csv" type="button" hidden>CSV</button>
       </div>
     </div>
+    <div class="grpw" id="grp" hidden></div>
     <div class="tbl" id="tbl"></div>
     <div class="cards" id="cards"></div>
     <div class="foot" id="foot"></div>
@@ -289,6 +309,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
   <label>Nama peserta<input type="text" id="dNama" required></label>
   <label>Kelas<select id="dKel"></select></label>
   <label>Batch<select id="dBatch"></select></label>
+  <label id="dKelpW" hidden>Kelompok<select id="dKelp"></select></label>
   <label>Catatan instruktur<textarea id="dCat"></textarea></label>
   <div class="confirm" id="dConf" hidden></div>
   <div class="row">
@@ -300,6 +321,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
 <dialog id="pdlg"><form method="dialog" id="pfrm">
   <h3 id="pT">Tempel daftar nama</h3>
   <label>Satu nama per baris (bisa ditempel dari Excel; kolom setelah tab diabaikan)<textarea id="pList" placeholder="Budi Santoso&#10;Siti Rahma&#10;…"></textarea></label>
+  <label id="pKelW" hidden>Masukkan ke kelompok<select id="pKel"></select></label>
   <div class="sub" id="pInfo"></div>
   <div class="row"><span></span><span style="display:flex;gap:8px"><button class="btn" type="button" id="pX">Batal</button><button class="btn pri" type="submit" id="pOk">Tambahkan</button></span></div>
 </form></dialog>
@@ -307,7 +329,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
 <dialog id="sh" aria-labelledby="shName">
   <div class="shh"><div><div class="ey" id="shKelas"></div><h3 id="shName"></h3></div><button class="btn" type="button" id="shX">Tutup</button></div>
   <div id="shBody"></div>
-  <div class="shf"><button class="btn" type="button" id="shEdit">Ubah nama / kelas</button><button class="btn pri" type="button" id="shPdf" hidden>PDF peserta ini</button></div>
+  <div class="shf"><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" id="shEdit">Ubah nama / kelas</button><button class="btn danger" type="button" id="shDel">Hapus peserta</button></span><button class="btn pri" type="button" id="shPdf" hidden>PDF peserta ini</button></div>
 </dialog>
 
 <script>
@@ -317,8 +339,8 @@ dialog#sh[open]{display:flex;flex-direction:column}
 (function(){
 const V="https://www.gstatic.com/firebasejs/11.6.1/", ROOT="artifacts/k3-kebakaran-app-v5/public/data/praktik_nilai";
 const CFG={apiKey:"AIzaSyA2ow2lR4Z3lX7zBcZC5Xg3eWlDm7KNAAg",authDomain:"portal-k3-bidang-kebakaran.firebaseapp.com",databaseURL:"https://portal-k3-bidang-kebakaran-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"portal-k3-bidang-kebakaran",appId:"1:497833559757:web:01c2de15cd5f56dbb18b84"};
-const DEF_CFG={"judul": "Penilaian Praktik & Kuis", "program": "Training K3 Penanggulangan Kebakaran", "basis": "Penilaian individu per kelas. Kelas D: praktik APAR dan fire blanket; Kelas C: SCBA, pencarian korban, APD dan fire ground; Kelas B dan A: laporan PKL Rencana Tanggap Darurat dari kunjungan perusahaan. Kehadiran dan keaktifan dinilai di semua kelas.", "bobotPraktik": 70, "bobotKuis": 30, "kelas": [{"k": "D", "judul": "Kelas D", "ket": "Petugas peran kebakaran · APAR & fire blanket"}, {"k": "C", "judul": "Kelas C", "ket": "Regu penanggulangan kebakaran · SCBA, pencarian korban, APD, fire ground"}, {"k": "B", "judul": "Kelas B", "ket": "Koordinator Unit Penanggulangan Kebakaran · laporan PKL Rencana Tanggap Darurat", "pkl": true}, {"k": "A", "judul": "Kelas A", "ket": "Ahli K3 Spesialis Penanggulangan Kebakaran · laporan PKL Rencana Tanggap Darurat", "pkl": true}], "skala": [{"k": "BS", "label": "Baik Sekali", "min": 90, "max": 100, "nilai": 95, "makna": "Semua langkah benar, urut, cepat, dan aman tanpa arahan."}, {"k": "B", "label": "Baik", "min": 80, "max": 89, "nilai": 85, "makna": "Langkah utama benar dan aman; kekurangan kecil."}, {"k": "C", "label": "Cukup", "min": 65, "max": 79, "nilai": 72, "makna": "Unsur dasar terpenuhi tetapi perlu arahan; perlu latihan ulang."}, {"k": "K", "label": "Kurang", "min": 0, "max": 64, "nilai": 55, "makna": "Langkah penting terlewat atau tindakan tidak aman; wajib remedial."}], "aspek": [{"kode": "D-APAR1", "kelas": "D", "nama": "Prosedur Awal Penggunaan APAR", "label": "Prosedur Awal APAR", "bobot": 15, "fokus": "Memberi tanda bahaya (teriak \"kebakaran\" / bunyikan alarm) dan melapor\nMengenali jenis kebakaran (kelas A/B/C/D) lalu memilih APAR yang sesuai\nMemeriksa APAR: segel & pin, jarum tekanan di zona hijau, selang/nozzle, label & masa berlaku\nMenentukan arah angin dan jalur mundur yang aman", "r": {"BS": "Semua langkah dilakukan urut, cepat, dan benar tanpa arahan; jenis APAR tepat dan pemeriksaan lengkap.", "B": "Langkah utama benar; satu butir pemeriksaan kurang teliti tanpa memengaruhi keselamatan.", "C": "Beberapa langkah terlewat atau tidak urut; perlu diingatkan instruktur.", "K": "Tidak memberi tanda bahaya, tidak memeriksa APAR, atau memilih APAR yang tidak sesuai jenis kebakaran."}}, {"kode": "D-APAR2", "kelas": "D", "nama": "Prosedur Mobilisasi Penggunaan APAR", "label": "Mobilisasi APAR", "bobot": 15, "fokus": "Mengangkat APAR dengan benar: pegang handle dan dasar tabung, tabung tetap tegak\nBerjalan cepat tanpa berlari, tidak membanting atau menyeret tabung\nMendekat dari arah datangnya angin (membelakangi angin)\nBerhenti pada jarak aman ±2–3 m dari api dengan posisi kuda-kuda rendah", "r": {"BS": "Membawa APAR aman dan efisien, pendekatan dari arah angin, jarak dan posisi tubuh tepat.", "B": "Mobilisasi benar; jarak atau posisi tubuh sedikit kurang tepat.", "C": "Pendekatan kurang memperhatikan arah angin atau jarak aman; cara membawa APAR kurang benar.", "K": "Berlari/membanting APAR, mendekat melawan angin, atau terlalu dekat sehingga membahayakan diri."}}, {"kode": "D-APAR3", "kelas": "D", "nama": "Prosedur Pemadaman Menggunakan APAR", "label": "Pemadaman APAR", "bobot": 20, "fokus": "Teknik PASS: Pull (cabut pin), Aim (arahkan ke dasar api), Squeeze (tekan tuas), Sweep (sapu kiri-kanan)\nMaju bertahap sambil menyapu sampai api padam seluruhnya\nMemastikan api tidak menyala kembali, mundur tanpa membelakangi api\nMeletakkan APAR bekas terpisah/rebah dan melapor", "r": {"BS": "PASS sempurna, api padam dalam waktu singkat, tidak menyala kembali, mundur dan lapor dengan benar.", "B": "Api padam; teknik menyapu atau jarak sedikit kurang efektif.", "C": "Api padam setelah beberapa kali percobaan atau dengan bantuan arahan; media banyak terbuang.", "K": "Menyemprot ke lidah api/bukan ke dasar api, api tidak padam, atau melakukan tindakan tidak aman."}}, {"kode": "D-FB1", "kelas": "D", "nama": "Prosedur Penggunaan Fire Blanket", "label": "Penggunaan Fire Blanket", "bobot": 15, "fokus": "Menarik tali/tab dari wadah dengan cepat dan membuka selimut penuh\nMelindungi tangan dengan menggulung ujung selimut ke arah punggung tangan\nMemegang selimut di depan tubuh sebagai perisai panas\nMendekat dari arah angin dengan posisi aman", "r": {"BS": "Selimut dibuka cepat dan benar, tangan & tubuh terlindungi, pendekatan aman.", "B": "Langkah benar; perlindungan tangan atau posisi perisai sedikit kurang rapat.", "C": "Ragu-ragu atau lambat membuka selimut; tangan/tubuh kurang terlindungi.", "K": "Tidak melindungi tangan/tubuh atau salah cara memegang sehingga berisiko terbakar."}}, {"kode": "D-FB2", "kelas": "D", "nama": "Prosedur Pemadaman dengan Fire Blanket", "label": "Pemadaman Fire Blanket", "bobot": 15, "fokus": "Menutup sumber api dengan meletakkan selimut dari depan menjauh dari tubuh (bukan melempar)\nMenutup rapat seluruh permukaan api dan mematikan sumber panas/gas bila ada\nMembiarkan selimut tertutup sampai dingin, tidak dibuka terlalu cepat\nUntuk korban pakaian terbakar: stop-drop-roll lalu bungkus", "r": {"BS": "Api tertutup rapat dan padam pada percobaan pertama; sumber panas dimatikan; selimut tidak dibuka terlalu cepat.", "B": "Api padam; cara menutup atau penanganan setelahnya sedikit kurang tepat.", "C": "Perlu lebih dari satu kali menutup, ada celah, atau selimut dibuka terlalu cepat.", "K": "Melempar selimut, api menjalar/tidak padam, atau membahayakan diri dan orang lain."}}, {"kode": "HADIR", "kelas": "", "nama": "Tingkat Kehadiran Peserta", "label": "Kehadiran", "bobot": 10, "fokus": "Persentase kehadiran sesi teori dan praktik\nKetepatan waktu datang dan kembali setelah istirahat\nKelengkapan absensi / tanda tangan daftar hadir", "r": {"BS": "Hadir 100% sesi dan selalu tepat waktu.", "B": "Hadir 100% sesi, terlambat sesekali; atau hadir ≥ 90% sesi.", "C": "Hadir 75–89% sesi atau sering terlambat.", "K": "Hadir < 75% sesi atau meninggalkan praktik tanpa izin."}}, {"kode": "AKTIF", "kelas": "", "nama": "Tingkat Keaktifan Peserta", "label": "Keaktifan", "bobot": 10, "fokus": "Bertanya dan menjawab saat teori maupun praktik\nMengikuti arahan instruktur dan aturan keselamatan\nInisiatif mencoba dan membantu peserta lain\nKerja sama tim dan sikap disiplin selama praktik", "r": {"BS": "Sangat aktif, berinisiatif, membantu tim, dan selalu patuh aturan keselamatan.", "B": "Aktif mengikuti dan menjawab; inisiatif sesekali.", "C": "Mengikuti bila diminta; jarang bertanya atau berinisiatif.", "K": "Pasif, tidak mengikuti arahan, atau mengabaikan aturan keselamatan."}}, {"kode": "C-SCBA1", "kelas": "C", "nama": "Prosedur Penggunaan SCBA – Pemeriksaan & Pemakaian", "label": "SCBA: Periksa & Pakai", "bobot": 10, "fokus": "Pemeriksaan sebelum pakai: tekanan silinder (penuh ±300 bar / ≥ 80%), uji kebocoran tekanan tinggi, peluit alarm, kondisi masker dan tali\nMemakai backplate, mengencangkan tali bahu dan pinggang\nMemasang masker dan uji kerapatan (negative pressure test), menyambung regulator\nWaktu pemakaian (donning) ≤ 60 detik", "r": {"BS": "Pemeriksaan lengkap dan urut, pemakaian benar, masker rapat, donning ≤ 60 detik.", "B": "Pemeriksaan dan pemakaian benar; waktu sedikit melebihi target atau satu butir kurang teliti.", "C": "Ada butir pemeriksaan terlewat atau pemakaian perlu dibantu; waktu jauh di atas target.", "K": "Tidak memeriksa tekanan/kebocoran atau masker tidak rapat sehingga tidak aman dipakai."}}, {"kode": "C-SCBA2", "kelas": "C", "nama": "Prosedur Penggunaan SCBA – Operasi & Pelepasan", "label": "SCBA: Operasi & Lepas", "bobot": 15, "fokus": "Pernapasan terkendali dan memantau pressure gauge selama bekerja\nTanggap peluit alarm tekanan rendah: segera keluar bersama pasangan (buddy)\nKomunikasi dengan tim, tetap dalam sistem buddy\nMelepas (doffing) urut: regulator, masker, tali; menutup valve, membuang tekanan, melapor", "r": {"BS": "Penggunaan terkendali, tanggap alarm, komunikasi baik, pelepasan dan perawatan sesuai urutan.", "B": "Penggunaan benar; pemantauan tekanan atau urutan pelepasan sedikit kurang rapi.", "C": "Kurang memantau tekanan, terlambat menanggapi alarm, atau urutan pelepasan salah.", "K": "Melepas masker di area berasap, mengabaikan alarm, atau meninggalkan pasangan."}}, {"kode": "C-CARI", "kelas": "C", "nama": "Pencarian Korban", "label": "Pencarian Korban", "bobot": 20, "fokus": "Pencarian sistematis (right/left hand search, menyusuri dinding) dalam posisi rendah\nTetap kontak dengan pasangan / tali pemandu\nMemeriksa seluruh ruang (bawah meja, balik pintu, kamar mandi) dan menandai ruang yang sudah diperiksa\nMelaporkan temuan dan mengevakuasi korban dengan teknik angkat/seret yang aman", "r": {"BS": "Pencarian sistematis dan cepat, seluruh area diperiksa, korban ditemukan dan dievakuasi aman.", "B": "Korban ditemukan dan dievakuasi; pola pencarian atau komunikasi sedikit kurang rapi.", "C": "Pencarian tidak sistematis, ada area terlewat, atau evakuasi korban kurang aman.", "K": "Korban tidak ditemukan, terpisah dari pasangan, atau teknik evakuasi membahayakan."}}, {"kode": "C-APD", "kelas": "C", "nama": "Prosedur Pemakaian APD", "label": "Pemakaian APD", "bobot": 10, "fokus": "Memeriksa kondisi APD pemadam sebelum dipakai\nMemakai lengkap dan urut: celana & sepatu boot, jaket, hood, helm dengan tali dagu, sarung tangan\nTidak ada kulit terbuka; resleting/velcro/pengait terkunci\nWaktu pemakaian sesuai target instruktur", "r": {"BS": "APD lengkap, urut, rapat tanpa kulit terbuka, dalam waktu target.", "B": "APD lengkap dan benar; waktu sedikit melebihi target.", "C": "Ada bagian kurang rapat atau urutan salah; perlu dibetulkan instruktur.", "K": "APD tidak lengkap atau ada kulit terbuka saat masuk area praktik."}}, {"kode": "C-FG", "kelas": "C", "nama": "Praktek Pemadaman / Fire Ground", "label": "Pemadaman / Fire Ground", "bobot": 25, "fokus": "Menggelar selang, menyambung kopling, dan menyiapkan nozzle dengan benar\nTeknik nozzle (straight stream, fog, pulsing) sesuai kondisi api\nPendekatan dalam tim (nozzleman, backup) dengan posisi rendah dan dari arah angin\nMengikuti perintah komandan, menjaga jarak aman, overhaul dan memastikan api padam", "r": {"BS": "Kerja tim terkoordinasi, teknik nozzle tepat, api padam cepat dan aman, overhaul tuntas.", "B": "Api padam dengan teknik benar; koordinasi tim atau efisiensi air sedikit kurang.", "C": "Api padam dengan banyak arahan; teknik atau posisi kurang tepat.", "K": "Tindakan tidak aman (posisi berdiri di depan api, kehilangan kendali selang) atau api tidak padam."}}, {"kode": "B-PROFIL", "kelas": "B", "nama": "Profil Perusahaan & Identifikasi Potensi Bahaya Kebakaran", "label": "Profil & Potensi Bahaya", "bobot": 15, "fokus": "Data perusahaan: bidang usaha, proses kerja, jumlah tenaga kerja per shift, luas & denah area\nIdentifikasi sumber penyalaan dan bahan mudah terbakar/meledak di tiap area\nKlasifikasi potensi bahaya kebakaran (ringan, sedang I/II/III, berat) sesuai Kepmenaker 186/1999\nPenetapan area kritis/prioritas yang menjadi dasar rencana tanggap darurat", "r": {"BS": "Data perusahaan lengkap dan akurat; sumber bahaya tiap area teridentifikasi; klasifikasi potensi bahaya tepat dan beralasan.", "B": "Data dan identifikasi bahaya lengkap; klasifikasi tepat namun alasan atau area kritis kurang dijelaskan.", "C": "Data perusahaan atau identifikasi bahaya sebagian; klasifikasi potensi bahaya tidak dijelaskan dasarnya.", "K": "Data tidak lengkap, sumber bahaya tidak diidentifikasi, atau klasifikasi potensi bahaya keliru."}}, {"kode": "B-SARANA", "kelas": "B", "nama": "Inventarisasi Sarana Proteksi Kebakaran & Penyelamatan Jiwa", "label": "Sarana Proteksi", "bobot": 15, "fokus": "APAR: jenis, jumlah, penempatan (jarak maks. 15 m, tinggi maks. 1,2 m) dan kondisi sesuai Permenakertrans 04/1980\nHidran, alarm & detektor kebakaran (Permenaker 02/1983), sprinkler bila ada, persediaan air\nSarana evakuasi: jalur & pintu darurat, tangga, tanda arah, lampu darurat, titik kumpul\nKondisi sarana dan catatan pemeriksaan/pemeliharaan; ketidaksesuaian yang ditemukan", "r": {"BS": "Semua sarana tercatat lengkap dengan jumlah, lokasi dan kondisi; dibandingkan dengan peraturan; ketidaksesuaian diuraikan jelas.", "B": "Sarana utama tercatat lengkap; perbandingan dengan peraturan ada namun sebagian kurang rinci.", "C": "Hanya sebagian sarana yang dicatat; kondisi atau kesesuaian dengan peraturan tidak diperiksa.", "K": "Inventarisasi sarana tidak ada atau salah sehingga tidak dapat dijadikan dasar rencana."}}, {"kode": "B-ORG", "kelas": "B", "nama": "Organisasi Tanggap Darurat (Unit Penanggulangan Kebakaran)", "label": "Organisasi Darurat", "bobot": 15, "fokus": "Struktur Unit Penanggulangan Kebakaran: petugas peran kebakaran, regu, koordinator, ahli K3 (Kepmenaker 186/1999)\nJumlah personel sesuai klasifikasi bahaya dan jumlah tenaga kerja (mis. petugas peran 2 orang per 25 tenaga kerja)\nUraian tugas & tanggung jawab tiap peran sebelum, saat dan sesudah kejadian; pengganti saat shift/libur\nDaftar kontak & nomor darurat internal dan eksternal (Damkar, rumah sakit, polisi)", "r": {"BS": "Struktur lengkap dan jumlah personel sesuai ketentuan; tugas tiap peran jelas untuk semua fase dan shift; kontak darurat lengkap.", "B": "Struktur dan tugas jelas; jumlah personel atau pengganti per shift kurang dihitung.", "C": "Struktur ada tetapi tugas umum/tumpang tindih; jumlah personel tidak dikaitkan dengan ketentuan.", "K": "Organisasi tanggap darurat tidak disusun atau tidak sesuai ketentuan."}}, {"kode": "B-PROS", "kelas": "B", "nama": "Prosedur Tanggap Darurat & Evakuasi", "label": "Prosedur & Evakuasi", "bobot": 15, "fokus": "Alur saat kebakaran: deteksi, alarm, pemadaman awal, evakuasi, penghitungan personel di titik kumpul\nSistem komando dan alur komunikasi/pelaporan, koordinasi dengan instansi luar\nProsedur khusus: tamu, kontraktor, penyandang disabilitas, area berbahaya\nPeta/denah evakuasi dengan jalur, titik kumpul dan posisi sarana proteksi", "r": {"BS": "Prosedur runtut, realistis dan sesuai kondisi perusahaan; komando & komunikasi jelas; peta evakuasi lengkap dan benar.", "B": "Prosedur dan peta evakuasi benar; beberapa kondisi khusus atau alur komunikasi kurang rinci.", "C": "Prosedur umum (menyalin contoh) dan kurang sesuai kondisi lapangan; peta evakuasi tidak lengkap.", "K": "Prosedur tidak ada, tidak runtut, atau berisi langkah yang membahayakan."}}, {"kode": "B-LAT", "kelas": "B", "nama": "Program Latihan, Inspeksi & Pemeliharaan", "label": "Latihan & Inspeksi", "bobot": 10, "fokus": "Jadwal latihan kebakaran (fire drill) dan pelatihan petugas peran kebakaran\nJadwal inspeksi & pemeliharaan sarana proteksi (harian/bulanan/tahunan) beserta penanggung jawab\nFormulir/checklist pemeriksaan dan pencatatan hasil\nEvaluasi hasil latihan dan tindak lanjut", "r": {"BS": "Program latihan dan inspeksi lengkap, terjadwal, ada penanggung jawab, checklist dan evaluasi.", "B": "Program lengkap; checklist atau evaluasi hasil latihan belum disertakan.", "C": "Program hanya disebutkan umum tanpa jadwal/penanggung jawab.", "K": "Program latihan dan inspeksi tidak disusun."}}, {"kode": "B-LAP", "kelas": "B", "nama": "Sistematika Laporan, Temuan & Rekomendasi", "label": "Laporan & Saran", "bobot": 10, "fokus": "Sistematika laporan: pendahuluan, data, hasil pengamatan, analisis, kesimpulan, rekomendasi, lampiran\nTemuan ketidaksesuaian terhadap peraturan disertai bukti (foto, denah)\nRekomendasi perbaikan spesifik, realistis dan berprioritas\nBahasa baku, rapi, dan penyajian/presentasi laporan", "r": {"BS": "Laporan sistematis dan rapi; temuan didukung bukti; rekomendasi spesifik, berprioritas dan dapat diterapkan; presentasi jelas.", "B": "Laporan lengkap dan rapi; rekomendasi benar namun prioritas atau bukti kurang.", "C": "Sistematika kurang runtut; temuan dan rekomendasi umum tanpa bukti.", "K": "Laporan tidak lengkap, tidak sistematis, atau tidak ada rekomendasi."}}, {"kode": "A-RISK", "kelas": "A", "nama": "Identifikasi Bahaya & Penilaian Risiko Kebakaran", "label": "Penilaian Risiko", "bobot": 15, "fokus": "Identifikasi sumber penyalaan, bahan bakar dan kondisi oksigen di tiap area/proses\nKlasifikasi hunian & potensi bahaya kebakaran (Kepmenaker 186/1999, SNI/NFPA)\nPenilaian risiko: kemungkinan x keparahan, matriks risiko, skenario kebakaran terburuk\nPenetapan area dan risiko prioritas yang menjadi dasar rencana", "r": {"BS": "Identifikasi bahaya menyeluruh; penilaian risiko kuantitatif/semikuantitatif yang tepat; skenario terburuk dan prioritas jelas.", "B": "Identifikasi dan penilaian risiko benar; skenario atau prioritas kurang tajam.", "C": "Identifikasi bahaya sebagian; penilaian risiko kualitatif tanpa dasar yang jelas.", "K": "Tidak ada penilaian risiko atau klasifikasi bahaya keliru."}}, {"kode": "A-PROT", "kelas": "A", "nama": "Evaluasi & Perhitungan Sistem Proteksi Aktif dan Pasif", "label": "Sistem Proteksi", "bobot": 15, "fokus": "Evaluasi kesesuaian APAR (Permenakertrans 04/1980), alarm & detektor (Permenaker 02/1983), hidran, sprinkler\nPerhitungan kebutuhan: jumlah/rating APAR, kapasitas pompa & tekanan hidran, persediaan air, jangkauan\nProteksi pasif: kompartemenisasi, dinding/pintu tahan api, bukaan, bahan bangunan\nKesenjangan terhadap standar dan dampaknya pada rencana tanggap darurat", "r": {"BS": "Evaluasi lengkap dengan perhitungan yang benar dan acuan standar tepat; kesenjangan dijelaskan beserta dampaknya.", "B": "Evaluasi benar; sebagian perhitungan atau acuan standar kurang rinci.", "C": "Evaluasi deskriptif tanpa perhitungan; acuan standar kurang tepat.", "K": "Tidak ada evaluasi sistem proteksi atau perhitungan salah sehingga kesimpulan keliru."}}, {"kode": "A-EGRESS", "kelas": "A", "nama": "Sarana Penyelamatan Jiwa & Evakuasi", "label": "Penyelamatan Jiwa", "bobot": 10, "fokus": "Jalur evakuasi, jarak tempuh, jumlah dan lebar eksit, tangga darurat\nPenerangan darurat, tanda arah, titik kumpul dan aksesibilitas\nPerhitungan kapasitas/waktu evakuasi terhadap jumlah penghuni\nKetidaksesuaian dan usulan perbaikan sarana evakuasi", "r": {"BS": "Sarana evakuasi dianalisis lengkap dengan perhitungan kapasitas/waktu evakuasi; ketidaksesuaian dan perbaikan jelas.", "B": "Analisis benar; perhitungan kapasitas atau waktu evakuasi kurang lengkap.", "C": "Sarana evakuasi hanya dideskripsikan tanpa analisis atau perhitungan.", "K": "Sarana penyelamatan jiwa tidak dianalisis atau analisis keliru."}}, {"kode": "A-RTD", "kelas": "A", "nama": "Rencana Tanggap Darurat Kebakaran (Fire Emergency Plan)", "label": "Rencana Tanggap Darurat", "bobot": 20, "fokus": "Struktur Unit Penanggulangan Kebakaran sesuai klasifikasi bahaya, sistem komando insiden\nProsedur per skenario (kebakaran, ledakan, kebocoran bahan berbahaya) dan per fase: siaga, tanggap, pemulihan\nSistem komunikasi, pelaporan, koordinasi dengan instansi luar (Damkar, rumah sakit, BPBD)\nPeta evakuasi, daftar sumber daya, kontak darurat dan langkah pemulihan pasca kejadian", "r": {"BS": "Rencana lengkap, terintegrasi dengan hasil penilaian risiko, realistis untuk perusahaan, mencakup semua skenario dan fase.", "B": "Rencana lengkap dan benar; satu skenario atau fase pemulihan kurang rinci.", "C": "Rencana umum (menyalin contoh), kurang dikaitkan dengan risiko perusahaan.", "K": "Rencana tanggap darurat tidak disusun, tidak dapat dijalankan, atau membahayakan."}}, {"kode": "A-MANAJ", "kelas": "A", "nama": "Manajemen Program: Latihan, Inspeksi, Audit & Investigasi", "label": "Manajemen Program", "bobot": 10, "fokus": "Program pelatihan petugas dan latihan kebakaran (fire drill) beserta evaluasinya\nJadwal inspeksi, pengujian dan pemeliharaan sistem proteksi\nAudit sistem manajemen penanggulangan kebakaran\nProsedur investigasi kebakaran/kejadian dan pencatatan", "r": {"BS": "Program manajemen lengkap, terukur, berjadwal, ada penanggung jawab dan mekanisme evaluasi/audit.", "B": "Program lengkap; audit atau investigasi kurang rinci.", "C": "Program hanya disebutkan umum tanpa jadwal dan penanggung jawab.", "K": "Program manajemen penanggulangan kebakaran tidak disusun."}}, {"kode": "A-LAP", "kelas": "A", "nama": "Analisis Kesenjangan, Rekomendasi & Penyajian Laporan", "label": "Analisis & Saran", "bobot": 10, "fokus": "Analisis kesenjangan terhadap peraturan dan standar yang berlaku\nRekomendasi teknis berprioritas, realistis, dengan pendekatan hierarki pengendalian\nSistematika laporan, kelengkapan lampiran (foto, denah, perhitungan)\nPenyajian/presentasi dan kemampuan menjawab pertanyaan penguji", "r": {"BS": "Analisis kesenjangan tajam; rekomendasi teknis berprioritas dan realistis; laporan sistematis; presentasi meyakinkan.", "B": "Analisis dan rekomendasi benar; prioritas atau penyajian kurang kuat.", "C": "Analisis dangkal; rekomendasi umum; laporan kurang sistematis.", "K": "Tidak ada analisis kesenjangan/rekomendasi, atau laporan tidak dapat dipertanggungjawabkan."}}], "pedoman": [{"judul": "Penilaian individu", "teks": "Setiap peserta diamati sendiri saat melakukan praktik; nilai tidak disalin dari peserta lain atau dari kelompok."}, {"judul": "Keselamatan dulu", "teks": "Instruktur menghentikan praktik bila ada tindakan tidak aman. Tindakan tidak aman pada suatu aspek otomatis dinilai Kurang untuk aspek tersebut."}, {"judul": "Nilai hitung", "teks": "Pilihan Baik Sekali/Baik/Cukup/Kurang dikonversi ke nilai 95; 85; 72; 55. Nilai praktik = rata-rata berbobot aspek kelasnya."}, {"judul": "Nilai akhir & status", "teks": "Nilai akhir = 70% praktik + 30% kuis. ≥ 90 Baik Sekali, ≥ 80 Baik, ≥ 65 Cukup (LULUS), < 65 Kurang (REMEDIAL)."}, {"judul": "Penilaian PKL (Kelas B & A)", "teks": "Nilai diambil dari laporan Rencana Tanggap Darurat hasil kunjungan perusahaan dan presentasinya. Bila laporan dikerjakan berkelompok, nilai aspek tetap ditetapkan per peserta berdasarkan kontribusi dan jawaban saat presentasi."}], "catatan": ["Nilai praktik baru dihitung setelah semua aspek kelas peserta terisi. Status LULUS/REMEDIAL keluar setelah nilai kuis diisi."], "versi": 2};window.__rk3DefCfg=DEF_CFG;window.__rk3BasisLama="Penilaian praktik individu per kelas. Aspek Kelas D: APAR dan fire blanket; Kelas C: SCBA, pencarian korban, APD, dan fire ground. Kehadiran dan keaktifan dinilai di semua kelas.";
-const K_KUNCI="rk3-pn-kunci", COLS=["pengaturan","peserta","batch"];
+const DEF_CFG={"judul": "Dashboard Penilaian Praktik", "program": "Training K3 Penanggulangan Kebakaran", "basis": "Kelas D: praktik APAR dan fire blanket; Kelas C: SCBA, pencarian korban, APD dan fire ground (dinilai per peserta). Kelas B dan A: laporan PKL Rencana Tanggap Darurat dinilai per kelompok. Kehadiran dan keaktifan selalu dinilai per peserta.", "bobotPraktik": 70, "bobotKuis": 30, "kelas": [{"k": "D", "judul": "Kelas D", "ket": "Petugas peran kebakaran · APAR & fire blanket"}, {"k": "C", "judul": "Kelas C", "ket": "Regu penanggulangan kebakaran · SCBA, pencarian korban, APD, fire ground"}, {"k": "B", "judul": "Kelas B", "ket": "Koordinator Unit Penanggulangan Kebakaran · laporan PKL Rencana Tanggap Darurat", "pkl": true, "kelompok": true}, {"k": "A", "judul": "Kelas A", "ket": "Ahli K3 Spesialis Penanggulangan Kebakaran · laporan PKL Rencana Tanggap Darurat", "pkl": true, "kelompok": true}], "skala": [{"k": "BS", "label": "Baik Sekali", "min": 90, "max": 100, "nilai": 95, "makna": "Semua langkah benar, urut, cepat, dan aman tanpa arahan."}, {"k": "B", "label": "Baik", "min": 80, "max": 89, "nilai": 85, "makna": "Langkah utama benar dan aman; kekurangan kecil."}, {"k": "C", "label": "Cukup", "min": 65, "max": 79, "nilai": 72, "makna": "Unsur dasar terpenuhi tetapi perlu arahan; perlu latihan ulang."}, {"k": "K", "label": "Kurang", "min": 0, "max": 64, "nilai": 55, "makna": "Langkah penting terlewat atau tindakan tidak aman; wajib remedial."}], "aspek": [{"kode": "D-APAR1", "kelas": "D", "nama": "Prosedur Awal Penggunaan APAR", "label": "Prosedur Awal APAR", "bobot": 15, "fokus": "Memberi tanda bahaya (teriak \"kebakaran\" / bunyikan alarm) dan melapor\nMengenali jenis kebakaran (kelas A/B/C/D) lalu memilih APAR yang sesuai\nMemeriksa APAR: segel & pin, jarum tekanan di zona hijau, selang/nozzle, label & masa berlaku\nMenentukan arah angin dan jalur mundur yang aman", "r": {"BS": "Semua langkah dilakukan urut, cepat, dan benar tanpa arahan; jenis APAR tepat dan pemeriksaan lengkap.", "B": "Langkah utama benar; satu butir pemeriksaan kurang teliti tanpa memengaruhi keselamatan.", "C": "Beberapa langkah terlewat atau tidak urut; perlu diingatkan instruktur.", "K": "Tidak memberi tanda bahaya, tidak memeriksa APAR, atau memilih APAR yang tidak sesuai jenis kebakaran."}}, {"kode": "D-APAR2", "kelas": "D", "nama": "Prosedur Mobilisasi Penggunaan APAR", "label": "Mobilisasi APAR", "bobot": 15, "fokus": "Mengangkat APAR dengan benar: pegang handle dan dasar tabung, tabung tetap tegak\nBerjalan cepat tanpa berlari, tidak membanting atau menyeret tabung\nMendekat dari arah datangnya angin (membelakangi angin)\nBerhenti pada jarak aman ±2–3 m dari api dengan posisi kuda-kuda rendah", "r": {"BS": "Membawa APAR aman dan efisien, pendekatan dari arah angin, jarak dan posisi tubuh tepat.", "B": "Mobilisasi benar; jarak atau posisi tubuh sedikit kurang tepat.", "C": "Pendekatan kurang memperhatikan arah angin atau jarak aman; cara membawa APAR kurang benar.", "K": "Berlari/membanting APAR, mendekat melawan angin, atau terlalu dekat sehingga membahayakan diri."}}, {"kode": "D-APAR3", "kelas": "D", "nama": "Prosedur Pemadaman Menggunakan APAR", "label": "Pemadaman APAR", "bobot": 20, "fokus": "Teknik PASS: Pull (cabut pin), Aim (arahkan ke dasar api), Squeeze (tekan tuas), Sweep (sapu kiri-kanan)\nMaju bertahap sambil menyapu sampai api padam seluruhnya\nMemastikan api tidak menyala kembali, mundur tanpa membelakangi api\nMeletakkan APAR bekas terpisah/rebah dan melapor", "r": {"BS": "PASS sempurna, api padam dalam waktu singkat, tidak menyala kembali, mundur dan lapor dengan benar.", "B": "Api padam; teknik menyapu atau jarak sedikit kurang efektif.", "C": "Api padam setelah beberapa kali percobaan atau dengan bantuan arahan; media banyak terbuang.", "K": "Menyemprot ke lidah api/bukan ke dasar api, api tidak padam, atau melakukan tindakan tidak aman."}}, {"kode": "D-FB1", "kelas": "D", "nama": "Prosedur Penggunaan Fire Blanket", "label": "Penggunaan Fire Blanket", "bobot": 15, "fokus": "Menarik tali/tab dari wadah dengan cepat dan membuka selimut penuh\nMelindungi tangan dengan menggulung ujung selimut ke arah punggung tangan\nMemegang selimut di depan tubuh sebagai perisai panas\nMendekat dari arah angin dengan posisi aman", "r": {"BS": "Selimut dibuka cepat dan benar, tangan & tubuh terlindungi, pendekatan aman.", "B": "Langkah benar; perlindungan tangan atau posisi perisai sedikit kurang rapat.", "C": "Ragu-ragu atau lambat membuka selimut; tangan/tubuh kurang terlindungi.", "K": "Tidak melindungi tangan/tubuh atau salah cara memegang sehingga berisiko terbakar."}}, {"kode": "D-FB2", "kelas": "D", "nama": "Prosedur Pemadaman dengan Fire Blanket", "label": "Pemadaman Fire Blanket", "bobot": 15, "fokus": "Menutup sumber api dengan meletakkan selimut dari depan menjauh dari tubuh (bukan melempar)\nMenutup rapat seluruh permukaan api dan mematikan sumber panas/gas bila ada\nMembiarkan selimut tertutup sampai dingin, tidak dibuka terlalu cepat\nUntuk korban pakaian terbakar: stop-drop-roll lalu bungkus", "r": {"BS": "Api tertutup rapat dan padam pada percobaan pertama; sumber panas dimatikan; selimut tidak dibuka terlalu cepat.", "B": "Api padam; cara menutup atau penanganan setelahnya sedikit kurang tepat.", "C": "Perlu lebih dari satu kali menutup, ada celah, atau selimut dibuka terlalu cepat.", "K": "Melempar selimut, api menjalar/tidak padam, atau membahayakan diri dan orang lain."}}, {"kode": "HADIR", "kelas": "", "nama": "Tingkat Kehadiran Peserta", "label": "Kehadiran", "bobot": 10, "fokus": "Persentase kehadiran sesi teori dan praktik\nKetepatan waktu datang dan kembali setelah istirahat\nKelengkapan absensi / tanda tangan daftar hadir", "r": {"BS": "Hadir 100% sesi dan selalu tepat waktu.", "B": "Hadir 100% sesi, terlambat sesekali; atau hadir ≥ 90% sesi.", "C": "Hadir 75–89% sesi atau sering terlambat.", "K": "Hadir < 75% sesi atau meninggalkan praktik tanpa izin."}}, {"kode": "AKTIF", "kelas": "", "nama": "Tingkat Keaktifan Peserta", "label": "Keaktifan", "bobot": 10, "fokus": "Bertanya dan menjawab saat teori maupun praktik\nMengikuti arahan instruktur dan aturan keselamatan\nInisiatif mencoba dan membantu peserta lain\nKerja sama tim dan sikap disiplin selama praktik", "r": {"BS": "Sangat aktif, berinisiatif, membantu tim, dan selalu patuh aturan keselamatan.", "B": "Aktif mengikuti dan menjawab; inisiatif sesekali.", "C": "Mengikuti bila diminta; jarang bertanya atau berinisiatif.", "K": "Pasif, tidak mengikuti arahan, atau mengabaikan aturan keselamatan."}}, {"kode": "C-SCBA1", "kelas": "C", "nama": "Prosedur Penggunaan SCBA – Pemeriksaan & Pemakaian", "label": "SCBA: Periksa & Pakai", "bobot": 10, "fokus": "Pemeriksaan sebelum pakai: tekanan silinder (penuh ±300 bar / ≥ 80%), uji kebocoran tekanan tinggi, peluit alarm, kondisi masker dan tali\nMemakai backplate, mengencangkan tali bahu dan pinggang\nMemasang masker dan uji kerapatan (negative pressure test), menyambung regulator\nWaktu pemakaian (donning) ≤ 60 detik", "r": {"BS": "Pemeriksaan lengkap dan urut, pemakaian benar, masker rapat, donning ≤ 60 detik.", "B": "Pemeriksaan dan pemakaian benar; waktu sedikit melebihi target atau satu butir kurang teliti.", "C": "Ada butir pemeriksaan terlewat atau pemakaian perlu dibantu; waktu jauh di atas target.", "K": "Tidak memeriksa tekanan/kebocoran atau masker tidak rapat sehingga tidak aman dipakai."}}, {"kode": "C-SCBA2", "kelas": "C", "nama": "Prosedur Penggunaan SCBA – Operasi & Pelepasan", "label": "SCBA: Operasi & Lepas", "bobot": 15, "fokus": "Pernapasan terkendali dan memantau pressure gauge selama bekerja\nTanggap peluit alarm tekanan rendah: segera keluar bersama pasangan (buddy)\nKomunikasi dengan tim, tetap dalam sistem buddy\nMelepas (doffing) urut: regulator, masker, tali; menutup valve, membuang tekanan, melapor", "r": {"BS": "Penggunaan terkendali, tanggap alarm, komunikasi baik, pelepasan dan perawatan sesuai urutan.", "B": "Penggunaan benar; pemantauan tekanan atau urutan pelepasan sedikit kurang rapi.", "C": "Kurang memantau tekanan, terlambat menanggapi alarm, atau urutan pelepasan salah.", "K": "Melepas masker di area berasap, mengabaikan alarm, atau meninggalkan pasangan."}}, {"kode": "C-CARI", "kelas": "C", "nama": "Pencarian Korban", "label": "Pencarian Korban", "bobot": 20, "fokus": "Pencarian sistematis (right/left hand search, menyusuri dinding) dalam posisi rendah\nTetap kontak dengan pasangan / tali pemandu\nMemeriksa seluruh ruang (bawah meja, balik pintu, kamar mandi) dan menandai ruang yang sudah diperiksa\nMelaporkan temuan dan mengevakuasi korban dengan teknik angkat/seret yang aman", "r": {"BS": "Pencarian sistematis dan cepat, seluruh area diperiksa, korban ditemukan dan dievakuasi aman.", "B": "Korban ditemukan dan dievakuasi; pola pencarian atau komunikasi sedikit kurang rapi.", "C": "Pencarian tidak sistematis, ada area terlewat, atau evakuasi korban kurang aman.", "K": "Korban tidak ditemukan, terpisah dari pasangan, atau teknik evakuasi membahayakan."}}, {"kode": "C-APD", "kelas": "C", "nama": "Prosedur Pemakaian APD", "label": "Pemakaian APD", "bobot": 10, "fokus": "Memeriksa kondisi APD pemadam sebelum dipakai\nMemakai lengkap dan urut: celana & sepatu boot, jaket, hood, helm dengan tali dagu, sarung tangan\nTidak ada kulit terbuka; resleting/velcro/pengait terkunci\nWaktu pemakaian sesuai target instruktur", "r": {"BS": "APD lengkap, urut, rapat tanpa kulit terbuka, dalam waktu target.", "B": "APD lengkap dan benar; waktu sedikit melebihi target.", "C": "Ada bagian kurang rapat atau urutan salah; perlu dibetulkan instruktur.", "K": "APD tidak lengkap atau ada kulit terbuka saat masuk area praktik."}}, {"kode": "C-FG", "kelas": "C", "nama": "Praktek Pemadaman / Fire Ground", "label": "Pemadaman / Fire Ground", "bobot": 25, "fokus": "Menggelar selang, menyambung kopling, dan menyiapkan nozzle dengan benar\nTeknik nozzle (straight stream, fog, pulsing) sesuai kondisi api\nPendekatan dalam tim (nozzleman, backup) dengan posisi rendah dan dari arah angin\nMengikuti perintah komandan, menjaga jarak aman, overhaul dan memastikan api padam", "r": {"BS": "Kerja tim terkoordinasi, teknik nozzle tepat, api padam cepat dan aman, overhaul tuntas.", "B": "Api padam dengan teknik benar; koordinasi tim atau efisiensi air sedikit kurang.", "C": "Api padam dengan banyak arahan; teknik atau posisi kurang tepat.", "K": "Tindakan tidak aman (posisi berdiri di depan api, kehilangan kendali selang) atau api tidak padam."}}, {"kode": "B-PROFIL", "kelas": "B", "nama": "Profil Perusahaan & Identifikasi Potensi Bahaya Kebakaran", "label": "Profil & Potensi Bahaya", "bobot": 15, "fokus": "Data perusahaan: bidang usaha, proses kerja, jumlah tenaga kerja per shift, luas & denah area\nIdentifikasi sumber penyalaan dan bahan mudah terbakar/meledak di tiap area\nKlasifikasi potensi bahaya kebakaran (ringan, sedang I/II/III, berat) sesuai Kepmenaker 186/1999\nPenetapan area kritis/prioritas yang menjadi dasar rencana tanggap darurat", "r": {"BS": "Data perusahaan lengkap dan akurat; sumber bahaya tiap area teridentifikasi; klasifikasi potensi bahaya tepat dan beralasan.", "B": "Data dan identifikasi bahaya lengkap; klasifikasi tepat namun alasan atau area kritis kurang dijelaskan.", "C": "Data perusahaan atau identifikasi bahaya sebagian; klasifikasi potensi bahaya tidak dijelaskan dasarnya.", "K": "Data tidak lengkap, sumber bahaya tidak diidentifikasi, atau klasifikasi potensi bahaya keliru."}}, {"kode": "B-SARANA", "kelas": "B", "nama": "Inventarisasi Sarana Proteksi Kebakaran & Penyelamatan Jiwa", "label": "Sarana Proteksi", "bobot": 15, "fokus": "APAR: jenis, jumlah, penempatan (jarak maks. 15 m, tinggi maks. 1,2 m) dan kondisi sesuai Permenakertrans 04/1980\nHidran, alarm & detektor kebakaran (Permenaker 02/1983), sprinkler bila ada, persediaan air\nSarana evakuasi: jalur & pintu darurat, tangga, tanda arah, lampu darurat, titik kumpul\nKondisi sarana dan catatan pemeriksaan/pemeliharaan; ketidaksesuaian yang ditemukan", "r": {"BS": "Semua sarana tercatat lengkap dengan jumlah, lokasi dan kondisi; dibandingkan dengan peraturan; ketidaksesuaian diuraikan jelas.", "B": "Sarana utama tercatat lengkap; perbandingan dengan peraturan ada namun sebagian kurang rinci.", "C": "Hanya sebagian sarana yang dicatat; kondisi atau kesesuaian dengan peraturan tidak diperiksa.", "K": "Inventarisasi sarana tidak ada atau salah sehingga tidak dapat dijadikan dasar rencana."}}, {"kode": "B-ORG", "kelas": "B", "nama": "Organisasi Tanggap Darurat (Unit Penanggulangan Kebakaran)", "label": "Organisasi Darurat", "bobot": 15, "fokus": "Struktur Unit Penanggulangan Kebakaran: petugas peran kebakaran, regu, koordinator, ahli K3 (Kepmenaker 186/1999)\nJumlah personel sesuai klasifikasi bahaya dan jumlah tenaga kerja (mis. petugas peran 2 orang per 25 tenaga kerja)\nUraian tugas & tanggung jawab tiap peran sebelum, saat dan sesudah kejadian; pengganti saat shift/libur\nDaftar kontak & nomor darurat internal dan eksternal (Damkar, rumah sakit, polisi)", "r": {"BS": "Struktur lengkap dan jumlah personel sesuai ketentuan; tugas tiap peran jelas untuk semua fase dan shift; kontak darurat lengkap.", "B": "Struktur dan tugas jelas; jumlah personel atau pengganti per shift kurang dihitung.", "C": "Struktur ada tetapi tugas umum/tumpang tindih; jumlah personel tidak dikaitkan dengan ketentuan.", "K": "Organisasi tanggap darurat tidak disusun atau tidak sesuai ketentuan."}}, {"kode": "B-PROS", "kelas": "B", "nama": "Prosedur Tanggap Darurat & Evakuasi", "label": "Prosedur & Evakuasi", "bobot": 15, "fokus": "Alur saat kebakaran: deteksi, alarm, pemadaman awal, evakuasi, penghitungan personel di titik kumpul\nSistem komando dan alur komunikasi/pelaporan, koordinasi dengan instansi luar\nProsedur khusus: tamu, kontraktor, penyandang disabilitas, area berbahaya\nPeta/denah evakuasi dengan jalur, titik kumpul dan posisi sarana proteksi", "r": {"BS": "Prosedur runtut, realistis dan sesuai kondisi perusahaan; komando & komunikasi jelas; peta evakuasi lengkap dan benar.", "B": "Prosedur dan peta evakuasi benar; beberapa kondisi khusus atau alur komunikasi kurang rinci.", "C": "Prosedur umum (menyalin contoh) dan kurang sesuai kondisi lapangan; peta evakuasi tidak lengkap.", "K": "Prosedur tidak ada, tidak runtut, atau berisi langkah yang membahayakan."}}, {"kode": "B-LAT", "kelas": "B", "nama": "Program Latihan, Inspeksi & Pemeliharaan", "label": "Latihan & Inspeksi", "bobot": 10, "fokus": "Jadwal latihan kebakaran (fire drill) dan pelatihan petugas peran kebakaran\nJadwal inspeksi & pemeliharaan sarana proteksi (harian/bulanan/tahunan) beserta penanggung jawab\nFormulir/checklist pemeriksaan dan pencatatan hasil\nEvaluasi hasil latihan dan tindak lanjut", "r": {"BS": "Program latihan dan inspeksi lengkap, terjadwal, ada penanggung jawab, checklist dan evaluasi.", "B": "Program lengkap; checklist atau evaluasi hasil latihan belum disertakan.", "C": "Program hanya disebutkan umum tanpa jadwal/penanggung jawab.", "K": "Program latihan dan inspeksi tidak disusun."}}, {"kode": "B-LAP", "kelas": "B", "nama": "Sistematika Laporan, Temuan & Rekomendasi", "label": "Laporan & Saran", "bobot": 10, "fokus": "Sistematika laporan: pendahuluan, data, hasil pengamatan, analisis, kesimpulan, rekomendasi, lampiran\nTemuan ketidaksesuaian terhadap peraturan disertai bukti (foto, denah)\nRekomendasi perbaikan spesifik, realistis dan berprioritas\nBahasa baku, rapi, dan penyajian/presentasi laporan", "r": {"BS": "Laporan sistematis dan rapi; temuan didukung bukti; rekomendasi spesifik, berprioritas dan dapat diterapkan; presentasi jelas.", "B": "Laporan lengkap dan rapi; rekomendasi benar namun prioritas atau bukti kurang.", "C": "Sistematika kurang runtut; temuan dan rekomendasi umum tanpa bukti.", "K": "Laporan tidak lengkap, tidak sistematis, atau tidak ada rekomendasi."}}, {"kode": "A-RISK", "kelas": "A", "nama": "Identifikasi Bahaya & Penilaian Risiko Kebakaran", "label": "Penilaian Risiko", "bobot": 15, "fokus": "Identifikasi sumber penyalaan, bahan bakar dan kondisi oksigen di tiap area/proses\nKlasifikasi hunian & potensi bahaya kebakaran (Kepmenaker 186/1999, SNI/NFPA)\nPenilaian risiko: kemungkinan x keparahan, matriks risiko, skenario kebakaran terburuk\nPenetapan area dan risiko prioritas yang menjadi dasar rencana", "r": {"BS": "Identifikasi bahaya menyeluruh; penilaian risiko kuantitatif/semikuantitatif yang tepat; skenario terburuk dan prioritas jelas.", "B": "Identifikasi dan penilaian risiko benar; skenario atau prioritas kurang tajam.", "C": "Identifikasi bahaya sebagian; penilaian risiko kualitatif tanpa dasar yang jelas.", "K": "Tidak ada penilaian risiko atau klasifikasi bahaya keliru."}}, {"kode": "A-PROT", "kelas": "A", "nama": "Evaluasi & Perhitungan Sistem Proteksi Aktif dan Pasif", "label": "Sistem Proteksi", "bobot": 15, "fokus": "Evaluasi kesesuaian APAR (Permenakertrans 04/1980), alarm & detektor (Permenaker 02/1983), hidran, sprinkler\nPerhitungan kebutuhan: jumlah/rating APAR, kapasitas pompa & tekanan hidran, persediaan air, jangkauan\nProteksi pasif: kompartemenisasi, dinding/pintu tahan api, bukaan, bahan bangunan\nKesenjangan terhadap standar dan dampaknya pada rencana tanggap darurat", "r": {"BS": "Evaluasi lengkap dengan perhitungan yang benar dan acuan standar tepat; kesenjangan dijelaskan beserta dampaknya.", "B": "Evaluasi benar; sebagian perhitungan atau acuan standar kurang rinci.", "C": "Evaluasi deskriptif tanpa perhitungan; acuan standar kurang tepat.", "K": "Tidak ada evaluasi sistem proteksi atau perhitungan salah sehingga kesimpulan keliru."}}, {"kode": "A-EGRESS", "kelas": "A", "nama": "Sarana Penyelamatan Jiwa & Evakuasi", "label": "Penyelamatan Jiwa", "bobot": 10, "fokus": "Jalur evakuasi, jarak tempuh, jumlah dan lebar eksit, tangga darurat\nPenerangan darurat, tanda arah, titik kumpul dan aksesibilitas\nPerhitungan kapasitas/waktu evakuasi terhadap jumlah penghuni\nKetidaksesuaian dan usulan perbaikan sarana evakuasi", "r": {"BS": "Sarana evakuasi dianalisis lengkap dengan perhitungan kapasitas/waktu evakuasi; ketidaksesuaian dan perbaikan jelas.", "B": "Analisis benar; perhitungan kapasitas atau waktu evakuasi kurang lengkap.", "C": "Sarana evakuasi hanya dideskripsikan tanpa analisis atau perhitungan.", "K": "Sarana penyelamatan jiwa tidak dianalisis atau analisis keliru."}}, {"kode": "A-RTD", "kelas": "A", "nama": "Rencana Tanggap Darurat Kebakaran (Fire Emergency Plan)", "label": "Rencana Tanggap Darurat", "bobot": 20, "fokus": "Struktur Unit Penanggulangan Kebakaran sesuai klasifikasi bahaya, sistem komando insiden\nProsedur per skenario (kebakaran, ledakan, kebocoran bahan berbahaya) dan per fase: siaga, tanggap, pemulihan\nSistem komunikasi, pelaporan, koordinasi dengan instansi luar (Damkar, rumah sakit, BPBD)\nPeta evakuasi, daftar sumber daya, kontak darurat dan langkah pemulihan pasca kejadian", "r": {"BS": "Rencana lengkap, terintegrasi dengan hasil penilaian risiko, realistis untuk perusahaan, mencakup semua skenario dan fase.", "B": "Rencana lengkap dan benar; satu skenario atau fase pemulihan kurang rinci.", "C": "Rencana umum (menyalin contoh), kurang dikaitkan dengan risiko perusahaan.", "K": "Rencana tanggap darurat tidak disusun, tidak dapat dijalankan, atau membahayakan."}}, {"kode": "A-MANAJ", "kelas": "A", "nama": "Manajemen Program: Latihan, Inspeksi, Audit & Investigasi", "label": "Manajemen Program", "bobot": 10, "fokus": "Program pelatihan petugas dan latihan kebakaran (fire drill) beserta evaluasinya\nJadwal inspeksi, pengujian dan pemeliharaan sistem proteksi\nAudit sistem manajemen penanggulangan kebakaran\nProsedur investigasi kebakaran/kejadian dan pencatatan", "r": {"BS": "Program manajemen lengkap, terukur, berjadwal, ada penanggung jawab dan mekanisme evaluasi/audit.", "B": "Program lengkap; audit atau investigasi kurang rinci.", "C": "Program hanya disebutkan umum tanpa jadwal dan penanggung jawab.", "K": "Program manajemen penanggulangan kebakaran tidak disusun."}}, {"kode": "A-LAP", "kelas": "A", "nama": "Analisis Kesenjangan, Rekomendasi & Penyajian Laporan", "label": "Analisis & Saran", "bobot": 10, "fokus": "Analisis kesenjangan terhadap peraturan dan standar yang berlaku\nRekomendasi teknis berprioritas, realistis, dengan pendekatan hierarki pengendalian\nSistematika laporan, kelengkapan lampiran (foto, denah, perhitungan)\nPenyajian/presentasi dan kemampuan menjawab pertanyaan penguji", "r": {"BS": "Analisis kesenjangan tajam; rekomendasi teknis berprioritas dan realistis; laporan sistematis; presentasi meyakinkan.", "B": "Analisis dan rekomendasi benar; prioritas atau penyajian kurang kuat.", "C": "Analisis dangkal; rekomendasi umum; laporan kurang sistematis.", "K": "Tidak ada analisis kesenjangan/rekomendasi, atau laporan tidak dapat dipertanggungjawabkan."}}], "pedoman": [{"judul": "Penilaian individu", "teks": "Kelas D & C: setiap peserta diamati sendiri saat praktik; nilai tidak disalin dari peserta lain."}, {"judul": "Keselamatan dulu", "teks": "Instruktur menghentikan praktik bila ada tindakan tidak aman. Tindakan tidak aman pada suatu aspek otomatis dinilai Kurang untuk aspek tersebut."}, {"judul": "Nilai hitung", "teks": "Pilihan Baik Sekali/Baik/Cukup/Kurang dikonversi ke nilai 95; 85; 72; 55. Nilai praktik = rata-rata berbobot aspek kelasnya."}, {"judul": "Nilai akhir & status", "teks": "Nilai akhir = 70% praktik + 30% kuis. ≥ 90 Baik Sekali, ≥ 80 Baik, ≥ 65 Cukup (LULUS), < 65 Kurang (REMEDIAL)."}, {"judul": "Penilaian PKL (Kelas B & A)", "teks": "Aspek laporan Rencana Tanggap Darurat dinilai satu kali per kelompok dan berlaku untuk semua anggotanya. Kehadiran dan keaktifan dinilai per peserta, sehingga nilai akhir anggota satu kelompok bisa berbeda."}], "catatan": ["Nilai praktik baru dihitung setelah semua aspek kelas peserta terisi. Status LULUS/REMEDIAL keluar setelah nilai kuis diisi."], "versi": 3};window.__rk3DefCfg=DEF_CFG;window.__rk3BasisLama="Penilaian praktik individu per kelas. Aspek Kelas D: APAR dan fire blanket; Kelas C: SCBA, pencarian korban, APD, dan fire ground. Kehadiran dan keaktifan dinilai di semua kelas.";
+const K_KUNCI="rk3-pn-kunci", COLS=["pengaturan","peserta","batch","kelompok"];
 const clone=o=>o==null?o:JSON.parse(JSON.stringify(o));
 const to=(pr,ms,m)=>{let t;return Promise.race([pr,new Promise((_,rj)=>{t=setTimeout(()=>rj(new Error(m||"Koneksi terlalu lambat.")),ms)})]).finally(()=>clearTimeout(t))};
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
@@ -405,7 +427,7 @@ window.__rk3Sync={
   menunggu:()=>Object.keys(pending).length,
   data:()=>clone(store),
   gabung(src){let baru=0,ganti=0,lewat=0;
-    for(const c of ["peserta","batch"])for(const [id,d] of Object.entries(src[c]||{})){const ada=store[c]?.[id];
+    for(const c of ["peserta","batch","kelompok"])for(const [id,d] of Object.entries(src[c]||{})){const ada=store[c]?.[id];
       if(!ada){tulis(c,id,d);baru++}else if((d._t||0)>(ada._t||0)){tulis(c,id,d);ganti++}else lewat++}
     return{baru,ganti,lewat}},
 };
@@ -420,7 +442,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&kunci&&!t
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=n=>n==null||n===""||isNaN(n)?"–":Number(n).toLocaleString("id-ID",{minimumFractionDigits:1,maximumFractionDigits:1});
-const S={cfg:null,peserta:[],batches:[],batch:null,kelas:null,st:"all",q:"",canWrite:true,isAdmin:false,db:null,loaded:false,dl:null};
+const S={kelompok:[],delArm:null,cfg:null,peserta:[],batches:[],batch:null,kelas:null,st:"all",q:"",canWrite:true,isAdmin:false,db:null,loaded:false,dl:null};
 try{const b=localStorage.getItem("rk3-praktik-batch");if(b)S.batch=b}catch(e){}
 const NONE="_none";
 const pBatch=p=>p.batch||NONE;
@@ -441,12 +463,24 @@ function setState(t){$("#state").textContent=t}
 function kelasList(){return S.cfg?.kelas||[]}
 function kelasJudul(k){return kelasList().find(x=>x.k===k)?.judul||("Kelas "+k)}
 function aspekKelas(k){const as=S.cfg?.aspek||[];return [...as.filter(a=>a.kelas===k),...as.filter(a=>!a.kelas)]}
+function isGrup(k){return !!kelasObj(k).kelompok}
+function grupOf(p){return p.kelompok?S.kelompok.find(g=>g.id===p.kelompok)||null:null}
+function grupList(b,k){return S.kelompok.filter(g=>g.batch===(b??S.batch)&&g.kelas===(k??S.kelas)).sort((x,y)=>String(x.nama).localeCompare(String(y.nama),"id",{numeric:true}))}
+function grupAspek(k){return (S.cfg?.aspek||[]).filter(a=>a.kelas===k)}
+/* nilai aspek efektif: Kelas berkelompok -> aspek kelas dari kelompok, Kehadiran/Keaktifan dari peserta */
+function nilaiP(p,a){return (a.kelas&&isGrup(p.kelas))?(grupOf(p)?.nilai?.[a.kode]||""):(p.nilai?.[a.kode]||"")}
+function nilaiGrup(g){const as=grupAspek(g.kelas),tot=as.reduce((t,a)=>t+(+a.bobot||0),0);let sum=0,isi=0;
+  for(const a of as){const v=nilaiOf(g.nilai?.[a.kode]);if(v!=null){sum+=v*(+a.bobot||0);isi++}}
+  return {nilai:as.length&&isi===as.length&&tot?Math.round(sum/tot*10)/10:null,isi,total:as.length}}
+/* alasan dari hasil Claude (disimpan di kelompok.ai) dipakai bila tingkatnya sama dengan nilai yang berlaku */
+function aiAspek(p,a,v){if(!a.kelas||!isGrup(p.kelas))return null;const x=grupOf(p)?.ai?.aspek?.[a.kode];return x&&x.nilai===v&&x.alasan?x:null}
+function ketAspek(p,a,v){const x=aiAspek(p,a,v);return x?(x.alasan+(x.bukti&&/[0-9a-z]/i.test(x.bukti)?" (bukti: "+x.bukti+")":"")):(a.r?.[v]||"")}
 function nilaiOf(k){const s=(S.cfg?.skala||[]).find(x=>x.k===k);return s?s.nilai:null}
 function kat(v){if(v==null)return null;return v>=90?"BS":v>=80?"B":v>=65?"C":"K"}
 function hitung(p){
   const as=aspekKelas(p.kelas);const tot=as.reduce((a,x)=>a+(+x.bobot||0),0);
   let sum=0,isi=0;
-  for(const a of as){const v=nilaiOf(p.nilai?.[a.kode]);if(v!=null){sum+=v*(+a.bobot||0);isi++}}
+  for(const a of as){const v=nilaiOf(nilaiP(p,a));if(v!=null){sum+=v*(+a.bobot||0);isi++}}
   const praktik=as.length&&isi===as.length&&tot?Math.round(sum/tot*10)/10:null;
   const kuis=(p.kuis===0||p.kuis)&&!isNaN(p.kuis)&&p.kuis>=0&&p.kuis<=100?+p.kuis:null;
   const wp=(+S.cfg?.bobotPraktik||0),wk=(+S.cfg?.bobotKuis||0);
@@ -458,7 +492,7 @@ function hitung(p){
 function daftarKata(a){return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" dan "+a[a.length-1]}
 function keterangan(p,mode){const singkat=mode===true||mode==="singkat",lembar=mode==="lembar",pkl=!!kelasObj(p.kelas).pkl;
   const as=aspekKelas(p.kelas),g={BS:[],B:[],C:[],K:[],"":[]},nm=a=>a.label||a.nama;
-  as.forEach(a=>{const v=p.nilai?.[a.kode]||"";(g[v]||g[""]).push(a)});
+  as.forEach(a=>{const v=nilaiP(p,a);(g[v]||g[""]).push(a)});
   if(!as.length||g[""].length===as.length)return "Belum dinilai.";
   const x=hitung(p),out=[],KT={BS:"sangat baik",B:"baik",C:"cukup",K:"kurang"};
   const kecil=t=>String(t||"").replace(/[.\s]+$/,"");
@@ -475,7 +509,7 @@ function keterangan(p,mode){const singkat=mode===true||mode==="singkat",lembar=m
   }else if(kurang.length){
     out.push("Kekurangan per aspek:");
     kurang.forEach(([a,v])=>{
-      let t=`- ${a.nama} (${SHORT[v]}): ${kecil(a.r?.[v])}.`;
+      let t=`- ${a.nama} (${SHORT[v]}): ${kecil(ketAspek(p,a,v))}.`;
       if(!singkat&&v!=="B"){const fk=fokus(a);if(fk.length)t+=` ${pkl?"Yang perlu dilengkapi pada laporan":"Yang perlu dilatih"}: ${fk.join("; ")}.`}
       if(singkat&&v==="K")t+=pkl?" Wajib direvisi.":" Wajib diulang.";
       if(singkat&&v==="C")t+=pkl?" Perlu dilengkapi.":" Perlu latihan ulang.";
@@ -486,7 +520,7 @@ function keterangan(p,mode){const singkat=mode===true||mode==="singkat",lembar=m
   else if(x.praktik!=null)out.push("Status akhir menunggu nilai kuis.");
   return out.join("\n");
 }
-function rows(k){return diBatch().filter(p=>k==null||p.kelas===k).map(p=>({p,h:hitung(p)})).sort((a,b)=>(a.p.no??999)-(b.p.no??999)||String(a.p.nama).localeCompare(b.p.nama))}
+function rows(k){const gn=p=>isGrup(p.kelas)?(grupOf(p)?.nama||"\uffff"):"";return diBatch().filter(p=>k==null||p.kelas===k).map(p=>({p,h:hitung(p)})).sort((a,b)=>gn(a.p).localeCompare(gn(b.p),"id",{numeric:true})||(a.p.no??999)-(b.p.no??999)||String(a.p.nama).localeCompare(b.p.nama))}
 
 /* ---------- render ---------- */
 function render(){
@@ -498,7 +532,7 @@ function render(){
   if(!valid(S.batch))S.batch=batchList()[0]?.id||(adaNone?NONE:null);
   $("#bSel").innerHTML=batchList().map(b=>`<option value="${esc(b.id)}">${esc(b.nama||"Batch")}${b.tanggal?" · "+esc(b.tanggal):""}</option>`).join("")+(adaNone?`<option value="${NONE}">Tanpa batch</option>`:"")+(S.batch?"":'<option value="" selected>Belum ada batch</option>');
   $("#bSel").value=S.batch||"";$("#bNew").hidden=!S.canWrite;
-  $("#judul").textContent=c.judul||"Penilaian Praktik & Kuis";
+  $("#judul").textContent=c.judul||"Dashboard Penilaian Praktik";
   $("#prog").textContent=c.program||"";
   $("#basis").textContent=c.basis||"";
   $("#wchip").innerHTML=`<span>Praktik ${esc(c.bobotPraktik)}%</span><span>Kuis ${esc(c.bobotKuis)}%</span><span>Lulus ≥ 65</span>`;
@@ -506,7 +540,7 @@ function render(){
   const J=kelasJudul(S.kelas);
   $("#profT").textContent="Profil aspek "+J;$("#rekT").textContent="Rekap peserta "+J;$("#rubT").textContent="Rubrik "+J+" & bobot";
   const R=rows(S.kelas);
-  renderKpi(R);renderAlerts(R);renderBars(R);renderStrip();renderFilters();renderTable(R);renderRubrik();renderKeg();
+  renderKpi(R);renderAlerts(R);renderBars(R);renderStrip();renderFilters();renderGroups(R);renderTable(R);renderRubrik();renderKeg();
   if($("#sh").open){const ae=document.activeElement;if(!(ae&&$("#sh").contains(ae)&&/INPUT|TEXTAREA/.test(ae.tagName)))renderSheet(false)}
 }
 function renderKeg(){
@@ -552,7 +586,7 @@ function renderBars(R){
   if(!as.length){$("#bars").innerHTML='<div class="empty">Belum ada aspek untuk kelas ini.</div>';$("#legend").innerHTML="";return}
   $("#bars").innerHTML=as.map(a=>{
     const cnt={BS:0,B:0,C:0,K:0};let sum=0,n=0;
-    R.forEach(r=>{const v=r.p.nilai?.[a.kode];if(cnt[v]!=null){cnt[v]++;sum+=nilaiOf(v);n++}});
+    R.forEach(r=>{const v=nilaiP(r.p,a);if(cnt[v]!=null){cnt[v]++;sum+=nilaiOf(v);n++}});
     const tot=R.length||1;const avg=n?sum/n:null;
     const seg=["BS","B","C","K"].map(k=>cnt[k]?`<i class="${CLS[k]}" style="width:${cnt[k]/tot*100}%" title="${SHORT[k]}: ${cnt[k]} peserta"></i>`:"").join("");
     return `<div class="bar"><div class="nm">${esc(a.nama)}<span>${esc(a.bobot)}%</span>${a.kelas?"":"<em>SEMUA KELAS</em>"}</div>
@@ -587,27 +621,39 @@ function renderFilters(){
   $("#add").hidden=$("#paste").hidden=!S.canWrite||!curBatch();
 }
 
+function renderGroups(R){
+  const el=$("#grp");if(!isGrup(S.kelas)||!S.batch){el.hidden=true;el.innerHTML="";return}
+  el.hidden=false;const gl=grupList(),tanpa=R.filter(r=>!grupOf(r.p)).length,can=S.canWrite&&curBatch();
+  el.innerHTML=`<div class="gh"><span class="sub"><b>Penilaian kelompok.</b> Aspek laporan PKL dinilai per kelompok; Kehadiran &amp; Keaktifan dinilai per peserta di tabel di bawah.${tanpa?` <b style="color:var(--c)">${tanpa} peserta belum masuk kelompok.</b>`:""}</span>${can?'<button class="btn pri" type="button" id="gNew">+ Kelompok</button>':""}</div>`+
+    (gl.length?`<div class="gcs">${gl.map(g=>{const n=nilaiGrup(g),ang=S.peserta.filter(p=>p.kelompok===g.id);
+      return `<button class="gc" type="button" data-grp="${esc(g.id)}"><span class="gv"><b>${esc(g.nama)}</b>${n.nilai!=null?`<span class="pill ${CLS[kat(n.nilai)]}">${fmt(n.nilai)}</span>`:`<span class="pill w">${n.isi}/${n.total} aspek</span>`}</span>
+        <small>${ang.length?esc(ang.map(p=>p.nama).join(", ")):"Belum ada anggota"}</small></button>`}).join("")}</div>`:'<div class="sub">Belum ada kelompok. Tekan <b>+ Kelompok</b>, lalu pilih anggotanya.</div>');
+}
+function tombolHapus(id){return S.canWrite?`<button class="btn del ${S.delArm===id?"arm":""}" type="button" data-del="${esc(id)}" aria-label="Hapus peserta">${S.delArm===id?"Yakin hapus?":"Hapus"}</button>`:""}
 function renderTable(R){
   const as=aspekKelas(S.kelas);
   const q=S.q.trim().toLowerCase();
   const list=R.filter(r=>(S.st==="all"||r.h.status===S.st)&&(!q||String(r.p.nama).toLowerCase().includes(q)));
   if(!R.length){$("#tbl").innerHTML=$("#cards").innerHTML=`<div class="empty">${!S.batch?"Belum ada batch. Tekan <b>+ Batch baru</b> di bagian atas, isi datanya, lalu tambahkan peserta.":`Belum ada peserta ${esc(kelasJudul(S.kelas))} di ${esc(batchNama(S.batch))}. ${S.canWrite&&curBatch()?"Tekan <b>+ Peserta</b> atau <b>Tempel daftar nama</b> untuk menambahkan.":""}`}</div>`;renderFoot();return}
   $("#cards").innerHTML=list.length?list.map(({p,h:x})=>`<button class="pc" type="button" data-sheet="${esc(p.id)}">
-    <span class="pn"><b>${esc(p.nama)}</b><small>${x.isi}/${x.total} aspek dinilai · Kuis ${x.kuis!=null?fmt(x.kuis):"–"}</small></span>
+    <span class="pn"><b>${esc(p.nama)}</b><small>${isGrup(p.kelas)?esc(grupOf(p)?.nama||"Belum masuk kelompok")+" · ":""}${x.isi}/${x.total} aspek dinilai · Kuis ${x.kuis!=null?fmt(x.kuis):"–"}</small></span>
     <span class="pr"><b>${fmt(x.akhir??x.praktik)}</b><span class="pill ${ST_CLS[x.status]}">${x.status}</span></span>
     <span class="pb"><i style="width:${x.total?x.isi/x.total*100:0}%"></i></span></button>`).join(""):'<div class="empty">Tidak ada peserta yang cocok dengan filter.</div>';
   const dis=S.canWrite?"":"disabled";
-  let h='<table class="rk"><thead><tr><th>No</th><th class="nm">Nama peserta</th>'+as.map(a=>`<th class="${a.kelas?"":"gen"}" title="${esc(a.nama)}">${esc(a.label||a.nama)}<small>${esc(a.bobot)}%</small></th>`).join("")+
-    `<th>${kelasObj(S.kelas).pkl?"Nilai PKL":"Nilai Praktik"}<small>${esc(S.cfg.bobotPraktik)}%</small></th><th>Nilai Kuis<small>${esc(S.cfg.bobotKuis)}%</small></th><th>Nilai Akhir</th><th>Predikat</th><th>Status</th><th>Keterangan</th></tr></thead><tbody>`;
+  const grp=isGrup(S.kelas);
+  let h='<table class="rk"><thead><tr><th>No</th><th class="nm">Nama peserta</th>'+(grp?'<th>Kelompok</th>':'')+as.map(a=>`<th class="${a.kelas?(grp?"grp":""):"gen"}" title="${esc(a.nama)}${a.kelas&&grp?" (dinilai per kelompok)":""}">${esc(a.label||a.nama)}<small>${esc(a.bobot)}%${a.kelas&&grp?" · kelompok":""}</small></th>`).join("")+
+    `<th>${kelasObj(S.kelas).pkl?"Nilai PKL":"Nilai Praktik"}<small>${esc(S.cfg.bobotPraktik)}%</small></th><th>Nilai Kuis<small>${esc(S.cfg.bobotKuis)}%</small></th><th>Nilai Akhir</th><th>Predikat</th><th>Status</th><th>Keterangan</th>${S.canWrite?"<th></th>":""}</tr></thead><tbody>`;
   list.forEach((r,i)=>{const p=r.p,x=r.h;
     h+=`<tr data-id="${esc(p.id)}"><td class="no">${i+1}</td><td class="nm"><button class="nmb" type="button" data-sheet="${esc(p.id)}">${esc(p.nama)}</button></td>`;
-    for(const a of as){const v=p.nilai?.[a.kode]||"";
+    if(grp){const g=grupOf(p);h+=g?`<td><button class="nmb" type="button" data-grp="${esc(g.id)}">${esc(g.nama)}</button></td>`:'<td class="sub" style="color:var(--c)">Belum</td>'}
+    for(const a of as){const v=nilaiP(p,a);
+      if(grp&&a.kelas){h+=`<td class="gv">${v?`<span class="pill ${CLS[v]}">${esc(SHORT[v])}</span>`:"–"}</td>`;continue}
       h+=`<td style="padding:2px"><select class="as ${v?CLS[v]:"e"}" data-as="${esc(a.kode)}" aria-label="${esc(a.nama)} untuk ${esc(p.nama)}" ${dis}><option value="">–</option>${(S.cfg.skala||[]).map(s=>`<option value="${s.k}" ${s.k===v?"selected":""}>${esc(s.label)}</option>`).join("")}</select></td>`}
     h+=`<td class="num px">${x.praktik!=null?fmt(x.praktik):x.isi?`<span class="sub">${x.isi}/${x.total}</span>`:"–"}</td>`;
     h+=`<td class="num"><input class="kz" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="–" value="${x.kuis??""}" data-kz aria-label="Nilai kuis ${esc(p.nama)}" ${dis}></td>`;
     h+=`<td class="num">${fmt(x.akhir)}</td><td class="num">${x.pred?`<span class="pill ${CLS[x.pred]}">${SHORT[x.pred]}</span>`:"–"}</td>`;
-    h+=`<td class="num"><span class="pill ${ST_CLS[x.status]}">${x.status}</span></td><td class="nt">${esc(keterangan(p,true))}${p.catatan?`<br><i>Catatan: ${esc(p.catatan)}</i>`:""}</td></tr>`});
-  if(!list.length)h+=`<tr><td colspan="${as.length+8}" class="empty">Tidak ada peserta yang cocok dengan filter.</td></tr>`;
+    h+=`<td class="num"><span class="pill ${ST_CLS[x.status]}">${x.status}</span></td><td class="nt">${esc(keterangan(p,true))}${p.catatan?`<br><i>Catatan: ${esc(p.catatan)}</i>`:""}</td>${S.canWrite?`<td>${tombolHapus(p.id)}</td>`:""}</tr>`});
+  if(!list.length)h+=`<tr><td colspan="${as.length+9+(grp?1:0)}" class="empty">Tidak ada peserta yang cocok dengan filter.</td></tr>`;
   $("#tbl").innerHTML=h+"</tbody></table>";renderFoot();
 }
 function renderFoot(){
@@ -638,17 +684,24 @@ async function tulis(id,patch){
 document.addEventListener("click",e=>{
   const kt=e.target.closest("[data-kelas]");if(kt){S.kelas=kt.dataset.kelas;try{localStorage.setItem("rk3-praktik-kelas",S.kelas)}catch(_){}render();return}
   const s=e.target.closest("[data-s]");if(s){S.st=s.dataset.s;render();return}
+  const dl=e.target.closest("[data-del]");if(dl){hapusPeserta(dl.dataset.del);return}
   const sh=e.target.closest("[data-sheet]");if(sh){openSheet(sh.dataset.sheet);return}
-  const lv=e.target.closest("[data-lv]");if(lv&&!lv.disabled){const p=S.peserta.find(x=>x.id===shId);if(!p)return;
+  const gr=e.target.closest("[data-grp]");if(gr){openGroup(gr.dataset.grp);return}
+  if(e.target.id==="gNew"){buatKelompok();return}
+  const glv=e.target.closest("[data-glv]");if(glv&&!glv.disabled){const g=S.kelompok.find(x=>x.id===shId);if(!g)return;
+    const cur=g.nilai?.[glv.dataset.asp]||"";const nilai={...(g.nilai||{}),[glv.dataset.asp]:cur===glv.dataset.glv?"":glv.dataset.glv};
+    g.nilai=nilai;render();tulisGrup(g.id,{nilai});return}
+  const lv=e.target.closest("[data-lv]");if(lv&&!lv.disabled&&shMode==="p"){const p=S.peserta.find(x=>x.id===shId);if(!p)return;
     const cur=p.nilai?.[lv.dataset.asp]||"";const nilai={...(p.nilai||{}),[lv.dataset.asp]:cur===lv.dataset.lv?"":lv.dataset.lv};
     p.nilai=nilai;render();tulis(p.id,{nilai});return}
   if(e.target.id==="wSave")simpanBobot();
 });
 
 /* ---------- lembar nilai per peserta ---------- */
-let shId=null;
-function openSheet(id){shId=id;renderSheet(true);if(!$("#sh").open)$("#sh").showModal()}
-function renderSheet(reset){
+let shId=null,shMode="p";
+function openSheet(id){shId=id;shMode="p";S.delArm=null;renderSheet(true);if(!$("#sh").open)$("#sh").showModal()}
+function openGroup(id){shId=id;shMode="g";S.delArm=null;renderSheet(true);if(!$("#sh").open)$("#sh").showModal()}
+function renderSheet(reset){if(shMode==="g")return renderGroupSheet(reset);
   const p=S.peserta.find(x=>x.id===shId);if(!p){if($("#sh").open)$("#sh").close();return}
   const x=hitung(p),as=aspekKelas(p.kelas),sk=S.cfg.skala||[],dis=S.canWrite?"":"disabled";
   const body=$("#shBody"),st=body.scrollTop;
@@ -659,7 +712,11 @@ function renderSheet(reset){
       <div><span>Nilai kuis</span><input type="number" id="shKuis" min="0" max="100" step="0.1" inputmode="decimal" placeholder="–" value="${x.kuis??""}" ${dis}></div>
       <div><span>Nilai akhir</span><b>${fmt(x.akhir)}</b><small>${x.pred?SHORT[x.pred]:"&nbsp;"}</small></div>
       <div><span>Status</span><span class="pill ${ST_CLS[x.status]}" style="justify-self:start">${x.status}</span></div></div>`+
-    as.map((a,i)=>{const v=p.nilai?.[a.kode]||"";const fk=String(a.fokus||"").split(/\n/).filter(Boolean);
+    (isGrup(p.kelas)?(()=>{const g=grupOf(p),gl=grupList(pBatch(p),p.kelas);return `<label class="sub" style="display:grid;gap:4px">Kelompok<select id="shPkel" ${dis}><option value="">— Belum masuk kelompok —</option>${gl.map(x=>`<option value="${esc(x.id)}" ${g&&g.id===x.id?"selected":""}>${esc(x.nama)}</option>`).join("")}</select></label>`})():"")+
+    as.map((a,i)=>{const v=nilaiP(p,a);const fk=String(a.fokus||"").split(/\n/).filter(Boolean);
+      if(a.kelas&&isGrup(p.kelas)){const g=grupOf(p);return `<div class="sha gro"><div class="t"><b>${i+1}. ${esc(a.nama)}</b><span>${esc(a.bobot)}% · kelompok</span></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${v?`<span class="pill ${CLS[v]}">${esc(SHORT[v])}</span>`:'<span class="pill w">Belum dinilai</span>'}${g?`<button class="btn" type="button" data-grp="${esc(g.id)}">Nilai di ${esc(g.nama)}</button>`:'<span class="sub">Pilih kelompok di atas.</span>'}</div>
+        ${v?`<p class="desc">${esc(ketAspek(p,a,v))}</p>`:""}</div>`}
       return `<div class="sha"><div class="t"><b>${i+1}. ${esc(a.nama)}</b><span>${esc(a.bobot)}%${a.kelas?"":" · semua kelas"}</span></div>
         <details data-k="${esc(a.kode)}" ${terbuka.has(a.kode)?"open":""}><summary>Fokus / indikator</summary><ul>${fk.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></details>
         <div class="lv" role="group" aria-label="Nilai ${esc(a.nama)}">${sk.map(s=>`<button type="button" class="${v===s.k?CLS[s.k]:""}" aria-pressed="${v===s.k}" data-lv="${s.k}" data-asp="${esc(a.kode)}" ${dis}>${esc(s.label)}<small>${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</small></button>`).join("")}</div>
@@ -667,12 +724,134 @@ function renderSheet(reset){
     `<div class="desc"><b>Keterangan (otomatis)</b>\n${esc(keterangan(p))}</div>`+
     `<label class="sub" style="display:grid;gap:4px">Catatan instruktur (tambahan, opsional)<textarea id="shCat" ${dis}>${esc(p.catatan||"")}</textarea></label>`;
   body.scrollTop=reset?0:st;
-  $("#shEdit").hidden=!S.canWrite;
+  $("#shEdit").hidden=!S.canWrite;$("#shEdit").textContent="Ubah nama / kelas";$("#shPdf").hidden=!S.dl;
+  $("#shDel").hidden=!S.canWrite;$("#shDel").textContent=S.delArm===p.id?"Yakin hapus "+p.nama+"?":"Hapus peserta";
 }
+function renderGroupSheet(reset){
+  const g=S.kelompok.find(x=>x.id===shId);if(!g){if($("#sh").open)$("#sh").close();return}
+  const as=grupAspek(g.kelas),sk=S.cfg.skala||[],dis=S.canWrite?"":"disabled",n=nilaiGrup(g);
+  const body=$("#shBody"),st=body.scrollTop;const terbuka=new Set([...body.querySelectorAll("details[open]")].map(d=>d.dataset.k));
+  $("#shKelas").textContent=kelasJudul(g.kelas)+" · penilaian kelompok";$("#shName").textContent=g.nama;
+  const calon=S.peserta.filter(p=>pBatch(p)===g.batch&&p.kelas===g.kelas).sort((a,b)=>String(a.nama).localeCompare(b.nama));
+  body.innerHTML=`<label class="sub" style="display:grid;gap:4px">Nama kelompok<input type="text" id="shGNama" value="${esc(g.nama)}" ${dis}></label>
+    <div class="shsum"><div><span>Nilai laporan kelompok</span><b>${fmt(n.nilai)}</b><small>${n.isi}/${n.total} aspek</small></div>
+      <div><span>Anggota</span><b>${S.peserta.filter(p=>p.kelompok===g.id).length}</b><small>orang</small></div>
+      <div style="grid-column:span 2"><span>Catatan</span><small>Nilai ini berlaku untuk semua anggota. Kehadiran &amp; keaktifan dinilai per peserta.</small></div></div>`+
+    as.map((a,i)=>{const v=g.nilai?.[a.kode]||"";const fk=String(a.fokus||"").split(/\n/).filter(Boolean);
+      return `<div class="sha"><div class="t"><b>${i+1}. ${esc(a.nama)}</b><span>${esc(a.bobot)}%</span></div>
+        <details data-k="${esc(a.kode)}" ${terbuka.has(a.kode)?"open":""}><summary>Fokus / indikator</summary><ul>${fk.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></details>
+        <div class="lv" role="group" aria-label="Nilai ${esc(a.nama)}">${sk.map(s=>`<button type="button" class="${v===s.k?CLS[s.k]:""}" aria-pressed="${v===s.k}" data-glv="${s.k}" data-asp="${esc(a.kode)}" ${dis}>${esc(s.label)}<small>${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</small></button>`).join("")}</div>
+        ${v?`<p class="desc">${esc(a.r?.[v]||"")}</p>`:""}${(()=>{const x=g.ai?.aspek?.[a.kode];return x?`<p class="desc ai">${x.nilai===v?"":"<b>Usulan Claude berbeda ("+esc(SHORT[x.nilai]||x.nilai)+").</b> "}<b>Hasil baca laporan:</b> ${esc(x.alasan||"")}${x.bukti?` <i>(bukti: ${esc(x.bukti)})</i>`:""}</p>`:""})()}</div>`}).join("")+aiPanel(g)+
+    `<label class="sub" style="display:grid;gap:4px">Catatan kelompok (opsional)<textarea id="shGCat" ${dis}>${esc(g.catatan||"")}</textarea></label>
+    <div class="sha"><div class="t"><b>Anggota kelompok</b><span>centang untuk memasukkan</span></div><div class="anggota">${calon.length?calon.map(p=>{const lain=p.kelompok&&p.kelompok!==g.id?grupOf(p):null;
+      return `<label><input type="checkbox" data-anggota="${esc(p.id)}" ${p.kelompok===g.id?"checked":""} ${dis}> ${esc(p.nama)}${lain?` <span class="sub">(sekarang di ${esc(lain.nama)})</span>`:""}</label>`}).join(""):'<span class="sub">Belum ada peserta di kelas ini.</span>'}</div></div>`;
+  body.scrollTop=reset?0:st;
+  $("#shEdit").hidden=true;$("#shPdf").hidden=true;
+  $("#shDel").hidden=!S.canWrite;$("#shDel").textContent=S.delArm===g.id?"Yakin hapus "+g.nama+"?":"Hapus kelompok";
+}
+/* ---------- bantuan Claude (langganan Pro): salin perintah -> tempel hasil ---------- */
+const AI={draft:{},txt:{}};
+function promptKelompok(g){
+  const ko=kelasObj(g.kelas),B=S.batches.find(b=>b.id===g.batch)||{},as=grupAspek(g.kelas),sk=S.cfg.skala||[];
+  const L=[];
+  L.push("Anda adalah penguji pada "+(S.cfg.program||"training K3 Penanggulangan Kebakaran")+". Nilailah laporan PKL Rencana Tanggap Darurat kelompok di PDF terlampir memakai RUBRIK di bawah.");
+  L.push("");
+  L.push("Kelas: "+kelasJudul(g.kelas)+(ko.ket?" – "+ko.ket:""));
+  L.push("Kelompok: "+g.nama+(B.nama?" · "+B.nama:"")+(B.lokasi?" · Lokasi/perusahaan PKL: "+B.lokasi:"")+(B.pjk3?" · "+B.pjk3:""));
+  L.push("");
+  L.push("ATURAN:");
+  L.push("1. Nilai hanya berdasarkan isi laporan. Jangan mengarang isi yang tidak ada.");
+  L.push("2. Untuk setiap aspek pilih satu tingkat: "+sk.map(s=>s.k+" = "+s.label+" ("+(s.k==="K"?"< 65":s.min+"–"+s.max)+")").join(", ")+", dengan mencocokkan isi laporan ke indikator dan deskripsi tingkat di rubrik.");
+  L.push("3. Tulis alasan singkat (maks. 3 kalimat) yang menyebut kekurangan dan kelebihan yang spesifik untuk laporan ini, serta bukti (nomor halaman atau judul bagian).");
+  L.push("4. Bila bagian yang dinilai tidak ditemukan di laporan, beri K dan tulis bahwa bagian itu tidak ditemukan.");
+  L.push("5. Bila PDF tidak dapat dibaca (mis. hasil scan buram), katakan dan jangan menebak nilai.");
+  L.push("");
+  L.push("RUBRIK:");
+  as.forEach((a,i)=>{L.push("");L.push((i+1)+". ["+a.kode+"] "+a.nama+" (bobot "+a.bobot+"%)");
+    L.push("   Indikator:");String(a.fokus||"").split(/\n/).filter(Boolean).forEach(f=>L.push("   - "+f));
+    sk.forEach(s=>L.push("   "+s.k+": "+(a.r?.[s.k]||"")))});
+  L.push("");
+  L.push("Balas HANYA dengan satu blok kode JSON dengan format berikut (pakai kode aspek persis seperti di rubrik, semua "+as.length+" aspek wajib ada):");
+  L.push("```json");
+  L.push(JSON.stringify({kelompok:g.nama,aspek:as.map(a=>({kode:a.kode,nilai:"BS|B|C|K",alasan:"...",bukti:"hal. ..."})),ringkasan:"kesimpulan 1-2 kalimat"},null,1));
+  L.push("```");
+  return L.join("\n");
+}
+function bacaHasilAI(txt,g){
+  const m=String(txt).match(/```(?:json)?\s*([\s\S]*?)```/i),src=m?m[1]:String(txt),i=src.indexOf("{"),j=src.lastIndexOf("}");
+  if(i<0||j<=i)throw new Error("Tidak menemukan hasil berformat JSON. Salin seluruh balasan Claude, termasuk blok kodenya.");
+  let o;try{o=JSON.parse(src.slice(i,j+1))}catch(e){throw new Error("Format hasil rusak/terpotong. Minta Claude mengirim ulang blok JSON-nya.")}
+  const as=grupAspek(g.kelas),MAP={"BS":"BS","BAIK SEKALI":"BS","B":"B","BAIK":"B","C":"C","CUKUP":"C","K":"K","KURANG":"K"};
+  const list=Array.isArray(o.aspek)?o.aspek:[];const out=[];
+  for(const a of as){const x=list.find(r=>String(r.kode||"").trim().toUpperCase()===a.kode.toUpperCase())||list.find(r=>String(r.nama||r.aspek||"").trim().toLowerCase()===a.nama.toLowerCase());
+    const nv=x?MAP[String(x.nilai||"").trim().toUpperCase()]||"":"";
+    out.push({kode:a.kode,nama:a.nama,nilai:nv,alasan:x?String(x.alasan||"").slice(0,800):"",bukti:x?String(x.bukti||"").slice(0,200):"",pakai:!!nv})}
+  if(!out.some(r=>r.nilai))throw new Error("Tidak ada aspek yang cocok dengan rubrik "+kelasJudul(g.kelas)+". Pastikan perintah yang disalin dari kelompok ini.");
+  return {aspek:out,ringkasan:String(o.ringkasan||"").slice(0,800)};
+}
+function aiPanel(g){
+  if(!S.canWrite)return g.ai?.ringkasan?`<div class="sha"><div class="t"><b>Ringkasan Claude</b></div><p class="desc">${esc(g.ai.ringkasan)}</p></div>`:"";
+  const d=AI.draft[g.id];
+  let h=`<div class="sha aip"><div class="t"><b>Nilai dengan bantuan Claude</b><span>pakai langganan Claude Pro</span></div>
+    <ol class="sub" style="margin:0;padding-left:18px;display:grid;gap:3px">
+      <li>Tekan <b>Salin perintah penilaian</b>.</li>
+      <li>Buka aplikasi Claude, unggah PDF laporan ${esc(g.nama)}, tempel perintahnya, lalu kirim.</li>
+      <li>Salin seluruh balasan Claude, tempel di kotak bawah, tekan <b>Baca hasil</b>, tinjau, lalu <b>Terapkan</b>.</li></ol>
+    <div class="tools"><button class="btn pri" type="button" id="aiCopy">Salin perintah penilaian</button><a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Buka Claude ↗</a></div>
+    <details><summary>Lihat perintah (salin manual bila tombol tidak berfungsi)</summary><textarea id="aiPrompt" readonly style="width:100%;min-height:140px;font:12px var(--f-num)">${esc(promptKelompok(g))}</textarea></details>
+    <label class="sub" style="display:grid;gap:4px">Tempel balasan Claude di sini<textarea id="aiIn" style="min-height:90px" placeholder="Tempel balasan berisi blok kode JSON…">${esc(AI.txt[g.id]||"")}</textarea></label>
+    <div class="tools"><button class="btn" type="button" id="aiRead">Baca hasil</button>${g.ai?.t?`<span class="sub">Terakhir diterapkan: ${new Date(g.ai.t).toLocaleString("id-ID",{dateStyle:"medium",timeStyle:"short"})}</span>`:""}</div>`;
+  if(d){h+=`<div class="aiprev"><b style="font-size:13px">Usulan Claude – centang yang ingin diterapkan</b>${d.aspek.map(r=>{const cur=g.nilai?.[r.kode]||"";
+      return `<label class="aiitem"><input type="checkbox" data-aipick="${esc(r.kode)}" ${r.pakai?"checked":""} ${r.nilai?"":"disabled"}><span><b>${esc(r.nama)}</b> ${r.nilai?`<span class="pill ${CLS[r.nilai]}">${esc(SHORT[r.nilai])}</span>`:'<span class="pill w">tidak terbaca</span>'}${cur&&cur!==r.nilai?` <span class="sub">(sekarang ${esc(SHORT[cur])})</span>`:""}<br><span class="sub">${esc(r.alasan)}${r.bukti?" · bukti: "+esc(r.bukti):""}</span></span></label>`}).join("")}
+      ${d.ringkasan?`<p class="desc"><b>Ringkasan:</b> ${esc(d.ringkasan)}</p>`:""}
+      <div class="tools"><button class="btn pri" type="button" id="aiApply">Terapkan usulan terpilih</button><button class="btn" type="button" id="aiCancel">Batal</button></div></div>`}
+  else if(g.ai?.ringkasan)h+=`<p class="desc"><b>Ringkasan Claude:</b> ${esc(g.ai.ringkasan)}</p>`;
+  return h+"</div>";
+}
+async function salinTeks(t,el){try{await navigator.clipboard.writeText(t);return true}catch(e){if(el){const d=el.closest("details");if(d)d.open=true;el.focus();el.select()}return false}}
+document.addEventListener("click",async e=>{
+  if(shMode!=="g")return;const g=S.kelompok.find(x=>x.id===shId);if(!g)return;
+  if(e.target.id==="aiCopy"){const ok=await salinTeks(promptKelompok(g),$("#aiPrompt"));toast(ok?"Perintah disalin. Tempel di aplikasi Claude bersama PDF laporan.":"Salin otomatis tidak diizinkan; teks perintah sudah ditandai, salin manual.");return}
+  if(e.target.id==="aiRead"){AI.txt[g.id]=$("#aiIn").value;try{AI.draft[g.id]=bacaHasilAI(AI.txt[g.id],g);renderSheet(false);toast("Hasil terbaca. Tinjau usulan lalu tekan Terapkan.")}catch(err){toast(err.message)}return}
+  if(e.target.id==="aiCancel"){delete AI.draft[g.id];renderSheet(false);return}
+  if(e.target.id==="aiApply"){const d=AI.draft[g.id];if(!d)return;const pilih=new Set([...document.querySelectorAll("[data-aipick]:checked")].map(x=>x.dataset.aipick));
+    const nilai={...(g.nilai||{})},asp={...(g.ai?.aspek||{})};let n=0;
+    for(const r of d.aspek){if(!r.nilai)continue;asp[r.kode]={nilai:r.nilai,alasan:r.alasan,bukti:r.bukti};if(pilih.has(r.kode)){nilai[r.kode]=r.nilai;n++}}
+    const ai={t:Date.now(),ringkasan:d.ringkasan,aspek:asp};g.nilai=nilai;g.ai=ai;delete AI.draft[g.id];delete AI.txt[g.id];render();
+    await tulisGrup(g.id,{nilai,ai});toast(n+" aspek diterapkan ke "+g.nama+".");return}
+});
+async function tulisGrup(id,patch){try{await S.db.doc("kelompok/"+id).update(patch)}catch(e){toast("Gagal menyimpan kelompok. Periksa koneksi lalu coba lagi.")}}
+async function buatKelompok(){
+  if(!S.batch||!curBatch())return;const gl=grupList();let n=gl.length+1;const ada=new Set(gl.map(g=>g.nama));while(ada.has("Kelompok "+n))n++;
+  const id="g"+Date.now().toString(36);const data={nama:"Kelompok "+n,batch:S.batch,kelas:S.kelas,nilai:{},catatan:"",dibuat:Date.now()};
+  try{await S.db.doc("kelompok/"+id).set(data);openGroup(id);toast(data.nama+" dibuat. Centang anggotanya di bagian bawah.")}catch(e){toast("Kelompok tidak bisa dibuat.")}
+}
+let armT=null;
+function armDel(id){S.delArm=id;clearTimeout(armT);armT=setTimeout(()=>{if(S.delArm===id){S.delArm=null;render()}},4000);render()}
+async function hapusPeserta(id){
+  const p=S.peserta.find(x=>x.id===id);if(!p||!S.canWrite)return;
+  if(S.delArm!==id){armDel(id);return}
+  S.delArm=null;if($("#sh").open&&shMode==="p"&&shId===id)$("#sh").close();
+  try{await S.db.doc("peserta/"+id).delete();toast(p.nama+" dihapus dari "+batchNama(pBatch(p))+".")}catch(e){toast("Gagal menghapus.")}
+}
+async function hapusKelompok(id){
+  const g=S.kelompok.find(x=>x.id===id);if(!g||!S.canWrite)return;
+  if(S.delArm!==id){armDel(id);return}
+  S.delArm=null;$("#sh").close();
+  try{for(const p of S.peserta.filter(p=>p.kelompok===id))await tulis(p.id,{kelompok:""});await S.db.doc("kelompok/"+id).delete();toast(g.nama+" dihapus. Anggotanya kini belum masuk kelompok.")}catch(e){toast("Gagal menghapus kelompok.")}
+}
+$("#shDel").addEventListener("click",()=>{if(shMode==="g")hapusKelompok(shId);else hapusPeserta(shId)});
 $("#shX").addEventListener("click",()=>$("#sh").close());
 $("#shEdit").addEventListener("click",()=>openDlg(shId));
 $("#shBody").addEventListener("change",e=>{
+  if(shMode==="g"){const g=S.kelompok.find(x=>x.id===shId);if(!g)return;
+    if(e.target.id==="shGNama"){const t=e.target.value.trim();if(!t){e.target.value=g.nama;return}if(t===g.nama)return;g.nama=t;render();tulisGrup(g.id,{nama:t})}
+    if(e.target.id==="aiIn"){AI.txt[g.id]=e.target.value;return}
+    if(e.target.id==="shGCat"){const t=e.target.value.trim();if(t===(g.catatan||""))return;g.catatan=t;tulisGrup(g.id,{catatan:t})}
+    const cb=e.target.closest("[data-anggota]");if(cb){const p=S.peserta.find(x=>x.id===cb.dataset.anggota);if(!p)return;const v=cb.checked?g.id:"";p.kelompok=v;render();tulis(p.id,{kelompok:v})}
+    return}
   const p=S.peserta.find(x=>x.id===shId);if(!p)return;
+  if(e.target.id==="shPkel"){const v=e.target.value;p.kelompok=v;render();tulis(p.id,{kelompok:v});return}
   if(e.target.id==="shKuis"){let v=e.target.value.trim()===""?null:Math.round(parseFloat(e.target.value.replace(",","."))*10)/10;
     if(v!=null&&(isNaN(v)||v<0||v>100)){toast("Nilai kuis harus 0–100.");e.target.value=p.kuis??"";return}
     if(v===p.kuis)return;p.kuis=v;e.target.blur();render();tulis(p.id,{kuis:v})}
@@ -758,7 +937,7 @@ async function pdfRekap(J){
   const nA=as.length;
   doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
     head:[["No","Nama Peserta",...as.map(a=>pt(`${a.label||a.nama}\n(${a.bobot}%)`)),kelasObj(S.kelas).pkl?"Nilai\nPKL":"Nilai\nPraktik","Nilai\nKuis","Nilai\nAkhir","Predikat","Status","Keterangan"]],
-    body:R.map(({p,h},i)=>[i+1,pt(p.nama),...as.map(a=>SHORT[p.nilai?.[a.kode]]||"-"),fmt(h.praktik),fmt(h.kuis),fmt(h.akhir),h.pred?SHORT[h.pred]:"-",h.status,pt(keterangan(p,true)+(p.catatan?"\nCatatan: "+p.catatan:""))]),
+    body:R.map(({p,h},i)=>[i+1,pt(p.nama+(isGrup(p.kelas)?"\n"+(grupOf(p)?.nama||"(belum berkelompok)"):"")),...as.map(a=>SHORT[nilaiP(p,a)]||"-"),fmt(h.praktik),fmt(h.kuis),fmt(h.akhir),h.pred?SHORT[h.pred]:"-",h.status,pt(keterangan(p,true)+(p.catatan?"\nCatatan: "+p.catatan:""))]),
     styles:{font:"helvetica",fontSize:7.6,cellPadding:1.6,valign:"middle",halign:"center",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
     headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",fontSize:6.2,cellPadding:1.1},
     columnStyles:{0:{cellWidth:7},1:{halign:"left",cellWidth:32,fontStyle:"bold"},...Object.fromEntries(as.map((a,i)=>[2+i,{cellWidth:14}])),[2+nA]:{cellWidth:12},[3+nA]:{cellWidth:11},[4+nA]:{cellWidth:11},[5+nA]:{cellWidth:15},[6+nA]:{cellWidth:17,fontSize:6.6},[7+nA]:{halign:"left",fontSize:6.3,valign:"top"}},
@@ -780,11 +959,11 @@ async function pdfRekap(J){
 function lembar(doc,p,W,H){
   const x=hitung(p),as=aspekKelas(p.kelas);
   {const ko=kelasObj(p.kelas);kop(doc,ko.pkl?"LEMBAR PENILAIAN PKL":"LEMBAR PENILAIAN PRAKTIK",W,ko.pkl?(ko.ket||""):"")}
-  const B=curBatch()||{};let y=infoBlok(doc,[["Nama Peserta",p.nama],["Kelas",kelasJudul(p.kelas)],["Batch",B.nama],["Kegiatan",B.kegiatan],["PJK3",B.pjk3],["Lokasi Praktek",B.lokasi],["Tanggal",B.tanggal]],31,W,1);
+  const B=curBatch()||{};let y=infoBlok(doc,[["Nama Peserta",p.nama],["Kelas",kelasJudul(p.kelas)],...(isGrup(p.kelas)?[["Kelompok",grupOf(p)?.nama||"-"]]:[]),["Batch",B.nama],["Kegiatan",B.kegiatan],["PJK3",B.pjk3],["Lokasi Praktek",B.lokasi],["Tanggal",B.tanggal]],31,W,1);
   doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
     head:[["No","Aspek Praktik","Bobot","Predikat","Nilai","Nilai x\nBobot","Keterangan"]],
-    body:as.map((a,i)=>{const v=p.nilai?.[a.kode];const n=nilaiOf(v);
-      return [i+1,pt(a.nama),a.bobot+"%",SHORT[v]||"-",n!=null?fmt(n):"-",n!=null?fmt(n*a.bobot/100):"-",pt(v?a.r?.[v]||"":"Belum dinilai")]}),
+    body:as.map((a,i)=>{const v=nilaiP(p,a);const n=nilaiOf(v);
+      return [i+1,pt(a.nama),a.bobot+"%",SHORT[v]||"-",n!=null?fmt(n):"-",n!=null?fmt(n*a.bobot/100):"-",pt(v?ketAspek(p,a,v):"Belum dinilai")]}),
     foot:[["",kelasObj(p.kelas).pkl?"Nilai PKL":"Nilai Praktik",as.reduce((s,a)=>s+(+a.bobot||0),0)+"%","","",fmt(x.praktik),x.praktik==null?`${x.isi}/${x.total} aspek terisi`:""]],
     styles:{font:"helvetica",fontSize:8.2,cellPadding:1.8,valign:"middle",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
     headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",halign:"center",fontSize:8},
@@ -843,16 +1022,19 @@ function openDlg(id){
   $("#dKel").innerHTML=kelasList().map(k=>`<option value="${esc(k.k)}">${esc(k.judul)}</option>`).join("");
   $("#dKel").value=p?.kelas||S.kelas;
   $("#dBatch").innerHTML=batchList().map(b=>`<option value="${esc(b.id)}">${esc(b.nama||"Batch")}</option>`).join("")+(p&&!p.batch?`<option value="${NONE}">Tanpa batch</option>`:"");
-  $("#dBatch").value=p?pBatch(p):S.batch;
+  $("#dBatch").value=p?pBatch(p):S.batch;dlgKelompok(p?.kelompok||"");
   $("#dDel").hidden=!p;$("#dDel").textContent="Hapus peserta";
   for(const el of ["#dNama","#dKel","#dBatch","#dCat","#dOk","#dDel"])$(el).disabled=!S.canWrite;
   $("#dlg").showModal();
 }
+function dlgKelompok(sel){const k=$("#dKel").value,b=$("#dBatch").value,on=isGrup(k);$("#dKelpW").hidden=!on;
+  $("#dKelp").innerHTML='<option value="">— Belum masuk kelompok —</option>'+(on?grupList(b,k).map(g=>`<option value="${esc(g.id)}">${esc(g.nama)}</option>`).join(""):"");$("#dKelp").value=on?sel:"";$("#dKelp").disabled=!S.canWrite}
+$("#dKel").addEventListener("change",()=>dlgKelompok(""));$("#dBatch").addEventListener("change",()=>dlgKelompok(""));
 $("#add").addEventListener("click",()=>openDlg(null));
 $("#dX").addEventListener("click",()=>$("#dlg").close());
 $("#frm").addEventListener("submit",async e=>{
   e.preventDefault();const nama=$("#dNama").value.trim();if(!nama){$("#dNama").focus();return}
-  const data={nama,kelas:$("#dKel").value,catatan:$("#dCat").value.trim()};const bv=$("#dBatch").value;if(bv&&bv!==NONE)data.batch=bv;
+  const data={nama,kelas:$("#dKel").value,catatan:$("#dCat").value.trim()};const bv=$("#dBatch").value;if(bv&&bv!==NONE)data.batch=bv;data.kelompok=isGrup(data.kelas)?$("#dKelp").value:"";
   $("#dlg").close();
   try{
     if(dlgId)await S.db.doc("peserta/"+dlgId).update(data);
@@ -869,22 +1051,23 @@ $("#dDel").addEventListener("click",async()=>{
 function parseList(){const ada=new Set(diBatch().filter(p=>p.kelas===S.kelas).map(p=>p.nama.trim().toLowerCase()));
   const seen=new Set();return $("#pList").value.split(/\r?\n/).map(l=>l.split("\t").find(c=>c.trim()&&!/^\d+[.)]?$/.test(c.trim()))||"").map(l=>l.replace(/^\s*\d+[.)]\s+/,"").trim())
     .filter(n=>n&&!/^nama/i.test(n)&&!ada.has(n.toLowerCase())&&!seen.has(n.toLowerCase())&&seen.add(n.toLowerCase()))}
-$("#paste").addEventListener("click",()=>{$("#pT").textContent="Tempel nama ke "+batchNama(S.batch)+" · "+kelasJudul(S.kelas);$("#pList").value="";$("#pInfo").textContent="";$("#pdlg").showModal()});
+$("#paste").addEventListener("click",()=>{$("#pT").textContent="Tempel nama ke "+batchNama(S.batch)+" · "+kelasJudul(S.kelas);$("#pList").value="";$("#pInfo").textContent="";const on=isGrup(S.kelas);$("#pKelW").hidden=!on;
+  $("#pKel").innerHTML='<option value="">— Belum masuk kelompok —</option>'+(on?grupList().map(g=>`<option value="${esc(g.id)}">${esc(g.nama)}</option>`).join(""):"");$("#pdlg").showModal()});
 $("#pList").addEventListener("input",()=>{const n=parseList().length;$("#pInfo").textContent=n?`${n} nama baru akan ditambahkan ke ${kelasJudul(S.kelas)} (nama yang sudah ada dilewati).`:""});
 $("#pX").addEventListener("click",()=>$("#pdlg").close());
 $("#pfrm").addEventListener("submit",async e=>{
   e.preventDefault();const names=parseList();if(!names.length){toast("Tidak ada nama baru untuk ditambahkan.");return}
-  $("#pdlg").close();let no=nextNo(),ok=0;const base=Date.now().toString(36),bId=S.batch,kl=S.kelas;
-  for(let i=0;i<names.length;i++){try{await S.db.collection("peserta").doc(`p${base}${i.toString(36)}`).set({nama:names[i],kelas:kl,batch:bId,no:no++,nilai:{},kuis:null,catatan:""});ok++}catch(err){toast(err?.code==="quota_exceeded"?"Penyimpanan penuh.":"Sebagian nama gagal disimpan.");break}}
+  $("#pdlg").close();let no=nextNo(),ok=0;const base=Date.now().toString(36),bId=S.batch,kl=S.kelas,gk=isGrup(kl)?$("#pKel").value:"";
+  for(let i=0;i<names.length;i++){try{await S.db.collection("peserta").doc(`p${base}${i.toString(36)}`).set({nama:names[i],kelas:kl,batch:bId,kelompok:gk,no:no++,nilai:{},kuis:null,catatan:""});ok++}catch(err){toast(err?.code==="quota_exceeded"?"Penyimpanan penuh.":"Sebagian nama gagal disimpan.");break}}
   toast(`${ok} peserta ditambahkan ke ${kelasJudul(S.kelas)}.`);
 });
 
 /* CSV */
 async function unduhCsv(){
   const as=aspekKelas(S.kelas);const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const head=["No","Nama","Kelas",...as.map(a=>a.nama),"Nilai Praktik","Nilai Kuis","Nilai Akhir","Predikat","Status","Keterangan","Catatan instruktur"];
+  const head=["No","Nama","Kelas","Kelompok",...as.map(a=>a.nama),"Nilai Praktik","Nilai Kuis","Nilai Akhir","Predikat","Status","Keterangan","Catatan instruktur"];
   const lines=[head.map(q).join(";")];
-  rows(S.kelas).forEach(({p,h},i)=>lines.push([i+1,p.nama,kelasJudul(p.kelas),...as.map(a=>SHORT[p.nilai?.[a.kode]]||""),h.praktik??"",h.kuis??"",h.akhir??"",h.pred?SHORT[h.pred]:"",h.status,keterangan(p),p.catatan].map(q).join(";")));
+  rows(S.kelas).forEach(({p,h},i)=>lines.push([i+1,p.nama,kelasJudul(p.kelas),isGrup(p.kelas)?(grupOf(p)?.nama||""):"",...as.map(a=>SHORT[nilaiP(p,a)]||""),h.praktik??"",h.kuis??"",h.akhir??"",h.pred?SHORT[h.pred]:"",h.status,keterangan(p),p.catatan].map(q).join(";")));
   try{await S.dl.save({filename:`Rekap Penilaian ${batchNama(S.batch)} ${kelasJudul(S.kelas)}.csv`,data:"﻿"+lines.join("\r\n")})}catch(e){if(e?.code!=="dismissed"&&e?.code!=="declined")toast("File tidak jadi diunduh.")}
 }
 $("#csv").addEventListener("click",unduhCsv);
@@ -893,15 +1076,18 @@ $("#csv").addEventListener("click",unduhCsv);
 let migrasiJalan=false;
 async function migrasiRubrik(db){
   const def=window.__rk3DefCfg;if(!def||migrasiJalan||!S.canWrite||!S.cfg)return;
-  const ada=new Set((S.cfg.kelas||[]).map(k=>k.k)),baru=(def.kelas||[]).filter(k=>!ada.has(k.k));if(!baru.length)return;
-  migrasiJalan=true;const c=structuredClone(S.cfg),kode=new Set((c.aspek||[]).map(a=>a.kode)),kb=new Set(baru.map(k=>k.k));
+  if((S.cfg.versi||1)>=(def.versi||1)&&(S.cfg.kelas||[]).length>=(def.kelas||[]).length)return;
+  migrasiJalan=true;const c=structuredClone(S.cfg),ada=new Set((c.kelas||[]).map(k=>k.k)),baru=(def.kelas||[]).filter(k=>!ada.has(k.k)),kb=new Set(baru.map(k=>k.k));
+  const kode=new Set((c.aspek||[]).map(a=>a.kode));
   c.kelas=[...(c.kelas||[]),...baru];
   c.aspek=[...(c.aspek||[]),...def.aspek.filter(a=>kb.has(a.kelas)&&!kode.has(a.kode))];
-  for(const k of c.kelas){const d=def.kelas.find(x=>x.k===k.k);if(d&&!k.ket)k.ket=d.ket}
-  if(c.basis===window.__rk3BasisLama)c.basis=def.basis;
-  const pj=new Set((c.pedoman||[]).map(p=>p.judul));c.pedoman=[...(c.pedoman||[]),...(def.pedoman||[]).filter(p=>!pj.has(p.judul))];
+  for(const k of c.kelas){const d=def.kelas.find(x=>x.k===k.k);if(!d)continue;if(!k.ket)k.ket=d.ket;if(d.pkl)k.pkl=true;if(d.kelompok)k.kelompok=true}
+  if(c.basis===window.__rk3BasisLama||/dinilai di semua kelas\.$/.test(c.basis||""))c.basis=def.basis;
+  if(!c.judul||c.judul==="Penilaian Praktik & Kuis")c.judul=def.judul;
+  const pd=Object.fromEntries((def.pedoman||[]).map(p=>[p.judul,p]));c.pedoman=(c.pedoman||[]).map(p=>pd[p.judul]||p);
+  const pj=new Set(c.pedoman.map(p=>p.judul));c.pedoman=[...c.pedoman,...(def.pedoman||[]).filter(p=>!pj.has(p.judul))];
   c.versi=Math.max(c.versi||1,def.versi||1);
-  try{await db.doc("pengaturan/utama").set(c);toast("Rubrik diperbarui: "+baru.map(k=>k.judul).join(" & ")+" ditambahkan.")}catch(e){migrasiJalan=false}
+  try{await db.doc("pengaturan/utama").set(c);toast("Rubrik diperbarui ke versi terbaru.")}catch(e){migrasiJalan=false}
 }
 async function start(){
   setState("Menghubungkan…");
@@ -910,6 +1096,7 @@ async function start(){
   const [db,user,dl]=await Promise.all([C.use("db"),C.use("user"),C.use("downloads")]);
   if(!db){setState("Data tidak dapat dimuat di tampilan ini. Masuk ke claude.ai lalu buka lagi.");$("#basis").textContent="Data penilaian belum dapat dimuat.";return}
   S.db=db;S.dl=dl;if(dl){$("#csv").hidden=$("#pdfR").hidden=$("#pdfI").hidden=$("#shPdf").hidden=false}
+  db.collection("kelompok").onSnapshot(s=>{S.kelompok=s.docs.map(d=>({id:d.id,...structuredClone(d.data())}));render()},()=>{});
   db.collection("batch").onSnapshot(s=>{S.batches=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
   if(user){const cw=await user.can("data.write");S.canWrite=cw!==false;S.isAdmin=await user.canEdit()}
   let gotCfg=false,gotP=false;
