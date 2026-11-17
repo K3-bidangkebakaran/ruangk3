@@ -1,7 +1,7 @@
 # Penilaian Praktik (ruangk3.com/penilaian/)
 
-Dashboard penilaian praktik & kuis training K3 Penanggulangan Kebakaran: batch, Kelas D / Kelas C,
-aspek berbobot per kelas (+ Kehadiran & Keaktifan di semua kelas), nilai akhir 70% praktik + 30% kuis,
+Dashboard penilaian praktik & kuis training K3 Penanggulangan Kebakaran: batch, Kelas D / C (praktik) dan
+Kelas B / A (laporan PKL Rencana Tanggap Darurat), aspek berbobot per kelas (+ Kehadiran & Keaktifan di semua kelas), nilai akhir 70% praktik + 30% kuis,
 predikat, status LULUS/REMEDIAL, PDF rekap & lembar per peserta (jsPDF di `vendor/`, dimuat saat dibutuhkan).
 
 ## Akses & data
@@ -13,7 +13,8 @@ predikat, status LULUS/REMEDIAL, PDF rekap & lembar per peserta (jsPDF di `vendo
   - `peserta/<id>` — `{nama, kelas: "D"|"C", batch, no, nilai: {<kodeAspek>: "BS"|"B"|"C"|"K"|""}, kuis, catatan, _t}`
 - Offline-first: salinan di localStorage (`rk3-pn-cache-<kunci>`), perubahan yang belum terkirim di
   `rk3-pn-antre-<kunci>` dan dikirim ulang saat online. Perangkat tetap masuk (`rk3-pn-kunci`) sampai tombol Keluar.
-- Rubrik baru untuk ruang penilaian baru diambil dari salinan bawaan di `index.html` (`DEF_CFG`).
+- Rubrik baru untuk ruang penilaian baru diambil dari salinan bawaan di `index.html` (`DEF_CFG`). Ruang lama yang
+  belum punya kelas baru di `DEF_CFG` ditambah otomatis saat dibuka (`migrasiRubrik`, hanya menambah).
 
 ## Aturan Firebase (WAJIB dipasang Adrian)
 Tambahkan di Firebase Console → Realtime Database → Rules, di dalam
