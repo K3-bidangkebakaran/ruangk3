@@ -118,7 +118,7 @@ table.rk{border-collapse:collapse;width:100%;min-width:1100px;font-size:13px}
 .rk input.kz{width:64px;text-align:center;font:600 13px var(--f-num);background:var(--c-bg);border-color:transparent}
 .rk input.kz:placeholder-shown{background:var(--soft)}
 .pill{display:inline-block;font:700 11px var(--f-body);letter-spacing:.04em;padding:3px 8px;border-radius:999px;white-space:nowrap}
-.rk td.nt{color:var(--muted);font-size:12px;min-width:200px;max-width:320px}
+.rk td.nt{color:var(--muted);font-size:12px;min-width:300px;max-width:440px;white-space:pre-line;line-height:1.45}
 .empty{padding:28px 16px;text-align:center;color:var(--muted)}
 .foot{font-size:12px;color:var(--muted);padding:10px 16px;border-top:1px solid var(--line);display:grid;gap:4px}
 .rub{overflow-x:auto}
@@ -196,7 +196,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
 .lv button.bs{background:var(--bs-bg);color:var(--bs)} .lv button.b{background:var(--b-bg);color:var(--b)} .lv button.c{background:var(--c-bg);color:var(--c)} .lv button.k{background:var(--k-bg);color:var(--k)}
 .lv button[aria-pressed="true"] small{color:inherit}
 .lv button:disabled{cursor:default}
-.desc{margin:0;font-size:12.5px;padding:7px 10px;border-radius:3px;background:var(--soft)}
+.desc{margin:0;font-size:12.5px;padding:7px 10px;border-radius:3px;background:var(--soft);white-space:pre-line}
 .shf{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;padding:10px 16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--panel)}
 #shCat{width:100%;min-height:70px;resize:vertical}
 @media (max-width:560px){input[type=search]{width:100%}.tools{width:100%}}
@@ -454,31 +454,37 @@ function hitung(p){
   const status=akhir!=null?(akhir>=65?"LULUS":"REMEDIAL"):praktik!=null?"MENUNGGU KUIS":"BELUM DINILAI";
   return {praktik,kuis,akhir,pred:akhir==null?null:kat(akhir),status,isi,total:as.length};
 }
-/* keterangan otomatis dari hasil tiap aspek */
+/* keterangan otomatis dari hasil tiap aspek: kekurangan per aspek (rubrik tingkat yang dicapai) + yang perlu dilatih (fokus/indikator) */
 function daftarKata(a){return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" dan "+a[a.length-1]}
-function keterangan(p,singkat){
+function keterangan(p,mode){const singkat=mode===true||mode==="singkat",lembar=mode==="lembar";
   const as=aspekKelas(p.kelas),g={BS:[],B:[],C:[],K:[],"":[]},nm=a=>a.label||a.nama;
   as.forEach(a=>{const v=p.nilai?.[a.kode]||"";(g[v]||g[""]).push(a)});
   if(!as.length||g[""].length===as.length)return "Belum dinilai.";
-  const x=hitung(p),out=[];
-  if(singkat){
-    if(g.K.length)out.push("Wajib perbaikan: "+g.K.map(nm).join(", "));
-    if(g.C.length)out.push("Latihan ulang: "+g.C.map(nm).join(", "));
-    if(!g.K.length&&!g.C.length&&!g[""].length)out.push(g.BS.length===as.length?"Seluruh aspek Baik Sekali":"Seluruh aspek minimal Baik");
-    if(g[""].length)out.push(g[""].length+" aspek belum dinilai");
-    return out.join(". ")+".";
-  }
-  const KT={BS:"sangat baik",B:"baik",C:"cukup",K:"kurang"};
-  if(x.praktik!=null)out.push(`Kemampuan praktik secara umum ${KT[kat(x.praktik)]} (nilai praktik ${fmt(x.praktik)}).`);
-  if(g.BS.length)out.push(`Sangat baik pada ${daftarKata(g.BS.map(nm))}.`);
-  if(g.B.length)out.push(`Baik pada ${daftarKata(g.B.map(nm))}.`);
-  if(g.C.length)out.push(`Perlu latihan ulang pada ${daftarKata(g.C.map(nm))}.`);
-  if(g.K.length)out.push(`Belum memenuhi dan wajib perbaikan pada ${daftarKata(g.K.map(nm))}.`);
-  if(!g.C.length&&!g.K.length&&!g[""].length)out.push("Seluruh aspek praktik sudah memenuhi standar.");
+  const x=hitung(p),out=[],KT={BS:"sangat baik",B:"baik",C:"cukup",K:"kurang"};
+  const kecil=t=>String(t||"").replace(/[.\s]+$/,"");
+  const fokus=a=>String(a.fokus||"").split(/\n/).map(t=>t.trim()).filter(Boolean);
+  if(!singkat&&x.praktik!=null)out.push(`Kemampuan praktik secara umum ${KT[kat(x.praktik)]} (nilai praktik ${fmt(x.praktik)}).`);
+  if(g.BS.length)out.push(`Sudah sangat baik: ${daftarKata(g.BS.map(nm))}.`);
+  const kurang=[...g.K.map(a=>[a,"K"]),...g.C.map(a=>[a,"C"]),...g.B.map(a=>[a,"B"])];
+  if(lembar){
+    if(g.B.length)out.push(`Baik: ${daftarKata(g.B.map(nm))}.`);
+    const lat=[...g.K.map(a=>[a,"K"]),...g.C.map(a=>[a,"C"])];
+    if(lat.length){out.push("Yang perlu dilatih (rincian kekurangan ada di kolom Keterangan tabel):");
+      lat.forEach(([a,v])=>{const fk=fokus(a);out.push(`- ${a.nama} (${SHORT[v]}${v==="K"?", wajib diulang":", latihan ulang"}): ${fk.join("; ")||kecil(a.r?.[v])}.`)})}
+    else if(!g[""].length)out.push("Tidak ada aspek yang perlu diulang.");
+  }else if(kurang.length){
+    out.push("Kekurangan per aspek:");
+    kurang.forEach(([a,v])=>{
+      let t=`- ${a.nama} (${SHORT[v]}): ${kecil(a.r?.[v])}.`;
+      if(!singkat&&v!=="B"){const fk=fokus(a);if(fk.length)t+=` Yang perlu dilatih: ${fk.join("; ")}.`}
+      if(singkat&&v==="K")t+=" Wajib diulang.";
+      if(singkat&&v==="C")t+=" Perlu latihan ulang.";
+      out.push(t)});
+  }else if(!g[""].length)out.push("Tidak ada kekurangan; seluruh aspek praktik memenuhi standar.");
   if(g[""].length)out.push(`Belum dinilai: ${daftarKata(g[""].map(nm))}.`);
-  if(x.akhir!=null)out.push(x.status==="LULUS"?`Dinyatakan LULUS dengan predikat ${SHORT[x.pred]} (nilai akhir ${fmt(x.akhir)}).`:`Dinyatakan REMEDIAL (nilai akhir ${fmt(x.akhir)}); ulangi praktik${g.K.length||g.C.length?" pada aspek yang belum memenuhi":""} dan kuis sesuai arahan instruktur.`);
+  if(x.akhir!=null)out.push(x.status==="LULUS"?`Dinyatakan LULUS dengan predikat ${SHORT[x.pred]} (nilai akhir ${fmt(x.akhir)}).`:`Dinyatakan REMEDIAL (nilai akhir ${fmt(x.akhir)}); ulangi praktik${g.K.length||g.C.length?" pada aspek Kurang/Cukup di atas":""} dan kuis sesuai arahan instruktur.`);
   else if(x.praktik!=null)out.push("Status akhir menunggu nilai kuis.");
-  return out.join(" ");
+  return out.join("\n");
 }
 function rows(k){return diBatch().filter(p=>k==null||p.kelas===k).map(p=>({p,h:hitung(p)})).sort((a,b)=>(a.p.no??999)-(b.p.no??999)||String(a.p.nama).localeCompare(b.p.nama))}
 
@@ -658,7 +664,7 @@ function renderSheet(reset){
         <details data-k="${esc(a.kode)}" ${terbuka.has(a.kode)?"open":""}><summary>Fokus / indikator</summary><ul>${fk.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></details>
         <div class="lv" role="group" aria-label="Nilai ${esc(a.nama)}">${sk.map(s=>`<button type="button" class="${v===s.k?CLS[s.k]:""}" aria-pressed="${v===s.k}" data-lv="${s.k}" data-asp="${esc(a.kode)}" ${dis}>${esc(s.label)}<small>${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</small></button>`).join("")}</div>
         ${v?`<p class="desc">${esc(a.r?.[v]||"")}</p>`:""}</div>`}).join("")+
-    `<div class="desc"><b>Keterangan (otomatis):</b> ${esc(keterangan(p))}</div>`+
+    `<div class="desc"><b>Keterangan (otomatis)</b>\n${esc(keterangan(p))}</div>`+
     `<label class="sub" style="display:grid;gap:4px">Catatan instruktur (tambahan, opsional)<textarea id="shCat" ${dis}>${esc(p.catatan||"")}</textarea></label>`;
   body.scrollTop=reset?0:st;
   $("#shEdit").hidden=!S.canWrite;
@@ -751,22 +757,23 @@ async function pdfRekap(J){
   const nA=as.length;
   doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
     head:[["No","Nama Peserta",...as.map(a=>pt(`${a.label||a.nama}\n(${a.bobot}%)`)),"Nilai\nPraktik","Nilai\nKuis","Nilai\nAkhir","Predikat","Status","Keterangan"]],
-    body:R.map(({p,h},i)=>[i+1,pt(p.nama),...as.map(a=>SHORT[p.nilai?.[a.kode]]||"-"),fmt(h.praktik),fmt(h.kuis),fmt(h.akhir),h.pred?SHORT[h.pred]:"-",h.status,pt(keterangan(p,true)+(p.catatan?" Catatan: "+p.catatan:""))]),
+    body:R.map(({p,h},i)=>[i+1,pt(p.nama),...as.map(a=>SHORT[p.nilai?.[a.kode]]||"-"),fmt(h.praktik),fmt(h.kuis),fmt(h.akhir),h.pred?SHORT[h.pred]:"-",h.status,pt(keterangan(p,true)+(p.catatan?"\nCatatan: "+p.catatan:""))]),
     styles:{font:"helvetica",fontSize:7.6,cellPadding:1.6,valign:"middle",halign:"center",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
-    headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",fontSize:7.2},
-    columnStyles:{0:{cellWidth:8},1:{halign:"left",cellWidth:38,fontStyle:"bold"},[7+nA]:{halign:"left",cellWidth:54,fontSize:6.6}},
-    didParseCell(d){if(d.section!=="body")return;const c=d.column.index;
+    headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",fontSize:6.2,cellPadding:1.1},
+    columnStyles:{0:{cellWidth:7},1:{halign:"left",cellWidth:32,fontStyle:"bold"},...Object.fromEntries(as.map((a,i)=>[2+i,{cellWidth:14}])),[2+nA]:{cellWidth:12},[3+nA]:{cellWidth:11},[4+nA]:{cellWidth:11},[5+nA]:{cellWidth:15},[6+nA]:{cellWidth:17,fontSize:6.6},[7+nA]:{halign:"left",fontSize:6.3,valign:"top"}},
+    didParseCell(d){const c=d.column.index;if(d.section==="head"&&c>=2&&c<2+nA)d.cell.styles.fontSize=5.5;if(d.section!=="body")return;
       if(c>=2&&c<2+nA)warnai(d,LABEL2K[d.cell.raw]);
       if(c===2+nA)d.cell.styles.fillColor=[227,238,248];
       if(c===4+nA)d.cell.styles.fontStyle="bold";
       if(c===5+nA)warnai(d,LABEL2K[d.cell.raw]);
       if(c===6+nA)warnai(d,ST_PC[d.cell.raw]);}});
-  let y2=doc.lastAutoTable.finalY+6;if(y2>H-60){doc.addPage();y2=20}
+  let y2=doc.lastAutoTable.finalY+6;if(y2>H-52){doc.addPage();y2=20}
   doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(21,33,46);doc.text("Keterangan aspek",12,y2);doc.setFont("helvetica","normal");
   const ket=as.map((a,i)=>`${i+1}. ${a.label||a.nama}: ${a.nama} (${a.bobot}%)`);
-  const half=Math.ceil(ket.length/2);ket.forEach((t,i)=>doc.text(pt(t),12+(i<half?0:(W-24)/2),y2+4.5+(i%half)*4,{maxWidth:(W-24)/2-4}));
-  y2+=6+half*4;doc.text(doc.splitTextToSize(pt(skalaTeks()),W-24),12,y2);
-  ttd(doc,y2+10,W,H);kakiHalaman(doc,W,H);
+  ket.forEach((t,i)=>doc.text(pt(t),12,y2+4.5+i*4,{maxWidth:W-24-95}));
+  ttd(doc,y2,W,H);doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(21,33,46);
+  y2+=Math.max(6+ket.length*4,36);if(y2>H-20){doc.addPage();y2=20}doc.text(doc.splitTextToSize(pt(skalaTeks()),W-24),12,y2);
+  kakiHalaman(doc,W,H);
   await simpanPdf(doc,`Rekap Penilaian ${batchNama(S.batch)} ${kelasJudul(S.kelas)}.pdf`);
 }
 function lembar(doc,p,W,H){
@@ -783,19 +790,20 @@ function lembar(doc,p,W,H){
     footStyles:{fillColor:[227,238,248],textColor:[21,33,46],fontStyle:"bold",halign:"center"},
     columnStyles:{0:{cellWidth:8,halign:"center"},1:{cellWidth:50,fontStyle:"bold"},2:{cellWidth:13,halign:"center"},3:{cellWidth:21,halign:"center"},4:{cellWidth:13,halign:"center"},5:{cellWidth:15,halign:"center"},6:{fontSize:7.4}},
     didParseCell(d){if(d.section==="body"&&d.column.index===3)warnai(d,LABEL2K[d.cell.raw])}});
-  y=doc.lastAutoTable.finalY+5;
+  y=doc.lastAutoTable.finalY+5;const ySum=y;
   doc.autoTable({startY:y,margin:{left:12,bottom:14},tableWidth:100,theme:"grid",
     body:[[`Nilai Praktik (${S.cfg.bobotPraktik}%)`,fmt(x.praktik)],[`Nilai Kuis (${S.cfg.bobotKuis}%)`,fmt(x.kuis)],["Nilai Akhir",fmt(x.akhir)],["Predikat",x.pred?SHORT[x.pred]:"-"],["Status",x.status]],
     styles:{font:"helvetica",fontSize:9,cellPadding:2,lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
     columnStyles:{0:{cellWidth:55,fillColor:[238,242,246]},1:{halign:"center",fontStyle:"bold"}},
     didParseCell(d){if(d.column.index!==1)return;if(d.row.index===3)warnai(d,LABEL2K[d.cell.raw]);if(d.row.index===4)warnai(d,ST_PC[d.cell.raw]);if(d.row.index===2)d.cell.styles.fontSize=11}});
+  {const ys=doc.lastAutoTable.finalY;if(doc.getCurrentPageInfo().pageNumber===doc.getNumberOfPages()&&ys-ySum<45)ttd(doc,ySum+3,W,H)}
   y=doc.lastAutoTable.finalY+6;
-  {if(y>H-60){doc.addPage();y=20}doc.setTextColor(21,33,46);doc.setFontSize(9);doc.setFont("helvetica","bold");doc.text("Keterangan",12,y);doc.setFont("helvetica","normal");
-    const kl=doc.splitTextToSize(pt(keterangan(p)),W-24);doc.text(kl,12,y+5);y+=8+kl.length*4.2}
-  if(p.catatan){doc.setFontSize(9);doc.setFont("helvetica","bold");doc.text("Catatan instruktur",12,y);doc.setFont("helvetica","normal");
-    const l=doc.splitTextToSize(pt(p.catatan),W-24);doc.text(l,12,y+5);y+=8+l.length*4.2}
-  doc.setFontSize(7.5);doc.setTextColor(90,100,112);const sl=doc.splitTextToSize(pt(skalaTeks()),W-24);doc.text(sl,12,y);
-  ttd(doc,y+sl.length*3.5+8,W,H);
+  const tulis=(teks,size,lh,warna)=>{doc.setFont("helvetica","normal");doc.setFontSize(size);doc.setTextColor(...warna);
+    for(const ln of doc.splitTextToSize(pt(teks),W-24)){if(y>H-16){doc.addPage();y=20;doc.setFont("helvetica","normal");doc.setFontSize(size);doc.setTextColor(...warna)}doc.text(ln,12,y);y+=lh}};
+  const judul=t=>{if(y>H-26){doc.addPage();y=20}doc.setTextColor(21,33,46);doc.setFontSize(9);doc.setFont("helvetica","bold");doc.text(t,12,y);y+=4.6};
+  judul("Keterangan");tulis(keterangan(p,"lembar"),8.4,3.6,[21,33,46]);y+=2.5;
+  if(p.catatan){judul("Catatan instruktur");tulis(p.catatan,8.6,3.8,[21,33,46]);y+=2.5}
+  tulis(skalaTeks(),7.2,3.2,[90,100,112]);
 }
 async function pdfLembar(J,ps,nama){
   if(!ps.length){toast("Belum ada peserta di kelas ini.");return}
