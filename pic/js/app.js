@@ -309,7 +309,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v92';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v93';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -738,6 +738,28 @@ async function svMerge(kid, h) {
   if (gagal) throw gagal;
   h.svSig = sig; h.rev = (h.rev || 0) + 1; await saveH(kid);
 }
+
+/* ---------- Informasi Umum otomatis di beranda ruangk3.com ----------
+   Foto dokumentasi harian HARI TERAKHIR kegiatan yang diambil/diunggah lewat APK disimpan juga TANPA watermark (f.c).
+   Salinan itu dikirim ke dh_info_foto/{kid}/{uid4}_{id} (maks. 4 per akun) + ringkasan dh_info/{kid}/{uid} {judul, isi, tgl, t, ids[]};
+   beranda menampilkannya sebagai berita kategori Informasi Umum. Foto lama (sebelum v93) tidak punya salinan tanpa watermark, jadi tidak ikut. */
+const hariAkhir = (k, d) => !!(k && d && Array.isArray(k.tgl) && k.tgl.length && d === k.tgl[k.tgl.length - 1]);
+const INFO_MAX = 4;
+function infoNode(k, d, ids) {
+  const tg = (k.tgl || []).filter(Boolean), awal = tg[0], rentang = awal && awal !== d ? `${tglPanjang(awal)} – ${tglPanjang(d)}` : tglPanjang(d);
+  const nama = namaTampil(k) || k.nama || 'Kegiatan training K3', tempat = [k.tempat, k.kota].filter(Boolean).join(', ');
+  return { judul: `Dokumentasi ${nama}`, isi: `Dokumentasi hari terakhir kegiatan ${nama}${tempat ? ' di ' + tempat : ''}, ${rentang}.`, tgl: d, t: nowS(), ids };
+}
+async function infoSync(kid) {
+  const k = KEGS[kid], h = H[kid]; if (!k || !h || !window.PicFB.infoPut) return;
+  const tg = (k.tgl || []).filter(Boolean), d = tg[tg.length - 1]; if (!d) return;
+  const fotos = ((h.hfoto || {})[d] || []).filter(f => f && f.c).slice(0, INFO_MAX), pre = me4() + '_';
+  const sig = d + '|' + fotos.map(f => f.i + ':' + f.c.length).join(',') + '|' + (k.nama || '') + '|' + (k.tempat || ''); if (h.infoSig === sig) return;
+  const ids = fotos.map(f => pre + f.i), lama = h.infoIds || [], put = {};
+  fotos.forEach(f => { if (!lama.includes(pre + f.i)) put[pre + f.i] = f.c; });
+  await window.PicFB.infoPut(kid, ids.length ? infoNode(k, d, ids) : null, put, lama.filter(x => !ids.includes(x)));
+  h.infoIds = ids; h.infoSig = sig; await saveH(kid);
+}
 let retryT = 0;
 async function sync() {
   if (ME && window.PicFB && !window.PicFB.uid() && online() && pending()) { syncErr = 'Sesi login berakhir. Hubungi admin atau masuk ulang.'; renderPill(); return; }
@@ -769,6 +791,7 @@ async function sync() {
         await saveH(kid);
       }
     }
+    for (const kid of urut) { if (KEGS[kid]) { try { await infoSync(kid); } catch (e) { } } } // Informasi Umum beranda: gagal tidak menghentikan sinkron, dicoba lagi pada sinkron berikutnya
     lastSync = Date.now(); syncErr = '';
   } catch (e) {
     syncErr = friendlyErr(e); clearTimeout(retryT); retryT = setTimeout(sync, 30000);
@@ -1576,7 +1599,8 @@ function stamp(x, w, h, lines) {
   rows.forEach(([t, fs, b]) => { x.font = (b ? '700 ' : '') + fs + 'px Arial, sans-serif'; x.fillText(t, pad, y, maxW); y += fs + gap; });
 }
 const tidyPos = p => ({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() });
-function toJpeg(src, sw, sh, k, nama, pos, ratio, rot, when) { // src: video/image/bitmap; ratio: potong tengah ke rasio lebar:tinggi (mis. 1.5 = 3:2, 16/9 = landscape; 0/false = tanpa potong); rot: putaran searah jarum jam (0/90/180/270) agar gambar tegak
+let JPEG_BERSIH = ''; // salinan foto TANPA watermark dari toJpeg terakhir (hanya bila diminta: dokumentasi harian hari terakhir -> Informasi Umum di beranda)
+function toJpeg(src, sw, sh, k, nama, pos, ratio, rot, when, bersih) { // src: video/image/bitmap; ratio: potong tengah ke rasio lebar:tinggi (mis. 1.5 = 3:2, 16/9 = landscape; 0/false = tanpa potong); rot: putaran searah jarum jam (0/90/180/270) agar gambar tegak
   rot = rot || 0; ratio = ratio === true ? 1.5 : (+ratio || 0);
   const q = rot === 90 || rot === 270, uw = q ? sh : sw, uh = q ? sw : sh; // ukuran gambar setelah ditegakkan
   let cx = 0, cy = 0, cw = uw, ch = uh;
@@ -1589,10 +1613,11 @@ function toJpeg(src, sw, sh, k, nama, pos, ratio, rot, when) { // src: video/ima
   else if (rot === 180) x.setTransform(-s, 0, 0, -s, s * (sw - cx), s * (sh - cy));
   else x.setTransform(s, 0, 0, s, -s * cx, -s * cy);
   x.drawImage(src, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0);
+  JPEG_BERSIH = bersih ? c.toDataURL('image/jpeg', .78) : '';
   stamp(x, w, h, wmLines(k, nama, pos, when || new Date(), !!when)); // watermark selalu di tepi bawah gambar yang sudah tegak
   return c.toDataURL('image/jpeg', .72);
 }
-async function prosesFoto(file, k, nama, pos, crop, up) { // cadangan bila kamera langsung tidak bisa dipakai: kamera bawaan HP
+async function prosesFoto(file, k, nama, pos, crop, up, bersih) { // cadangan bila kamera langsung tidak bisa dipakai: kamera bawaan HP
   let src, sw, sh, rev = null;
   try {
     if (window.createImageBitmap) { src = await createImageBitmap(file, { imageOrientation: 'from-image' }); sw = src.width; sh = src.height; }
@@ -1602,7 +1627,7 @@ async function prosesFoto(file, k, nama, pos, crop, up) { // cadangan bila kamer
     src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = rev; });
     sw = src.naturalWidth || src.width; sh = src.naturalHeight || src.height;
   }
-  try { return toJpeg(src, sw, sh, k, nama, up ? null : pos, sw >= sh ? LAND_RATIO : (crop ? 1.5 : 0), 0, up ? new Date(file.lastModified || Date.now()) : null); } finally { if (rev) URL.revokeObjectURL(rev); if (src.close) src.close(); }
+  try { return toJpeg(src, sw, sh, k, nama, up ? null : pos, sw >= sh ? LAND_RATIO : (crop ? 1.5 : 0), 0, up ? new Date(file.lastModified || Date.now()) : null, bersih); } finally { if (rev) URL.revokeObjectURL(rev); if (src.close) src.close(); }
 }
 
 let CAM = null;
@@ -1720,7 +1745,8 @@ function camLocStart() { // dua jalur: lokasi cepat (jaringan/Wi-Fi, berfungsi d
 }
 function camShot() {
   const v = $('#camV', CAM.el); if (!v.videoWidth) return;
-  const url = toJpeg(v, v.videoWidth, v.videoHeight, CAM.k, CAM.nama, CAM.pos, camRatio(), camRot());
+  const url = toJpeg(v, v.videoWidth, v.videoHeight, CAM.k, CAM.nama, CAM.pos, camRatio(), camRot(), null, hariAkhir(CAM.k, CAM.hari));
+  CAM.bersih = JPEG_BERSIH;
   if (!CAM.pos) toast('Foto ini belum memuat lokasi. Tekan Ulangi setelah lokasi terkunci.');
   CAM.review = url; v.pause();
   const im = $('#camImg', CAM.el); im.src = url; im.hidden = false; v.hidden = true; $('#camWm', CAM.el).hidden = true;
@@ -1732,7 +1758,7 @@ function camRetake() {
 }
 function camSave(url) {
   const { kid, pid, slot, hari } = CAM, h = hOf(kid);
-  if (hari) { (h.hfoto[hari] = h.hfoto[hari] || []).push({ i: Date.now().toString(36), u: url }); logA(kid, 'fotoh', hari); camClose(); touch(kid); render(); toast('Foto tersimpan'); return; }
+  if (hari) { const f = { i: Date.now().toString(36), u: url }; if (url === CAM.review && CAM.bersih) f.c = CAM.bersih; else if (url !== CAM.review && JPEG_BERSIH) f.c = JPEG_BERSIH; (h.hfoto[hari] = h.hfoto[hari] || []).push(f); logA(kid, 'fotoh', hari); camClose(); touch(kid); render(); toast('Foto tersimpan'); return; }
   h[slot][pid] = url; logA(kid, 'foto'); camClose(); touch(kid); render(); toast('Foto tersimpan');
 }
 
@@ -1750,8 +1776,8 @@ async function uploadFoto(inp) {
   let n = 0, bad = 0;
   for (const f of (hari ? files : files.slice(0, 1))) {
     try {
-      const url = await prosesFoto(f, k, p.nama, null, !!hari, true);
-      if (hari) { (h.hfoto[hari] = h.hfoto[hari] || []).push({ i: Date.now().toString(36) + (n++).toString(36), u: url }); logA(kid, 'fotoh', hari); }
+      const url = await prosesFoto(f, k, p.nama, null, !!hari, true, hariAkhir(k, hari));
+      if (hari) { const fe = { i: Date.now().toString(36) + (n++).toString(36), u: url }; if (JPEG_BERSIH) fe.c = JPEG_BERSIH; (h.hfoto[hari] = h.hfoto[hari] || []).push(fe); logA(kid, 'fotoh', hari); }
       else { h[slot][pid] = url; n++; logA(kid, 'foto'); }
     } catch (err) { bad++; }
   }
@@ -1902,7 +1928,7 @@ document.addEventListener('change', async e => {
   if (e.target.id === 'camFile' && CAM) {
     const f = e.target.files[0]; if (!f) return;
     toast('Memproses foto…');
-    try { const pos = CAM.pos || await new Promise(r => { if (!navigator.geolocation) return r(null); navigator.geolocation.getCurrentPosition(g => r(POS = tidyPos(g)), () => r(null), { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }); }); camSave(await prosesFoto(f, CAM.k, CAM.nama, pos, !!CAM.hari)); }
+    try { const pos = CAM.pos || await new Promise(r => { if (!navigator.geolocation) return r(null); navigator.geolocation.getCurrentPosition(g => r(POS = tidyPos(g)), () => r(null), { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }); }); camSave(await prosesFoto(f, CAM.k, CAM.nama, pos, !!CAM.hari, false, hariAkhir(CAM.k, CAM.hari))); }
     catch (err) { toast('Foto tidak bisa dibaca. Coba ambil ulang.'); }
   }
 });
