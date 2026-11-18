@@ -21,23 +21,26 @@
   }
   function fmt(t) { var d = new Date(t); return HARI[d.getDay()] + ', ' + d.getDate() + ' ' + BLN[d.getMonth()] + ' ' + d.getFullYear() + ' · ' + p2(d.getHours()) + '.' + p2(d.getMinutes()) + zona(); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var OFF = 0; // selisih jam server Firebase - jam perangkat (jam HP yang salah tidak lagi membuat pemeliharaan tidak tampil / tidak selesai)
+  function now() { return Date.now() + OFF; }
+  function kunci(c) { return c ? String(+c.t || 0) + ':' + String(+c.selesai || 0) : ''; } // identitas satu jadwal pemeliharaan
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
 
   function ambil() {
     var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 8000);
     return fetch(URL_ + '?_=' + Date.now(), { cache: 'no-store', signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (r) { try { var d = Date.parse(r.headers.get('Date') || ''); if (d) { var o = d - Date.now(); OFF = Math.abs(o) > 90000 ? o : 0; } } catch (e) { } return r.ok ? r.json() : null; })
       .catch(function () { return undefined; }) // gagal / tanpa sinyal: biarkan keadaan sekarang
       .then(function (j) { clearTimeout(to); return j; });
   }
   function berlaku(c) { // pemeliharaan sedang berjalan untuk halaman ini?
     if (!c || c.aktif !== true) return false;
-    var now = Date.now(), sel = +c.selesai || 0, mul = +c.mulai || 0;
-    if (!sel || now >= sel || now < mul) return false;
+    var n = now(), sel = +c.selesai || 0, mul = +c.mulai || 0;
+    if (!sel || n >= sel || n < mul) return false;
     var tg = c.target; if (tg && typeof tg === 'object' && tg[PAGE] === false) return false;
     return true;
   }
-  function lewat(c) { return PAGE === 'web' && c && (window.__rk3AdminUtama === true || (+ls(BY) >= (+c.selesai || 0) && (+c.selesai || 0) > 0)); } // Admin Utama yang sedang login tidak ditutup
+  function lewat(c) { return PAGE === 'web' && c && (window.__rk3AdminUtama === true || (!!ls(BY) && ls(BY) === kunci(c))); } // Admin Utama yang sedang login tidak ditutup
 
   // ---------- tampilan ----------
   var CSS = '#rk3m{position:fixed;inset:0;z-index:2147483000;overflow:auto;background:radial-gradient(1200px 500px at 50% -10%,#1B2A44 0%,#0E1624 60%);color:#EEF2F7;font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column;-webkit-text-size-adjust:100%}' +
@@ -106,7 +109,7 @@
   }
   function detik() {
     if (!root || !cfg) return;
-    var now = Date.now(), sel = +cfg.selesai || now, mul = +cfg.mulai || (+cfg.t || now), sisa = Math.max(0, sel - now), tot = Math.max(1, sel - mul);
+    var now = Date.now() + OFF, sel = +cfg.selesai || now, mul = +cfg.mulai || (+cfg.t || now), sisa = Math.max(0, sel - now), tot = Math.max(1, sel - mul);
     var d = Math.floor(sisa / 864e5), h = Math.floor(sisa / 36e5) % 24, m = Math.floor(sisa / 6e4) % 60, s = Math.floor(sisa / 1e3) % 60;
     function set(k, v) { var e = root.querySelector('[data-k="' + k + '"]'); if (e) e.textContent = p2(v); }
     set('d', d); set('h', h); set('m', m); set('s', s);
@@ -147,7 +150,7 @@
     f.onsubmit = function (e) {
       e.preventDefault();
       if (inp.value !== 'admin123') { er.textContent = 'Akses ditolak. Selama pemeliharaan hanya Admin Utama yang dapat masuk.'; inp.value = ''; return; }
-      var pin = inp.value; ls(BY, String(+cfg.selesai || 0)); tutup(); masukAdmin(pin); bilah();
+      var pin = inp.value; ls(BY, kunci(cfg)); tutup(); masukAdmin(pin); bilah();
     };
   }
   function masukAdmin(pin) { // jalankan login admin yang sudah ada di website (form-login-admin), tunggu modul halaman siap
@@ -176,7 +179,7 @@
         window.rk3MaintSet({ aktif: false }).then(function () { cfg = Object.assign({}, cfg, { aktif: false }); bilah(); }).catch(function (e) { btn.disabled = false; btn.textContent = 'Matikan sekarang'; alertMsg('Gagal mematikan: ' + ((e && e.message) || 'cek internet')); });
       };
     }
-    var upd = function () { var x = Math.max(0, (+cfg.selesai || 0) - Date.now()), s = b.querySelector('[data-sisa]'); if (s) s.textContent = p2(Math.floor(x / 36e5)) + ':' + p2(Math.floor(x / 6e4) % 60) + ':' + p2(Math.floor(x / 1e3) % 60); if (!x) bilah(); };
+    var upd = function () { var x = Math.max(0, (+cfg.selesai || 0) - now()), s = b.querySelector('[data-sisa]'); if (s) s.textContent = p2(Math.floor(x / 36e5)) + ':' + p2(Math.floor(x / 6e4) % 60) + ':' + p2(Math.floor(x / 1e3) % 60); if (!x) bilah(); };
     clearInterval(barT); upd(); barT = setInterval(upd, 1000);
   }
   function alertMsg(m) { if (typeof window.showToast === 'function') window.showToast(m, 'error'); else { try { console.warn(m); } catch (e) { } } }
@@ -188,7 +191,7 @@
     clearTimeout(startT);
     if (berlaku(cfg) && !lewat(cfg)) { if (!shown) tampil(); }
     else if (shown) { if (!berlaku(cfg)) selesai(); else tutup(); }
-    else if (cfg && cfg.aktif === true && +cfg.mulai > Date.now() && +cfg.mulai - Date.now() < 864e5) startT = setTimeout(periksa, +cfg.mulai - Date.now() + 500); // terjadwal: tampil tepat pada jam mulai
+    else if (cfg && cfg.aktif === true && +cfg.mulai > now() && +cfg.mulai - now() < 864e5) startT = setTimeout(periksa, +cfg.mulai - now() + 500); // terjadwal: tampil tepat pada jam mulai
     bilah();
   }
   function periksa() { return ambil().then(terapkan); }
@@ -200,7 +203,7 @@
   }
   periksa();
   var lastP = Date.now();
-  pollT = setInterval(function () { var gap = shown ? 30000 : 300000; if ((shown || !document.hidden) && Date.now() - lastP >= gap) { lastP = Date.now(); periksa(); } }, 15000); // hemat kuota: 30 dtk saat layar pemeliharaan tampil, 5 mnt selain itu
+  pollT = setInterval(function () { var gap = shown ? 30000 : 60000; if ((shown || !document.hidden) && Date.now() - lastP >= gap) { lastP = Date.now(); periksa(); } }, 15000); // permintaan sangat kecil (< 1 KB): dicek tiap 30 dtk saat layar tampil, tiap 1 mnt selain itu (dulu 5 mnt -> halaman yang sudah terbuka telat tertutup)
   document.addEventListener('visibilitychange', function () { if (!document.hidden) periksa(); });
   window.addEventListener('online', periksa);
 })();
