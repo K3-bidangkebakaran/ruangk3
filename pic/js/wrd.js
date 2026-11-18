@@ -165,11 +165,13 @@ function kelasEv(ev, k) {
   if (k && out.lap.hari) { const kk = kelasKey(k); out.lap = { ...out.lap, hari: Object.fromEntries(Object.entries(out.lap.hari).map(([d, h]) => [d, !h ? h : h.mk && h.mk[kk] ? { ...h, materi: h.mk[kk] } : { ...h, materi: materiAlat(h.materi, k, ks) }])) }; } // Dokumentasi Harian: materi khusus alat ini (bila diisi) menggantikan materi umum hari itu
   return out;
 }
+const alatTampil = k => /rigger/i.test(k) && !/juru\s*ikat/i.test(k) ? "Juru Ikat " + k : k;
 function materiAlat(m, k, ks) {
   let t = String(m || ""); if (!t || !k) return t;
-  const lain = (ks || []).filter(x => x && x !== k && t.toLowerCase().includes(String(x).toLowerCase())).sort((a, b) => b.length - a.length);
-  if (!lain.length || t.toLowerCase().includes(String(k).toLowerCase())) return t;
-  lain.forEach(x => { t = t.replace(new RegExp(String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), k); });
+  const lc = t.toLowerCase(), lain = (ks || []).filter(x => x && x !== k && lc.includes(String(x).toLowerCase())).sort((a, b) => b.length - a.length);
+  if (!lain.length || lc.includes(String(k).toLowerCase())) return t; // materi sudah menyebut alat ini (mis. gabungan beberapa alat): biarkan
+  const kt = alatTampil(k), esc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  lain.forEach(x => { t = t.replace(new RegExp("(?:operator\\s+|juru\\s*ikat\\s+)?" + esc(x), "ig"), kt); });
   return t;
 }
 function kelasGroups(ev) { // [{kelas, ev}] ; bukan PAPA = satu kelompok tanpa nama kelas

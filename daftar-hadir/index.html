@@ -1378,7 +1378,7 @@ const fotoN = (a, p) => {
 const fotoKeysP = (a, p) => FOTO_KEYS.slice(0, fotoN(a, p));
 const adaFoto = p => FOTO_KEYS.some(k => !!p[k]);
 const judulB3Kelas = k => `${J_B3} (${String(k).toUpperCase()})`;
-const ALAT_KELAS = ["Crawler Crane", "Hoist Crane", "Mobile Crane", "Portal Crane", "Truck Crane", "Gantry Crane", "Overhead Traveling Crane", "Overhead Crane"]; // punya Kelas 1, 2, 3
+const ALAT_KELAS = ["Crawler Crane", "Cargo Hoist Crane", "Hoist Crane", "Mobile Crane", "Portal Crane", "Truck Crane", "Gantry Crane", "Overhead Traveling Crane", "Overhead Crane"]; // punya Kelas 1, 2, 3
 const ALAT_NON = ["Conveyor", "Rigger"]; // tanpa kelas
 const ALAT_SEMUA = ALAT_KELAS.concat(ALAT_NON);
 const alatLabel = x => x.kls ? `${x.k} Kelas ${x.kls}` : x.k;
@@ -1427,11 +1427,13 @@ function kelasEv(ev, k) {
 }
 /* Materi Dokumentasi Harian PAPA: bila materi umum menyebut alat LAIN (mis. "Praktik (Mobile Crane Kelas 1)") pada laporan alat ini (mis. Rigger),
    nama alat itu diganti nama alat laporan ini agar sama dengan judul. Huruf besar/kecil diabaikan; materi tanpa nama alat tidak berubah. */
+const alatTampil = k => /rigger/i.test(k) && !/juru\s*ikat/i.test(k) ? "Juru Ikat " + k : k; // nama alat di teks laporan (sama dengan judul: "JURU IKAT RIGGER")
 function materiAlat(m, k, ks) {
   let t = String(m || ""); if (!t || !k) return t;
-  const lain = (ks || []).filter(x => x && x !== k && t.toLowerCase().includes(String(x).toLowerCase())).sort((a, b) => b.length - a.length);
-  if (!lain.length || t.toLowerCase().includes(String(k).toLowerCase())) return t;
-  lain.forEach(x => { t = t.replace(new RegExp(String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), k); });
+  const lc = t.toLowerCase(), lain = (ks || []).filter(x => x && x !== k && lc.includes(String(x).toLowerCase())).sort((a, b) => b.length - a.length);
+  if (!lain.length || lc.includes(String(k).toLowerCase())) return t; // materi sudah menyebut alat ini (mis. gabungan beberapa alat): biarkan
+  const kt = alatTampil(k), esc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  lain.forEach(x => { t = t.replace(new RegExp("(?:operator\\s+|juru\\s*ikat\\s+)?" + esc(x), "ig"), kt); });
   return t;
 }
 function kelasGroups(ev) { // [{kelas, ev}] ; bukan PAPA = satu kelompok tanpa nama kelas
@@ -2275,7 +2277,7 @@ $("#btnCamStart").onclick = () => {
 /* ---------- paste from Excel ---------- */
 // kolom "Kelas" di data tempel / Excel: kelas yang baru otomatis masuk Daftar Kelas dan bidang PAPA diaktifkan. Mengembalikan jumlah kelas baru.
 const AUTO = { msg: "" };
-const ALAT_RX = [["Overhead Traveling Crane", /overhead\s*(traveling|travelling|travel)|travel+ing\s*crane|\beot\b/], ["Overhead Crane", /overhead/], ["Crawler Crane", /c(e)?rawler|crawl/], ["Hoist Crane", /hoist/], ["Mobile Crane", /mobile/], ["Portal Crane", /portal/], ["Truck Crane", /truck/], ["Gantry Crane", /gantry/], ["Conveyor", /conveyor|conveyer/], ["Rigger", /rigger|rigging/]];
+const ALAT_RX = [["Overhead Traveling Crane", /overhead\s*(traveling|travelling|travel)|travel+ing\s*crane|\beot\b/], ["Overhead Crane", /overhead/], ["Crawler Crane", /c(e)?rawler|crawl/], ["Cargo Hoist Crane", /cargo\s*hoist/], ["Hoist Crane", /hoist/], ["Mobile Crane", /mobile/], ["Portal Crane", /portal/], ["Truck Crane", /truck/], ["Gantry Crane", /gantry/], ["Conveyor", /conveyor|conveyer/], ["Rigger", /rigger|rigging/]];
 const B3_RX = [["Teknisi K3 Deteksi Gas", /deteksi\s*gas/], [B3_RESCUE, /penyelamat/], ["Teknisi Ruang Terbatas", /teknisi.*ruang\s*terbatas|ruang\s*terbatas.*teknisi/], ["Ahli K3 Muda Lingkungan Kerja", /(ahli\s*k3\s*muda|k3\s*muda|ahli\s*muda).*(lingkungan|\blk\b)/], ["Petugas K3 Kimia", /petugas.*kimia/], ["Ahli K3 Kimia", /ahli.*kimia/]];
 B3_RX.push(["Ahli K3 Pesawat Tenaga dan Produksi", /(ahli\s*k3\s*)?pesawat\s*tenaga|\bptp\b/]);
 const b3DariTeks = t => { const x = norm(t); if (!x) return ""; const m = B3_RX.find(([, rx]) => rx.test(x)); return m ? m[0] : ""; };
