@@ -465,6 +465,7 @@ table.lap tr.merah td{background:#ff6b6b;color:#000;font-weight:700}
 .lp-day{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff;margin-top:10px}
 .lp-day .h{font-weight:700;margin-bottom:6px;font-size:13px}
 .lp-day input[type=text]{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px}
+.lp-mk{margin-top:6px;font-size:13px}.lp-mk summary{cursor:pointer;color:#1f4e8c;font-weight:600;padding:4px 0}.lp-mk label{display:flex;flex-direction:column;gap:3px;margin:6px 0 0;font-weight:600;color:#374151}.lp-mk input{font-weight:400}
 .lp-nr select,.lp-nr textarea,.lp-nr input[type=text]{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;margin-top:6px;font:inherit;background:#fff}
 .lp-nr .auto{margin-top:6px;font-size:12px;color:#4b5563}
 .lp-nr .bls{margin:6px 0 0;padding:8px 10px;background:#f6f7f9;border-radius:8px;font-size:12px;line-height:1.5;color:#374151}
@@ -1257,7 +1258,7 @@ const nlNorm = o => { const r = {}; if (o && typeof o === "object") ["up", "sm"]
 const lapNorm = l => {
   const b = lapDefault(); l = l && typeof l === "object" ? l : {};
   const hari = {};
-  Object.keys(l.hari || {}).forEach(k => { const h = l.hari[k] || {}; hari[k] = { materi: String(h.materi || ""), fotos: (Array.isArray(h.fotos) ? h.fotos : []).filter(x => typeof x === "string" && x) }; });
+  Object.keys(l.hari || {}).forEach(k => { const h = l.hari[k] || {}; hari[k] = { materi: String(h.materi || ""), fotos: (Array.isArray(h.fotos) ? h.fotos : []).filter(x => typeof x === "string" && x) }; const mk = h.mk && typeof h.mk === "object" ? Object.fromEntries(Object.entries(h.mk).filter(([, v]) => typeof v === "string" && v.trim())) : {}; if (Object.keys(mk).length) hari[k].mk = mk; }); // mk: materi khusus per alat (PAPA), kunci kelasKey(alat)
   const s = (x, d) => { const o = { ...d, ...(x && typeof x === "object" ? x : {}) }; Object.keys(d).forEach(k => { o[k] = String(o[k] == null ? "" : o[k]); }); return o; };
   const nr = {}; Object.keys(l.nr || {}).forEach(k => { nr[k] = naraRow(l.nr[k]); });
   const nrOffN = {}; Object.keys(l.nrOff && typeof l.nrOff === "object" ? l.nrOff : {}).forEach(k => { if (l.nrOff[k] && NR_KEY.test(k)) nrOffN[k] = 1; });
@@ -1413,7 +1414,7 @@ function syncAngkat(prev) {
 }
 function kelasEv(ev, k) {
   const ks = kelasList(ev.acara), a = ev.acara, kg = (a.kegiatan || "").trim(), hk = hariKelas(ev, k);
-  return {
+  const out = {
     ...ev, kelasNama: k,
     peserta: ev.peserta.filter(p => (p.nama || "").trim() && (k ? p.kelas === k : !ks.includes(p.kelas))),
     acara: { ...a, kegiatan: k ? (a.jenis === "angkat" ? judulAngkatKelas(k) : isB3(a) ? judulProgKelas(a, k) : (kg ? kg + " \u2013 " + k : k)) : a.kegiatan, ...(hk ? { hari: hk, tanggal: hk[0], tanggal2: hk[hk.length - 1] } : {}) }, // alat selain Kelas 1: hanya 4 hari pertama
@@ -1421,6 +1422,8 @@ function kelasEv(ev, k) {
       ? { ...ev.lap, nr: ((ev.lap.nrk || {})[kelasKey(k)]) || {}, nrOff: ((ev.lap.nrOffK || {})[kelasKey(k)]) || {}, nrHari: hariKelas(ev, k) }
       : { ...ev.lap, nr: ev.lap.nr || {}, nrHari: hariKelas(ev, k) } // narasumber: satu isian untuk semua alat; hari yang dicetak mengikuti kelas
   };
+  if (k && out.lap.hari) { const kk = kelasKey(k); out.lap = { ...out.lap, hari: Object.fromEntries(Object.entries(out.lap.hari).map(([d, h]) => [d, h && h.mk && h.mk[kk] ? { ...h, materi: h.mk[kk] } : h])) }; } // Dokumentasi Harian: materi khusus alat ini (bila diisi) menggantikan materi umum hari itu
+  return out;
 }
 function kelasGroups(ev) { // [{kelas, ev}] ; bukan PAPA = satu kelompok tanpa nama kelas
   if (!ev.acara.papa) return [{ kelas: "", ev }];
@@ -3279,6 +3282,14 @@ $("#pages").addEventListener("click", e => { if (e.target.closest(".sign-block")
 /* ---------- tab 5: Laporan (Daftar Nilai, Daftar Nama, Dokumentasi Harian) ---------- */
 const lapHariOf = (ev, d) => (ev.lap.hari[d] = ev.lap.hari[d] || { materi: "", fotos: [] });
 const lapHari = d => lapHariOf(S, d);
+/* PAPA: materi Dokumentasi Harian khusus per alat (lap.hari[d].mk[kelasKey(alat)]). Kosong = memakai materi umum hari itu. Mencegah laporan alat lain ikut menulis mis. "Praktek Mobile Crane". */
+const mkFields = (d, h) => {
+  if (!S.acara.papa) return "";
+  const ks = kelasList(S.acara).filter(k => { const hk = hariKelas(S, k); return !hk || hk.includes(d); });
+  if (ks.length < 2) return "";
+  const mk = h.mk || {};
+  return `<details class="lp-mk"${Object.keys(mk).length ? " open" : ""}><summary>Materi khusus per alat (opsional)</summary>${ks.map(k => `<label>${esc(k)}<input type="text" data-f="materiK" data-k="${kelasKey(k)}" placeholder="Kosong = ${esc(h.materi || "materi umum di atas")}" value="${esc(mk[kelasKey(k)] || "")}" autocomplete="off"></label>`).join("")}</details>`;
+};
 const lpGet = path => path.split(".").reduce((o, k) => (o || {})[k], S.lap);
 const lpSet = (path, val) => { const k = path.split("."); let o = S.lap; while (k.length > 1) o = o[k.shift()]; o[k[0]] = val; };
 function fillLap() {
@@ -3344,7 +3355,7 @@ function renderLap() {
   $("#lpDays").innerHTML = days.length ? days.map((d, i) => {
     const h = L.hari[d] || { materi: "", fotos: [] };
     return `<div class="lp-day" data-day="${d}"><div class="h">DAY ${i + 1} · ${esc(fmtTgl(d))}</div>
-      <input type="text" data-f="materi" placeholder="Materi hari ini (mis. Regulasi Online)" value="${esc(h.materi)}" autocomplete="off">
+      <input type="text" data-f="materi" placeholder="Materi hari ini (mis. Regulasi Online)" value="${esc(h.materi)}" autocomplete="off">${mkFields(d, h)}
       <div class="hint" style="margin:4px 0"><b>${(h.fotos || []).length}</b> foto → <b>${Math.max(1, Math.ceil((h.fotos || []).length / 2))}</b> halaman di Word (2 foto per halaman)</div>
       <div class="lp-ph">${(h.fotos || []).map((u, k) => `<div class="t"><img src="${u}" alt=""><i>${k + 1}</i><button type="button" data-act="hdel" data-i="${k}" title="Hapus foto">✕</button></div>`).join("")}</div>
       <button class="btn sm primary" type="button" data-act="hfoto">📷 Tambah foto</button></div>`;
@@ -3385,6 +3396,7 @@ $("#lapBox").addEventListener("input", e => {
   const row = el.closest(".lp-r"), day = el.closest(".lp-day");
   if (row && (el.dataset.f === "ut" || el.dataset.f === "up" || el.dataset.f === "sm" || el.dataset.f === "et")) { const p = S.peserta[idx(row.dataset.id)]; if (p) { p[el.dataset.f] = el.value.trim(); if (el.dataset.f === "up" || el.dataset.f === "sm") { p.nl = p.nl || {}; delete p.nl[el.dataset.f]; /* isian manual: nilai link yang sama (penanda waktu lama) tidak menimpa lagi; link baru tetap bisa */ } changed(); if (el.dataset.f === "ut") row.querySelectorAll("[data-et]").forEach(x => { const on = x.dataset.et === p.ut; x.classList.toggle("on", on); x.setAttribute("aria-pressed", on); }); } }
   else if (day && el.dataset.f === "materi") { lapHari(day.dataset.day).materi = el.value; changed(); }
+  else if (day && el.dataset.f === "materiK" && el.dataset.k) { const h = lapHari(day.dataset.day), v = el.value; h.mk = h.mk || {}; if (v.trim()) h.mk[el.dataset.k] = v; else delete h.mk[el.dataset.k]; if (!Object.keys(h.mk).length) delete h.mk; changed(); }
 });
 $("#lapBox").addEventListener("change", e => {
   const el = e.target;
@@ -4759,7 +4771,7 @@ const Cloud = {
   payload(ev) {
     const a = { ...ev.acara, ttd: ev.acara.ttd ? "(file)" : "" };
     const days = hariList(ev.acara), LP = ev.lap || lapDefault();
-    const lap = { ...LP, s1: { ...LP.s1, ttd: LP.s1.ttd ? "(file)" : "" }, s2: { ...LP.s2, ttd: LP.s2.ttd ? "(file)" : "" }, hari: Object.fromEntries(Object.entries(LP.hari || {}).map(([d, h]) => [d, { materi: h.materi || "", n: (h.fotos || []).length }])), nr: Object.fromEntries(Object.entries(LP.nr || {}).map(([d, r]) => [d, { ...r, ttd: r.ttd ? "(file)" : "" }])), nrk: Object.fromEntries(Object.entries(LP.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { ...r, ttd: r.ttd ? "(file)" : "" }]))])) };
+    const lap = { ...LP, s1: { ...LP.s1, ttd: LP.s1.ttd ? "(file)" : "" }, s2: { ...LP.s2, ttd: LP.s2.ttd ? "(file)" : "" }, hari: Object.fromEntries(Object.entries(LP.hari || {}).map(([d, h]) => [d, { materi: h.materi || "", n: (h.fotos || []).length, ...(h.mk ? { mk: h.mk } : {}) }])), nr: Object.fromEntries(Object.entries(LP.nr || {}).map(([d, r]) => [d, { ...r, ttd: r.ttd ? "(file)" : "" }])), nrk: Object.fromEntries(Object.entries(LP.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([d, r]) => [d, { ...r, ttd: r.ttd ? "(file)" : "" }]))])) };
     a.folderNama = judulDasar(ev.acara); // nama folder di Drive (pendek)
     return {
       id: ev.id, created: ev.created, acara: a, wm: ev.wm, days, lap,
@@ -5036,7 +5048,7 @@ const Cloud = {
     const ev = normalize({
       id: d.id, created: d.created, wm: d.wm,
       acara: { ...d.acara, ttd: "" },
-      lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [] }])), nr: Object.fromEntries(Object.entries(lp.nr || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }])), nrk: Object.fromEntries(Object.entries(lp.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }]))])) }))(d.lap || {}),
+      lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [], ...(h && h.mk ? { mk: h.mk } : {}) }])), nr: Object.fromEntries(Object.entries(lp.nr || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }])), nrk: Object.fromEntries(Object.entries(lp.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }]))])) }))(d.lap || {}),
       peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: "", foto2: "", foto3: "", foto4: "", foto5: "", ttd: {}, sf: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, sm: p.sm, nl: p.nl, et: p.et, hasil: p.hasil }))
     });
     const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); // berkas Word tidak perlu diunduh
