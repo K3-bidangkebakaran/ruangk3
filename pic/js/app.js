@@ -309,7 +309,7 @@ const nrOf = (h, k, d, raw) => { const o = { kid: '', nama: '', nip: '', inst: '
 const kelasArr = k => Array.isArray(k && k.kelas) ? k.kelas : Object.values((k && k.kelas) || {});
 const urutKelas = (k, list) => { if (!k || !k.papa) return list; const ks = kelasArr(k), ki = p => { const i = ks.indexOf(p.kelas); return i < 0 ? 999 : i; }; return list.slice().sort((a, b) => ki(a) - ki(b)); };
 const instKel = p => esc(p.instansi || '') + (p.kelas ? (p.instansi ? ' · ' : '') + '<b class="kls">' + esc(p.kelas) + '</b>' : '');
-const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v95';
+const NR_KEY = /^(\d{4}-\d{2}-\d{2})(?:_(\d+))?$/, NR_MAX = 4, APP_VER = 'v96';
 /* Bidang PAPA (pesawat angkat): semua isian peserta + narasumber dipisah PER ALAT. Dokumentasi Harian, TTD PIC & penandatangan nilai tetap satu untuk semua alat.
    Kunci narasumber per alat = '<kunciAlat>~<hari>' (kunciAlat = kelasKey(label), rumus sama dengan web Daftar Hadir & Apps Script). */
 const kelasKey = l => 'k' + fnv(String(l)).split(':')[0];
@@ -352,6 +352,16 @@ function nrGabung(h, k) { if (k && k.b3) return; // B3 memang per program: janga
   [h.nr, h.nrs].forEach(M => { if (!M) return; Object.keys(M).forEach(key => { const i = key.indexOf('~'); if (i < 0) return; const pl = key.slice(i + 1), kosong = !(pl in M) || (M === h.nr ? !(M[pl] && M[pl].kid) : !M[pl]); if (kosong) M[pl] = M[key]; delete M[key]; ch = true; }); });
   if (h.sent) Object.keys(h.sent).forEach(key => { if (/^nr_k[0-9a-z]+~/.test(key)) delete h.sent[key]; });
   if (ch) { h.dirty = true; h.upd = Math.max(nowS(), (h.upd || 0) + 1); h.rev = (h.rev || 0) + 1; }
+}
+/* Pilihan deskripsi Dokumentasi Harian (dipilih PIC): umum + materi narasumber hari itu + praktek per alat (PAPA). Materi tetap bisa diketik sendiri. */
+const MATERI_UMUM = ['Pembukaan & Materi Teori', 'Materi Teori', 'Materi Teknis', 'Praktek', 'Evaluasi Teori', 'Evaluasi Praktek', 'Evaluasi Teori & Praktek', 'Seminar', 'Penutupan'];
+function materiPilihan(h, k, d) {
+  const out = [''], add = t => { t = String(t || '').trim(); if (t && !out.includes(t)) out.push(t); };
+  try { Object.keys({ ...((LAPK(k).nr) || {}), ...(h.nr || {}) }).filter(key => key === d || key.indexOf(d + '_') === 0).forEach(key => { const r = nrOf(h, k, key); const m = r.mid && r.mid !== 'manual' ? MATERI_KAT.find(x => x.id === r.mid) : null; add(m ? m.judul : String(r.mtxt || '').split('\n')[0]); }); } catch (e) { }
+  MATERI_UMUM.forEach(add);
+  if (papaOf(k)) kelasArr(k).filter(Boolean).forEach(kl => { add(`Praktek (${kl})`); add(`Evaluasi Praktek (${kl})`); });
+  const cur = materiOf(h, k, d); if (cur) add(cur);
+  return out;
 }
 const nrSet = (h, k, d) => (h.nr[d] = nrOf(h, k, d)); // salin isian admin dulu supaya semua kolom ikut terkirim
 /* ---- Link tanda tangan narasumber: halaman ruangk3.com/narasumber/?k=<kegiatan>&r=<kunci baris> ---- */
@@ -1502,7 +1512,8 @@ function render() {
   } else if (P.screen === 'dhr') {
     const hh = hOf(kid), days = k.tgl || [];
     h = appbar('Dokumentasi Harian', k.nama, true) + `<div class="screen">${days.map((d, i) => `<div class="card2" data-day="${esc(d)}"><b>Day ${i + 1} · ${esc(hariNama(d))}, ${esc(tglPanjang(d))}</b>
-      <div class="field"><label for="in_m${i}">Materi</label><input id="in_m${i}" data-materi="${esc(d)}" value="${esc(materiOf(hh, k, d))}" autocomplete="off" placeholder="Contoh: Regulasi Online"></div>
+      <div class="field"><label for="in_mp${i}">Deskripsi dokumentasi</label><select id="in_mp${i}" data-mpilih="${esc(d)}">${materiPilihan(hh, k, d).map(o => `<option value="${esc(o)}"${o === materiOf(hh, k, d) ? ' selected' : ''}>${esc(o || '— Pilih deskripsi (mis. Evaluasi Teori) —')}</option>`).join('')}</select></div>
+      <div class="field"><label for="in_m${i}">Materi (tertulis di laporan)</label><input id="in_m${i}" data-materi="${esc(d)}" value="${esc(materiOf(hh, k, d))}" autocomplete="off" placeholder="Pilih di atas atau ketik sendiri"></div>
       <div class="hfotos">${(hh.hfoto[d] || []).map(f => `<div class="hf"><img src="${f.u}" alt="Foto dokumentasi" data-act="pv" data-pv="d|${esc(d)}|${esc(f.i)}" title="Ketuk untuk memperbesar"><button type="button" data-act="hdel" data-i="${esc(f.i)}" aria-label="Hapus foto">✕</button><span class="by">Oleh: Anda${ME && ME.nama ? ' (' + esc(ME.nama) + ')' : ''}</span></div>`).join('')}${wmDay(kid, d).map(x => `<div class="hf"><img src="${wmGet(kid, x)}" alt="Foto dokumentasi dari website" data-act="pv" data-pv="x|${esc(x)}" title="Ketuk untuk memperbesar"><span class="by">Dari website</span></div>`).join('')}${xmPlan(kid).filter(x => x.key.startsWith('d_' + d + '_')).sort((a, b) => a.key < b.key ? -1 : 1).map(x => { const u = xmGet(kid, x.key); return u ? `<div class="hf"><img src="${u}" alt="Foto dokumentasi dari ${esc(x.nama)}" data-act="pv" data-pv="x|${esc(x.key)}" title="Ketuk untuk memperbesar"><span class="by">Oleh: ${esc(x.nama)}</span></div>` : `<div class="hf ph0">${online() ? 'Memuat foto…' : 'Foto belum termuat<br><small>butuh sinyal</small>'}<span class="by">Oleh: ${esc(x.nama)}</span></div>`; }).join('')}</div>
       <div class="row"><button type="button" class="btn pri" data-act="hfoto" data-d="${esc(d)}">${I.cam} Ambil foto</button><label class="btn filebtn" data-up-l>⬆ Unggah dari galeri<input type="file" accept="image/*" multiple data-up="1" data-hari="${esc(d)}" aria-label="Unggah foto dokumentasi hari ${i + 1} dari galeri"></label></div></div>`).join('') || '<div class="empty">Belum ada tanggal kegiatan.</div>'}
       <p class="hint">Foto diambil dari kamera aplikasi atau diunggah dari galeri HP (boleh pilih banyak sekaligus), diberi watermark (kegiatan, tempat, lokasi/tanggal) tanpa nama peserta, dan dipotong rasio 3:2. Ketuk foto untuk memperbesar. Tiap halaman laporan memuat 2 foto.</p></div>`;
@@ -1924,6 +1935,7 @@ document.addEventListener('click', e => {
 document.addEventListener('change', async e => {
   const kid = P.kid, k = kid && KEGS[kid];
   if (e.target.dataset && e.target.dataset.up) { await uploadFoto(e.target); return; }
+  if (e.target.tagName === 'SELECT' && e.target.dataset.mpilih && k) { const d = e.target.dataset.mpilih, v = e.target.value; if (!v) return; const h = hOf(kid); h.materi[d] = v; const inp = e.target.closest('.card2') && e.target.closest('.card2').querySelector('[data-materi]'); if (inp) inp.value = v; touch(kid); toast('Deskripsi dokumentasi disimpan'); return; }
   if (e.target.tagName === 'SELECT' && e.target.dataset.nr && k) { const d = e.target.closest('.card2').dataset.day, h = hOf(kid), r = nrSet(h, k, d); if (e.target.dataset.nr === 'kid') naraPilih(r, e.target.value); else materiPilih(r, e.target.value); touch(kid); render(); return; }
   if (e.target.id === 'camFile' && CAM) {
     const f = e.target.files[0]; if (!f) return;

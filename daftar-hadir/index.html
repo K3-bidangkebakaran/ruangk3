@@ -1422,8 +1422,17 @@ function kelasEv(ev, k) {
       ? { ...ev.lap, nr: ((ev.lap.nrk || {})[kelasKey(k)]) || {}, nrOff: ((ev.lap.nrOffK || {})[kelasKey(k)]) || {}, nrHari: hariKelas(ev, k) }
       : { ...ev.lap, nr: ev.lap.nr || {}, nrHari: hariKelas(ev, k) } // narasumber: satu isian untuk semua alat; hari yang dicetak mengikuti kelas
   };
-  if (k && out.lap.hari) { const kk = kelasKey(k); out.lap = { ...out.lap, hari: Object.fromEntries(Object.entries(out.lap.hari).map(([d, h]) => [d, h && h.mk && h.mk[kk] ? { ...h, materi: h.mk[kk] } : h])) }; } // Dokumentasi Harian: materi khusus alat ini (bila diisi) menggantikan materi umum hari itu
+  if (k && out.lap.hari) { const kk = kelasKey(k); out.lap = { ...out.lap, hari: Object.fromEntries(Object.entries(out.lap.hari).map(([d, h]) => [d, !h ? h : h.mk && h.mk[kk] ? { ...h, materi: h.mk[kk] } : { ...h, materi: materiAlat(h.materi, k, ks) }])) }; } // Dokumentasi Harian: materi khusus alat ini (bila diisi) menggantikan materi umum hari itu
   return out;
+}
+/* Materi Dokumentasi Harian PAPA: bila materi umum menyebut alat LAIN (mis. "Praktik (Mobile Crane Kelas 1)") pada laporan alat ini (mis. Rigger),
+   nama alat itu diganti nama alat laporan ini agar sama dengan judul. Huruf besar/kecil diabaikan; materi tanpa nama alat tidak berubah. */
+function materiAlat(m, k, ks) {
+  let t = String(m || ""); if (!t || !k) return t;
+  const lain = (ks || []).filter(x => x && x !== k && t.toLowerCase().includes(String(x).toLowerCase())).sort((a, b) => b.length - a.length);
+  if (!lain.length || t.toLowerCase().includes(String(k).toLowerCase())) return t;
+  lain.forEach(x => { t = t.replace(new RegExp(String(x).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig"), k); });
+  return t;
 }
 function kelasGroups(ev) { // [{kelas, ev}] ; bukan PAPA = satu kelompok tanpa nama kelas
   if (!ev.acara.papa) return [{ kelas: "", ev }];
@@ -1846,8 +1855,8 @@ function renderSet(S) { // S = kegiatan (atau kegiatan turunan satu kelas); menu
   }
   sec.sf = html; html = "";
   if (L.nilai) {
-    const rows = lpPeserta.filter(p => !p.batal);
-    const eT = semOn(S), tbl = (c, st) => `<table class="lap nl">${colg(eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th>${eT ? "<th>NILAI SEMINAR</th>" : ""}</tr></thead><tbody>${c.map((p, k) => `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td>${eT ? `<td class="c">${esc(p.sm || "")}</td>` : ""}</tr>`).join("") || empty(eT ? 6 : 5)}</tbody></table>`;
+    const rows = lpPeserta; // peserta Cancel tetap tercantum (baris merah, nilai tertulis CANCEL) sama seperti daftar hadir & daftar peserta
+    const eT = semOn(S), tbl = (c, st) => `<table class="lap nl">${colg(eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35])}<thead><tr><th>NO</th><th>NAMA</th><th>INSTANSI</th><th>NILAI UJIAN TEORI</th><th>NILAI UJIAN PRAKTEK</th>${eT ? "<th>NILAI SEMINAR</th>" : ""}</tr></thead><tbody>${c.map((p, k) => p.batal ? `<tr class="merah"><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c" colspan="${eT ? 3 : 2}">CANCEL</td></tr>` : `<tr><td class="c">${st + k + 1}</td><td>${up(p.nama)}</td><td>${up(p.instansi)}</td><td class="c">${esc(p.ut)}</td><td class="c">${esc(p.up)}</td>${eT ? `<td class="c">${esc(p.sm || "")}</td>` : ""}</tr>`).join("") || empty(eT ? 6 : 5)}</tbody></table>`;
     const sg = s => `<div class="lp-sg"><div class="jab">${esc(s.jab || "").replace(/\n/g, "<br>")}</div><div class="sp">${s.ttd ? `<img src="${s.ttd}" alt="">` : ""}</div><div class="nm">${esc(s.nama || "") || "&nbsp;"}</div>${s.nip ? `<div class="nip">NIP. ${esc(s.nip)}</div>` : ""}</div>`;
     const head = pi => pi ? `<div class="lp-h">DAFTAR NILAI PESERTA <small>(lanjutan)</small></div><div class="lp-gap"></div>`
       : `<div class="lp-h">DAFTAR NILAI PESERTA</div><div class="lp-h">${esc(LT.keg) || "&nbsp;"}</div><div class="lp-h s3">TANGGAL : ${esc(LT.tgl1)}</div><div class="lp-gap"></div>`;
@@ -4233,10 +4242,11 @@ const Word = (() => {
 
   function nilai(ev, ctx) {
     const D = Doc(), L = ev.lap || {}, T = ctx.lap, eT = semOn(ev), Wm = eT ? [10, 38, 52, 30, 30, 30] : [10, 46, 64, 35, 35], W = Wm.map(tw);
-    const rows = ev.peserta.filter(p => (p.nama || "").trim() && !p.batal);
-    const body = rows.map((p, i) => D.row(
-      D.cell(W[0], D.par(lr(D, i + 1), { jc: "center" })) + D.cell(W[1], D.par(lr(D, upc(p.nama)))) + D.cell(W[2], D.par(lr(D, upc(p.instansi))))
-      + D.cell(W[3], D.par(lr(D, p.ut || ""), { jc: "center" })) + D.cell(W[4], D.par(lr(D, p.up || ""), { jc: "center" })) + (eT ? D.cell(W[5], D.par(lr(D, p.sm || ""), { jc: "center" })) : ""), { h: tw(4.8) })).join("") || lapEmpty(D, Wm);
+    const rows = ev.peserta.filter(p => (p.nama || "").trim()); // peserta Cancel tetap tercantum (baris merah, nilai "CANCEL")
+    const body = rows.map((p, i) => { const F = p.batal ? { fill: "FF6B6B" } : {}, c = p.batal ? { color: BLACK } : undefined, nv = v => p.batal ? "CANCEL" : (v || "");
+      return D.row(
+      D.cell(W[0], D.par(lr(D, i + 1, c), { jc: "center" }), F) + D.cell(W[1], D.par(lr(D, upc(p.nama), c)), F) + D.cell(W[2], D.par(lr(D, upc(p.instansi), c)), F)
+      + D.cell(W[3], D.par(lr(D, nv(p.ut), c), { jc: "center" }), F) + D.cell(W[4], D.par(lr(D, nv(p.up), c), { jc: "center" }), F) + (eT ? D.cell(W[5], D.par(lr(D, nv(p.sm), c), { jc: "center" }), F) : ""), { h: tw(4.8) }); }).join("") || lapEmpty(D, Wm);
     const blk = s => {
       const lines = String(s.jab || "").split("\n"); while (lines.length < 2) lines.push("");
       return lines.map(l => D.par(l ? lr(D, l) : "", { jc: "center" })).join("")
