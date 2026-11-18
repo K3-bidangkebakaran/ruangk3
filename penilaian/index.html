@@ -250,6 +250,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
 .gc .gv{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rk td.gv{text-align:center}
 .rk th.grp{background:var(--fire)}
+.btn.mini{padding:3px 8px;font-size:11px;margin-top:6px}
 .btn.del{padding:3px 8px;font-size:11.5px;color:var(--k);border-color:transparent;background:transparent}
 .btn.del.arm{background:var(--k);color:#fff;border-color:var(--k)}
 .sha.gro{background:var(--soft)}
@@ -338,7 +339,7 @@ dialog#sh[open]{display:flex;flex-direction:column}
   </section>
 
   <section class="card">
-    <div class="h"><h2 id="rubT">Rubrik &amp; bobot</h2><div class="wset" id="wset"></div></div>
+    <div class="h"><h2 id="rubT">Rubrik &amp; bobot</h2><div class="tools"><button class="btn pri" type="button" id="pdfRub" hidden>PDF rubrik kelas ini</button><button class="btn" type="button" id="pdfRubAll" hidden>PDF rubrik semua kelas</button></div><div class="wset" id="wset"></div></div>
     <div class="body" style="display:grid;gap:14px">
       <div class="rub" id="rub"></div>
       <div class="ped" id="ped"></div>
@@ -716,9 +717,9 @@ function renderRubrik(){
   const c=S.cfg,as=aspekKelas(S.kelas),sk=c.skala||[];const tot=as.reduce((a,x)=>a+(+x.bobot||0),0);
   const ul=t=>{const l=String(t||"").split(/\n/).filter(Boolean);return l.length>1?"<ul>"+l.map(x=>`<li>${esc(x)}</li>`).join("")+"</ul>":esc(t)};
   let h=`<table><thead><tr><th>Aspek praktik</th><th>Bobot</th><th>Fokus / indikator</th>${sk.map(s=>`<th class="${CLS[s.k]}">${esc(s.label)}<br><span style="font-family:var(--f-num);font-weight:500">${s.k==="K"?"&lt; 65":s.min+"–"+s.max}</span></th>`).join("")}</tr></thead><tbody>`;
-  for(const a of as)h+=`<tr><td class="as"><b>${esc(a.nama)}</b><span>${esc(a.kode)}</span>${a.kelas?"":"<br><em>SEMUA KELAS</em>"}</td><td class="bb">${esc(a.bobot)}%</td><td>${ul(a.fokus)}</td>${sk.map(s=>`<td>${esc(a.r?.[s.k]||"")}</td>`).join("")}</tr>`;
+  for(const a of as)h+=`<tr><td class="as"><b>${esc(a.nama)}</b><span>${esc(a.kode)}</span>${a.kelas?"":"<br><em>SEMUA KELAS</em>"}${S.dl?`<br><button class="btn mini" type="button" data-pdfasp="${esc(a.kode)}" title="PDF indikator ${esc(a.nama)}">PDF indikator</button>`:""}</td><td class="bb">${esc(a.bobot)}%</td><td>${ul(a.fokus)}</td>${sk.map(s=>`<td>${esc(a.r?.[s.k]||"")}</td>`).join("")}</tr>`;
   h+=`<tr><td class="as"><b>Total bobot ${esc(kelasJudul(S.kelas))}</b></td><td class="bb" style="color:${tot===100?"var(--bs)":"var(--k)"}">${tot}%</td><td colspan="${sk.length+1}"></td></tr></tbody></table>`;
-  $("#rub").innerHTML=h;
+  $("#rub").innerHTML=h;$("#pdfRub").textContent="PDF rubrik "+kelasJudul(S.kelas);
   $("#ped").innerHTML=(c.pedoman||[]).map(p=>`<div><b>${esc(p.judul)}</b><p>${esc(p.teks)}</p></div>`).join("");
   const ed=S.isAdmin;
   $("#wset").innerHTML=`<label>Praktik <input type="number" id="wp" min="0" max="100" value="${esc(c.bobotPraktik)}" ${ed?"":"disabled"}>%</label>
@@ -1042,6 +1043,66 @@ async function pdfLembar(J,ps,nama){
   ps.forEach((p,i)=>{if(i)doc.addPage();lembar(doc,p,W,H)});
   kakiHalaman(doc,W,H);await simpanPdf(doc,nama);
 }
+/* PDF rubrik & indikator (untuk dibagikan) */
+function kakiRubrik(doc,W,H,teks){const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont("helvetica","normal");doc.setFontSize(7.5);doc.setTextColor(120,130,140);
+    doc.text(pt(teks),12,H-7);doc.text(`Halaman ${i} dari ${n}`,W-12,H-7,{align:"right"})}}
+function catatanKelas(k){const ko=kelasObj(k);return ko.kelompok?"Aspek laporan PKL dinilai per kelompok; Kehadiran dan Keaktifan dinilai per peserta.":"Setiap aspek dinilai per peserta melalui pengamatan langsung saat praktik."}
+function rubrikKelas(doc,k,W,H,baru){
+  const ko=kelasObj(k),as=aspekKelas(k),sk=S.cfg.skala||[],tot=as.reduce((t,a)=>t+(+a.bobot||0),0);
+  if(baru)doc.addPage();
+  kop(doc,(ko.pkl?"RUBRIK PENILAIAN PKL – ":"RUBRIK PENILAIAN PRAKTIK – ")+kelasJudul(k).toUpperCase(),W,[S.cfg.program,ko.ket].filter(Boolean).join(" · "));
+  doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(21,33,46);
+  doc.text(pt(catatanKelas(k)+" Nilai akhir = "+S.cfg.bobotPraktik+"% "+(ko.pkl?"PKL":"praktik")+" + "+S.cfg.bobotKuis+"% kuis; LULUS bila nilai akhir >= 65."),12,30,{maxWidth:W-24});
+  doc.autoTable({startY:35,margin:{left:12,right:12,bottom:14},theme:"grid",
+    head:[["No","Aspek","Bobot","Fokus / indikator",...sk.map(x=>pt(x.label+"\n"+(x.k==="K"?"< 65":x.min+"-"+x.max)))]],
+    body:[...as.map((a,i)=>[i+1,pt(a.nama+(a.kelas?"":"\n(semua kelas)")+(ko.kelompok&&a.kelas?"\n(dinilai per kelompok)":"")),a.bobot+"%",pt(String(a.fokus||"").split(/\n/).filter(Boolean).map(f=>"- "+f).join("\n")),...sk.map(x=>pt(a.r?.[x.k]||""))]),
+      ["","Total bobot",tot+"%","",...sk.map(()=>"")]],
+    styles:{font:"helvetica",fontSize:7.4,cellPadding:1.8,valign:"top",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
+    headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold",halign:"center",valign:"middle",fontSize:7.6},
+    columnStyles:{0:{cellWidth:8,halign:"center"},1:{cellWidth:38,fontStyle:"bold"},2:{cellWidth:13,halign:"center"},3:{cellWidth:66}},
+    didParseCell(d){const c=d.column.index;if(d.section==="head"&&c>=4)warnai(d,sk[c-4]?.k);
+      if(d.section==="body"&&d.row.index===as.length){d.cell.styles.fontStyle="bold";d.cell.styles.fillColor=[238,242,246]}}});
+  let y=doc.lastAutoTable.finalY+5;if(y>H-30){doc.addPage();y=20}
+  doc.setFontSize(7.6);doc.setTextColor(90,100,112);doc.text(doc.splitTextToSize(pt(skalaTeks()),W-24),12,y);
+}
+async function pdfRubrik(J,semua){
+  const doc=new J({orientation:"landscape",unit:"mm",format:"a4"});const W=297,H=210;
+  const ks=semua?kelasList().map(x=>x.k):[S.kelas];ks.forEach((k,i)=>rubrikKelas(doc,k,W,H,i>0));
+  kakiRubrik(doc,W,H,[S.cfg.program,"Rubrik penilaian"].filter(Boolean).join(" · "));
+  await simpanPdf(doc,semua?"Rubrik Penilaian Semua Kelas.pdf":`Rubrik Penilaian ${kelasJudul(S.kelas)}.pdf`);
+}
+async function pdfIndikator(J,kode){
+  const a=(S.cfg.aspek||[]).find(x=>x.kode===kode);if(!a)return;
+  const k=a.kelas||S.kelas,ko=kelasObj(k),sk=S.cfg.skala||[];
+  const doc=new J({orientation:"portrait",unit:"mm",format:"a4"});const W=210,H=297;
+  kop(doc,"INDIKATOR PENILAIAN",W,[S.cfg.program,a.kelas?kelasJudul(a.kelas):"Semua kelas"].filter(Boolean).join(" · "));
+  doc.setTextColor(21,33,46);doc.setFont("helvetica","bold");doc.setFontSize(13);
+  const jl=doc.splitTextToSize(pt(a.nama),W-24);doc.text(jl,12,34);let y=34+jl.length*5.6;
+  doc.setFont("helvetica","normal");doc.setFontSize(9.5);
+  {const il=doc.splitTextToSize(pt(`Kode ${a.kode} · Bobot ${a.bobot}% · `+(a.kelas?kelasJudul(a.kelas)+(ko.ket?" ("+ko.ket+")":""):"Berlaku untuk semua kelas")),W-24);doc.text(il,12,y);y+=il.length*4.4+2.5}
+  if(a.kelas&&ko.kelompok){doc.setFontSize(8.8);doc.setTextColor(90,100,112);doc.text("Dinilai per kelompok dari laporan PKL.",12,y);y+=6;doc.setTextColor(21,33,46)}
+  doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.text("Fokus / indikator yang diamati",12,y+2);y+=5;
+  doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"plain",
+    body:String(a.fokus||"").split(/\n/).filter(Boolean).map((f,i)=>[(i+1)+".",pt(f)]),
+    styles:{font:"helvetica",fontSize:9.5,cellPadding:{top:1.4,bottom:1.4,left:1.5,right:1.5},textColor:[21,33,46]},columnStyles:{0:{cellWidth:8}}});
+  y=doc.lastAutoTable.finalY+6;
+  doc.setFont("helvetica","bold");doc.setFontSize(10.5);doc.text("Kriteria penilaian",12,y);
+  doc.autoTable({startY:y+2,margin:{left:12,right:12,bottom:14},theme:"grid",
+    head:[["Tingkat","Rentang nilai","Kriteria"]],
+    body:sk.map(x=>[x.label,x.k==="K"?"< 65":x.min+" - "+x.max,pt(a.r?.[x.k]||"")]),
+    styles:{font:"helvetica",fontSize:9.5,cellPadding:2.4,valign:"middle",lineColor:[200,208,218],lineWidth:.2,textColor:[21,33,46]},
+    headStyles:{fillColor:[35,89,132],textColor:255,fontStyle:"bold"},
+    columnStyles:{0:{cellWidth:30,fontStyle:"bold"},1:{cellWidth:28,halign:"center"}},
+    didParseCell(d){if(d.section==="body"&&d.column.index===0)warnai(d,sk[d.row.index]?.k)}});
+  y=doc.lastAutoTable.finalY+6;doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(90,100,112);
+  doc.text(doc.splitTextToSize(pt("Nilai hitung tiap tingkat: "+sk.map(x=>x.label+" = "+fmt(x.nilai)).join(", ")+". "+catatanKelas(k)),W-24),12,y);
+  kakiRubrik(doc,W,H,[S.cfg.program,"Indikator "+a.kode].filter(Boolean).join(" · "));
+  await simpanPdf(doc,`Indikator ${a.label||a.nama}${a.kelas?" ("+kelasJudul(a.kelas)+")":""}.pdf`.replace(/[\\/:*?"<>|]/g,"-"));
+}
+$("#pdfRub").addEventListener("click",e=>jalankanPdf(e.currentTarget,J=>pdfRubrik(J,false)));
+$("#pdfRubAll").addEventListener("click",e=>jalankanPdf(e.currentTarget,J=>pdfRubrik(J,true)));
+document.addEventListener("click",e=>{const b=e.target.closest("[data-pdfasp]");if(b)jalankanPdf(b,J=>pdfIndikator(J,b.dataset.pdfasp))});
 $("#pdfR").addEventListener("click",e=>jalankanPdf(e.currentTarget,pdfRekap));
 $("#pdfI").addEventListener("click",e=>jalankanPdf(e.currentTarget,J=>pdfLembar(J,rows(S.kelas).map(r=>r.p),`Lembar Penilaian ${batchNama(S.batch)} ${kelasJudul(S.kelas)}.pdf`)));
 $("#shPdf").addEventListener("click",e=>{const p=S.peserta.find(x=>x.id===shId);if(p)jalankanPdf(e.currentTarget,J=>pdfLembar(J,[p],`Lembar Penilaian ${batchNama(S.batch)} - ${p.nama}.pdf`))});
@@ -1147,7 +1208,7 @@ async function start(){
   if(!C||!C.use){setState("Data hanya tersedia saat dibuka di claude.ai.");$("#basis").textContent="Buka halaman ini di claude.ai untuk melihat data penilaian.";return}
   const [db,user,dl]=await Promise.all([C.use("db"),C.use("user"),C.use("downloads")]);
   if(!db){setState("Data tidak dapat dimuat di tampilan ini. Masuk ke claude.ai lalu buka lagi.");$("#basis").textContent="Data penilaian belum dapat dimuat.";return}
-  S.db=db;S.dl=dl;if(dl){$("#csv").hidden=$("#pdfR").hidden=$("#pdfI").hidden=$("#shPdf").hidden=false}
+  S.db=db;S.dl=dl;if(dl){$("#csv").hidden=$("#pdfR").hidden=$("#pdfI").hidden=$("#shPdf").hidden=$("#pdfRub").hidden=$("#pdfRubAll").hidden=false}
   db.collection("kelompok").onSnapshot(s=>{S.kelompok=s.docs.map(d=>({id:d.id,...structuredClone(d.data())}));render()},()=>{});
   db.collection("batch").onSnapshot(s=>{S.batches=s.docs.map(d=>({id:d.id,...d.data()}));render()},()=>{});
   if(user){const cw=await user.can("data.write");S.canWrite=cw!==false;S.isAdmin=await user.canEdit()}
