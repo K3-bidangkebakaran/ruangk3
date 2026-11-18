@@ -154,7 +154,7 @@ const angkatLabel = ks => {
 const judulAngkatKelas = k => `${J_ANGKAT} (${angkatLabel([k])})`;
 function kelasEv(ev, k) {
   const ks = kelasList(ev.acara), a = ev.acara, kg = (a.kegiatan || "").trim(), hk = hariKelas(ev, k);
-  return {
+  const out = {
     ...ev, kelasNama: k,
     peserta: ev.peserta.filter(p => (p.nama || "").trim() && (k ? p.kelas === k : !ks.includes(p.kelas))),
     acara: { ...a, kegiatan: k ? (a.jenis === "angkat" ? judulAngkatKelas(k) : isB3(a) ? judulProgKelas(a, k) : (kg ? kg + " \u2013 " + k : k)) : a.kegiatan, ...(hk ? { hari: hk, tanggal: hk[0], tanggal2: hk[hk.length - 1] } : {}) }, // alat selain Kelas 1: hanya 4 hari pertama
@@ -162,6 +162,8 @@ function kelasEv(ev, k) {
       ? { ...ev.lap, nr: ((ev.lap.nrk || {})[kelasKey(k)]) || {}, nrOff: ((ev.lap.nrOffK || {})[kelasKey(k)]) || {}, nrHari: hariKelas(ev, k) }
       : { ...ev.lap, nr: ev.lap.nr || {}, nrHari: hariKelas(ev, k) } // narasumber: satu isian untuk semua alat; hari yang dicetak mengikuti kelas
   };
+  if (k && out.lap.hari) { const kk = kelasKey(k); out.lap = { ...out.lap, hari: Object.fromEntries(Object.entries(out.lap.hari).map(([d, h]) => [d, h && h.mk && h.mk[kk] ? { ...h, materi: h.mk[kk] } : h])) }; } // Dokumentasi Harian: materi khusus alat ini (bila diisi) menggantikan materi umum hari itu
+  return out;
 }
 function kelasGroups(ev) { // [{kelas, ev}] ; bukan PAPA = satu kelompok tanpa nama kelas
   if (!ev.acara.papa) return [{ kelas: "", ev }];
