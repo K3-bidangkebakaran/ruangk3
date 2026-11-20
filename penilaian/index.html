@@ -542,35 +542,23 @@ function hitung(p){
 }
 /* keterangan otomatis dari hasil tiap aspek: kekurangan per aspek (rubrik tingkat yang dicapai) + yang perlu dilatih (fokus/indikator) */
 function daftarKata(a){return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" dan "+a[a.length-1]}
-function keterangan(p,mode){const singkat=mode===true||mode==="singkat",lembar=mode==="lembar",pkl=!!kelasObj(p.kelas).pkl;
-  const as=aspekKelas(p.kelas),g={BS:[],B:[],C:[],K:[],"":[]},nm=a=>a.label||a.nama;
+/* keterangan = rangkuman singkat hasil penilaian (tanpa uraian rubrik per aspek) */
+function keterangan(p,mode){
+  const pkl=!!kelasObj(p.kelas).pkl,as=aspekKelas(p.kelas),g={BS:[],B:[],C:[],K:[],"":[]},nm=a=>a.label||a.nama;
   as.forEach(a=>{const v=nilaiP(p,a);(g[v]||g[""]).push(a)});
   if(!as.length||g[""].length===as.length)return "Belum dinilai.";
-  const x=hitung(p),out=[],KT={BS:"sangat baik",B:"baik",C:"cukup",K:"kurang"};
-  const kecil=t=>String(t||"").replace(/[.\s]+$/,"");
-  const fokus=a=>String(a.fokus||"").split(/\n/).map(t=>t.trim()).filter(Boolean);
-  if(!singkat&&x.praktik!=null)out.push(kelasObj(p.kelas).pkl?`Kualitas laporan PKL Rencana Tanggap Darurat secara umum ${KT[kat(x.praktik)]} (nilai PKL ${fmt(x.praktik)}).`:`Kemampuan praktik secara umum ${KT[kat(x.praktik)]} (nilai praktik ${fmt(x.praktik)}).`);
-  if(g.BS.length)out.push(`Sudah sangat baik: ${daftarKata(g.BS.map(nm))}.`);
-  const kurang=[...g.B.map(a=>[a,"B"]),...g.C.map(a=>[a,"C"]),...g.K.map(a=>[a,"K"])];
-  if(lembar){
-    if(g.B.length)out.push(`Baik: ${daftarKata(g.B.map(nm))}.`);
-    const lat=[...g.C.map(a=>[a,"C"]),...g.K.map(a=>[a,"K"])];
-    if(lat.length){out.push((pkl?"Yang perlu dilengkapi/diperbaiki pada laporan":"Yang perlu dilatih")+" (rincian kekurangan ada di kolom Keterangan tabel):");
-      lat.forEach(([a,v])=>{const fk=fokus(a);out.push(`- ${a.nama} (${SHORT[v]}${v==="K"?(pkl?", wajib direvisi":", wajib diulang"):(pkl?", perlu dilengkapi":", latihan ulang")}): ${fk.join("; ")||kecil(a.r?.[v])}.`)})}
-    else if(!g[""].length)out.push("Tidak ada aspek yang perlu diulang.");
-  }else if(kurang.length){
-    out.push("Keterangan per aspek (Baik – Cukup – Kurang):");
-    kurang.forEach(([a,v])=>{
-      let t=`- ${a.nama} (${SHORT[v]}): ${kecil(ketAspek(p,a,v))}.`;
-      if(!singkat&&v!=="B"){const fk=fokus(a);if(fk.length)t+=` ${pkl?"Yang perlu dilengkapi pada laporan":"Yang perlu dilatih"}: ${fk.join("; ")}.`}
-      if(singkat&&v==="K")t+=pkl?" Wajib direvisi.":" Wajib diulang.";
-      if(singkat&&v==="C")t+=pkl?" Perlu dilengkapi.":" Perlu latihan ulang.";
-      out.push(t)});
-  }else if(!g[""].length)out.push("Tidak ada kekurangan; seluruh aspek praktik memenuhi standar.");
-  if(g[""].length)out.push(`Belum dinilai: ${daftarKata(g[""].map(nm))}.`);
-  if(x.akhir!=null)out.push(x.status==="LULUS"?`Dinyatakan LULUS dengan predikat ${SHORT[x.pred]} (nilai akhir ${fmt(x.akhir)}).`:`Dinyatakan REMEDIAL (nilai akhir ${fmt(x.akhir)}); ${pkl?"revisi laporan PKL":"ulangi praktik"}${g.K.length||g.C.length?" pada aspek Kurang/Cukup di atas":""} dan kuis sesuai arahan instruktur.`);
-  else if(x.praktik!=null)out.push("Status akhir menunggu nilai kuis.");
-  return out.join("\n");
+  const x=hitung(p),KT={BS:"sangat baik",B:"baik",C:"cukup",K:"kurang"},bag=[];
+  const awal=x.praktik!=null?(pkl?`Laporan PKL ${KT[kat(x.praktik)]} (nilai PKL ${fmt(x.praktik)})`:`Kemampuan praktik ${KT[kat(x.praktik)]} (nilai praktik ${fmt(x.praktik)})`):"";
+  if(g.BS.length)bag.push("unggul pada "+daftarKata(g.BS.map(nm)));
+  if(g.B.length)bag.push("baik pada "+daftarKata(g.B.map(nm)));
+  if(g.C.length)bag.push((pkl?"perlu dilengkapi pada ":"perlu latihan ulang pada ")+daftarKata(g.C.map(nm)));
+  if(g.K.length)bag.push((pkl?"wajib direvisi pada ":"wajib mengulang ")+daftarKata(g.K.map(nm)));
+  let t=[awal,...bag].filter(Boolean).join("; ");t=t.charAt(0).toUpperCase()+t.slice(1)+".";
+  if(g[""].length)t+=` ${g[""].length} aspek belum dinilai.`;
+  const ai=isGrup(p.kelas)?grupOf(p)?.ai?.ringkasan:"";if(ai)t+=" Catatan laporan: "+String(ai).replace(/[.\s]+$/,"")+".";
+  if(x.akhir!=null)t+=x.status==="LULUS"?` LULUS, predikat ${SHORT[x.pred]} (nilai akhir ${fmt(x.akhir)}).`:` REMEDIAL (nilai akhir ${fmt(x.akhir)}).`;
+  else if(x.praktik!=null)t+=" Status menunggu nilai kuis.";
+  return t;
 }
 function rows(k){const gn=p=>isGrup(p.kelas)?(grupOf(p)?.nama||"\uffff"):"";return diBatch().filter(p=>k==null||p.kelas===k).map(p=>({p,h:hitung(p)})).sort((a,b)=>gn(a.p).localeCompare(gn(b.p),"id",{numeric:true})||(a.p.no??999)-(b.p.no??999)||String(a.p.nama).localeCompare(b.p.nama))}
 
@@ -1013,7 +1001,7 @@ function lembar(doc,p,W,H){
   {const ko=kelasObj(p.kelas);kop(doc,ko.pkl?"LEMBAR PENILAIAN PKL":"LEMBAR PENILAIAN PRAKTIK",W,ko.pkl?(ko.ket||""):"")}
   const B=curBatch()||{};let y=infoBlok(doc,[["Nama Peserta",p.nama],["Kelas",kelasJudul(p.kelas)],...(isGrup(p.kelas)?[["Kelompok",grupOf(p)?.nama||"-"]]:[]),["Batch",B.nama],["Kegiatan",B.kegiatan],["PJK3",B.pjk3],["Lokasi Praktek",B.lokasi],["Tanggal",B.tanggal]],31,W,1);
   doc.autoTable({startY:y,margin:{left:12,right:12,bottom:14},theme:"grid",
-    head:[["No","Aspek Praktik","Bobot","Predikat","Nilai","Nilai x\nBobot","Keterangan"]],
+    head:[["No","Aspek Praktik","Bobot","Predikat","Nilai","Nilai x\nBobot","Kriteria yang dicapai"]],
     body:as.map((a,i)=>{const v=nilaiP(p,a);const n=nilaiOf(v);
       return [i+1,pt(a.nama),a.bobot+"%",SHORT[v]||"-",n!=null?fmt(n):"-",n!=null?fmt(n*a.bobot/100):"-",pt(v?ketAspek(p,a,v):"Belum dinilai")]}),
     foot:[["",kelasObj(p.kelas).pkl?"Nilai PKL":"Nilai Praktik",as.reduce((s,a)=>s+(+a.bobot||0),0)+"%","","",fmt(x.praktik),x.praktik==null?`${x.isi}/${x.total} aspek terisi`:""]],
