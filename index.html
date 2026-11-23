@@ -1745,6 +1745,7 @@
                                 <button type="button" id="dh-tab-rekap" role="tab" aria-selected="true" class="px-4 py-2 rounded-md text-sm font-bold bg-white text-slate-900 shadow-sm">Rekap Kegiatan</button>
                                 <button type="button" id="dh-tab-app" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Input Kegiatan</button>
                                 <button type="button" id="dh-tab-pic" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Portal PIC</button>
+                                <button type="button" id="dh-tab-db" role="tab" aria-selected="false" class="px-4 py-2 rounded-md text-sm font-bold text-slate-500 hover:text-slate-800">Database</button>
                             </div>
                     </div></div>
                 <div id="dh-head-st" class="hidden" style="align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;margin-right:12px"><span id="dh-st-chips" style="display:contents"></span>
@@ -2492,6 +2493,22 @@
                             </div>
                         </div>
                         <iframe id="dh-pic-frame" title="Admin Portal PIC" class="block w-full border-0 bg-white" style="height:calc(100vh - 17rem);min-height:560px" allow="fullscreen"></iframe>
+                    </div>
+                    <!-- Tab 4: Database peserta semua kegiatan -> satu spreadsheet (.xlsx) 3 sheet: Lulus, Cancel, Remedial. Data dikumpulkan aplikasi Daftar Hadir (window.dhDatabase di #dh-frame). -->
+                    <div id="dh-view-db" class="hidden">
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div><h4 class="text-sm font-bold text-slate-800">Database peserta semua kegiatan</h4>
+                                <p class="text-xs text-slate-500" style="margin-top:4px;max-width:720px">Satu spreadsheet berisi 3 sheet: <b>Lulus</b>, <b>Cancel</b>, dan <b>Remedial</b>. Kolom: nama peserta, instansi/perusahaan, nama kegiatan pelatihan, tanggal kegiatan, tempat, dan penyelenggara. Data diambil dari semua kegiatan di Google Drive (tanpa foto).</p></div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button type="button" id="btn-dh-db-muat" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Hitung ulang</button>
+                                    <button type="button" id="btn-dh-db-unduh" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold" style="min-height:36px">Unduh Spreadsheet (.xlsx)</button>
+                                </div>
+                            </div>
+                            <p id="dh-db-st" class="text-xs text-slate-500" style="margin-top:12px"></p>
+                            <div id="dh-db-ring" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px"></div>
+                            <div id="dh-db-tabel" style="margin-top:16px"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -10060,7 +10077,7 @@
         window.dhBukaPanel = async function() {
             if (!dhIsAdmin()) return;
             try { if (!dhCfg() && window.__dhDriveP) await Promise.race([window.__dhDriveP, new Promise(r => setTimeout(r, 7000))]); } catch (e) {} // perangkat baru: tunggu koneksi Drive dipulihkan dari Firebase sebelum aplikasi dimuat
-            let tab = 'rekap'; try { const tv = localStorage.getItem('rk3_dh_view'); tab = (tv === 'app' || tv === 'pic') ? tv : 'rekap'; } catch (e) {}
+            let tab = 'rekap'; try { const tv = localStorage.getItem('rk3_dh_view'); tab = (tv === 'app' || tv === 'pic' || tv === 'db') ? tv : 'rekap'; } catch (e) {}
             window.dhTampilView(tab);
             try { const f = document.getElementById('dh-frame'); if (f && !f.getAttribute('src')) { localStorage.setItem('rk3_admin_at', String(Date.now())); f.src = '/daftar-hadir/'; } } catch (e) {} // muat di latar: kirim kegiatan ke PIC + tarik hasil PIC
             { const c = await dhCfgDariAplikasi(), cur = dhCfg(); if (c && (!cur || ((c.ts || 0) > (cur.ts || 0) && (c.url !== cur.url || c.token !== cur.token)))) dhSimpanCfg(c); } // salinan aplikasi Daftar Hadir yang lebih baru ikut dipakai panel
@@ -10144,18 +10161,22 @@
         // Tab Rekap / Input: aplikasi Daftar Hadir dimuat di dalam halaman ini (iframe satu origin), bukan tab baru.
         let dhAppDipakai = false;
         window.dhTampilView = function(v) {
-            const app = v === 'app', pic = v === 'pic';
-            document.getElementById('dh-view-rekap')?.classList.toggle('hidden', app || pic);
+            const app = v === 'app', pic = v === 'pic', dbv = v === 'db';
+            document.getElementById('dh-view-rekap')?.classList.toggle('hidden', app || pic || dbv);
+            document.getElementById('dh-view-db')?.classList.toggle('hidden', !dbv);
             document.getElementById('dh-view-app')?.classList.toggle('dh-offscreen', !app); // tetap hidup di latar agar kegiatan dikirim ke PIC dan hasil PIC masuk otomatis
             document.getElementById('dh-view-pic')?.classList.toggle('hidden', !pic);
             const aktif = ['bg-white', 'text-slate-900', 'shadow-sm'], mati = ['text-slate-500', 'hover:text-slate-800'];
-            [['dh-tab-rekap', !app && !pic], ['dh-tab-app', app], ['dh-tab-pic', pic]].forEach(([id, on]) => {
+            [['dh-tab-rekap', !app && !pic && !dbv], ['dh-tab-app', app], ['dh-tab-pic', pic], ['dh-tab-db', dbv]].forEach(([id, on]) => {
                 const b = document.getElementById(id); if (!b) return;
                 aktif.forEach(c => b.classList.toggle(c, on)); mati.forEach(c => b.classList.toggle(c, !on));
                 b.setAttribute('aria-selected', on ? 'true' : 'false');
             });
-            try { localStorage.setItem('rk3_dh_view', app ? 'app' : (pic ? 'pic' : 'rekap')); } catch (e) {}
-            if (app) {
+            try { localStorage.setItem('rk3_dh_view', app ? 'app' : (pic ? 'pic' : (dbv ? 'db' : 'rekap'))); } catch (e) {}
+            if (dbv) {
+                if (!dhIsAdmin()) return;
+                window.dhDbBuka();
+            } else if (app) {
                 if (!dhIsAdmin()) return;
                 try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} // sesi admin masih berlaku; aplikasi memeriksa penanda ini
                 const f = document.getElementById('dh-frame');
@@ -10199,6 +10220,55 @@
         document.getElementById('dh-tab-rekap')?.addEventListener('click', () => window.dhTampilView('rekap'));
         document.getElementById('dh-tab-app')?.addEventListener('click', () => window.dhTampilView('app'));
         document.getElementById('dh-tab-pic')?.addEventListener('click', () => window.dhTampilView('pic'));
+        document.getElementById('dh-tab-db')?.addEventListener('click', () => window.dhTampilView('db'));
+        /* Database peserta: dikumpulkan oleh aplikasi Daftar Hadir (iframe #dh-frame, window.dhDatabase) dari Google Drive + perangkat ini. */
+        let dhDbData = null, dhDbJalan = false;
+        const dhDbFrame = async () => { // tunggu aplikasi Daftar Hadir siap (dimuat di latar)
+            const f = document.getElementById('dh-frame'); if (!f) throw new Error('Aplikasi Daftar Hadir tidak ditemukan.');
+            if (!f.getAttribute('src')) { try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} f.src = '/daftar-hadir/'; }
+            for (let i = 0; i < 120; i++) { // maks. 60 dtk
+                try { const w = f.contentWindow; if (w && w.dhDatabase && w.dhDatabase.siap()) return w.dhDatabase; } catch (e) {}
+                await new Promise(r => setTimeout(r, 500));
+            }
+            throw new Error('Aplikasi Daftar Hadir belum siap. Coba lagi sebentar lagi.');
+        };
+        const dhDbSt = (t, c) => { const el = document.getElementById('dh-db-st'); if (el) { el.textContent = t || ''; el.className = 'text-xs ' + (c === 'err' ? 'text-red-600' : c === 'warn' ? 'text-amber-700' : 'text-slate-500'); } };
+        const dhDbTgl = d => { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return isNaN(x) ? d : x.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); };
+        const dhDbRender = () => {
+            const ring = document.getElementById('dh-db-ring'), tb = document.getElementById('dh-db-tabel'); if (!ring || !tb) return;
+            const d = dhDbData; if (!d) { ring.innerHTML = ''; tb.innerHTML = ''; return; }
+            const kartu = (l, v, w, k) => `<div style="border:1px solid #e2e8f0;border-left:4px solid ${w};border-radius:8px;padding:10px 12px;background:#fff"><div class="text-xs text-slate-500">${l}</div><div class="text-2xl font-bold text-slate-800">${v}</div>${k ? `<div class="text-xs text-slate-500">${k}</div>` : ''}</div>`;
+            ring.innerHTML = kartu('Kegiatan', d.nKeg, '#64748b', d.total + ' peserta') + kartu('Sheet Lulus', d.lulus, '#16a34a') + kartu('Sheet Cancel', d.cancel, '#dc2626') + kartu('Sheet Remedial', d.remedial, '#eab308')
+                + kartu('Tidak ikut 3 sheet', d.tidak + d.kosong, '#cbd5e1', `${d.tidak} tidak lulus · ${d.kosong} belum ada keterangan lulus`);
+            const lim = 10, rows = (d.rows || []).filter(r => r.batal || r.remedial || r.hasil === 'lulus').slice(0, lim);
+            const ket = r => r.batal ? '<span class="text-red-600 font-bold">Cancel</span>' : r.remedial ? '<span class="text-amber-700 font-bold">Remedial</span>' : '<span class="text-emerald-700 font-bold">Lulus</span>';
+            tb.innerHTML = rows.length ? `<p class="text-xs font-bold text-slate-700" style="margin-bottom:6px">Contoh isi (${rows.length} baris teratas, kegiatan terbaru dulu)</p><div class="overflow-x-auto admin-scroll"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="text-slate-500 text-[10px] uppercase tracking-wider"><tr><th class="px-2 py-1">Nama Peserta</th><th class="px-2 py-1">Instansi</th><th class="px-2 py-1">Kegiatan</th><th class="px-2 py-1">Tanggal</th><th class="px-2 py-1">Penyelenggara</th><th class="px-2 py-1">Sheet</th></tr></thead><tbody class="divide-y divide-slate-200">`
+                + rows.map(r => `<tr><td class="px-2 py-1 font-semibold text-slate-800">${dhEsc(r.nama)}</td><td class="px-2 py-1">${dhEsc(r.instansi || '–')}</td><td class="px-2 py-1">${dhEsc(r.kegiatan)}</td><td class="px-2 py-1">${dhEsc(r.tgl || dhDbTgl(r.mulai))}</td><td class="px-2 py-1">${dhEsc(r.pj)}</td><td class="px-2 py-1">${ket(r)}</td></tr>`).join('') + '</tbody></table></div>'
+                : '<p class="text-xs text-slate-500 italic">Belum ada peserta berstatus Lulus, Cancel, atau Remedial.</p>';
+        };
+        const dhDbJalankan = async (unduh) => {
+            if (dhDbJalan || !dhIsAdmin()) return; dhDbJalan = true;
+            const bu = document.getElementById('btn-dh-db-unduh'), bm = document.getElementById('btn-dh-db-muat');
+            [bu, bm].forEach(b => { if (b) b.disabled = true; });
+            try {
+                dhDbSt('Menyiapkan aplikasi Daftar Hadir…');
+                const api = await dhDbFrame(), prog = t => dhDbSt(t);
+                if (unduh) {
+                    const r = await api.unduh(prog);
+                    dhDbData = r; dhDbRender();
+                    dhDbSt(`Berkas "${r.nama}" diunduh: ${r.lulus} lulus, ${r.cancel} cancel, ${r.remedial} remedial.` + (r.gagal && r.gagal.length ? ` ${r.gagal.length} kegiatan gagal dibaca dari Drive: ${r.gagal.join(', ')}.` : ''), r.gagal && r.gagal.length ? 'warn' : '');
+                    window.showToast && window.showToast('Spreadsheet database peserta diunduh.', 'success');
+                } else {
+                    dhDbData = await api.kumpul(prog); dhDbRender();
+                    dhDbSt(`Data dari ${dhDbData.nKeg} kegiatan siap diunduh.` + (dhDbData.gagal && dhDbData.gagal.length ? ` ${dhDbData.gagal.length} kegiatan gagal dibaca dari Drive: ${dhDbData.gagal.join(', ')}.` : ''), dhDbData.gagal && dhDbData.gagal.length ? 'warn' : '');
+                }
+            } catch (e) {
+                dhDbSt('Gagal: ' + String((e && e.message) || e), 'err');
+            } finally { dhDbJalan = false; [bu, bm].forEach(b => { if (b) b.disabled = false; }); }
+        };
+        window.dhDbBuka = () => { if (!dhDbData) dhDbJalankan(false); else dhDbRender(); };
+        document.getElementById('btn-dh-db-muat')?.addEventListener('click', () => dhDbJalankan(false));
+        document.getElementById('btn-dh-db-unduh')?.addEventListener('click', () => dhDbJalankan(true));
         document.getElementById('btn-dh-pic-muat')?.addEventListener('click', () => { const pf = document.getElementById('dh-pic-frame'); if (pf) { try { localStorage.setItem('rk3_admin_at', String(Date.now())); } catch (e) {} pf.src = '/pic/admin.html'; } });
         window.addEventListener('message', (ev) => { // kegiatan dihapus di aplikasi Input Kegiatan -> langsung hilang dari Rekap
             if (ev.origin !== location.origin) return;

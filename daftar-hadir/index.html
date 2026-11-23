@@ -793,6 +793,8 @@ body.kp-on .quick{display:none}
       </div>
       <div class="field lvf"><label for="f-tempat">Tempat</label>
         <input id="f-tempat" data-k="tempat" placeholder="cth. Aula Training PT LPMI, Morowali"></div>
+      <div class="field lvf"><label for="f-pjk3">Penyelenggara</label>
+        <input id="f-pjk3" data-k="penyelenggara" list="dlPjk3" placeholder="PJK3 LPMI"><datalist id="dlPjk3"></datalist></div>
     </section>
 
     <section class="card" data-pane="data">
@@ -1269,7 +1271,7 @@ const lapNorm = l => {
 const blank = () => ({
   id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36), created: Date.now(),
   acara: { kegiatan: "", tanggal: today, tanggal2: "", hari: [today], jamMulai: "08:00", jamSelesai: "16:00", zona: "WITA",
-           tempat: "Morowali", narasumber: "", jenis: "", kelasDamkar: "", alat: [], damkar: false, papa: false, kelas: [], kota: "Morowali", tglTtd: today, jabatanTtd: "PIC", namaTtd: "", ttd: "", barisKosong: 0 },
+           tempat: "Morowali", narasumber: "", jenis: "", kelasDamkar: "", alat: [], damkar: false, papa: false, kelas: [], penyelenggara: "PJK3 LPMI", kota: "Morowali", tglTtd: today, jabatanTtd: "PIC", namaTtd: "", ttd: "", barisKosong: 0 },
   peserta: [],
   wm: { alamat: "", auto: true, lat: null, lng: null },
   lap: lapDefault(),
@@ -5053,7 +5055,7 @@ const Cloud = {
     if (gagal) throw gagal;
   },
   /** Ambil satu kegiatan lengkap dari Drive menjadi objek kegiatan (belum disimpan / dibuka). */
-  async fetchEvent(id, prog) {
+  async fetchEvent(id, prog, noFiles) { // noFiles: hanya data (tanpa foto/TTD), dipakai Database peserta
     const ent = (this.remote || []).find(x => x.id === id), ru = ent ? Number(ent.updated) || 0 : 0; // dicatat SEBELUM unduh: perubahan yang masuk saat mengunduh terdeteksi lagi nanti
     const r = await this.api("getEvent", { id });
     const d = r.event, files = r.files || {};
@@ -5063,6 +5065,7 @@ const Cloud = {
       lap: (lp => ({ ...lp, s1: { ...(lp.s1 || {}), ttd: "" }, s2: { ...(lp.s2 || {}), ttd: "" }, hari: Object.fromEntries(Object.entries(lp.hari || {}).map(([k, h]) => [k, { materi: (h && h.materi) || "", fotos: [], ...(h && h.mk ? { mk: h.mk } : {}) }])), nr: Object.fromEntries(Object.entries(lp.nr || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }])), nrk: Object.fromEntries(Object.entries(lp.nrk || {}).map(([kk, D]) => [kk, Object.fromEntries(Object.entries(D || {}).map(([k, r]) => [k, { ...(r || {}), ttd: "" }]))])) }))(d.lap || {}),
       peserta: (d.peserta || []).map(p => ({ id: p.id, nama: p.nama, instansi: p.instansi, kelas: p.kelas || "", foto: "", foto2: "", foto3: "", foto4: "", foto5: "", ttd: {}, sf: {}, batal: !!p.batal, remedial: !!p.remedial, ut: p.ut, up: p.up, sm: p.sm, nl: p.nl, et: p.et, hasil: p.hasil }))
     });
+    if (noFiles) return ev;
     const keys = Object.keys(files).filter(k => !k.startsWith("doc:")); // berkas Word tidak perlu diunduh
     await this.fetchFiles(ev, files, keys, prog);
     Object.values(ev.lap.hari).forEach(h => { h.fotos = h.fotos.filter(Boolean); });
@@ -5215,6 +5218,104 @@ $("#evCloudList").addEventListener("click", e => {
   if (b.dataset.act === "pull") Cloud.pull(id); else if (b.dataset.act === "upd") Cloud.upd(id); else Cloud.removeRemote(id);
 });
 window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDeletes().then(() => Cloud.reconcile()); });
+
+/* ---------- Database peserta (semua kegiatan) -> satu spreadsheet 3 sheet: Lulus, Cancel, Remedial ----------
+   Sumber: kegiatan di Google Drive (data.json, tanpa foto) + kegiatan di perangkat ini. Salinan perangkat ini dipakai bila sama/lebih baru
+   dari Drive; selain itu data diambil dari Drive (getEvent) TANPA menyimpan/menimpa apa pun. Dipanggil dari panel admin (tab Database)
+   lewat window.dhDatabase. PAPA/B3/PTP: nama kegiatan per alat/program (kelasGroups) sama dengan judul laporan. */
+const PJK3_DEF = "PJK3 LPMI";
+const Db = {
+  res: null, at: 0, busy: null,
+  async kumpul(prog, maxAge) {
+    if (maxAge && this.res && Date.now() - this.at < maxAge) return this.res; // baru saja dikumpulkan: pakai lagi
+    if (this.busy) return this.busy;
+    this.busy = (async () => {
+      const say = t => { try { prog && prog(t); } catch (e) { } };
+      let rem = null;
+      if (Cloud.ready()) {
+        say("Membaca daftar kegiatan di Google Drive…");
+        try { const r = await Cloud.api("listEvents"); rem = r.events || []; Cloud.setRemote(rem); } catch (e) { rem = Cloud.remoteList(); if (!rem.length && !EV.length) throw new Error("Google Drive tidak dapat dihubungi: " + Cloud.friendly(e.message)); }
+      }
+      const mati = new Set([...Cloud.gone]), ids = [], seen = new Set();
+      (rem || []).forEach(e => { if (e && e.id && !mati.has(e.id) && !seen.has(e.id)) { seen.add(e.id); ids.push({ id: e.id, r: e }); } });
+      EV.forEach(e => { if (e && e.id && !mati.has(e.id) && !seen.has(e.id)) { seen.add(e.id); ids.push({ id: e.id, r: null }); } });
+      const evs = [], gagal = []; let i = 0, n = 0;
+      const ambil = async ({ id, r }) => {
+        let ev = null, dl = false;
+        const lokal = id === S.id || EV.some(x => x.id === id), st = r ? Cloud.stateOf(r) : "unsent";
+        if (lokal && (st !== "stale" && st !== "new" || !Cloud.ready())) ev = id === S.id ? S : await idbGet("event:" + id).catch(() => null);
+        if (!ev && Cloud.ready() && r) { try { ev = await Cloud.fetchEvent(id, null, true); dl = true; } catch (e) { gagal.push((r && r.kegiatan) || id); } }
+        if (!ev && lokal) ev = id === S.id ? S : await idbGet("event:" + id).catch(() => null); // Drive gagal: pakai salinan di perangkat ini
+        if (ev) evs.push(id === S.id || dl ? ev : normalize(ev));
+        n++; say(`Mengumpulkan data kegiatan ${n}/${ids.length}…`);
+      };
+      const q = ids.slice(); // 3 sekaligus (Apps Script lambat per permintaan)
+      await Promise.all([0, 1, 2].map(async () => { while (q.length) await ambil(q.shift()); }));
+      const rows = [];
+      evs.forEach(ev => {
+        const a = ev.acara || {}, pj = String(a.penyelenggara || "").trim() || PJK3_DEF;
+        kelasGroups(ev).forEach(({ ev: e }) => {
+          const ea = e.acara, days = hariList(ea).filter(Boolean);
+          e.peserta.forEach(p => {
+            const nama = String(p.nama || "").trim(); if (!nama) return;
+            rows.push({ nama, instansi: String(p.instansi || "").trim(), kegiatan: String(ea.kegiatan || "").trim() || "(tanpa nama)", tgl: hariTanggal(ea, days), mulai: days[0] || "", selesai: days[days.length - 1] || "", tempat: String(ea.tempat || "").trim(), pj,
+              batal: !!p.batal, remedial: !p.batal && !!p.remedial, hasil: p.batal ? "" : (p.hasil || ""), ut: p.ut || "", up: p.up || "", ev: ev.id });
+          });
+        });
+      });
+      rows.sort((x, y) => String(y.mulai).localeCompare(String(x.mulai)) || x.kegiatan.localeCompare(y.kegiatan) || x.nama.localeCompare(y.nama, "id", { sensitivity: "base" }));
+      this.at = Date.now();
+      return (this.res = { rows, nKeg: evs.length, gagal });
+    })();
+    try { return await this.busy; } finally { this.busy = null; }
+  },
+  bagi(rows) {
+    return {
+      lulus: rows.filter(r => !r.batal && r.hasil === "lulus"),
+      cancel: rows.filter(r => r.batal),
+      remedial: rows.filter(r => r.remedial),
+      tidak: rows.filter(r => !r.batal && r.hasil === "tidak").length,
+      kosong: rows.filter(r => !r.batal && !r.hasil).length
+    };
+  },
+  async unduh(prog) {
+    const res = await this.kumpul(prog, 300000), b = this.bagi(res.rows);
+    if (prog) prog("Menyusun spreadsheet…");
+    const XLSX = await loadXLSX();
+    const tgl = d => d ? fmtTglPendek(d) : "";
+    const HEAD = ["No", "Nama Peserta", "Instansi / Perusahaan", "Nama Kegiatan Pelatihan", "Tanggal Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "Tempat", "Penyelenggara"];
+    const sheet = (list, extra) => {
+      const aoa = [HEAD.concat(extra ? extra.h : [])].concat(list.map((r, i) => [i + 1, r.nama, r.instansi, r.kegiatan, r.tgl, tgl(r.mulai), tgl(r.selesai), r.tempat, r.pj].concat(extra ? extra.f(r) : [])));
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = [5, 32, 32, 58, 30, 16, 16, 26, 22].concat(extra ? extra.h.map(() => 18) : []).map(w => ({ wch: w }));
+      ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(aoa.length - 1, 1), c: aoa[0].length - 1 } }) };
+      return ws;
+    };
+    const nilai = { h: ["Nilai Ujian Teori", "Nilai Ujian Praktek"], f: r => [r.ut, r.up] };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, sheet(b.lulus, { h: nilai.h.concat("Keterangan"), f: r => nilai.f(r).concat(r.remedial ? "Lulus setelah remedial" : "Lulus") }), "Lulus");
+    XLSX.utils.book_append_sheet(wb, sheet(b.cancel, { h: ["Keterangan"], f: () => ["Cancel"] }), "Cancel");
+    XLSX.utils.book_append_sheet(wb, sheet(b.remedial, { h: nilai.h.concat("Hasil Akhir"), f: r => nilai.f(r).concat(r.hasil === "lulus" ? "Lulus" : r.hasil === "tidak" ? "Tidak lulus" : "Belum ada keterangan") }), "Remedial");
+    const d = new Date(), nm = `Database Peserta - ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}.xlsx`;
+    XLSX.writeFile(wb, nm, { compression: true });
+    return { ...res, ...this.ringkas(res.rows), nama: nm };
+  },
+  ringkas(rows) { const b = this.bagi(rows || []); return { total: (rows || []).length, lulus: b.lulus.length, cancel: b.cancel.length, remedial: b.remedial.length, tidak: b.tidak, kosong: b.kosong }; }
+};
+window.dhDatabase = {
+  kumpul: async prog => { const r = await Db.kumpul(prog); return { ...Db.ringkas(r.rows), nKeg: r.nKeg, gagal: r.gagal, rows: r.rows }; },
+  unduh: prog => Db.unduh(prog),
+  siap: () => true
+};
+// pilihan isian Penyelenggara: nama yang pernah dipakai + daftar mitra PJK3 di situs utama (bila tertanam di panel admin)
+function isiDlPjk3() {
+  const dl = document.getElementById("dlPjk3"); if (!dl) return;
+  const set = new Set([PJK3_DEF]);
+  try { const f = window.parent && window.parent !== window && window.parent.getDaftarPenyelenggara; (typeof f === "function" ? f() : []).forEach(x => { const n = String(x || "").trim(); if (n) set.add(n); }); } catch (e) { }
+  if (S && S.acara && S.acara.penyelenggara) set.add(String(S.acara.penyelenggara).trim());
+  dl.innerHTML = [...set].map(n => `<option value="${esc(n)}">`).join("");
+}
+document.addEventListener("focusin", e => { if (e.target && e.target.id === "f-pjk3") isiDlPjk3(); });
 
 /* ---------- Portal PIC: kegiatan dikirim ke aplikasi PIC, hasil PIC masuk otomatis ----------
    Kegiatan yang diinput di sini (nama, tanggal, tempat, peserta) dikirim ke Firebase (dh_kegiatan) sehingga
