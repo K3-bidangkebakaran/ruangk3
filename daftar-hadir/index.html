@@ -5226,9 +5226,11 @@ window.addEventListener("online", () => { Cloud.schedule(1000); Cloud.flushDelet
 const PJK3_DEF = "PJK3 LPMI";
 const Db = {
   res: null, at: 0, busy: null,
-  async kumpul(prog, maxAge) {
-    if (maxAge && this.res && Date.now() - this.at < maxAge) return this.res; // baru saja dikumpulkan: pakai lagi
-    if (this.busy) return this.busy;
+  async kumpul(prog, maxAge, hanya) { // hanya: daftar id kegiatan yang boleh masuk (mis. yang sudah Selesai di APK PIC); kosong/null = semua
+    const sig = hanya ? [...hanya].sort().join(",") : "*";
+    if (maxAge && this.res && this.sig === sig && Date.now() - this.at < maxAge) return this.res; // baru saja dikumpulkan: pakai lagi
+    if (this.busy) await this.busy.catch(() => { });
+    const izin = hanya ? new Set(hanya) : null;
     this.busy = (async () => {
       const say = t => { try { prog && prog(t); } catch (e) { } };
       let rem = null;
@@ -5239,6 +5241,7 @@ const Db = {
       const mati = new Set([...Cloud.gone]), ids = [], seen = new Set();
       (rem || []).forEach(e => { if (e && e.id && !mati.has(e.id) && !seen.has(e.id)) { seen.add(e.id); ids.push({ id: e.id, r: e }); } });
       EV.forEach(e => { if (e && e.id && !mati.has(e.id) && !seen.has(e.id)) { seen.add(e.id); ids.push({ id: e.id, r: null }); } });
+      if (izin) { const sisa = ids.filter(x => izin.has(x.id)); ids.length = 0; ids.push(...sisa); } // kegiatan belum Selesai tidak diunduh sama sekali
       const evs = [], gagal = []; let i = 0, n = 0;
       const ambil = async ({ id, r }) => {
         let ev = null, dl = false;
@@ -5264,7 +5267,7 @@ const Db = {
         });
       });
       rows.sort((x, y) => String(y.mulai).localeCompare(String(x.mulai)) || x.kegiatan.localeCompare(y.kegiatan) || x.nama.localeCompare(y.nama, "id", { sensitivity: "base" }));
-      this.at = Date.now();
+      this.at = Date.now(); this.sig = sig;
       return (this.res = { rows, nKeg: evs.length, gagal });
     })();
     try { return await this.busy; } finally { this.busy = null; }
@@ -5291,9 +5294,9 @@ const Db = {
     };
   },
   /** Tulis ke Google Spreadsheet "Database Peserta" di Drive (Code.gs aksi saveDatabase, berkas & link tetap sama) -> { url, ... } */
-  async keDrive(prog) {
+  async keDrive(prog, hanya) {
     if (!Cloud.ready()) throw new Error("Google Drive belum terhubung di perangkat ini.");
-    const res = await this.kumpul(prog, 60000), T = this.tabel(res.rows);
+    const res = await this.kumpul(prog, 60000, hanya), T = this.tabel(res.rows);
     if (prog) prog("Menyimpan Database Peserta ke Google Drive…");
     const sheets = {}; Object.keys(T).forEach(k => { sheets[k] = { head: T[k].head, rows: T[k].rows, lebar: T[k].lebar }; });
     let r;
@@ -5321,7 +5324,7 @@ const Db = {
 window.dhDatabase = {
   kumpul: async prog => { const r = await Db.kumpul(prog); return { ...Db.ringkas(r.rows), nKeg: r.nKeg, gagal: r.gagal, rows: r.rows }; },
   unduh: prog => Db.unduh(prog),
-  keDrive: prog => Db.keDrive(prog),
+  keDrive: (prog, hanya) => Db.keDrive(prog, hanya),
   siap: () => true
 };
 // pilihan isian Penyelenggara: nama yang pernah dipakai + daftar mitra PJK3 di situs utama (bila tertanam di panel admin)
