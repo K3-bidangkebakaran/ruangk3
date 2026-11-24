@@ -20,7 +20,7 @@
  */
 
 const ROOT_NAME = 'Daftar Hadir & Dokumentasi - LPMI';
-const API_VER = 10; // dibaca aplikasi lewat aksi 'ping' untuk memastikan Code.gs sudah versi terbaru
+const API_VER = 11; // dibaca aplikasi lewat aksi 'ping' untuk memastikan Code.gs sudah versi terbaru
 const PARENT_NAME = 'Ruangk3.com'; // folder induk di Google Drive (dicari lewat nama, ID tidak disimpan di repo)
 const SHEET_NAME = 'Database Induk - Daftar Hadir LPMI';
 const MAX_DAYS = 7;
@@ -166,6 +166,7 @@ function doPost(e) {
       case 'fileSizes': return out_(fileSizes_(req));
       case 'tenants': return out_(tenants_());
       case 'agendaSimpan': return out_(agendaSimpan_(req));
+      case 'saveDatabase': return out_(saveDatabase_(req));
       default: return out_({ ok: false, error: 'Aksi tidak dikenal: ' + req.action });
     }
   } catch (err) {
@@ -177,6 +178,51 @@ function doPost(e) {
 
 function out_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Database Peserta (tombol "Database Peserta" di Rekap Kegiatan panel admin).
+ * Baris disusun aplikasi Daftar Hadir (nama kegiatan per alat/program sama dengan judul laporan), di sini hanya ditulis
+ * ke SATU Google Spreadsheet "Database Peserta - Daftar Hadir LPMI" (di folder Daftar Hadir) dengan sheet Lulus, Cancel, Remedial.
+ * Isi sheet diganti penuh tiap kali tombol ditekan; berkasnya tetap sama (link tidak berubah). ID di Script Property DB_PESERTA_ID.
+ */
+function saveDatabase_(req) {
+  const data = req.sheets || {}, NAMA = ['Lulus', 'Cancel', 'Remedial'], WARNA = { Lulus: '#1b8a4c', Cancel: '#c62828', Remedial: '#b8860b' };
+  const props = PropertiesService.getScriptProperties();
+  let ss = null;
+  const id = props.getProperty('DB_PESERTA_ID');
+  if (id) { try { ss = SpreadsheetApp.openById(id); if (DriveApp.getFileById(id).isTrashed()) ss = null; } catch (e) { ss = null; } }
+  if (!ss) {
+    ss = SpreadsheetApp.create('Database Peserta - Daftar Hadir LPMI');
+    try { DriveApp.getFileById(ss.getId()).moveTo(getRoot_()); } catch (e) { }
+    props.setProperty('DB_PESERTA_ID', ss.getId());
+  }
+  const n = {};
+  NAMA.forEach(function (nm, i) {
+    const d = data[nm]; if (!d || !d.head || !d.head.length) return;
+    let sh = ss.getSheetByName(nm);
+    if (!sh) {
+      const s0 = ss.getSheets()[0];
+      sh = (i === 0 && ss.getSheets().length === 1 && s0.getLastRow() === 0 && NAMA.indexOf(s0.getName()) < 0) ? s0.setName(nm) : ss.insertSheet(nm);
+    }
+    const w = d.head.length;
+    const rows = [d.head].concat((d.rows || []).map(function (r) { const x = []; for (let c = 0; c < w; c++) x.push(r[c] == null ? '' : String(r[c])); return x; }));
+    if (sh.getFilter()) sh.getFilter().remove();
+    sh.clear();
+    if (sh.getMaxColumns() < w) sh.insertColumnsAfter(sh.getMaxColumns(), w - sh.getMaxColumns());
+    if (sh.getMaxRows() < rows.length + 1) sh.insertRowsAfter(sh.getMaxRows(), rows.length + 1 - sh.getMaxRows());
+    const rg = sh.getRange(1, 1, rows.length, w);
+    rg.setNumberFormat('@'); // teks apa adanya: tanggal & nilai tidak diubah Google Sheets
+    rg.setValues(rows);
+    sh.getRange(1, 1, 1, w).setFontWeight('bold').setBackground(WARNA[nm]).setFontColor('#ffffff');
+    sh.setFrozenRows(1);
+    if (rows.length > 1) rg.createFilter();
+    (d.lebar || []).forEach(function (px, c) { if (c < w && px) sh.setColumnWidth(c + 1, px); });
+    n[nm] = rows.length - 1;
+  });
+  NAMA.forEach(function (nm, i) { const sh = ss.getSheetByName(nm); if (sh) { ss.setActiveSheet(sh); ss.moveActiveSheet(i + 1); } });
+  const s1 = ss.getSheetByName('Lulus'); if (s1) ss.setActiveSheet(s1);
+  return { ok: true, url: ss.getUrl(), n: n };
 }
 
 /* =========================== DRIVE =========================== */
