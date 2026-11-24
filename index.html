@@ -10246,9 +10246,16 @@
                 prog('Menyiapkan aplikasi Daftar Hadir…');
                 for (let i = 0; i < 120 && !api; i++) { try { const x = f.contentWindow && f.contentWindow.dhDatabase; if (x && x.keDrive) api = x; } catch (e) {} if (!api) await new Promise(r => setTimeout(r, 500)); }
                 if (!api) throw new Error('Aplikasi Daftar Hadir belum siap. Coba lagi sebentar lagi.');
-                const r = await api.keDrive(prog);
+                prog('Membaca status Selesai dari aplikasi PIC…');
+                for (let i = 0; i < 100 && dhHasilBusy; i++) await new Promise(r => setTimeout(r, 300)); // tunggu pembacaan yang sedang berjalan
+                await window.dhMuatHasil(true); // hanya kegiatan yang sudah ditandai Selesai (APK PIC / Selesai paksa admin) yang masuk database
+                if (!dhHasilAll) throw new Error('Status Selesai dari aplikasi PIC belum bisa dibaca. Periksa koneksi, lalu coba lagi.');
+                const calon = new Set([...dhEvents.map(e => e.id), ...Object.keys(dhHasilAll || {}), ...Object.keys(dhAdm || {})]);
+                const selesai = [...calon].filter(id => id && dhSelesai(id));
+                if (!selesai.length) throw new Error('Belum ada kegiatan yang ditandai Selesai di APK PIC.');
+                const r = await api.keDrive(prog, selesai);
                 const gagal = (r.gagal || []).length ? ` ${r.gagal.length} kegiatan gagal dibaca dari Drive: ${r.gagal.join(', ')}.` : '';
-                dhStatus(`Database Peserta diperbarui dari ${r.nKeg} kegiatan: ${r.lulus} lulus, ${r.cancel} cancel, ${r.remedial} remedial.` + gagal + (w ? '' : ' Buka spreadsheet: ' + r.url), gagal ? 'warn' : 'ok');
+                dhStatus(`Database Peserta diperbarui dari ${r.nKeg} kegiatan yang sudah Selesai: ${r.lulus} lulus, ${r.cancel} cancel, ${r.remedial} remedial.` + gagal + (w ? '' : ' Buka spreadsheet: ' + r.url), gagal ? 'warn' : 'ok');
                 try { localStorage.setItem('rk3_dh_dburl', r.url); } catch (e) {}
                 if (w && !w.closed) w.location.href = r.url; else if (!w) window.open(r.url, '_blank');
             } catch (e) {
