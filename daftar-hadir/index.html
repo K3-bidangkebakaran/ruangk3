@@ -3999,7 +3999,7 @@ setTimeout(() => { try { tenantAuto(); } catch (e) { } setInterval(() => { try {
 }
 
 /* ---------- sinkron Google Drive (lewat Google Apps Script) ---------- */
-const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 10; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
+const CFG_LS = "rk3_dh_cfg", CFG_HAD = "rk3_dh_had", CFG_BAK = "rk3_dh_bak", DRIVE_URL_OK = /^https:\/\/script\.google(usercontent)?\.com\//, API_VER = 11; // API_VER: versi Code.gs yang dibutuhkan aplikasi ini
 const REMOTE_KEY = "cloud-remote-list"; // salinan terakhir daftar kegiatan di Drive (supaya langsung tampil)
 const CLOUD_KEY = "cloud-config", CLOUD_BAK = "cloud-config-bak", DEL_KEY = "cloud-del"; // DEL_KEY: antrean kegiatan yang harus dihapus juga di Google Drive
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ":" + str.length; }
@@ -5244,7 +5244,7 @@ const Db = {
         let ev = null, dl = false;
         const lokal = id === S.id || EV.some(x => x.id === id), st = r ? Cloud.stateOf(r) : "unsent";
         if (lokal && (st !== "stale" && st !== "new" || !Cloud.ready())) ev = id === S.id ? S : await idbGet("event:" + id).catch(() => null);
-        if (!ev && Cloud.ready() && r) { try { ev = await Cloud.fetchEvent(id, null, true); dl = true; } catch (e) { gagal.push((r && r.kegiatan) || id); } }
+        if (!ev && Cloud.ready() && r) { try { ev = await Cloud.fetchEvent(id, null, true); dl = true; } catch (e) { gagal.push(((r && r.kegiatan) || id) + " (" + Cloud.friendly(String((e && e.message) || e)) + ")"); } }
         if (!ev && lokal) ev = id === S.id ? S : await idbGet("event:" + id).catch(() => null); // Drive gagal: pakai salinan di perangkat ini
         if (ev) evs.push(id === S.id || dl ? ev : normalize(ev));
         n++; say(`Mengumpulkan data kegiatan ${n}/${ids.length}…`);
@@ -5278,24 +5278,40 @@ const Db = {
       kosong: rows.filter(r => !r.batal && !r.hasil).length
     };
   },
-  async unduh(prog) {
-    const res = await this.kumpul(prog, 300000), b = this.bagi(res.rows);
-    if (prog) prog("Menyusun spreadsheet…");
-    const XLSX = await loadXLSX();
-    const tgl = d => d ? fmtTglPendek(d) : "";
-    const HEAD = ["No", "Nama Peserta", "Instansi / Perusahaan", "Nama Kegiatan Pelatihan", "Tanggal Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "Tempat", "Penyelenggara"];
-    const sheet = (list, extra) => {
-      const aoa = [HEAD.concat(extra ? extra.h : [])].concat(list.map((r, i) => [i + 1, r.nama, r.instansi, r.kegiatan, r.tgl, tgl(r.mulai), tgl(r.selesai), r.tempat, r.pj].concat(extra ? extra.f(r) : [])));
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws["!cols"] = [5, 32, 32, 58, 30, 16, 16, 26, 22].concat(extra ? extra.h.map(() => 18) : []).map(w => ({ wch: w }));
-      ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(aoa.length - 1, 1), c: aoa[0].length - 1 } }) };
-      return ws;
+  tabel(rows) { // isi 3 sheet (dipakai Google Sheets di Drive & cadangan unduh .xlsx)
+    const b = this.bagi(rows), tgl = d => d ? fmtTglPendek(d) : "";
+    const HEAD = ["No", "Nama Peserta", "Instansi / Perusahaan", "Nama Kegiatan Pelatihan", "Tanggal Kegiatan", "Tanggal Mulai", "Tanggal Selesai", "Tempat", "Penyelenggara"], LB = [5, 32, 32, 58, 30, 16, 16, 26, 22];
+    const nilai = ["Nilai Ujian Teori", "Nilai Ujian Praktek"];
+    const sheet = (list, h, f) => ({ head: HEAD.concat(h), lebar: LB.concat(h.map(() => 18)).map(w => Math.round(w * 7.5)), wch: LB.concat(h.map(() => 18)),
+      rows: list.map((r, i) => [i + 1, r.nama, r.instansi, r.kegiatan, r.tgl, tgl(r.mulai), tgl(r.selesai), r.tempat, r.pj].concat(f(r))) });
+    return {
+      Lulus: sheet(b.lulus, nilai.concat("Keterangan"), r => [r.ut, r.up, r.remedial ? "Lulus setelah remedial" : "Lulus"]),
+      Cancel: sheet(b.cancel, ["Keterangan"], () => ["Cancel"]),
+      Remedial: sheet(b.remedial, nilai.concat("Hasil Akhir"), r => [r.ut, r.up, r.hasil === "lulus" ? "Lulus" : r.hasil === "tidak" ? "Tidak lulus" : "Belum ada keterangan"])
     };
-    const nilai = { h: ["Nilai Ujian Teori", "Nilai Ujian Praktek"], f: r => [r.ut, r.up] };
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, sheet(b.lulus, { h: nilai.h.concat("Keterangan"), f: r => nilai.f(r).concat(r.remedial ? "Lulus setelah remedial" : "Lulus") }), "Lulus");
-    XLSX.utils.book_append_sheet(wb, sheet(b.cancel, { h: ["Keterangan"], f: () => ["Cancel"] }), "Cancel");
-    XLSX.utils.book_append_sheet(wb, sheet(b.remedial, { h: nilai.h.concat("Hasil Akhir"), f: r => nilai.f(r).concat(r.hasil === "lulus" ? "Lulus" : r.hasil === "tidak" ? "Tidak lulus" : "Belum ada keterangan") }), "Remedial");
+  },
+  /** Tulis ke Google Spreadsheet "Database Peserta" di Drive (Code.gs aksi saveDatabase, berkas & link tetap sama) -> { url, ... } */
+  async keDrive(prog) {
+    if (!Cloud.ready()) throw new Error("Google Drive belum terhubung di perangkat ini.");
+    const res = await this.kumpul(prog, 60000), T = this.tabel(res.rows);
+    if (prog) prog("Menyimpan Database Peserta ke Google Drive…");
+    const sheets = {}; Object.keys(T).forEach(k => { sheets[k] = { head: T[k].head, rows: T[k].rows, lebar: T[k].lebar }; });
+    let r;
+    try { r = await this.api("saveDatabase", { sheets }); }
+    catch (e) { if (/aksi tidak dikenal/i.test(e.message || "")) { const x = new Error("Apps Script Daftar Hadir belum diperbarui (perlu Code.gs versi " + API_VER + ")."); x.lama = true; throw x; } throw e; }
+    return { ...res, ...this.ringkas(res.rows), url: r.url };
+  },
+  api(a, b) { return Cloud.api(a, b); },
+  async unduh(prog) {
+    const res = await this.kumpul(prog, 300000), T = this.tabel(res.rows);
+    if (prog) prog("Menyusun spreadsheet…");
+    const XLSX = await loadXLSX(), wb = XLSX.utils.book_new();
+    Object.keys(T).forEach(k => {
+      const t = T[k], aoa = [t.head].concat(t.rows), ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = t.wch.map(w => ({ wch: w }));
+      ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(aoa.length - 1, 1), c: t.head.length - 1 } }) };
+      XLSX.utils.book_append_sheet(wb, ws, k);
+    });
     const d = new Date(), nm = `Database Peserta - ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}.xlsx`;
     XLSX.writeFile(wb, nm, { compression: true });
     return { ...res, ...this.ringkas(res.rows), nama: nm };
@@ -5305,6 +5321,7 @@ const Db = {
 window.dhDatabase = {
   kumpul: async prog => { const r = await Db.kumpul(prog); return { ...Db.ringkas(r.rows), nKeg: r.nKeg, gagal: r.gagal, rows: r.rows }; },
   unduh: prog => Db.unduh(prog),
+  keDrive: prog => Db.keDrive(prog),
   siap: () => true
 };
 // pilihan isian Penyelenggara: nama yang pernah dipakai + daftar mitra PJK3 di situs utama (bila tertanam di panel admin)
