@@ -5642,9 +5642,27 @@
             
             window.showToast("Permintaan terkirim. Menunggu instruktur...", "success");
             
-            onValue(ref(db, `${pathVerifikasi}/${reqRef.key}`), async (snap) => {
+            window.tungguIzinUjian(reqRef.key, bdg, kls, idTim);
+        });
+
+        /* Menunggu izin ujian dari instruktur. Dulu pendengar ini hanya hidup selama halaman tunggu
+           tidak dimuat ulang: peserta yang HP-nya me-refresh tab / pindah aplikasi / login ulang
+           tidak pernah menerima izin walau admin sudah menyetujui (hanya yang tetap membuka halaman
+           yang masuk ujian). Kini permintaan dicatat di localStorage `ruangk3_req_<uid>` dan
+           dipasang lagi setelah login (window.lanjutkanIzinUjian); ujian hanya dimulai SEKALI. */
+        window.tungguIzinUjian = function(reqKey, bdg, kls, idTim) {
+            if (!currentUser || !currentUser.uid || !reqKey) return;
+            const LS = `ruangk3_req_${currentUser.uid}`;
+            try { localStorage.setItem(LS, JSON.stringify({ k: reqKey, bdg, kls, idTim, t: Date.now() })); } catch(e) {}
+            if (window.__izinUjianUnsub) { try { window.__izinUjianUnsub(); } catch(e) {} window.__izinUjianUnsub = null; }
+            let sudahMulai = false, unsub = null;
+            unsub = onValue(ref(db, `${pathVerifikasi}/${reqKey}`), async (snap) => {
                 const recVal = snap.val();
-                if(recVal && recVal.status === 'approved') {
+                if(recVal && recVal.status === 'approved' && !sudahMulai) {
+                    sudahMulai = true;
+                    setTimeout(() => { try { unsub && unsub(); } catch(e) {} }, 0);
+                    if (window.__izinUjianUnsub === unsub) window.__izinUjianUnsub = null;
+                    try { localStorage.removeItem(LS); } catch(e) {}
                     window.showToast("Instruktur menyetujui. Memuat soal dari Bank Soal...", "success");
 
                     // Soal diambil LANGSUNG dari Bank Soal admin sesuai Bidang & Kelas, lalu diacak.
@@ -5722,7 +5740,26 @@
                     }, 1000);
                 }
             });
-        });
+            window.__izinUjianUnsub = unsub;
+        };
+
+        // Setelah login / muat ulang: pasang lagi penunggu izin untuk permintaan yang belum dimulai.
+        window.lanjutkanIzinUjian = async function() {
+            if (!currentUser || !currentUser.uid) return;
+            const LS = `ruangk3_req_${currentUser.uid}`;
+            let sv = null; try { sv = JSON.parse(localStorage.getItem(LS) || 'null'); } catch(e) {}
+            if (!sv || !sv.k) return;
+            if (Date.now() - (Number(sv.t) || 0) > 12 * 3600000) { try { localStorage.removeItem(LS); } catch(e) {} return; }
+            let rec = { status: 'pending' };
+            try { const sn = await window.withTimeout(get(ref(db, `${pathVerifikasi}/${sv.k}`)), 15000); rec = sn.val(); } catch(e) { /* sinyal lemah: tetap pasang penunggu */ }
+            if (!rec || (rec.status !== 'pending' && rec.status !== 'approved')) { try { localStorage.removeItem(LS); } catch(e) {} return; }
+            window.openModal('modal-ujian');
+            document.getElementById('ujian-intro')?.classList.add('hidden');
+            document.getElementById('ujian-soal')?.classList.add('hidden');
+            document.getElementById('ujian-waiting')?.classList.remove('hidden');
+            document.getElementById('ujian-waiting')?.classList.add('flex');
+            window.tungguIzinUjian(sv.k, sv.bdg, sv.kls, sv.idTim);
+        };
 
         document.getElementById('btn-cancel-request')?.addEventListener('click', () => { 
             window.closeModal(); 
@@ -8692,10 +8729,28 @@
             return { durasiMenit, jumlahSoal, standarKelulusan };
         }
 
+        // Dulu kegagalan ditelan diam-diam (catch kosong) dan persetujuan massal ditulis satu per satu,
+        // sehingga bila satu penulisan tertahan/gagal (sinyal lemah) peserta lain tidak ikut disetujui
+        // padahal muncul pesan "berhasil". Kini SEMUA permintaan ditulis dalam SATU update multi-path
+        // (semua berhasil atau semua gagal) dan kegagalan ditampilkan ke admin.
+        async function setujuiUjianBanyak(keys, durasiMenit, jumlahSoal, standarKelulusan) {
+            const upd = {};
+            keys.forEach(k => {
+                upd[`${k}/status`] = 'approved';
+                upd[`${k}/durasiMenit`] = durasiMenit;
+                upd[`${k}/jumlahSoal`] = jumlahSoal;
+                upd[`${k}/standarKelulusan`] = standarKelulusan;
+            });
+            await window.withTimeout(update(ref(db, pathVerifikasi), upd), 30000);
+        }
         async function setujuiSatuUjian(uid, durasiMenit, jumlahSoal, standarKelulusan) {
             try {
-                await update(ref(db, `${pathVerifikasi}/${uid}`), { status: 'approved', durasiMenit, jumlahSoal, standarKelulusan });
-            } catch(e){}
+                await setujuiUjianBanyak([uid], durasiMenit, jumlahSoal, standarKelulusan);
+                return true;
+            } catch(e) {
+                window.showToast("Gagal menyetujui ujian: " + ((e && e.message) || e) + ". Periksa koneksi lalu coba lagi.", "error");
+                return false;
+            }
         }
 
         window.approveUjian = async function(uid) {
@@ -8719,10 +8774,14 @@
                 document.getElementById(`input-jumlah-grup-${groupId}`),
                 document.getElementById(`input-standar-grup-${groupId}`)
             );
-            for(const key of grp.keys) {
-                await setujuiSatuUjian(key, durasiMenit, jumlahSoal, standarKelulusan);
+            const keys = grp.keys.slice(); // salinan: tabel digambar ulang saat data berubah
+            try {
+                await setujuiUjianBanyak(keys, durasiMenit, jumlahSoal, standarKelulusan);
+            } catch(e) {
+                window.showToast("Gagal menyetujui " + keys.length + " permintaan ujian: " + ((e && e.message) || e) + ". Tidak ada yang tersimpan, silakan coba lagi.", "error");
+                return;
             }
-            window.showToast(`${grp.keys.length} permintaan ujian (tanggal & kelas yang sama) berhasil disetujui sekaligus.`, "success");
+            window.showToast(`${keys.length} permintaan ujian (tanggal & kelas yang sama) berhasil disetujui sekaligus.`, "success");
         };
 
         window.fetchDataRealtime = function() {
@@ -10687,7 +10746,7 @@
                             window.renderAvatarUI(data.nama, 'Peserta');
                             document.getElementById('modul-locked')?.classList.add('hidden');
                             document.getElementById('modul-list')?.classList.remove('hidden');
-                            window.checkAndResumeExam();
+                            if (!window.checkAndResumeExam()) window.lanjutkanIzinUjian();
                             // Kalau ada hasil ujian yang sempat gagal tersimpan saat koneksi
                             // peserta bermasalah (lihat window.finishQuiz), coba simpan ulang di
                             // sini juga -- supaya tetap tersinkron walau peserta sempat menutup
